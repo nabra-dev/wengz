@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting seed...");
 
-  // Clean existing data
+  // Clean existing data (keeps schema; safer than force-reset)
   await prisma.notification.deleteMany();
   await prisma.rating.deleteMany();
   await prisma.withdrawalRequest.deleteMany();
@@ -21,8 +21,10 @@ async function main() {
   await prisma.package.deleteMany();
   await prisma.serviceType.deleteMany();
   await prisma.providerProfile.deleteMany();
+  await prisma.activityLog.deleteMany();
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
+  await prisma.verificationToken.deleteMany();
   await prisma.user.deleteMany();
   await prisma.systemSettings.deleteMany();
 
