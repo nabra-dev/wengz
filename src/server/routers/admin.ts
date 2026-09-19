@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs";
 import { notifyProviderAssignment, notifyProviderWithdrawalReviewed } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
-import { reviewProviderWithdrawal, sendProviderPayout } from "@/lib/provider-wallet";
+import { reviewProviderWithdrawal, sendProviderPayout, settleCompletedRequest } from "@/lib/provider-wallet";
+import { logActivityAsync } from "@/lib/activity-log";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -822,6 +823,21 @@ export const adminRouter = router({
         locale: ctx.locale,
       });
 
+      logActivityAsync({
+        action: "wallet.withdraw_review",
+        message: `Withdrawal ${input.status.toLowerCase()}: ${withdrawal.amountEgp} EGP`,
+        actorId: ctx.session.user.id,
+        actorRole: "SUPER_ADMIN",
+        entityType: "WithdrawalRequest",
+        entityId: withdrawal.id,
+        metadata: {
+          status: input.status,
+          amountEgp: withdrawal.amountEgp,
+          providerId: withdrawal.providerId,
+          reason: input.reason.trim(),
+        },
+      });
+
       return { success: true };
     }),
 
@@ -860,7 +876,148 @@ export const adminRouter = router({
         locale: ctx.locale,
       });
 
+      logActivityAsync({
+        action: "wallet.payout",
+        message: `Admin payout ${withdrawal.amountEgp} EGP to provider`,
+        actorId: ctx.session.user.id,
+        actorRole: "SUPER_ADMIN",
+        entityType: "WithdrawalRequest",
+        entityId: withdrawal.id,
+        metadata: {
+          amountEgp: withdrawal.amountEgp,
+          providerId: input.providerId,
+          reason: input.reason.trim(),
+        },
+      });
+
       return { success: true, withdrawalId: withdrawal.id };
+    }),
+
+  /**
+   * Repair path: settle COMPLETED requests that never got a finance ledger
+   * entry (e.g. completed before wallet feature, or failed settlement).
+   */
+  settleUnsettledCompletedRequests: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/finance/settle-unsettled",
+        tags: ["admin"],
+        summary: "Settle completed requests missing finance ledger entries",
+      },
+    })
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional()
+    )
+    .output(
+      z.object({
+        settled: z.number(),
+        skipped: z.number(),
+        errors: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const unsettled = await ctx.db.request.findMany({
+        where: {
+          status: "COMPLETED",
+          providerId: { not: null },
+          deletedAt: null,
+          providerFinance: null,
+        },
+        select: { id: true },
+        take: input?.limit ?? 50,
+        orderBy: { completedAt: "asc" },
+      });
+
+      let settled = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      for (const request of unsettled) {
+        try {
+          await ctx.db.$transaction(async (tx) => {
+            await settleCompletedRequest(tx, request.id);
+          });
+          settled += 1;
+        } catch (err) {
+          skipped += 1;
+          errors.push(
+            `${request.id}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      }
+
+      logActivityAsync({
+        action: "wallet.settle",
+        message: `Settled ${settled} unsettled request(s); skipped ${skipped}`,
+        actorId: ctx.session.user.id,
+        actorRole: "SUPER_ADMIN",
+        metadata: { settled, skipped, errors: errors.slice(0, 10) },
+      });
+
+      return { settled, skipped, errors };
+    }),
+
+  getActivityLogs: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/activity-logs",
+        tags: ["admin"],
+        summary: "List system activity / audit history",
+      },
+    })
+    .input(
+      z
+        .object({
+          action: z.string().optional(),
+          level: z.enum(["info", "warn", "error"]).optional(),
+          actorId: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
+    .output(
+      z.object({
+        logs: z.array(z.any()),
+        nextCursor: z.string().nullable(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const where: {
+        action?: string;
+        level?: string;
+        actorId?: string;
+      } = {};
+      if (input?.action) where.action = input.action;
+      if (input?.level) where.level = input.level;
+      if (input?.actorId) where.actorId = input.actorId;
+
+      const logs = await ctx.db.activityLog.findMany({
+        where,
+        include: {
+          actor: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: (input?.limit ?? 50) + 1,
+        cursor: input?.cursor ? { id: input.cursor } : undefined,
+        skip: input?.cursor ? 1 : 0,
+      });
+
+      let nextCursor: string | null = null;
+      if (logs.length > (input?.limit ?? 50)) {
+        const next = logs.pop();
+        nextCursor = next?.id ?? null;
+      }
+
+      return { logs, nextCursor };
     }),
 
   // Get all users

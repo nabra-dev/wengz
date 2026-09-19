@@ -12,37 +12,17 @@ export interface RevisionResult {
 }
 
 /**
- * Smart Revision Algorithm
+ * Smart Revision Algorithm (atomic)
  *
- * This is the core algorithm for handling revision requests:
- *
- * 1. Get the request and active subscription
- * 2. Check current revision count vs. max free revisions from package
- * 3. IF count < max: Allow FREE revision, increment counter
- * 4. ELSE (count >= max): Check if client has credits
- *    - IF yes: Deduct 1 credit, RESET counter to 0
- *    - IF no: Block revision
- *
- * Key Innovation: Counter resets after paid revision!
- * This allows clients to get free revisions again after paying.
- *
- * Example with 3 free revisions:
- * Request created → Delivered
- * - Revision 1: Free (count=1) ✅
- * - Revision 2: Free (count=2) ✅
- * - Revision 3: Free (count=3) ✅
- * - Revision 4: Paid (count=0, -1 credit) 💳 COUNTER RESET!
- * - Revision 5: Free (count=1) ✅
- * - Revision 6: Free (count=2) ✅
- * - Revision 7: Free (count=3) ✅
- * - Revision 8: Paid (count=0, -1 credit) 💳 COUNTER RESET!
+ * Free path: CAS update only while status=DELIVERED and count < max.
+ * Paid path: deduct credits + status/counter update in one $transaction.
+ * Concurrent revision requests cannot exceed free allowance or double-charge.
  */
 export async function handleRevisionRequest(
   requestId: string,
   userId: string,
   locale = "en"
 ): Promise<RevisionResult> {
-  // Step 1: Get the request with its service type
   const request = await db.request.findUnique({
     where: { id: requestId },
     include: {
@@ -51,7 +31,7 @@ export async function handleRevisionRequest(
     },
   });
 
-  if (!request) {
+  if (!request || request.deletedAt) {
     return {
       allowed: false,
       isFree: false,
@@ -61,7 +41,6 @@ export async function handleRevisionRequest(
     };
   }
 
-  // Verify the user is the client
   if (request.clientId !== userId) {
     return {
       allowed: false,
@@ -72,7 +51,6 @@ export async function handleRevisionRequest(
     };
   }
 
-  // Check request status - must be DELIVERED
   if (request.status !== "DELIVERED") {
     return {
       allowed: false,
@@ -83,7 +61,6 @@ export async function handleRevisionRequest(
     };
   }
 
-  // Step 2: Get active subscription with package details
   const subscription = await db.clientSubscription.findFirst({
     where: {
       userId,
@@ -106,27 +83,13 @@ export async function handleRevisionRequest(
     };
   }
 
-  // Read all revision settings from the service type (current values)
   const maxFreeRevisions = request.serviceType.maxFreeRevisions;
   const currentCount = request.currentRevisionCount;
   const paidRevisionCost = request.serviceType.paidRevisionCost;
   const resetFreeRevisionsOnPaid = request.serviceType.resetFreeRevisionsOnPaid;
 
-  // Step 3: Check if this revision is free
+  // FREE REVISION — conditional update prevents concurrent over-allowance
   if (currentCount < maxFreeRevisions) {
-    // FREE REVISION - just increment counter
-    const updatedRequest = await db.request.update({
-      where: { id: requestId },
-      data: {
-        currentRevisionCount: currentCount + 1,
-        totalRevisions: request.totalRevisions + 1,
-        status: "REVISION_REQUESTED",
-        isRevision: true,
-        revisionType: "free",
-      },
-    });
-
-    // Create system comment for tracking
     const freeRevisionComment = await getTranslation(
       locale,
       "requests.messages.systemMessages.revisionRequestedFree",
@@ -135,18 +98,51 @@ export async function handleRevisionRequest(
         max: maxFreeRevisions,
       }
     );
-    await db.requestComment.create({
-      data: {
-        requestId,
-        userId,
-        content: freeRevisionComment,
-        type: "SYSTEM",
-      },
+
+    const result = await db.$transaction(async (tx) => {
+      const cas = await tx.request.updateMany({
+        where: {
+          id: requestId,
+          deletedAt: null,
+          status: "DELIVERED",
+          currentRevisionCount: { lt: maxFreeRevisions },
+        },
+        data: {
+          currentRevisionCount: { increment: 1 },
+          totalRevisions: { increment: 1 },
+          status: "REVISION_REQUESTED",
+          isRevision: true,
+          revisionType: "free",
+        },
+      });
+
+      if (cas.count === 0) {
+        return null;
+      }
+
+      await tx.requestComment.create({
+        data: {
+          requestId,
+          userId,
+          content: freeRevisionComment,
+          type: "SYSTEM",
+        },
+      });
+
+      return tx.request.findUnique({ where: { id: requestId } });
     });
 
-    // Notify provider
+    if (!result) {
+      return {
+        allowed: false,
+        isFree: false,
+        creditCost: 0,
+        newRevisionCount: currentCount,
+        message: "Unable to request revision. The request may have changed — please refresh.",
+      };
+    }
+
     if (request.providerId) {
-      // Send realtime + email notification
       await notifyStatusChange({
         requestId,
         userId: request.providerId,
@@ -160,12 +156,12 @@ export async function handleRevisionRequest(
       allowed: true,
       isFree: true,
       creditCost: 0,
-      newRevisionCount: updatedRequest.currentRevisionCount,
-      message: `Free revision requested (${currentCount + 1}/${maxFreeRevisions} used). Provider will be notified.`,
+      newRevisionCount: result.currentRevisionCount,
+      message: `Free revision requested (${result.currentRevisionCount}/${maxFreeRevisions} used). Provider will be notified.`,
     };
   }
 
-  // Step 4: Paid revision - check credits
+  // PAID REVISION — deduct + update in one transaction
   if (subscription.remainingCredits < paidRevisionCost) {
     return {
       allowed: false,
@@ -176,38 +172,6 @@ export async function handleRevisionRequest(
     };
   }
 
-  // Deduct credits for paid revision
-  const deductResult = await deductCredits(
-    userId,
-    paidRevisionCost,
-    `Paid revision for request: ${request.title}`
-  );
-
-  if (!deductResult.success) {
-    return {
-      allowed: false,
-      isFree: false,
-      creditCost: paidRevisionCost,
-      newRevisionCount: currentCount,
-      message: deductResult.message || "Failed to deduct credits.",
-    };
-  }
-
-  // Update request - conditionally RESET counter based on package settings
-  const newRevisionCount = resetFreeRevisionsOnPaid ? 0 : currentCount;
-  const updatedRequest = await db.request.update({
-    where: { id: requestId },
-    data: {
-      currentRevisionCount: newRevisionCount, // Reset to 0 if package allows, otherwise keep count
-      totalRevisions: request.totalRevisions + 1,
-      status: "REVISION_REQUESTED",
-      isRevision: true,
-      revisionType: "paid",
-      creditCost: request.creditCost + paidRevisionCost, // Accumulate the paid revision cost
-    },
-  });
-
-  // Create system comment
   const resetNote = await getTranslation(
     locale,
     resetFreeRevisionsOnPaid
@@ -231,18 +195,77 @@ export async function handleRevisionRequest(
     }
   );
 
-  await db.requestComment.create({
-    data: {
-      requestId,
+  const paidResult = await db.$transaction(async (tx) => {
+    const deductResult = await deductCredits(
       userId,
-      content: paidRevisionComment,
-      type: "SYSTEM",
-    },
+      paidRevisionCost,
+      `Paid revision for request: ${request.title}`,
+      tx
+    );
+
+    if (!deductResult.success) {
+      return { ok: false as const, message: deductResult.message || "Failed to deduct credits." };
+    }
+
+    const newRevisionCount = resetFreeRevisionsOnPaid ? 0 : currentCount;
+    const cas = await tx.request.updateMany({
+      where: {
+        id: requestId,
+        deletedAt: null,
+        status: "DELIVERED",
+        currentRevisionCount: { gte: maxFreeRevisions },
+      },
+      data: {
+        currentRevisionCount: newRevisionCount,
+        totalRevisions: { increment: 1 },
+        status: "REVISION_REQUESTED",
+        isRevision: true,
+        revisionType: "paid",
+        creditCost: { increment: paidRevisionCost },
+      },
+    });
+
+    if (cas.count === 0) {
+      // Throw to roll back the credit deduction
+      throw new Error("REVISION_STATUS_CHANGED");
+    }
+
+    await tx.requestComment.create({
+      data: {
+        requestId,
+        userId,
+        content: paidRevisionComment,
+        type: "SYSTEM",
+      },
+    });
+
+    const updated = await tx.request.findUnique({ where: { id: requestId } });
+    return {
+      ok: true as const,
+      newBalance: deductResult.newBalance,
+      newRevisionCount: updated?.currentRevisionCount ?? newRevisionCount,
+    };
+  }).catch((err: unknown) => {
+    if (err instanceof Error && err.message === "REVISION_STATUS_CHANGED") {
+      return {
+        ok: false as const,
+        message: "Unable to request revision. The request may have changed — please refresh.",
+      };
+    }
+    throw err;
   });
 
-  // Notify provider
+  if (!paidResult.ok) {
+    return {
+      allowed: false,
+      isFree: false,
+      creditCost: paidRevisionCost,
+      newRevisionCount: currentCount,
+      message: paidResult.message,
+    };
+  }
+
   if (request.providerId) {
-    // Send realtime + email notification
     await notifyStatusChange({
       requestId,
       userId: request.providerId,
@@ -256,12 +279,12 @@ export async function handleRevisionRequest(
     allowed: true,
     isFree: false,
     creditCost: paidRevisionCost,
-    newRevisionCount: updatedRequest.currentRevisionCount,
+    newRevisionCount: paidResult.newRevisionCount,
     message: buildPaidRevisionMessage(
       paidRevisionCost,
       maxFreeRevisions,
       resetFreeRevisionsOnPaid,
-      deductResult.newBalance
+      paidResult.newBalance
     ),
   };
 }
@@ -302,7 +325,7 @@ export async function getRevisionInfo(
     },
   });
 
-  if (request?.clientId !== userId) {
+  if (!request || request.deletedAt || request.clientId !== userId) {
     return {
       currentCount: 0,
       maxFree: 0,
@@ -312,7 +335,6 @@ export async function getRevisionInfo(
     };
   }
 
-  // Read all revision settings from the service type (current values)
   const maxFree = request.serviceType.maxFreeRevisions;
   const paidCost = request.serviceType.paidRevisionCost;
   const currentCount = request.currentRevisionCount;

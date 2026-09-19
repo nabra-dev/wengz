@@ -6,6 +6,7 @@ jest.mock("../db", () => ({
     clientSubscription: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -84,18 +85,19 @@ describe("Credit Logic", () => {
     it("should deduct credits successfully", async () => {
       const { db } = require("../db");
       db.clientSubscription.findFirst.mockResolvedValue(mockSubscription);
-      db.clientSubscription.update.mockResolvedValue({
-        ...mockSubscription,
-        remainingCredits: 7,
-      });
+      db.clientSubscription.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await deductCredits("user-123", 3, "Test deduction");
 
       expect(result.success).toBe(true);
       expect(result.newBalance).toBe(7);
-      expect(db.clientSubscription.update).toHaveBeenCalledWith({
-        where: { id: "sub-123" },
-        data: { remainingCredits: 7 },
+      // Atomic conditional decrement — the balance guard lives in the WHERE clause
+      expect(db.clientSubscription.updateMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          id: "sub-123",
+          remainingCredits: { gte: 3 },
+        }),
+        data: { remainingCredits: { decrement: 3 } },
       });
     });
 
@@ -115,6 +117,8 @@ describe("Credit Logic", () => {
         ...mockSubscription,
         remainingCredits: 2,
       });
+      // Conditional update matches no rows when balance is too low
+      db.clientSubscription.updateMany.mockResolvedValue({ count: 0 });
 
       const result = await deductCredits("user-123", 5);
 

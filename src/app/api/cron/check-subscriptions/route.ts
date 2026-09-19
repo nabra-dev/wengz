@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifySubscriptionExpiring, notifySubscriptionExpired } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
+import { logActivityAsync } from "@/lib/activity-log";
 
 // This endpoint should be called by a cron job (e.g., daily)
 // You can use services like Vercel Cron, GitHub Actions, or external cron services
@@ -61,7 +63,7 @@ async function processExpiringSubscriptions(
         results.expiringNotified++;
       }
     } catch (error) {
-      console.error(`Failed to notify user ${subscription.userId}:`, error);
+      logger.error(`Failed to notify user ${subscription.userId}:`, error);
       results.errors.push(`User ${subscription.userId}: ${error}`);
     }
   }
@@ -98,18 +100,24 @@ async function processExpiredSubscriptions(
       });
       results.expiredDeactivated++;
     } catch (error) {
-      console.error(`Failed to process expired subscription ${subscription.id}:`, error);
+      logger.error(`Failed to process expired subscription ${subscription.id}:`, error);
       results.errors.push(`Subscription ${subscription.id}: ${error}`);
     }
   }
 }
 
 export async function GET(request: Request) {
-  // Optional: Add authentication/authorization
+  // Fail closed: CRON_SECRET is required in production. In development we
+  // allow unauthenticated calls to keep local testing simple.
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production") {
+      logger.error("[CRON] CRON_SECRET is not set — refusing to run in production");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -178,6 +186,13 @@ export async function GET(request: Request) {
     await processExpiringSubscriptions(expiringSubscriptions, now, results);
     await processExpiredSubscriptions(expiredSubscriptions, now, results);
 
+    logActivityAsync({
+      action: "cron.subscriptions",
+      message: `Cron checked subscriptions: ${results.expiringNotified} expiring, ${results.expiredNotified} expired, ${results.expiredDeactivated} deactivated`,
+      metadata: { ...results },
+      level: results.errors.length ? "warn" : "info",
+    });
+
     return NextResponse.json({
       success: true,
       timestamp: now.toISOString(),
@@ -185,7 +200,13 @@ export async function GET(request: Request) {
       message: `Checked subscriptions: ${results.expiringNotified} expiring notifications sent, ${results.expiredNotified} expired notifications sent, ${results.expiredDeactivated} subscriptions deactivated.`,
     });
   } catch (error) {
-    console.error("Error checking subscriptions:", error);
+    logger.error("Error checking subscriptions:", error);
+    logActivityAsync({
+      action: "cron.subscriptions",
+      message: "Cron subscription check failed",
+      level: "error",
+      metadata: { error: error instanceof Error ? error.message : String(error) },
+    });
     return NextResponse.json(
       {
         success: false,

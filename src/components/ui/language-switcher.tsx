@@ -9,6 +9,27 @@ const locales = [
   { code: "ar", label: "AR", flag: "🇸🇦" },
 ] as const;
 
+/**
+ * Builds the target path for a locale switch, stripping any existing locale
+ * prefix to avoid double-prefixing (e.g. "/ar/provider" + "en" → "/en/provider").
+ */
+export function buildLocaleSwitchPath(
+  pathname: string,
+  targetLocale: string
+): string {
+  const segments = pathname.split("/").filter(Boolean);
+  const localeList = ["en", "ar"] as const;
+  const isFirstSegmentLocale = localeList.includes(segments[0] as (typeof localeList)[number]);
+
+  let pathWithoutLocale = pathname;
+  if (isFirstSegmentLocale) {
+    const remaining = segments.slice(1).join("/");
+    pathWithoutLocale = remaining ? `/${remaining}` : "/";
+  }
+
+  return `/${targetLocale}${pathWithoutLocale === "/" ? "" : pathWithoutLocale}`;
+}
+
 export function LanguageSwitcher() {
   const locale = useLocale();
   const pathname = usePathname();
@@ -18,18 +39,7 @@ export function LanguageSwitcher() {
   const targetLanguage = locales.find((l) => l.code === targetLocale) || locales[0];
 
   const handleToggle = () => {
-    const segments = pathname.split("/").filter(Boolean);
-    const localeList = ["en", "ar"] as const;
-    const isFirstSegmentLocale = localeList.includes(segments[0] as (typeof localeList)[number]);
-
-    let pathWithoutLocale = pathname;
-    if (isFirstSegmentLocale) {
-      const remaining = segments.slice(1).join("/");
-      pathWithoutLocale = remaining ? `/${remaining}` : "/";
-    }
-
-    const newPath = `/${targetLocale}${pathWithoutLocale === "/" ? "" : pathWithoutLocale}`;
-    globalThis.location.href = newPath;
+    globalThis.location.href = buildLocaleSwitchPath(pathname, targetLocale);
   };
 
   return (

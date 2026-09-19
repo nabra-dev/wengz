@@ -167,11 +167,18 @@ export default function ProviderWalletPage() {
         icon: Wallet,
       },
       {
-        title: t("withdrawStatus.PENDING"),
+        title: t("summary.pending"),
         value: formatEgp(data?.pendingEgp ?? 0),
-        description: t("withdraw.description"),
+        description: t("summary.pendingDesc"),
         detail: t("summary.creditDetail", { credits: data?.pendingCredits ?? 0 }),
         icon: Clock,
+      },
+      {
+        title: t("summary.paid"),
+        value: formatEgp(data?.paidEgp ?? 0),
+        description: t("summary.paidDesc"),
+        detail: t("summary.creditDetail", { credits: data?.paidCredits ?? 0 }),
+        icon: History,
       },
       {
         title: t("summary.periodEarnings"),
@@ -179,13 +186,6 @@ export default function ProviderWalletPage() {
         description: t("summary.periodEarningsDesc"),
         detail: t("summary.creditDetail", { credits: data?.totalEarnings ?? 0 }),
         icon: CreditCard,
-      },
-      {
-        title: t("summary.completed"),
-        value: formatCredits(data?.completedCount ?? 0),
-        description: t("summary.completedDesc"),
-        detail: null,
-        icon: History,
       },
     ],
     [data, t]

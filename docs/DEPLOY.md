@@ -36,6 +36,7 @@ nano .env
 # set:
 # NEXTAUTH_URL=https://wengz.tech
 # NEXT_PUBLIC_APP_URL=https://wengz.tech
+# NEXT_PUBLIC_GTM_ID=GTM-58DDFXLX
 # CONTACT_FORMS_RECIPIENT=info@wengz.tech   # if you have that mailbox
 # SMTP_* From address if needed
 

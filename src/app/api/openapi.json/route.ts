@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { buildOpenApiDocument } from "@/server/openapi";
 
-export function GET(req: Request) {
+export async function GET(req: Request) {
   try {
+    // OpenAPI document is admin-only in production.
+    if (process.env.NODE_ENV === "production") {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.role !== "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+    }
+
     const url = new URL(req.url);
     const origin = `${url.protocol}//${url.host}`;
     const baseUrl = `${origin}/api/rest`;

@@ -126,7 +126,6 @@ export function ContactFormPage({ variant }: ContactFormPageProps) {
       });
 
       const debug = await inspectSubmissionResponse("contact-api", res);
-      console.info("[ContactForm] submit response", debug);
 
       if (debug.ok) {
         formEl.reset();
@@ -134,10 +133,9 @@ export function ContactFormPage({ variant }: ContactFormPageProps) {
         return;
       }
 
-      console.error("[ContactForm] contact API failed", debug);
       toast.error(t("forms.toast.errorTitle"), { description: t("forms.toast.errorDesc") });
     } catch (error) {
-      console.error("[ContactForm] submit exception", error);
+
       toast.error(t("forms.toast.errorTitle"), { description: t("forms.toast.errorDesc") });
     } finally {
       setLoading(false);

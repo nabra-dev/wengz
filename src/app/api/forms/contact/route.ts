@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendEmail } from "@/lib/notifications/email";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+// Contact form — spam protection.
+const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 
 const BodySchema = z.object({
   type: z.enum(["client", "provider"]),
@@ -72,6 +76,15 @@ async function sendViaWeb3Forms(payload: {
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const rl = rateLimit(`contact-form:${ip}`, CONTACT_RATE_LIMIT);
+    if (!rl.success) {
+      return NextResponse.json(
+        { ok: false, error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+
     if (
       !process.env.WEB3FORMS_CLIENT_ACCESS_KEY &&
       !process.env.WEB3FORMS_PROVIDER_ACCESS_KEY &&

@@ -58,7 +58,7 @@ export default function AdminRequestDetailPage() {
         if (derived > 0) return derived;
       }
     } catch (e) {
-      console.error("Failed to derive attribute credits", e);
+
     }
     return existing;
   })();

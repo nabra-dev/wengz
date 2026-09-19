@@ -6,6 +6,7 @@ import { handleRevisionRequest, getRevisionInfo } from "@/lib/revision-logic";
 import { validateAttributeResponses, calculateAttributeCredits } from "@/lib/attribute-validation";
 import { getPriorityCostsForService } from "@/lib/priority-costs";
 import { settleCompletedRequest } from "@/lib/provider-wallet";
+import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
   createNotification,
   getLocalizedRequestStatusLabel,
@@ -194,6 +195,13 @@ function buildCostBreakdownMessage(
  * Validates request access based on user role
  */
 function validateRequestAccess(userId: string, role: string, request: any) {
+  if (request.deletedAt) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Request not found",
+    });
+  }
+
   if (role === "CLIENT" && request.clientId !== userId) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -284,6 +292,16 @@ export const requestRouter = router({
       // Validate attribute responses
       validateServiceAttributes(serviceType, input.attributeResponses);
 
+      // Only allow our private upload URLs — blocks javascript: and external phishing.
+      try {
+        assertAllowedUploadUrls(input.attachments, userId);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid attachment URL. Upload files through the app first.",
+        });
+      }
+
       // Calculate total credit cost
       const costDetails = await calculateTotalCreditCost(
         serviceType,
@@ -292,55 +310,60 @@ export const requestRouter = router({
         input.serviceTypeId
       );
 
-      // Check and deduct credits
-      const creditResult = await checkAndDeductCredits(
-        userId,
-        costDetails.totalCreditCost,
-        `New request: ${input.title} (Priority ${input.priority})`
-      );
-
-      if (!creditResult.allowed || !creditResult.success) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: creditResult.message,
-        });
-      }
-
-      // Create the request
-      const request = await ctx.db.request.create({
-        data: {
-          title: input.title,
-          description: input.description,
-          clientId: userId,
-          serviceTypeId: input.serviceTypeId,
-          priority: input.priority,
-          creditCost: costDetails.totalCreditCost,
-          baseCreditCost: costDetails.baseCreditCost,
-          attributeCredits: costDetails.attributeCredits,
-          priorityCreditCost: costDetails.priorityCost,
-          isRevision: false,
-          formData: input.formData || {},
-          attributeResponses: input.attributeResponses || null,
-          attachments: input.attachments || [],
-          status: "PENDING",
-        } as any,
-        include: {
-          serviceType: true,
-        },
-      });
-
-      // Create system comment
+      // Deduct credits, create the request, and write the system comment in
+      // one transaction: either everything commits or the credits roll back.
       const requestCreatedComment = await getTranslation(
         ctx.locale,
         "requests.messages.systemMessages.requestCreated"
       );
-      await ctx.db.requestComment.create({
-        data: {
-          requestId: request.id,
+
+      const { request, creditResult } = await ctx.db.$transaction(async (tx) => {
+        const creditResult = await checkAndDeductCredits(
           userId,
-          content: requestCreatedComment,
-          type: "SYSTEM",
-        },
+          costDetails.totalCreditCost,
+          `New request: ${input.title} (Priority ${input.priority})`,
+          tx
+        );
+
+        if (!creditResult.allowed || !creditResult.success) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: creditResult.message,
+          });
+        }
+
+        const request = await tx.request.create({
+          data: {
+            title: input.title,
+            description: input.description,
+            clientId: userId,
+            serviceTypeId: input.serviceTypeId,
+            priority: input.priority,
+            creditCost: costDetails.totalCreditCost,
+            baseCreditCost: costDetails.baseCreditCost,
+            attributeCredits: costDetails.attributeCredits,
+            priorityCreditCost: costDetails.priorityCost,
+            isRevision: false,
+            formData: input.formData || {},
+            attributeResponses: input.attributeResponses || null,
+            attachments: input.attachments || [],
+            status: "PENDING",
+          } as any,
+          include: {
+            serviceType: true,
+          },
+        });
+
+        await tx.requestComment.create({
+          data: {
+            requestId: request.id,
+            userId,
+            content: requestCreatedComment,
+            type: "SYSTEM",
+          },
+        });
+
+        return { request, creditResult };
       });
 
       // Notify matching providers
@@ -407,17 +430,29 @@ export const requestRouter = router({
       const role = ctx.session.user.role;
 
       let where: any = {};
+      let providerSupportedServiceIds: string[] | null = null;
 
       if (role === "CLIENT") {
         where.clientId = userId;
       } else if (role === "PROVIDER") {
-        // Providers see their accepted requests + pending requests matching their skills
-        // Note: We don't need to fetch provider profile here as we're just building where clause
+        // Providers see their own requests + pending requests matching their
+        // supported services only (prevents browsing unrelated client work).
+        const providerProfile = await ctx.db.providerProfile.findUnique({
+          where: { userId },
+          include: { supportedServices: { select: { id: true } } },
+        });
+        providerSupportedServiceIds =
+          providerProfile?.supportedServices.map((s: { id: string }) => s.id) || [];
+
         where = {
           OR: [
             { providerId: userId },
             {
-              AND: [{ status: "PENDING" }, { providerId: null }],
+              AND: [
+                { status: "PENDING" },
+                { providerId: null },
+                { serviceTypeId: { in: providerSupportedServiceIds } },
+              ],
             },
           ],
         };
@@ -429,7 +464,7 @@ export const requestRouter = router({
       }
 
       const requests = await ctx.db.request.findMany({
-        where,
+        where: { ...where, deletedAt: null },
         include: {
           client: {
             select: { id: true, name: true, email: true, image: true },
@@ -448,9 +483,19 @@ export const requestRouter = router({
         skip: input?.cursor ? 1 : 0,
       });
 
+      // Providers browsing unassigned pending requests must not see client PII.
+      const sanitized =
+        role === "PROVIDER"
+          ? requests.map((r) =>
+              r.providerId === userId
+                ? r
+                : { ...r, client: { ...r.client, email: null } }
+            )
+          : requests;
+
       // Use stored credit cost (no need to recalculate, preserves historical costs)
       return {
-        requests,
+        requests: sanitized,
         nextCursor: requests.length === (input?.limit || 20) ? (requests.at(-1)?.id ?? null) : null,
       };
     }),
@@ -516,6 +561,17 @@ export const requestRouter = router({
       // Access control
       validateRequestAccess(userId, role, request);
 
+      // Providers viewing an unassigned pending request must not see client PII.
+      const isProviderBrowsing =
+        role === "PROVIDER" && request.providerId !== userId;
+      const visibleRequest = isProviderBrowsing
+        ? {
+            ...request,
+            client: { ...request.client, email: null },
+            comments: [],
+          }
+        : request;
+
       // Get revision info if client
       let revisionInfo = null;
       if (role === "CLIENT" || role === "SUPER_ADMIN") {
@@ -526,7 +582,7 @@ export const requestRouter = router({
       const attributeCredits = getAttributeCredits(request);
 
       return {
-        ...request,
+        ...visibleRequest,
         attributeCredits,
         revisionInfo,
       } as any;
@@ -555,31 +611,53 @@ export const requestRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",
         });
       }
 
-      if (request.providerId) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "This request has already been accepted",
+      // Enforce skill match for providers (admins may assign freely).
+      if (role === "PROVIDER") {
+        const providerProfile = await ctx.db.providerProfile.findUnique({
+          where: { userId },
+          include: { supportedServices: { select: { id: true } } },
         });
+        const supportedServiceIds =
+          providerProfile?.supportedServices.map((s: { id: string }) => s.id) || [];
+
+        if (!supportedServiceIds.includes(request.serviceTypeId)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "This request is not in your supported services",
+          });
+        }
       }
 
       const estimatedDelivery = input.estimatedDays
         ? new Date(Date.now() + input.estimatedDays * 24 * 60 * 60 * 1000)
         : null;
 
-      const updatedRequest = await ctx.db.request.update({
-        where: { id: input.requestId },
+      // Atomic accept: only succeeds while the request is still unassigned.
+      const accepted = await ctx.db.request.updateMany({
+        where: { id: input.requestId, providerId: null, status: "PENDING" },
         data: {
           providerId: userId,
           status: "IN_PROGRESS",
           estimatedDelivery,
         },
+      });
+
+      if (accepted.count === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This request has already been accepted",
+        });
+      }
+
+      const updatedRequest = await ctx.db.request.findUnique({
+        where: { id: input.requestId },
       });
 
       // Create system comment
@@ -649,7 +727,7 @@ export const requestRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",
@@ -660,6 +738,15 @@ export const requestRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not assigned to this request",
+        });
+      }
+
+      try {
+        assertAllowedUploadUrls(input.files, userId);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid file URL. Upload files through the app first.",
         });
       }
 
@@ -766,7 +853,7 @@ export const requestRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",
@@ -793,13 +880,26 @@ export const requestRouter = router({
       );
 
       const updatedRequest = await ctx.db.$transaction(async (tx) => {
-        const completedRequest = await tx.request.update({
-          where: { id: input.requestId },
+        // CAS: only complete while still DELIVERED and not soft-deleted
+        const cas = await tx.request.updateMany({
+          where: {
+            id: input.requestId,
+            status: "DELIVERED",
+            deletedAt: null,
+            clientId: userId,
+          },
           data: {
             status: "COMPLETED",
             completedAt: new Date(),
           },
         });
+
+        if (cas.count === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Request must be in DELIVERED status to approve",
+          });
+        }
 
         if (request.providerId) {
           await settleCompletedRequest(tx, input.requestId);
@@ -814,7 +914,7 @@ export const requestRouter = router({
           },
         });
 
-        return completedRequest;
+        return tx.request.findUnique({ where: { id: input.requestId } });
       });
 
       // Notify provider
@@ -851,7 +951,7 @@ export const requestRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",
@@ -874,6 +974,15 @@ export const requestRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You don't have access to this request",
+        });
+      }
+
+      try {
+        assertAllowedUploadUrls(input.files, userId);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid file URL. Upload files through the app first.",
         });
       }
 
@@ -940,7 +1049,7 @@ export const requestRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",

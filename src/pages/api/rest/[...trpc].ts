@@ -2,6 +2,7 @@ import { createOpenApiNextHandler } from "trpc-openapi";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { appRouter } from "@/server/routers/_app";
 import { createTRPCContext } from "@/server/trpc";
+import { logger } from "@/lib/logger";
 
 export default createOpenApiNextHandler({
   router: appRouter,
@@ -24,7 +25,7 @@ export default createOpenApiNextHandler({
   onError({ error, path }: { error: unknown; path?: string }) {
     if (process.env.NODE_ENV === "development") {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`❌ REST/OpenAPI failed on ${path ?? "<no-path>"}: ${message}`);
+      logger.error(`❌ REST/OpenAPI failed on ${path ?? "<no-path>"}: ${message}`);
     }
   },
 });

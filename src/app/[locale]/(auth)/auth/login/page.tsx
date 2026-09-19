@@ -115,7 +115,7 @@ export default function LoginPage() {
         globalThis.location.href = `/${locale}/client`;
       }
     } catch (err) {
-      console.error("Login error:", err);
+
       toast.error(t("error"), {
         description: t("errorMessage"),
       });

@@ -2,6 +2,7 @@
 // Separate file to avoid Next.js route export restrictions
 
 import { getTranslation } from "./i18n-helper";
+import { logger } from "@/lib/logger";
 
 type ClientConn = {
   controller: ReadableStreamDefaultController;
@@ -55,7 +56,7 @@ export async function sendNotificationToUser(userId: string, notification: any) 
       const data = `data: ${JSON.stringify(payload)}\n\n`;
       conn.controller.enqueue(new TextEncoder().encode(data));
     } catch (error) {
-      console.error(`SSE error for user ${userId}:`, error);
+      logger.error(`SSE error for user ${userId}:`, error);
       clients.delete(userId);
     }
   }

@@ -20,6 +20,7 @@ describe("assignFreeClientSubscription", () => {
         }),
       },
       clientSubscription: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: "subscription-1" }),
       },
     };
@@ -30,6 +31,10 @@ describe("assignFreeClientSubscription", () => {
       id: "subscription-1",
     });
 
+    expect(db.clientSubscription.findFirst).toHaveBeenCalledWith({
+      where: { userId: "client-1", isFreeTrialUsed: true },
+      select: { id: true },
+    });
     expect(db.package.findFirst).toHaveBeenCalledWith({
       where: {
         isFreePackage: true,
@@ -49,12 +54,31 @@ describe("assignFreeClientSubscription", () => {
     });
   });
 
+  it("skips when the user already used a free trial", async () => {
+    const db = {
+      package: {
+        findFirst: jest.fn(),
+      },
+      clientSubscription: {
+        findFirst: jest.fn().mockResolvedValue({ id: "old-trial" }),
+        create: jest.fn(),
+      },
+    };
+
+    const typedDb = db as unknown as Parameters<typeof assignFreeClientSubscription>[0];
+
+    await expect(assignFreeClientSubscription(typedDb, "client-1")).resolves.toBeNull();
+    expect(db.package.findFirst).not.toHaveBeenCalled();
+    expect(db.clientSubscription.create).not.toHaveBeenCalled();
+  });
+
   it("does nothing when no active free package exists", async () => {
     const db = {
       package: {
         findFirst: jest.fn().mockResolvedValue(null),
       },
       clientSubscription: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
       },
     };

@@ -6,6 +6,7 @@
 import { getRedisClient } from "@/lib/cache";
 import type { RedisClientType } from "redis";
 import type { Redis as UpstashRedis } from "@upstash/redis";
+import { logger } from "@/lib/logger";
 
 export interface CacheHealth {
   isHealthy: boolean;
@@ -55,7 +56,7 @@ export async function checkCacheHealth(): Promise<CacheHealth> {
         totalKeys = await redisClient.dbSize();
       }
     } catch (e) {
-      console.warn("Could not fetch key count:", e);
+      logger.warn("Could not fetch key count:", e);
     }
 
     // Get memory info (only available for traditional Redis)
@@ -74,7 +75,7 @@ export async function checkCacheHealth(): Promise<CacheHealth> {
           });
         }
       } catch (e) {
-        console.warn("Could not fetch memory info:", e);
+        logger.warn("Could not fetch memory info:", e);
       }
     }
 
@@ -95,7 +96,7 @@ export async function checkCacheHealth(): Promise<CacheHealth> {
       timestamp: new Date(),
     };
   } catch (error) {
-    console.error("Cache health check failed:", error);
+    logger.error("Cache health check failed:", error);
     return {
       isHealthy: false,
       connected: false,
@@ -126,7 +127,7 @@ export async function getCacheStatistics(): Promise<CacheStatistics | null> {
         totalKeys = await redisClient.dbSize();
       }
     } catch (e) {
-      console.warn("Could not fetch key count:", e);
+      logger.warn("Could not fetch key count:", e);
     }
 
     // Get all keys to analyze patterns
@@ -148,7 +149,7 @@ export async function getCacheStatistics(): Promise<CacheStatistics | null> {
           estimatedMemory += memory || 50;
         } catch (e) {
           // MEMORY command might not be available, use fallback
-          console.warn(`Could not get memory for key ${key}:`, e);
+          logger.warn(`Could not get memory for key ${key}:`, e);
           estimatedMemory += 50 + key.length;
         }
       } else {
@@ -163,7 +164,7 @@ export async function getCacheStatistics(): Promise<CacheStatistics | null> {
       commonPrefixes: prefixes,
     };
   } catch (error) {
-    console.error("Failed to get cache statistics:", error);
+    logger.error("Failed to get cache statistics:", error);
     return null;
   }
 }
@@ -175,25 +176,25 @@ export async function logCacheStatus(): Promise<void> {
   const health = await checkCacheHealth();
   const stats = await getCacheStatistics();
 
-  console.log("\n📊 === Cache Health Status ===");
-  console.log(`✅ Connected: ${health.connected}`);
-  console.log(`📦 Total Keys: ${health.totalKeys}`);
+  logger.info("\n📊 === Cache Health Status ===");
+  logger.info(`✅ Connected: ${health.connected}`);
+  logger.info(`📦 Total Keys: ${health.totalKeys}`);
 
   if (health.memoryUsed && health.memoryMax) {
     const memoryMB = (health.memoryUsed / 1024 / 1024).toFixed(2);
     const maxMB = (health.memoryMax / 1024 / 1024).toFixed(2);
-    console.log(`💾 Memory: ${memoryMB}MB / ${maxMB}MB (${health.memoryUtilization?.toFixed(2)}%)`);
+    logger.info(`💾 Memory: ${memoryMB}MB / ${maxMB}MB (${health.memoryUtilization?.toFixed(2)}%)`);
   }
 
   if (stats) {
-    console.log("\n📈 Cache Statistics:");
-    console.log(`  Common Prefixes: ${JSON.stringify(stats.commonPrefixes, null, 2)}`);
+    logger.info("\n📈 Cache Statistics:");
+    logger.info(`  Common Prefixes: ${JSON.stringify(stats.commonPrefixes, null, 2)}`);
   }
 
   if (health.error) {
-    console.error(`❌ Error: ${health.error}`);
+    logger.error(`❌ Error: ${health.error}`);
   }
-  console.log("");
+  logger.info("");
 }
 
 /**
@@ -208,11 +209,11 @@ export function startCacheHealthMonitor(
     const health = await checkCacheHealth();
 
     if (!health.isHealthy) {
-      console.error("🚨 Redis cache unhealthy!", health.error);
+      logger.error("🚨 Redis cache unhealthy!", health.error);
     }
 
     if (health.memoryUtilization && health.memoryUtilization > threshold) {
-      console.warn(`⚠️ Redis memory usage high: ${health.memoryUtilization.toFixed(2)}%`);
+      logger.warn(`⚠️ Redis memory usage high: ${health.memoryUtilization.toFixed(2)}%`);
     }
   }, intervalMs);
 }
@@ -230,38 +231,38 @@ function formatMemorySize(bytes: number): string {
  * Print detailed cache report
  */
 export async function printCacheReport(): Promise<void> {
-  console.log("\n");
-  console.log("╔══════════════════════════════════════════╗");
-  console.log("║         REDIS CACHE REPORT               ║");
-  console.log("╚══════════════════════════════════════════╝");
+  logger.info("\n");
+  logger.info("╔══════════════════════════════════════════╗");
+  logger.info("║         REDIS CACHE REPORT               ║");
+  logger.info("╚══════════════════════════════════════════╝");
 
   const health = await checkCacheHealth();
   const stats = await getCacheStatistics();
 
-  console.log(`\n📊 Health Status:`);
-  console.log(`   Connected: ${health.connected ? "✅ Yes" : "❌ No"}`);
-  console.log(`   Healthy: ${health.isHealthy ? "✅ Yes" : "❌ No"}`);
-  console.log(`   Total Keys: ${health.totalKeys}`);
+  logger.info(`\n📊 Health Status:`);
+  logger.info(`   Connected: ${health.connected ? "✅ Yes" : "❌ No"}`);
+  logger.info(`   Healthy: ${health.isHealthy ? "✅ Yes" : "❌ No"}`);
+  logger.info(`   Total Keys: ${health.totalKeys}`);
 
   if (health.memoryUsed) {
-    console.log(`\n💾 Memory Usage:`);
-    console.log(`   Used: ${formatMemorySize(health.memoryUsed)}`);
+    logger.info(`\n💾 Memory Usage:`);
+    logger.info(`   Used: ${formatMemorySize(health.memoryUsed)}`);
     if (health.memoryMax) {
-      console.log(`   Max: ${formatMemorySize(health.memoryMax)}`);
-      console.log(`   Utilization: ${health.memoryUtilization?.toFixed(2)}%`);
+      logger.info(`   Max: ${formatMemorySize(health.memoryMax)}`);
+      logger.info(`   Utilization: ${health.memoryUtilization?.toFixed(2)}%`);
     }
   }
 
   if (stats) {
-    console.log(`\n📈 Key Distribution:`);
+    logger.info(`\n📈 Key Distribution:`);
     const sorted = Object.entries(stats.commonPrefixes)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
 
     sorted.forEach(([prefix, count]) => {
-      console.log(`   ${prefix}: ${count} keys`);
+      logger.info(`   ${prefix}: ${count} keys`);
     });
   }
 
-  console.log("\n");
+  logger.info("\n");
 }

@@ -20,6 +20,7 @@ jobs:
       NEXTAUTH_URL: https://wengz.tech
       NEXTAUTH_SECRET: ci-build-placeholder-not-a-real-secret
       NEXT_PUBLIC_APP_URL: https://wengz.tech
+      NEXT_PUBLIC_GTM_ID: GTM-58DDFXLX
       HUSKY: "0"
     steps:
       - name: Checkout
@@ -39,6 +40,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
 
   deploy:
     name: Deploy to Hostinger VPS

@@ -60,11 +60,11 @@ function playNotificationSound() {
       // Silently fail if audio is not allowed (e.g., no user interaction yet)
       // This is expected for the first notification before any user interaction
       if (!error.message.includes("user didn't interact")) {
-        console.error("Failed to play notification sound:", error);
+
       }
     });
   } catch (error) {
-    console.error("Failed to create notification sound:", error);
+
   }
 }
 
@@ -109,7 +109,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         setUnreadCount(data.count || 0);
       }
     } catch (error) {
-      console.error("Failed to fetch unread count:", error);
+
     }
   }, [session, status]);
 
@@ -135,7 +135,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         setHasPermission(granted);
         return granted;
       } catch (error) {
-        console.error("Error requesting notification permission:", error);
+
         return false;
       }
     }
@@ -271,7 +271,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
         handleNotificationMessage(notification);
       } catch (error) {
-        console.error("Error parsing notification:", error);
+
       }
     };
 
@@ -284,7 +284,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         es.onerror = () => handleError(connect);
         es.onmessage = handleMessage;
       } catch (error) {
-        console.error("❌ Failed to create EventSource:", error);
+
         if (isMounted) {
           setIsConnected(false);
         }

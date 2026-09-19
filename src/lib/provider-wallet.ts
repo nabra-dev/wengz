@@ -229,6 +229,15 @@ export function allocateWithdrawalAmounts(
 
 async function loadWalletForUpdate(tx: TransactionClient, providerId: string) {
   await getOrCreateProviderWallet(tx, providerId);
+
+  // Take a real row lock (SELECT ... FOR UPDATE) so concurrent withdrawals,
+  // reviews, and payouts for the same provider serialize on the wallet row
+  // for the duration of the transaction. This prevents double-holds and
+  // over-payouts from stale balance reads.
+  await tx.$queryRaw`
+    SELECT id FROM "ProviderWallet" WHERE "providerId" = ${providerId} FOR UPDATE
+  `;
+
   const wallet = await tx.providerWallet.findUnique({
     where: { providerId },
   });
@@ -271,6 +280,10 @@ export async function requestProviderWithdrawal(
 
   const payout = payoutDetailsFromProfile(profile);
 
+  // Lock the wallet row FIRST: concurrent withdrawal requests for this
+  // provider serialize here, so the pending-count check below cannot race.
+  const wallet = await loadWalletForUpdate(tx, params.providerId);
+
   const pendingCount = await tx.withdrawalRequest.count({
     where: {
       providerId: params.providerId,
@@ -285,7 +298,6 @@ export async function requestProviderWithdrawal(
     });
   }
 
-  const wallet = await loadWalletForUpdate(tx, params.providerId);
   const allocation = allocateWithdrawalAmounts(
     params.amountEgp,
     wallet.balanceEgp,
@@ -349,14 +361,21 @@ export async function reviewProviderWithdrawal(
     });
   }
 
-  if (withdrawal.status !== "PENDING") {
+  // Lock the provider's wallet row first, then re-read the withdrawal:
+  // concurrent admin reviews serialize on the wallet lock, and the second
+  // reviewer must see the already-updated status before proceeding.
+  const wallet = await loadWalletForUpdate(tx, withdrawal.providerId);
+
+  const freshWithdrawal = await tx.withdrawalRequest.findUnique({
+    where: { id: params.withdrawalId },
+  });
+
+  if (!freshWithdrawal || freshWithdrawal.status !== "PENDING") {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "This withdrawal has already been reviewed",
     });
   }
-
-  const wallet = await loadWalletForUpdate(tx, withdrawal.providerId);
 
   if (params.status === "APPROVED") {
     await tx.providerWallet.update({

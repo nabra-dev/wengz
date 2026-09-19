@@ -1,28 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Lato, Cairo } from "next/font/google";
+import type { ReactNode } from "react";
 import "./globals.css";
-import { AuthProvider } from "@/components/providers/session-provider";
-import { TRPCProvider } from "@/components/providers/trpc-provider";
-import { ThemeProvider } from "@/components/providers/theme-provider";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 // Initialize notification system on server
 import "@/lib/notifications/init";
 
-const metadataBase = process.env.NEXT_PUBLIC_APP_URL?.startsWith("http")
-  ? new URL(process.env.NEXT_PUBLIC_APP_URL)
-  : new URL("https://wengz.tech");
-
-const lato = Lato({
-  weight: ["300", "400", "700", "900"],
-  subsets: ["latin"],
-  variable: "--font-lato",
-});
-
-const cairo = Cairo({
-  weight: ["300", "400", "600", "700", "900"],
-  subsets: ["arabic", "latin"],
-  variable: "--font-cairo",
-});
+const metadataBase = new URL(SITE_URL);
 
 export const metadata: Metadata = {
   metadataBase,
@@ -35,11 +19,20 @@ export const metadata: Metadata = {
   applicationName: "Wengz",
   keywords: [
     "Wengz",
+    "وينجز",
     "digital services",
     "service marketplace",
     "creative services",
-    "subscription",
+    "design subscription",
+    "credit-based subscription",
+    "freelance marketplace",
+    "content production",
+    "video production",
   ],
+  authors: [{ name: "Wengz", url: SITE_URL }],
+  creator: "Wengz",
+  publisher: "Wengz",
+  category: "business",
   openGraph: {
     title: "Wengz | Digital Services Marketplace",
     description:
@@ -47,17 +40,36 @@ export const metadata: Metadata = {
     siteName: "Wengz",
     type: "website",
     locale: "en_US",
+    alternateLocale: ["ar_SA"],
+    url: SITE_URL,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        alt: "Wengz",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Wengz | Digital Services Marketplace",
     description:
       "Connect with trusted creators through a credit-based subscription model for design, development, video production, and more.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -68,9 +80,12 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/images/logo.svg",
+    icon: [{ url: "/images/logo.svg", type: "image/svg+xml" }, { url: "/images/icon-192.png" }],
     shortcut: "/images/logo.svg",
-    apple: "/images/logo.svg",
+    apple: "/images/icon-192.png",
+  },
+  other: {
+    "msapplication-TileColor": "#690DD4",
   },
 };
 
@@ -79,29 +94,16 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#690DD4",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#690DD4" },
+    { media: "(prefers-color-scheme: dark)", color: "#690DD4" },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" className={`${lato.variable} ${cairo.variable}`} suppressHydrationWarning>
-      <head>
-        <script>{`try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='light'?'light':'dark')}catch(e){}`}</script>
-      </head>
-      <body className="font-sans" suppressHydrationWarning>
-        <ThemeProvider>
-          <AuthProvider>
-            <TRPCProvider>
-              {/* <ChunkReloadOnError /> */}
-              {children}
-            </TRPCProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+/**
+ * Pass-through root layout so `[locale]/layout` can own `<html lang>` / `dir`
+ * (critical for bilingual SEO). Providers and fonts live in the locale layout.
+ */
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  return children;
 }

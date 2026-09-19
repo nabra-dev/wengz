@@ -16,6 +16,7 @@ import {
   sendWhatsAppTemplate,
 } from "./whatsapp";
 import { getTranslation } from "./i18n-helper";
+import { logger } from "@/lib/logger";
 
 // Store for SSE notification sender (will be set by SSE route when a user connects)
 let sseNotificationSender: ((userId: string, notification: any) => void) | null = null;
@@ -112,7 +113,7 @@ async function sendSseNotification(
   try {
     sender(userId, notification);
   } catch (error) {
-    console.error("Failed to send SSE notification:", error);
+    logger.error("Failed to send SSE notification:", error);
   }
 }
 
@@ -128,14 +129,14 @@ async function sendWhatsAppNotificationIfOptedIn(
 
   const to = formatE164(userPhone);
   if (!to) {
-    console.warn("Skipped WhatsApp: invalid phone", { userId, type: notificationType });
+    logger.warn("Skipped WhatsApp: invalid phone", { userId, type: notificationType });
     return;
   }
 
   const templateConfig =
     getTemplateConfigForType(notificationType) ?? getTemplateConfigForType("general");
   if (!templateConfig) {
-    console.warn("Skipped WhatsApp: no template configured", { userId, type: notificationType });
+    logger.warn("Skipped WhatsApp: no template configured", { userId, type: notificationType });
     return;
   }
 
@@ -150,7 +151,7 @@ async function sendWhatsAppNotificationIfOptedIn(
       languageCode: whatsappLocale,
     });
   } catch (err) {
-    console.error("Failed to send WhatsApp notification:", err);
+    logger.error("Failed to send WhatsApp notification:", err);
   }
 }
 
@@ -646,8 +647,8 @@ export async function sendWelcomeEmail(params: {
       },
     });
 
-    console.log(`✅ Welcome email sent to ${userEmail}`);
+    logger.info(`✅ Welcome email sent to ${userEmail}`);
   } catch (error) {
-    console.error(`❌ Failed to send welcome email to ${userEmail}:`, error);
+    logger.error(`❌ Failed to send welcome email to ${userEmail}:`, error);
   }
 }

@@ -1,8 +1,10 @@
 {
   "name": "Wengz",
   "short_name": "Wengz",
-  "description": "Connect with service providers through a credit-based subscription model",
+  "description": "Digital services marketplace with credit-based subscriptions for design, development, and content production",
   "start_url": "/",
+  "lang": "en",
+  "dir": "ltr",
   "display": "standalone",
   "background_color": "#690DD4",
   "theme_color": "#690DD4",
@@ -24,10 +26,17 @@
   "categories": ["business", "productivity"],
   "shortcuts": [
     {
-      "name": "New Request",
-      "short_name": "Request",
-      "description": "Create a new service request",
-      "url": "/client",
+      "name": "Client form",
+      "short_name": "Client",
+      "description": "Submit a client project brief",
+      "url": "/forms/client",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Creator form",
+      "short_name": "Creator",
+      "description": "Apply as a Wengz creator",
+      "url": "/forms/provider",
       "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
     }
   ]

@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -56,9 +57,23 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
+        }
+
+        // Rate limit login attempts per email+IP to slow credential stuffing.
+        const forwarded = req?.headers?.["x-forwarded-for"];
+        const ip =
+          (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() ||
+          (req?.headers?.["x-real-ip"] as string | undefined) ||
+          "unknown";
+        const rl = rateLimit(`login:${credentials.email.toLowerCase()}:${ip}`, {
+          limit: 10,
+          windowMs: 60_000,
+        });
+        if (!rl.success) {
+          throw new Error("Too many login attempts. Please try again shortly.");
         }
 
         const user = await db.user.findFirst({

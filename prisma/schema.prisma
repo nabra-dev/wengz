@@ -39,6 +39,7 @@ model User {
   comments            RequestComment[]
   sessions            Session[]
   watchedRequests     RequestWatcher[]
+  activityLogs        ActivityLog[]
 
   @@index([deletedAt])
   @@index([registrationIp])
@@ -383,6 +384,28 @@ model SystemSettings {
   description String?
   updatedAt   DateTime @updatedAt
   createdAt   DateTime @default(now())
+}
+
+/// Immutable audit / activity history for admin observability.
+model ActivityLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorRole  String?
+  action     String
+  entityType String?
+  entityId   String?
+  message    String
+  metadata   Json?
+  level      String   @default("info")
+  ip         String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([level, createdAt])
 }
 
 enum Role {

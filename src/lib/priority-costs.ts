@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { logger } from "@/lib/logger";
 
 // Default priority costs - extracted as constant to avoid recreation
 const DEFAULT_PRIORITY_COSTS = { low: 0, medium: 1, high: 2 } as const;
@@ -25,7 +26,7 @@ export async function getPriorityCostsForService(
       };
     }
   } catch (error) {
-    console.warn("Failed to fetch priority costs from service type, using defaults", error);
+    logger.warn("Failed to fetch priority costs from service type, using defaults", error);
   }
 
   return DEFAULT_PRIORITY_COSTS;
@@ -56,7 +57,7 @@ export async function calculateCreditCost(
 
 // Legacy function for backward compatibility - deprecated
 export async function getPriorityCosts(): Promise<{ low: number; medium: number; high: number }> {
-  console.warn("getPriorityCosts() is deprecated, use getPriorityCostsForService() instead");
+  logger.warn("getPriorityCosts() is deprecated, use getPriorityCostsForService() instead");
   return { low: 0, medium: 1, high: 2 };
 }
 

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * Performance monitoring and metrics collection
  * Tracks API performance, cache efficiency, and database query times
@@ -241,7 +242,7 @@ export async function measureAsync<T>(
     return result;
   } catch (error) {
     const duration = performance.now() - start;
-    console.error(`${label} failed after ${duration.toFixed(2)}ms:`, error);
+    logger.error(`${label} failed after ${duration.toFixed(2)}ms:`, error);
     throw error;
   }
 }
@@ -252,23 +253,23 @@ export async function measureAsync<T>(
 export function logPerformanceMetrics(interval = 60000) {
   setInterval(() => {
     const summary = performanceMonitor.getSummary();
-    console.log("=== Performance Summary ===");
-    console.log(`Total Requests: ${summary.totalRequests}`);
-    console.log(`Error Rate: ${summary.errorRate.toFixed(2)}%`);
-    console.log(`Avg Response: ${summary.avgResponseTime.toFixed(2)}ms`);
-    console.log(`Cache Hit Rate: ${summary.cacheStats.hitRate.toFixed(2)}%`);
+    logger.info("=== Performance Summary ===");
+    logger.info(`Total Requests: ${summary.totalRequests}`);
+    logger.info(`Error Rate: ${summary.errorRate.toFixed(2)}%`);
+    logger.info(`Avg Response: ${summary.avgResponseTime.toFixed(2)}ms`);
+    logger.info(`Cache Hit Rate: ${summary.cacheStats.hitRate.toFixed(2)}%`);
 
     if (summary.slowestEndpoints.length > 0) {
-      console.log("Slowest Endpoints:");
+      logger.info("Slowest Endpoints:");
       summary.slowestEndpoints.forEach(([endpoint, time]) => {
-        console.log(`  ${endpoint}: ${time.toFixed(2)}ms`);
+        logger.info(`  ${endpoint}: ${time.toFixed(2)}ms`);
       });
     }
 
     if (summary.highErrorRateEndpoints.length > 0) {
-      console.log("High Error Rate Endpoints:");
+      logger.info("High Error Rate Endpoints:");
       summary.highErrorRateEndpoints.forEach(([endpoint, rate]) => {
-        console.log(`  ${endpoint}: ${(rate * 100).toFixed(2)}%`);
+        logger.info(`  ${endpoint}: ${(rate * 100).toFixed(2)}%`);
       });
     }
   }, interval);

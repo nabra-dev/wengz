@@ -17,7 +17,7 @@ export function formatE164(phone?: string | null): string | null {
   let s = phone.trim();
 
   // Replace common formatting characters
-  s = s.replaceAll(/[\s\-().]]/g, "");
+  s = s.replaceAll(/[\s\-().]/g, "");
 
   // Handle international prefix '00'
   if (s.startsWith("00")) {

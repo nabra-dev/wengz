@@ -2,6 +2,7 @@ import { generateOpenApiDocument } from "trpc-openapi";
 import { appRouter } from "./routers/_app";
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { logger } from "@/lib/logger";
 
 // Enhance Zod for OpenAPI generation (formats, metadata)
 extendZodWithOpenApi(z);
@@ -27,7 +28,7 @@ export function buildOpenApiDocument(baseUrl: string) {
     });
   } catch (e) {
     // Log and fall back to a static OpenAPI spec
-    console.error("buildOpenApiDocument: generation failed, using fallback spec", e);
+    logger.error("buildOpenApiDocument: generation failed, using fallback spec", e);
     return {
       openapi: "3.0.3",
       info: {

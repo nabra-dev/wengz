@@ -162,7 +162,7 @@ describe("calculateAttributeCredits", () => {
     expect(result).toBe(0);
   });
 
-  it("should handle multiselect type gracefully (not supported yet)", () => {
+  it("should charge creditImpact per selected option for multiselect", () => {
     const attributes: ServiceAttribute[] = [
       {
         question: "Select features",
@@ -176,8 +176,8 @@ describe("calculateAttributeCredits", () => {
       { question: "Select features", answer: ["Feature1", "Feature2"] },
     ];
 
-    // Multiselect not supported for credit calculation yet
+    // Multiselect is supported: each selected option costs creditImpact
     const result = calculateAttributeCredits(attributes, responses);
-    expect(result).toBe(0);
+    expect(result).toBe(10);
   });
 });

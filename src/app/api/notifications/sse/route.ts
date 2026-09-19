@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { setSseNotificationSender } from "@/lib/notifications";
 import { getSseClients, sendNotificationToUser } from "@/lib/notifications/sse-utils";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    console.log("❌ SSE: Unauthorized access attempt");
+    logger.info("❌ SSE: Unauthorized access attempt");
     return new Response("Unauthorized", { status: 401 });
   }
 

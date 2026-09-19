@@ -5,6 +5,9 @@ import { TRPCError } from "@trpc/server";
 import { sendWelcomeEmail } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
+import { rateLimit } from "@/lib/rate-limit";
+import { logActivityAsync } from "@/lib/activity-log";
+import { logger } from "@/lib/logger";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -36,6 +39,29 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit registrations per IP to slow down bulk account creation
+      // (free-trial abuse, spam).
+      const forwardedFor =
+        ctx.req && "headers" in ctx.req && typeof (ctx.req as any).headers?.get === "function"
+          ? (ctx.req as any).headers.get("x-forwarded-for")
+          : (ctx.req as any)?.headers?.["x-forwarded-for"];
+      const realIpHeader =
+        ctx.req && "headers" in ctx.req && typeof (ctx.req as any).headers?.get === "function"
+          ? (ctx.req as any).headers.get("x-real-ip")
+          : (ctx.req as any)?.headers?.["x-real-ip"];
+      const ipForLimit =
+        (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(",")[0]?.trim() ||
+        (Array.isArray(realIpHeader) ? realIpHeader[0] : realIpHeader) ||
+        "unknown";
+
+      const rl = rateLimit(`register:${ipForLimit}`, { limit: 5, windowMs: 60_000 });
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many registration attempts. Please try again shortly.",
+        });
+      }
+
       const existingUser = await ctx.db.user.findUnique({
         where: { email: input.email },
       });
@@ -87,8 +113,19 @@ export const authRouter = router({
         userRole: user.role,
         locale: ctx.locale,
       }).catch((error) => {
-        console.error("Failed to send welcome email:", error);
+        logger.error("Failed to send welcome email:", error);
         // Don't throw - email failure shouldn't break registration
+      });
+
+      logActivityAsync({
+        action: "auth.register",
+        message: `New client registered: ${user.email}`,
+        actorId: user.id,
+        actorRole: "CLIENT",
+        entityType: "User",
+        entityId: user.id,
+        ip,
+        metadata: { email: user.email },
       });
 
       return {

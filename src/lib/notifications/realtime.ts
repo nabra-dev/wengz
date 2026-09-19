@@ -2,6 +2,7 @@
 // This file is kept for backward compatibility
 
 import { sendNotificationToUser, broadcastNotification } from "./sse-utils";
+import { logger } from "@/lib/logger";
 
 type NotificationType = "message" | "status_change" | "assignment" | "general";
 
@@ -17,7 +18,7 @@ interface RealtimeNotification {
 export function setNotificationSender(
   _sender: (userId: string, notification: RealtimeNotification) => void
 ) {
-  console.warn("setNotificationSender is deprecated. SSE clients are managed centrally.");
+  logger.warn("setNotificationSender is deprecated. SSE clients are managed centrally.");
 }
 
 export function sendRealtimeNotification(

@@ -1,0 +1,39 @@
+import {
+  absoluteUrl,
+  brandName,
+  buildPageMetadata,
+  canonicalPath,
+  languageAlternates,
+  SITE_URL,
+} from "@/lib/seo";
+
+describe("seo helpers", () => {
+  it("builds locale-aware absolute URLs with as-needed prefix", () => {
+    expect(absoluteUrl("/", "en")).toBe(`${SITE_URL}/`);
+    expect(absoluteUrl("/", "ar")).toBe(`${SITE_URL}/ar`);
+    expect(absoluteUrl("/forms/client", "en")).toBe(`${SITE_URL}/forms/client`);
+    expect(absoluteUrl("/forms/client", "ar")).toBe(`${SITE_URL}/ar/forms/client`);
+  });
+
+  it("builds canonical paths and hreflang maps", () => {
+    expect(canonicalPath("/privacy", "en")).toBe("/privacy");
+    expect(canonicalPath("/privacy", "ar")).toBe("/ar/privacy");
+    expect(languageAlternates("/contact")).toEqual({
+      "x-default": `${SITE_URL}/contact`,
+      en: `${SITE_URL}/contact`,
+      ar: `${SITE_URL}/ar/contact`,
+    });
+  });
+
+  it("returns localized brand and page metadata", () => {
+    expect(brandName("ar")).toBe("وينجز");
+    const meta = buildPageMetadata({
+      locale: "en",
+      path: "/terms",
+      title: "Terms",
+      description: "Terms of service",
+    });
+    expect(meta.alternates?.canonical).toBe("/terms");
+    expect(meta.robots).toMatchObject({ index: true, follow: true });
+  });
+});

@@ -10,6 +10,11 @@ import {
 } from "@/lib/notifications/whatsapp";
 
 export async function POST(req: Request) {
+  // Test endpoint — development only, must not ship to production.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

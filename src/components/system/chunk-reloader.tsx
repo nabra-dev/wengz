@@ -15,7 +15,7 @@ export function ChunkReloadOnError() {
         message.includes("Loading chunk") || filename.includes("/_next/static/chunks/");
 
       if (isChunkError) {
-        console.warn("Chunk load error detected. Reloading page...");
+
         globalThis.location?.reload();
       }
     };
@@ -25,11 +25,11 @@ export function ChunkReloadOnError() {
       const message = typeof reason?.message === "string" ? reason.message : "";
       const stack = typeof reason?.stack === "string" ? reason.stack : "";
       if (typeof message === "string" && message.includes("Loading chunk")) {
-        console.warn("Chunk load rejection detected. Reloading page...");
+
         globalThis.location?.reload();
       }
       if (typeof stack === "string" && stack.includes("/_next/static/chunks/")) {
-        console.warn("Chunk load rejection stack detected. Reloading page...");
+
         globalThis.location?.reload();
       }
     };

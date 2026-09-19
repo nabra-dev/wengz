@@ -27,8 +27,21 @@ async function main() {
 
   console.log("🧹 Cleaned existing data");
 
-  // Create only the admin user
-  const hashedAdminPassword = await bcrypt.hash("Nabra@2020#Alaa", 12);
+  // Create only the admin user.
+  // SECURITY: never hardcode credentials — provide SEED_ADMIN_PASSWORD via env.
+  // In production, refuse to seed an admin without an explicit password.
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminPassword) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SEED_ADMIN_PASSWORD env var is required to seed the admin user in production"
+      );
+    }
+    console.warn(
+      "⚠️  SEED_ADMIN_PASSWORD not set — using development-only default password"
+    );
+  }
+  const hashedAdminPassword = await bcrypt.hash(adminPassword || "DevOnly!ChangeMe123", 12);
 
   const admin = await prisma.user.create({
     data: {
@@ -459,7 +472,7 @@ async function main() {
   console.log("\n✅ Seed completed successfully!");
   console.log("\n📋 Admin Account:");
   console.log("─".repeat(50));
-  console.log("Super Admin:  nabraagency20@gmail.com / Nabra@2020#Alaa");
+  console.log("Super Admin:  nabraagency20@gmail.com / <from SEED_ADMIN_PASSWORD env>");
   console.log("─".repeat(50));
   console.log("\n📦 Packages Created:");
   console.log("─".repeat(50));

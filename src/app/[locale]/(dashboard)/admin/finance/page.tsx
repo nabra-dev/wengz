@@ -214,15 +214,29 @@ export default function AdminFinancePage() {
       icon: Clock,
     },
     {
-      title: t("summary.settledRequests"),
-      value: formatCredits(finance?.summary.totalSettledRequests ?? 0),
-      description: t("summary.settledRequestsDesc"),
+      title: t("summary.paidOut"),
+      value: formatEgp(finance?.summary.totalPaidEgp ?? 0),
+      description: t("summary.paidOutDesc"),
       detail: t("summary.creditDetail", {
-        credits: finance?.summary.totalRequestCredits ?? 0,
+        credits: finance?.summary.totalPaidCredits ?? 0,
       }),
       icon: CheckCircle,
     },
   ];
+
+  const settleMutation = trpc.admin.settleUnsettledCompletedRequests.useMutation({
+    onSuccess: (result) => {
+      showSuccess(
+        t("ledger.settleSuccess", {
+          settled: result.settled,
+          skipped: result.skipped,
+        })
+      );
+      utils.admin.getFinanceOverview.invalidate();
+      utils.admin.getProviderFinanceLedger.invalidate();
+    },
+    onError: (error) => showError(error),
+  });
 
   return (
     <div className="space-y-6">
@@ -361,6 +375,7 @@ export default function AdminFinancePage() {
                   <TableHead>{t("wallets.provider")}</TableHead>
                   <TableHead>{t("withdrawals.destination")}</TableHead>
                   <TableHead>{t("wallets.balanceEgp")}</TableHead>
+                  <TableHead>{t("wallets.pendingEgp")}</TableHead>
                   <TableHead>{t("wallets.paidEgp")}</TableHead>
                   <TableHead>{t("wallets.requests")}</TableHead>
                   <TableHead>{t("wallets.actions")}</TableHead>
@@ -379,6 +394,7 @@ export default function AdminFinancePage() {
                       {formatDestination(wallet.payout ?? { payoutMethod: null, accountHolder: null, bankName: null, bankAccount: null, eWalletNumber: null })}
                     </TableCell>
                     <TableCell>{formatEgp(wallet.balanceEgp)}</TableCell>
+                    <TableCell>{formatEgp(wallet.pendingEgp)}</TableCell>
                     <TableCell>{formatEgp(wallet.paidEgp)}</TableCell>
                     <TableCell>{wallet.requestCount}</TableCell>
                     <TableCell className="flex flex-wrap gap-2">
@@ -434,13 +450,28 @@ export default function AdminFinancePage() {
                   : t("ledger.description")}
               </CardDescription>
             </div>
-            {(finance?.summary.unsettledCompletedRequests ?? 0) > 0 && (
-              <Badge variant="secondary">
-                {t("ledger.unsettled", {
-                  count: finance?.summary.unsettledCompletedRequests ?? 0,
-                })}
+            <div className="flex flex-wrap items-center gap-2">
+              {(finance?.summary.unsettledCompletedRequests ?? 0) > 0 && (
+                <>
+                  <Badge variant="secondary">
+                    {t("ledger.unsettled", {
+                      count: finance?.summary.unsettledCompletedRequests ?? 0,
+                    })}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settleMutation.isPending}
+                    onClick={() => settleMutation.mutate({ limit: 50 })}
+                  >
+                    {settleMutation.isPending ? t("ledger.settling") : t("ledger.settleNow")}
+                  </Button>
+                </>
+              )}
+              <Badge variant="outline">
+                {t("summary.settledRequests")}: {finance?.summary.totalSettledRequests ?? 0}
               </Badge>
-            )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -483,7 +514,7 @@ export default function AdminFinancePage() {
                     <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
                     <TableCell>{formatEgp(entry.providerAmountEgp)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{t(`status.${entry.status}`)}</Badge>
+                      <Badge variant="secondary">{t("status.AVAILABLE")}</Badge>
                     </TableCell>
                     <TableCell>{new Date(entry.settledAt).toLocaleDateString(locale)}</TableCell>
                   </TableRow>

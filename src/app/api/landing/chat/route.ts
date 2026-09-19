@@ -2,8 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
+
+// Public AI chat — expensive per call, so keep this tight.
+const CHAT_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const BodySchema = z.object({
   prompt: z.string().min(2).max(1800),
@@ -201,6 +206,15 @@ function parseMaxTokens(raw?: string) {
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const rl = rateLimit(`landing-chat:${ip}`, CHAT_RATE_LIMIT);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const json = await req.json();
     const body = BodySchema.parse(json);
 
@@ -240,7 +254,7 @@ export async function POST(req: Request) {
 
     if (!openAIResponse.ok) {
       const failure = await openAIResponse.text();
-      console.error("OpenAI chat completion failed:", failure);
+      logger.error("OpenAI chat completion failed:", failure);
       return NextResponse.json({ error: "Failed to generate reply" }, { status: 502 });
     }
 
@@ -262,7 +276,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    console.error("Landing chat route error:", error);
+    logger.error("Landing chat route error:", error);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }

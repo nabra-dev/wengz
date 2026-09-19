@@ -61,16 +61,10 @@ const withPWA = require("next-pwa")({
       },
     },
     {
+      // Never cache API responses in the service worker — they are
+      // authenticated, user-specific, and must always hit the network.
       urlPattern: /\/api\/.*$/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "apis",
-        networkTimeoutSeconds: 10,
-        expiration: {
-          maxEntries: 16,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
+      handler: "NetworkOnly",
     },
     {
       urlPattern: /.*/i,
@@ -88,6 +82,16 @@ const withPWA = require("next-pwa")({
 });
 
 const withNextIntl = require("next-intl/plugin")("./src/i18n/request.ts");
+const { withSentryConfig } = require("@sentry/nextjs");
+
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+  // HSTS: enable once HTTPS is confirmed stable in production.
+  // { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -95,6 +99,14 @@ const nextConfig = {
   // Use webpack since next-pwa requires it
   turbopack: {},
   outputFileTracingRoot: require("node:path").join(__dirname),
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
@@ -125,4 +137,11 @@ const nextConfig = {
   },
 };
 
-module.exports = withNextIntl(withPWA(nextConfig));
+module.exports = withSentryConfig(withNextIntl(withPWA(nextConfig)), {
+  // Suppress noisy Sentry CLI output during builds unless explicitly debugging.
+  silent: true,
+  // Upload source maps only when auth token is present (optional in CI).
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});

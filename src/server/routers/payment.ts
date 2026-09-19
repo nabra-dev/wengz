@@ -5,6 +5,7 @@ import { PaymentStatus } from "@prisma/client";
 import { createNotification, notifyAdminsNewPendingPayment } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { resolveLocalizedText } from "@/lib/i18n";
+import { logActivityAsync } from "@/lib/activity-log";
 
 export const paymentRouter = router({
   // Get IBAN info for payment (public info clients need)
@@ -281,26 +282,57 @@ export const paymentRouter = router({
         });
       }
 
-      // Update payment status
-      await ctx.db.paymentProof.update({
-        where: { id: input.paymentId },
-        data: {
-          status: PaymentStatus.APPROVED,
-          reviewedBy: adminId,
-          reviewedAt: new Date(),
-        },
-      });
+      // Soft amount check: warn/block if submitted amount is far below package price
+      // (allow small rounding differences of 1%).
+      const packagePrice = payment.subscription.package.price;
+      if (packagePrice > 0 && payment.amount < packagePrice * 0.99) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Payment amount (${payment.amount}) is below package price (${packagePrice}). Reject or ask client to resubmit.`,
+        });
+      }
 
-      // Activate the subscription
-      await ctx.db.clientSubscription.update({
-        where: { id: payment.subscriptionId },
-        data: {
-          isActive: true,
-          startDate: new Date(),
-          endDate: new Date(
-            Date.now() + payment.subscription.package.durationDays * 24 * 60 * 60 * 1000
-          ),
-        },
+      // Single transaction: CAS the proof status, deactivate any other active
+      // subscriptions for this user, then activate the paid one. Concurrent
+      // approvals collapse to one winner; partial failures roll back.
+      await ctx.db.$transaction(async (tx) => {
+        const cas = await tx.paymentProof.updateMany({
+          where: { id: input.paymentId, status: PaymentStatus.PENDING },
+          data: {
+            status: PaymentStatus.APPROVED,
+            reviewedBy: adminId,
+            reviewedAt: new Date(),
+          },
+        });
+
+        if (cas.count === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This payment has already been reviewed",
+          });
+        }
+
+        // Enforce a single active subscription per client.
+        await tx.clientSubscription.updateMany({
+          where: {
+            userId: payment.userId,
+            isActive: true,
+            id: { not: payment.subscriptionId },
+          },
+          data: { isActive: false },
+        });
+
+        // Activate the subscription
+        await tx.clientSubscription.update({
+          where: { id: payment.subscriptionId },
+          data: {
+            isActive: true,
+            startDate: new Date(),
+            endDate: new Date(
+              Date.now() + payment.subscription.package.durationDays * 24 * 60 * 60 * 1000
+            ),
+          },
+        });
       });
 
       // Notify the user (DB + SSE)
@@ -329,6 +361,20 @@ export const paymentRouter = router({
           titleKey: "notifications.paymentApproved.title",
           messageKey: "notifications.paymentApproved.message",
           messageParams: { packageName: localizedPackageName },
+        },
+      });
+
+      logActivityAsync({
+        action: "payment.approve",
+        message: `Payment approved for ${payment.userId}`,
+        actorId: adminId,
+        actorRole: "SUPER_ADMIN",
+        entityType: "PaymentProof",
+        entityId: payment.id,
+        metadata: {
+          subscriptionId: payment.subscriptionId,
+          amount: payment.amount,
+          currency: payment.currency,
         },
       });
 
@@ -381,24 +427,34 @@ export const paymentRouter = router({
         });
       }
 
-      // Update payment status
-      await ctx.db.paymentProof.update({
-        where: { id: input.paymentId },
-        data: {
-          status: PaymentStatus.REJECTED,
-          reviewedBy: adminId,
-          reviewedAt: new Date(),
-          rejectionReason: input.reason,
-        },
-      });
+      // Single transaction with a CAS on PENDING so concurrent reviews
+      // collapse to one winner and partial failures roll back.
+      await ctx.db.$transaction(async (tx) => {
+        const cas = await tx.paymentProof.updateMany({
+          where: { id: input.paymentId, status: PaymentStatus.PENDING },
+          data: {
+            status: PaymentStatus.REJECTED,
+            reviewedBy: adminId,
+            reviewedAt: new Date(),
+            rejectionReason: input.reason,
+          },
+        });
 
-      // Deactivate the subscription (it was pending anyway)
-      await ctx.db.clientSubscription.update({
-        where: { id: payment.subscriptionId },
-        data: {
-          isActive: false,
-          cancelledAt: new Date(),
-        },
+        if (cas.count === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This payment has already been reviewed",
+          });
+        }
+
+        // Deactivate the subscription (it was pending anyway)
+        await tx.clientSubscription.update({
+          where: { id: payment.subscriptionId },
+          data: {
+            isActive: false,
+            cancelledAt: new Date(),
+          },
+        });
       });
 
       // Notify the user (DB + SSE)
@@ -422,6 +478,20 @@ export const paymentRouter = router({
           titleKey: "notifications.paymentRejected.title",
           messageKey: "notifications.paymentRejected.message",
           messageParams: { reason: input.reason },
+        },
+      });
+
+      logActivityAsync({
+        action: "payment.reject",
+        message: `Payment rejected for ${payment.userId}`,
+        actorId: adminId,
+        actorRole: "SUPER_ADMIN",
+        entityType: "PaymentProof",
+        entityId: payment.id,
+        level: "warn",
+        metadata: {
+          subscriptionId: payment.subscriptionId,
+          reason: input.reason,
         },
       });
 

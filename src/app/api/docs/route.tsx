@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const html = `
 <!DOCTYPE html>
@@ -30,7 +32,15 @@ const html = `
 </html>
 `;
 
-export function GET() {
+export async function GET() {
+  // API docs are admin-only in production to avoid exposing the API map.
+  if (process.env.NODE_ENV === "production") {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "SUPER_ADMIN") {
+      return new NextResponse("Not found", { status: 404 });
+    }
+  }
+
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",

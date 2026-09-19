@@ -62,14 +62,39 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+/**
+ * Revalidate the session user against the database on every protected call.
+ * JWTs are long-lived (30 days), so role changes and soft-deletes must be
+ * enforced from the DB, not the token. Returns the fresh role.
+ */
+async function revalidateSessionUser(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, deletedAt: true },
+  });
+
+  if (!user || user.deletedAt) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is no longer active. Please sign in again.",
+    });
+  }
+
+  return user;
+}
+
 // Middleware to enforce authentication
-const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
   return next({
     ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
+      session: {
+        ...ctx.session,
+        user: { ...ctx.session.user, role: freshUser.role },
+      },
     },
   });
 });
@@ -77,11 +102,12 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
 export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
 
 // Middleware to enforce admin role
-const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
+const enforceUserIsAdmin = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
-  if (ctx.session.user.role !== "SUPER_ADMIN") {
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (freshUser.role !== "SUPER_ADMIN") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You must be an admin to access this resource",
@@ -89,7 +115,10 @@ const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
   }
   return next({
     ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
+      session: {
+        ...ctx.session,
+        user: { ...ctx.session.user, role: freshUser.role },
+      },
     },
   });
 });
@@ -97,11 +126,12 @@ const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
 export const adminProcedure = t.procedure.use(enforceUserIsAdmin);
 
 // Middleware to enforce provider role
-const enforceUserIsProvider = t.middleware(({ ctx, next }) => {
+const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
-  if (ctx.session.user.role !== "PROVIDER" && ctx.session.user.role !== "SUPER_ADMIN") {
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (freshUser.role !== "PROVIDER" && freshUser.role !== "SUPER_ADMIN") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You must be a provider to access this resource",
@@ -109,7 +139,10 @@ const enforceUserIsProvider = t.middleware(({ ctx, next }) => {
   }
   return next({
     ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
+      session: {
+        ...ctx.session,
+        user: { ...ctx.session.user, role: freshUser.role },
+      },
     },
   });
 });
@@ -117,11 +150,12 @@ const enforceUserIsProvider = t.middleware(({ ctx, next }) => {
 export const providerProcedure = t.procedure.use(enforceUserIsProvider);
 
 // Middleware to enforce client role
-const enforceUserIsClient = t.middleware(({ ctx, next }) => {
+const enforceUserIsClient = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
-  if (ctx.session.user.role !== "CLIENT" && ctx.session.user.role !== "SUPER_ADMIN") {
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (freshUser.role !== "CLIENT" && freshUser.role !== "SUPER_ADMIN") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You must be a client to access this resource",
@@ -129,7 +163,10 @@ const enforceUserIsClient = t.middleware(({ ctx, next }) => {
   }
   return next({
     ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
+      session: {
+        ...ctx.session,
+        user: { ...ctx.session.user, role: freshUser.role },
+      },
     },
   });
 });

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { getTranslation } from "./i18n-helper";
+import { logger } from "@/lib/logger";
 
 interface EmailOptions {
   to: string;
@@ -40,7 +41,7 @@ export async function sendEmail({
 }: EmailOptions): Promise<boolean> {
   // Skip if email is not configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.warn("Email not configured. Skipping email notification.");
+    logger.warn("Email not configured. Skipping email notification.");
     return false;
   }
 
@@ -58,7 +59,7 @@ export async function sendEmail({
 
     return true;
   } catch (error) {
-    console.error("Failed to send email:", error);
+    logger.error("Failed to send email:", error);
     return false;
   }
 }

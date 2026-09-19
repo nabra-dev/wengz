@@ -31,13 +31,12 @@ describe("Health Check API", () => {
     expect(data.database).toBe("connected");
   });
 
-  it("should return timestamp and stats", async () => {
+  it("should return timestamp without leaking business stats", async () => {
     const response = await GET();
     const data = await response.json();
 
     expect(data).toHaveProperty("timestamp");
-    expect(data).toHaveProperty("stats");
-    expect(data.stats).toHaveProperty("users");
-    expect(data.stats).toHaveProperty("requests");
+    // Liveness only — user/request counts must not be exposed publicly.
+    expect(data).not.toHaveProperty("stats");
   });
 });

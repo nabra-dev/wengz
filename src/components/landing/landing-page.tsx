@@ -382,7 +382,7 @@ export default function LandingPage() {
           ? "تعذر توليد الرد الآن. حاول مرة أخرى."
           : "Could not generate a reply right now. Please try again."
       );
-      console.error("Landing chat error:", error);
+
     } finally {
       setHeroLoadingReply(false);
     }
@@ -1356,13 +1356,13 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground md:justify-end">
-            <Link href="#" className="transition-colors hover:text-foreground">
+            <Link href="/privacy" className="transition-colors hover:text-foreground">
               {t("common.footer.privacy")}
             </Link>
-            <Link href="#" className="transition-colors hover:text-foreground">
+            <Link href="/terms" className="transition-colors hover:text-foreground">
               {t("common.footer.terms")}
             </Link>
-            <Link href="#" className="transition-colors hover:text-foreground">
+            <Link href="/contact" className="transition-colors hover:text-foreground">
               {t("common.footer.contact")}
             </Link>
           </div>

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * Server-side i18n helper for notifications
  * Loads translations and provides formatting utilities
@@ -20,7 +21,7 @@ export async function loadMessages(locale: string): Promise<Messages> {
     messagesCache[locale] = messages.default;
     return messages.default;
   } catch (error) {
-    console.error(`Failed to load messages for locale: ${locale}`, error);
+    logger.error(`Failed to load messages for locale: ${locale}`, error);
     // Fallback to English
     if (locale !== "en") {
       return loadMessages("en");
@@ -61,7 +62,7 @@ export async function getTranslation(
   let translation = getNestedValue(messages, key);
 
   if (!translation) {
-    console.warn(`Translation not found for key: ${key} in locale: ${locale}`);
+    logger.warn(`Translation not found for key: ${key} in locale: ${locale}`);
     // Try fallback to English
     if (locale !== "en") {
       const enMessages = await loadMessages("en");

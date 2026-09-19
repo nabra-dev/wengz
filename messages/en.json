@@ -251,6 +251,7 @@
         "requests": "All Requests",
         "payments": "Payments",
         "finance": "Finance",
+        "activity": "Activity",
         "notifications": "Notifications",
         "packages": "Packages",
         "services": "Services",
@@ -701,15 +702,17 @@
     },
     "finance": {
       "title": "Provider Wallets",
-      "subtitle": "Credit/token finance for providers and Wengz shares",
+      "subtitle": "Track provider earnings, pending withdrawals, and manual payouts",
       "summary": {
         "providerCredits": "Provider Credits",
         "providerAmount": "Provider Amount",
         "providerCreditsDesc": "Total credits credited to providers",
         "walletBalance": "Wallet Balance",
-        "walletBalanceDesc": "Current provider wallet balances",
+        "walletBalanceDesc": "Current available provider wallet balances",
         "settledRequests": "Settled Requests",
         "settledRequestsDesc": "Completed requests credited to providers",
+        "paidOut": "Paid Out",
+        "paidOutDesc": "Total amount already paid to providers",
         "creditDetail": "{credits} credits"
       },
       "wallets": {
@@ -717,7 +720,8 @@
         "description": "All providers and their current credit wallet status",
         "provider": "Provider",
         "balance": "Balance",
-        "balanceEgp": "Balance EGP",
+        "balanceEgp": "Available EGP",
+        "pendingEgp": "Pending EGP",
         "paid": "Paid",
         "paidEgp": "Paid EGP",
         "requests": "Requests",
@@ -728,9 +732,12 @@
       },
       "ledger": {
         "title": "Finance Ledger",
-        "description": "Request-level provider and Wengz credit split",
+        "description": "Request-level earnings credited to provider wallets",
         "filteredBy": "Showing ledger entries for {provider}",
         "unsettled": "{count} completed request(s) without ledger",
+        "settleNow": "Settle now",
+        "settling": "Settling...",
+        "settleSuccess": "Settled {settled} request(s). Skipped {skipped}.",
         "provider": "Provider",
         "request": "Request",
         "service": "Service",
@@ -804,6 +811,28 @@
         "approved": "Withdrawal marked as paid",
         "rejected": "Withdrawal rejected and funds returned",
         "sent": "Payout recorded"
+      }
+    },
+    "activityLogs": {
+      "title": "Activity history",
+      "subtitle": "Immutable audit trail of backend events (auth, payments, wallet, cron)",
+      "tableTitle": "Recent activity",
+      "tableDescription": "Newest events first. Filter by level or action key.",
+      "actionPlaceholder": "Filter action (e.g. payment.approve)",
+      "filterAll": "All",
+      "filterInfo": "Info",
+      "filterWarn": "Warn",
+      "filterError": "Error",
+      "empty": "No activity logged yet.",
+      "loadMore": "Load more",
+      "newest": "Newest",
+      "columns": {
+        "time": "Time",
+        "level": "Level",
+        "action": "Action",
+        "message": "Message",
+        "actor": "Actor",
+        "entity": "Entity"
       }
     },
     "attributesManager": {
@@ -1616,6 +1645,10 @@
       "summary": {
         "balance": "Wallet Balance",
         "balanceDesc": "Available EGP value from approved work",
+        "pending": "Pending withdrawal",
+        "pendingDesc": "Amount held while a withdrawal is under review",
+        "paid": "Paid out",
+        "paidDesc": "Lifetime amount already paid to you",
         "periodEarnings": "Last 30 Days",
         "periodEarningsDesc": "EGP value credited in the current period",
         "completed": "Settled Requests",
@@ -1624,7 +1657,7 @@
       },
       "ledger": {
         "title": "Credit Ledger",
-        "description": "Every approved request credited to your wallet",
+        "description": "All approved requests credited to your wallet",
         "empty": "No wallet entries yet. Credits appear here after clients approve delivered work.",
         "request": "Request",
         "service": "Service",
@@ -2013,6 +2046,97 @@
         "step3": "Tap \"Add\" to install",
         "gotIt": "Got it"
       }
+    }
+  },
+  "legal": {
+    "privacy": {
+      "metaTitle": "Privacy Policy",
+      "metaDescription": "How Wengz collects, uses, and protects your personal information.",
+      "title": "Privacy Policy",
+      "updated": "Last updated: September 2026",
+      "intro": "This Privacy Policy explains how Wengz (“we”, “us”) handles information when you use wengz.tech and related services.",
+      "sections": {
+        "who": {
+          "title": "Who we are",
+          "body": "Wengz is a digital services marketplace operated at https://wengz.tech. For privacy questions, contact info@wengz.tech."
+        },
+        "data": {
+          "title": "Information we collect",
+          "body": "We may collect account details (name, email, phone), project and form submissions, payment-related records needed to process subscriptions, usage and device data (such as browser type and pages visited), and communications you send us."
+        },
+        "use": {
+          "title": "How we use information",
+          "body": "We use information to provide and improve the platform, match clients with creators, process payments and subscriptions, send transactional notifications, respond to inquiries, and keep the service secure."
+        },
+        "share": {
+          "title": "Sharing",
+          "body": "We share data with service providers who help us operate (hosting, payments, messaging) under appropriate safeguards. We may disclose information when required by law or to protect rights and safety. We do not sell your personal information."
+        },
+        "rights": {
+          "title": "Your choices",
+          "body": "You may request access, correction, or deletion of personal data we hold about you, subject to legal and operational limits. Contact info@wengz.tech to make a request."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Email info@wengz.tech for privacy-related requests. We may update this policy from time to time; the “Last updated” date above will change when we do."
+        }
+      }
+    },
+    "terms": {
+      "metaTitle": "Terms of Service",
+      "metaDescription": "Terms that govern use of the Wengz digital services marketplace.",
+      "title": "Terms of Service",
+      "updated": "Last updated: September 2026",
+      "intro": "By accessing or using Wengz, you agree to these Terms. If you do not agree, do not use the platform.",
+      "sections": {
+        "acceptance": {
+          "title": "Agreement",
+          "body": "These Terms form a binding agreement between you and Wengz regarding use of wengz.tech, accounts, subscriptions, and related services."
+        },
+        "services": {
+          "title": "The service",
+          "body": "Wengz connects clients and creators through credit-based subscriptions and project workflows. Features may change as we improve the product. The platform is currently offered in beta and may change frequently."
+        },
+        "accounts": {
+          "title": "Accounts",
+          "body": "You are responsible for accurate registration details and for keeping your credentials secure. You must be able to enter into a binding agreement under applicable law to use paid features."
+        },
+        "credits": {
+          "title": "Credits, packages, and payments",
+          "body": "Credits and packages are subject to the plan terms shown at purchase. Fees are generally non-refundable except where required by law or expressly stated by Wengz. Misuse of credits or payment fraud may result in suspension."
+        },
+        "conduct": {
+          "title": "Acceptable use",
+          "body": "You may not abuse the platform, infringe others’ rights, upload unlawful content, attempt unauthorized access, or interfere with other users. We may suspend or terminate accounts that violate these Terms."
+        },
+        "liability": {
+          "title": "Disclaimers and liability",
+          "body": "The service is provided “as is” to the fullest extent permitted by law. Wengz is not liable for indirect or consequential damages arising from use of the platform. Nothing in these Terms limits rights that cannot be waived under applicable law."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Questions about these Terms: info@wengz.tech."
+        }
+      }
+    },
+    "contact": {
+      "metaTitle": "Contact Wengz",
+      "metaDescription": "Contact Wengz for client projects, creator applications, or general support.",
+      "title": "Contact",
+      "updated": "We typically reply within 1–2 business days",
+      "intro": "Tell us whether you need help as a client or want to join as a creator — we’ll route you to the right next step.",
+      "sections": {
+        "email": {
+          "title": "Email",
+          "body": "Reach us at info@wengz.tech for general questions, partnerships, and support."
+        },
+        "forms": {
+          "title": "Intake forms",
+          "body": "Prefer a structured start? Use the client form for project briefs or the creator form to apply to the network."
+        }
+      },
+      "ctaClient": "Client form",
+      "ctaProvider": "Creator form"
     }
   }
 }

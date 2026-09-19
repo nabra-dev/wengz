@@ -1,4 +1,10 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
+import { logActivityAsync } from "@/lib/activity-log";
+
+/** Prisma client or an interactive transaction client. */
+type DbLike = Prisma.TransactionClient | typeof db;
 
 export interface CreditCheckResult {
   allowed: boolean;
@@ -51,14 +57,23 @@ export async function checkCredits(
 }
 
 /**
- * Deduct credits from user's subscription
+ * Deduct credits from user's subscription.
+ *
+ * Atomic: the balance guard is evaluated inside the UPDATE itself
+ * (`WHERE remainingCredits >= credits` + `decrement`), so concurrent
+ * deductions cannot double-spend. Pass `tx` to participate in a caller's
+ * transaction (e.g. deduct + request create must commit or roll back
+ * together).
  */
 export async function deductCredits(
   userId: string,
   credits: number = 1,
-  reason?: string
+  reason?: string,
+  tx?: DbLike
 ): Promise<CreditDeductionResult> {
-  const subscription = await db.clientSubscription.findFirst({
+  const client = tx ?? db;
+
+  const subscription = await client.clientSubscription.findFirst({
     where: {
       userId,
       isActive: true,
@@ -75,7 +90,17 @@ export async function deductCredits(
     };
   }
 
-  if (subscription.remainingCredits < credits) {
+  const result = await client.clientSubscription.updateMany({
+    where: {
+      id: subscription.id,
+      isActive: true,
+      endDate: { gte: new Date() },
+      remainingCredits: { gte: credits },
+    },
+    data: { remainingCredits: { decrement: credits } },
+  });
+
+  if (result.count === 0) {
     return {
       success: false,
       newBalance: subscription.remainingCredits,
@@ -83,33 +108,37 @@ export async function deductCredits(
     };
   }
 
-  const updatedSubscription = await db.clientSubscription.update({
-    where: { id: subscription.id },
-    data: {
-      remainingCredits: subscription.remainingCredits - credits,
-    },
-  });
-
   // Log the transaction (optional - could create a CreditTransaction table)
-  console.log(`[CREDIT] Deducted ${credits} from user ${userId}. Reason: ${reason || "N/A"}`);
+  logger.info("Credits deducted", { userId, credits, reason });
+  logActivityAsync({
+    action: "credit.deduct",
+    message: `Deducted ${credits} credit(s)${reason ? `: ${reason}` : ""}`,
+    actorId: userId,
+    entityType: "ClientSubscription",
+    entityId: subscription.id,
+    metadata: { credits, reason, newBalance: subscription.remainingCredits - credits },
+  });
 
   return {
     success: true,
-    newBalance: updatedSubscription.remainingCredits,
+    newBalance: subscription.remainingCredits - credits,
     message: `Successfully deducted ${credits} credit(s).`,
   };
 }
 
 /**
- * Combined check and deduct credits in a single operation
- * Optimized to avoid duplicate database queries
+ * Combined check and deduct credits in a single operation.
+ * Atomic — see `deductCredits`. Pass `tx` to run inside a transaction.
  */
 export async function checkAndDeductCredits(
   userId: string,
   credits: number = 1,
-  reason?: string
+  reason?: string,
+  tx?: DbLike
 ): Promise<CreditDeductionResult & { allowed: boolean }> {
-  const subscription = await db.clientSubscription.findFirst({
+  const client = tx ?? db;
+
+  const subscription = await client.clientSubscription.findFirst({
     where: {
       userId,
       isActive: true,
@@ -127,7 +156,17 @@ export async function checkAndDeductCredits(
     };
   }
 
-  if (subscription.remainingCredits < credits) {
+  const result = await client.clientSubscription.updateMany({
+    where: {
+      id: subscription.id,
+      isActive: true,
+      endDate: { gte: new Date() },
+      remainingCredits: { gte: credits },
+    },
+    data: { remainingCredits: { decrement: credits } },
+  });
+
+  if (result.count === 0) {
     return {
       success: false,
       allowed: false,
@@ -136,32 +175,37 @@ export async function checkAndDeductCredits(
     };
   }
 
-  const updatedSubscription = await db.clientSubscription.update({
-    where: { id: subscription.id },
-    data: {
-      remainingCredits: subscription.remainingCredits - credits,
-    },
+  logger.info("Credits deducted", { userId, credits, reason });
+  logActivityAsync({
+    action: "credit.deduct",
+    message: `Deducted ${credits} credit(s)${reason ? `: ${reason}` : ""}`,
+    actorId: userId,
+    entityType: "ClientSubscription",
+    entityId: subscription.id,
+    metadata: { credits, reason, newBalance: subscription.remainingCredits - credits },
   });
-
-  console.log(`[CREDIT] Deducted ${credits} from user ${userId}. Reason: ${reason || "N/A"}`);
 
   return {
     success: true,
     allowed: true,
-    newBalance: updatedSubscription.remainingCredits,
+    newBalance: subscription.remainingCredits - credits,
     message: `Successfully deducted ${credits} credit(s).`,
   };
 }
 
 /**
- * Add credits to user's subscription (e.g., for refunds or bonuses)
+ * Add credits to user's subscription (e.g., for refunds or bonuses).
+ * Uses an atomic increment so concurrent additions cannot be lost.
  */
 export async function addCredits(
   userId: string,
   credits: number,
-  reason?: string
+  reason?: string,
+  tx?: DbLike
 ): Promise<CreditDeductionResult> {
-  const subscription = await db.clientSubscription.findFirst({
+  const client = tx ?? db;
+
+  const subscription = await client.clientSubscription.findFirst({
     where: {
       userId,
       isActive: true,
@@ -178,14 +222,22 @@ export async function addCredits(
     };
   }
 
-  const updatedSubscription = await db.clientSubscription.update({
+  const updatedSubscription = await client.clientSubscription.update({
     where: { id: subscription.id },
     data: {
-      remainingCredits: subscription.remainingCredits + credits,
+      remainingCredits: { increment: credits },
     },
   });
 
-  console.log(`[CREDIT] Added ${credits} to user ${userId}. Reason: ${reason || "N/A"}`);
+  logger.info("Credits added", { userId, credits, reason });
+  logActivityAsync({
+    action: "credit.add",
+    message: `Added ${credits} credit(s)${reason ? `: ${reason}` : ""}`,
+    actorId: userId,
+    entityType: "ClientSubscription",
+    entityId: subscription.id,
+    metadata: { credits, reason, newBalance: updatedSubscription.remainingCredits },
+  });
 
   return {
     success: true,

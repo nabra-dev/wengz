@@ -1,29 +1,22 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    // Test database connection
+    // Liveness probe: database connectivity only. Business metrics are not
+    // exposed publicly — add an authenticated /api/health/detailed if needed.
     await db.$queryRaw`SELECT 1`;
-
-    // Get system info
-    const userCount = await db.user.count();
-    const requestCount = await db.request.count();
 
     return NextResponse.json({
       status: "healthy",
       database: "connected",
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV,
-      stats: {
-        users: userCount,
-        requests: requestCount,
-      },
     });
   } catch (error) {
-    console.error("Health check failed:", error);
+    logger.error("Health check failed:", error);
     return NextResponse.json(
       {
         status: "unhealthy",

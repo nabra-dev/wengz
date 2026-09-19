@@ -314,21 +314,18 @@ export const providerRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      // Period window is for the "earnings this period" summary cards only.
+      // The ledger/withdrawal history always returns full history so older
+      // settlements remain visible while balance still includes them.
       const startDate = input?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = input?.endDate || new Date();
 
-      const [wallet, ledger, profile, withdrawals] = await Promise.all([
+      const [wallet, ledger, periodLedger, profile, withdrawals] = await Promise.all([
         ctx.db.providerWallet.findUnique({
           where: { providerId: userId },
         }),
         ctx.db.providerFinanceLedger.findMany({
-          where: {
-            providerId: userId,
-            settledAt: {
-              gte: startDate,
-              lte: endDate,
-            },
-          },
+          where: { providerId: userId },
           include: {
             request: {
               select: {
@@ -349,6 +346,20 @@ export const providerRouter = router({
             },
           },
           orderBy: { settledAt: "desc" },
+          take: 100,
+        }),
+        ctx.db.providerFinanceLedger.findMany({
+          where: {
+            providerId: userId,
+            settledAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+          select: {
+            providerCredits: true,
+            providerAmountEgp: true,
+          },
         }),
         ctx.db.providerProfile.findUnique({
           where: { userId },
@@ -386,7 +397,7 @@ export const providerRouter = router({
         },
       }));
 
-      const totals = ledger.reduce(
+      const periodTotals = periodLedger.reduce(
         (
           sum: {
             providerCredits: number;
@@ -401,15 +412,15 @@ export const providerRouter = router({
       );
 
       return {
-        totalEarnings: totals.providerCredits,
-        completedCount: ledger.length,
+        totalEarnings: periodTotals.providerCredits,
+        completedCount: periodLedger.length,
         balanceCredits: wallet?.balanceCredits ?? 0,
         pendingCredits: wallet?.pendingCredits ?? 0,
         paidCredits: wallet?.paidCredits ?? 0,
         balanceEgp: wallet?.balanceEgp ?? 0,
         pendingEgp: wallet?.pendingEgp ?? 0,
         paidEgp: wallet?.paidEgp ?? 0,
-        totalEarningsEgp: totals.providerAmountEgp,
+        totalEarningsEgp: periodTotals.providerAmountEgp,
         period: {
           start: startDate,
           end: endDate,
@@ -505,19 +516,10 @@ export const providerRouter = router({
         where: { id: input.requestId },
       });
 
-      if (!request) {
+      if (!request || request.deletedAt) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Request not found",
-        });
-      }
-
-      if (request.providerId === userId) {
-        // Request already claimed by this provider, allow to proceed
-      } else if (request.providerId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "This request has already been claimed",
         });
       }
 
@@ -528,9 +530,45 @@ export const providerRouter = router({
         });
       }
 
-      const updatedRequest = await ctx.db.request.update({
-        where: { id: input.requestId },
+      // Enforce skill match: providers may only claim requests for service
+      // types they support (same rule as getAvailableRequests).
+      const providerProfile = await ctx.db.providerProfile.findUnique({
+        where: { userId },
+        include: { supportedServices: { select: { id: true } } },
+      });
+      const supportedServiceIds =
+        providerProfile?.supportedServices.map((s: { id: string }) => s.id) || [];
+
+      if (
+        request.providerId !== userId &&
+        !supportedServiceIds.includes(request.serviceTypeId)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This request is not in your supported services",
+        });
+      }
+
+      // Atomic claim: only succeeds if the request is still pending and
+      // unassigned (or already ours). Prevents two providers claiming at once.
+      const claimed = await ctx.db.request.updateMany({
+        where: {
+          id: input.requestId,
+          status: "PENDING",
+          OR: [{ providerId: null }, { providerId: userId }],
+        },
         data: { providerId: userId },
+      });
+
+      if (claimed.count === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This request has already been claimed",
+        });
+      }
+
+      const updatedRequest = await ctx.db.request.findUnique({
+        where: { id: input.requestId },
       });
 
       // Send notification about provider assignment

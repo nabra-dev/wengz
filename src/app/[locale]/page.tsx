@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import LandingPage from "@/components/landing/landing-page";
+import { LandingServiceJsonLd } from "@/components/seo/json-ld";
+import { buildPageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -9,18 +11,27 @@ export async function generateMetadata({
   const { locale } = await params;
   const isArabic = locale === "ar";
 
-  return {
+  return buildPageMetadata({
+    locale,
+    path: "/",
     title: isArabic ? "منصة الخدمات الرقمية" : "Digital Services Marketplace",
     description: isArabic
       ? "احصل على خدمات تصميم وتطوير وإنتاج محتوى عبر مبدعين موثوقين وباشتراك مرن قائم على الكريدت."
       : "Get design, development, and content services from trusted creators with flexible credit-based subscriptions.",
-    robots: {
-      index: true,
-      follow: true,
-    },
-  };
+  });
 }
 
-export default function HomePage() {
-  return <LandingPage />;
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  return (
+    <>
+      <LandingServiceJsonLd locale={locale} />
+      <LandingPage />
+    </>
+  );
 }

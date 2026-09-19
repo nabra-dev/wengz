@@ -136,6 +136,7 @@ Typical categories inferred from code and dependencies:
 - **Redis / Upstash**: as consumed in `src/lib/cache.ts`
 - **S3 / B2**: upload and asset URLs (see `src/app/api/upload/` and image remote patterns in `next.config.js`)
 - **Email / WhatsApp**: nodemailer and WhatsApp integrations under `src/lib/notifications/`
+- **Analytics**: `NEXT_PUBLIC_GTM_ID` (Google Tag Manager; defaults to `GTM-58DDFXLX` in locale layout)
 
 Treat this list as a **checklist**, not a complete `.env` template—verify each integration’s module for exact variable names.
 

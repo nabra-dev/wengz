@@ -102,7 +102,7 @@ export function FileUpload({
         type: data.type,
       };
     } catch (error) {
-      console.error("Upload error:", error);
+
       toast.error(t("uploadFailed"), {
         description: error instanceof Error ? error.message : t("uploadFailedDesc"),
       });

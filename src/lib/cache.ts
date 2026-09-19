@@ -1,5 +1,6 @@
 import { createClient, type RedisClientType } from "redis";
 import { Redis as UpstashRedis } from "@upstash/redis";
+import { logger } from "@/lib/logger";
 
 let redisClient: RedisClientType | UpstashRedis | null = null;
 let isUpstash = false;
@@ -68,17 +69,17 @@ export async function getRedisClient(): Promise<RedisClientType | UpstashRedis |
         token: process.env.UPSTASH_REDIS_REST_TOKEN,
       });
       isUpstash = true;
-      console.log("✅ Upstash Redis connected (serverless mode)");
+      logger.info("✅ Upstash Redis connected (serverless mode)");
       return redisClient;
     } catch (error) {
-      console.error("Failed to connect to Upstash Redis:", error);
+      logger.error("Failed to connect to Upstash Redis:", error);
       return null;
     }
   }
 
   // Traditional Redis (Local/Railway/Redis Cloud) - Priority 2
   if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
-    console.warn("Redis not configured. Caching disabled.");
+    logger.warn("Redis not configured. Caching disabled.");
     return null;
   }
 
@@ -90,7 +91,7 @@ export async function getRedisClient(): Promise<RedisClientType | UpstashRedis |
       socket: {
         reconnectStrategy: (retries: number) => {
           if (retries > 10) {
-            console.error("Redis reconnection failed after 10 attempts");
+            logger.error("Redis reconnection failed after 10 attempts");
             return new Error("Redis reconnection failed");
           }
           return retries * 100;
@@ -99,19 +100,19 @@ export async function getRedisClient(): Promise<RedisClientType | UpstashRedis |
     });
 
     redisClient.on("error", (err: Error) => {
-      console.error("Redis error:", err);
+      logger.error("Redis error:", err);
       redisClient = null;
     });
 
     redisClient.on("connect", () => {
-      console.log("✅ Traditional Redis connected");
+      logger.info("✅ Traditional Redis connected");
     });
 
     await redisClient.connect();
     isUpstash = false;
     return redisClient;
   } catch (error) {
-    console.error("Failed to connect to Redis:", error);
+    logger.error("Failed to connect to Redis:", error);
     return null;
   }
 }
@@ -134,7 +135,7 @@ export async function getCached<T>(key: string): Promise<T | null> {
       return JSON.parse(data as string) as T;
     }
   } catch (error) {
-    console.error(`Cache get error for key ${key}:`, error);
+    logger.error(`Cache get error for key ${key}:`, error);
     return null;
   }
 }
@@ -164,7 +165,7 @@ export async function setCached<T>(key: string, value: T, ttl?: number): Promise
       }
     }
   } catch (error) {
-    console.error(`Cache set error for key ${key}:`, error);
+    logger.error(`Cache set error for key ${key}:`, error);
   }
 }
 
@@ -186,7 +187,7 @@ export async function deleteCached(key: string | string[]): Promise<void> {
       await (client as RedisClientType).del(keys);
     }
   } catch (error) {
-    console.error(`Cache delete error:`, error);
+    logger.error(`Cache delete error:`, error);
   }
 }
 
@@ -207,7 +208,7 @@ export async function deleteCachedPattern(pattern: string): Promise<void> {
       }
     }
   } catch (error) {
-    console.error(`Cache pattern delete error:`, error);
+    logger.error(`Cache pattern delete error:`, error);
   }
 }
 
@@ -226,7 +227,7 @@ export async function incrementCached(key: string, increment = 1): Promise<numbe
       return await (client as RedisClientType).incrBy(key, increment);
     }
   } catch (error) {
-    console.error(`Cache increment error for key ${key}:`, error);
+    logger.error(`Cache increment error for key ${key}:`, error);
     return 0;
   }
 }
@@ -251,7 +252,7 @@ export async function getOrSetCached<T>(
     }
     return data;
   } catch (error) {
-    console.error(`Cache get-or-set error for key ${key}:`, error);
+    logger.error(`Cache get-or-set error for key ${key}:`, error);
     return null;
   }
 }

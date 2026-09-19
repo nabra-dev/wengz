@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
+
+// Uploads are authenticated but still abuse-prone (disk + bandwidth).
+const UPLOAD_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const STORAGE_ROOT = process.env.LOCAL_UPLOAD_DIR || path.join(process.cwd(), "storage");
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -14,8 +19,6 @@ const ALLOWED_TYPES = new Set([
   "image/gif",
   "image/webp",
   "application/pdf",
-  "application/zip",
-  "application/x-zip-compressed",
   // Audio types for voice notes
   "audio/webm",
   "audio/mpeg",
@@ -38,6 +41,17 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = rateLimit(
+      `upload:${session.user.id}:${getClientIp(req)}`,
+      UPLOAD_RATE_LIMIT
+    );
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many uploads. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
     }
 
     const formData = await req.formData();
@@ -83,7 +97,7 @@ export async function POST(req: Request) {
       type: file.type,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    logger.error("Upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

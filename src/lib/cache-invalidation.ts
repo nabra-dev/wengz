@@ -5,6 +5,7 @@
  */
 
 import { deleteCached, deleteCachedPattern, cacheKeys } from "@/lib/cache";
+import { logger } from "@/lib/logger";
 
 /**
  * Invalidate all user-related cache entries
@@ -124,6 +125,6 @@ export async function invalidateRequestCacheFull(
  * WARNING: Only use in development or for emergency situations
  */
 export async function clearAllCache(): Promise<void> {
-  console.warn("⚠️ Clearing ALL Redis cache - this should only be used in development");
+  logger.warn("⚠️ Clearing ALL Redis cache - this should only be used in development");
   await deleteCachedPattern("*");
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 // Import the SSE sender directly
 let sseSender: any = null;
@@ -9,7 +10,7 @@ let sseSender: any = null;
 // Not exported as it's not a Next.js route handler
 function registerSseSender(sender: any) {
   sseSender = sender;
-  console.log("🔧 Debug: SSE sender registered in debug route");
+  logger.info("🔧 Debug: SSE sender registered in debug route");
 }
 
 // Make it available globally for SSE route to call
@@ -18,6 +19,11 @@ if (typeof globalThis !== "undefined") {
 }
 
 export async function GET() {
+  // Debug endpoint — development only, must not ship to production.
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -26,8 +32,8 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  console.log("🧪 Debug notify called for user:", userId);
-  console.log("🔍 SSE sender available:", !!sseSender);
+  logger.info("🧪 Debug notify called for user:", userId);
+  logger.info("🔍 SSE sender available:", !!sseSender);
 
   if (!sseSender) {
     return NextResponse.json(
@@ -53,7 +59,7 @@ export async function GET() {
       message: "Notification sent via SSE",
     });
   } catch (error: any) {
-    console.error("❌ Debug notify error:", error);
+    logger.error("❌ Debug notify error:", error);
     return NextResponse.json(
       {
         error: "Failed to send notification",
