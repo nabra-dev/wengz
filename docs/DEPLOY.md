@@ -143,6 +143,6 @@ ssh root@72.62.181.253 '/usr/local/bin/deploy-nabra.sh'
 
 ## Notes
 
-- Until Prisma migration files exist, deploy uses `npm run db:push`. Switch the script to `npm run db:migrate:deploy` when migrations are committed.
+- Until Prisma migration files exist, deploy uses `npm run db:push` (`--accept-data-loss`). That is required for intentional column drops (e.g. removing `hasWhatsapp`). Switch the script to `npm run db:migrate:deploy` when migrations are committed.
 - Concurrent deploys are blocked by `/var/lib/nabra/deploy.lock` and by the workflow `concurrency` group.
 - After changing `scripts/deploy-nabra.sh`, reinstall it on the VPS before the next Actions deploy (or pull manually once, then install).

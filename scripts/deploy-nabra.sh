@@ -81,7 +81,9 @@ fi
 SCHEMA_SHA="$(file_sha prisma/schema.prisma)"
 PREV_SCHEMA_SHA="$(cat "$SCHEMA_HASH_FILE" 2>/dev/null || true)"
 if [[ "$SCHEMA_SHA" != "$PREV_SCHEMA_SHA" ]]; then
-  log "Prisma schema changed — running db:push"
+  # --accept-data-loss is required for intentional column drops (e.g. hasWhatsapp).
+  # Deploy already runs only when schema hash changes; review schema diffs before merge.
+  log "Prisma schema changed — running db:push --accept-data-loss"
   npm run db:push
   echo "$SCHEMA_SHA" >"$SCHEMA_HASH_FILE"
 else
