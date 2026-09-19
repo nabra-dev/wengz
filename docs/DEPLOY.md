@@ -58,6 +58,21 @@ certbot --nginx -d wengz.tech -d www.wengz.tech
 nginx -t && systemctl reload nginx
 ```
 
+### Large uploads (request attachments up to 500MB)
+
+Request/delivery files use **chunked** uploads (~5MB parts) to local disk. Nginx still needs room for a chunk (and for small single-shot uploads ≤20MB):
+
+```nginx
+# inside the wengz.tech server { } block
+client_max_body_size 32m;
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;
+proxy_request_buffering off;
+```
+
+Then `nginx -t && systemctl reload nginx`.
+
+Ensure the VPS volume behind `LOCAL_UPLOAD_DIR` (default `storage/` in the app dir) has enough free space. Incomplete chunk sessions live under `storage/uploads/<userId>/.tmp/` and are removed on complete/abort.
 ## One-time VPS setup
 
 ### 1. Install the deploy script

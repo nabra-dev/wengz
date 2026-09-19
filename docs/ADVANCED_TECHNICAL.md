@@ -117,6 +117,7 @@ flowchart TB
 - `src/lib/performance.ts` — wired as tRPC middleware on protected/admin/provider/client procedures.
 - Pattern deletes use `SCAN` (not `KEYS`) for traditional Redis.
 - Uploads are **local disk** via `src/app/api/upload/` (not S3 yet); `next.config.js` still allows remote image hosts for future object storage.
+- Request/delivery attachments support up to **500MB** via chunked streaming (`/api/upload/init` → `/chunk` → `/complete`). Small files (≤20MB) still use single-shot `POST /api/upload`. Payment proofs stay capped at 10MB.
 - Landing media: prefer compressed assets under `public/images/landing`; gallery videos lazy-load via IntersectionObserver.
 
 ---

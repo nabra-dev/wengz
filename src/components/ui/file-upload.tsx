@@ -6,6 +6,12 @@ import { X, Upload, FileIcon, Image as ImageIcon, FileText, Loader2 } from "luci
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import {
+  ALLOWED_UPLOAD_MIME_TYPES,
+  REQUEST_ATTACHMENT_MAX_MB,
+  UPLOAD_ACCEPT_ATTR,
+} from "@/lib/upload-limits";
+import { uploadFileToServer } from "@/lib/upload-client";
 
 export interface UploadedFile {
   url: string;
@@ -23,56 +29,30 @@ interface FileUploadProps {
   readonly disabled?: boolean;
 }
 
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  "application/zip",
-  "application/x-zip-compressed",
-  // Audio types for voice notes
-  "audio/webm",
-  "audio/mpeg",
-  "audio/ogg",
-  "audio/mp4",
-  "audio/wav",
-  "audio/m4a",
-  "audio/aac",
-  // Video types
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-  "video/x-msvideo",
-  "video/x-matroska",
-  "video/mpeg",
-]);
-
 export function FileUpload({
   onFilesChange,
   maxFiles = 5,
-  maxSizeMB = 10,
-  accept = "image/*,.pdf,.zip,audio/*,video/*",
+  maxSizeMB = REQUEST_ATTACHMENT_MAX_MB,
+  accept = UPLOAD_ACCEPT_ATTR,
   className,
   disabled = false,
 }: FileUploadProps) {
   const t = useTranslations("ui.fileUpload");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = useCallback(
     async (file: File): Promise<UploadedFile | null> => {
-      // Validate file type
-      if (!ALLOWED_TYPES.has(file.type)) {
+      if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
         toast.error(t("invalidFileType"), {
           description: t("invalidFileTypeDesc", { filename: file.name }),
         });
         return null;
       }
 
-      // Validate file size
       const maxSizeBytes = maxSizeMB * 1024 * 1024;
       if (file.size > maxSizeBytes) {
         toast.error(t("fileTooLarge"), {
@@ -81,21 +61,11 @@ export function FileUpload({
         return null;
       }
 
-      const formData = new FormData();
-      formData.append("file", file);
-
       try {
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
+        const data = await uploadFileToServer(file, {
+          maxSizeBytes,
+          onProgress: (p) => setUploadPercent(p.percent),
         });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(error.error || t("uploadFailedDesc"));
-        }
-
-        const data = await response.json();
         return {
           url: data.url,
           filename: data.filename,
@@ -126,9 +96,14 @@ export function FileUpload({
 
       const filesToUpload = Array.from(files).slice(0, remainingSlots);
       setIsUploading(true);
+      setUploadPercent(0);
 
-      const results = await Promise.all(filesToUpload.map(uploadFile));
-      const successfulUploads = results.filter((r): r is UploadedFile => r !== null);
+      const successfulUploads: UploadedFile[] = [];
+      // Serial uploads keep disk/CPU load predictable for large files.
+      for (const file of filesToUpload) {
+        const result = await uploadFile(file);
+        if (result) successfulUploads.push(result);
+      }
 
       if (successfulUploads.length > 0) {
         const newFiles = [...uploadedFiles, ...successfulUploads];
@@ -140,6 +115,7 @@ export function FileUpload({
       }
 
       setIsUploading(false);
+      setUploadPercent(null);
     },
     [uploadedFiles, maxFiles, onFilesChange, t, uploadFile]
   );
@@ -186,7 +162,6 @@ export function FileUpload({
 
   return (
     <div className={cn("space-y-3", className)}>
-      {/* Drop zone */}
       <section
         aria-label="File upload drop zone"
         className={cn(
@@ -215,7 +190,11 @@ export function FileUpload({
           {isUploading ? (
             <>
               <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">{t("uploading")}</p>
+              <p className="text-sm text-muted-foreground">
+                {uploadPercent === null
+                  ? t("uploading")
+                  : t("uploadingProgress", { percent: uploadPercent })}
+              </p>
             </>
           ) : (
             <>
@@ -241,7 +220,6 @@ export function FileUpload({
         </div>
       </section>
 
-      {/* Uploaded files list */}
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">
@@ -277,7 +255,6 @@ export function FileUpload({
   );
 }
 
-// Helper to create removeFile handler
 function createRemoveFileHandler(
   uploadedFiles: UploadedFile[],
   setUploadedFiles: (files: UploadedFile[]) => void,
@@ -289,55 +266,48 @@ function createRemoveFileHandler(
     onFilesChange(newFiles);
   };
 }
-// Compact version for inline use (e.g., in chat)
+
 export function InlineFileUpload({
   onFilesChange,
   maxFiles = 3,
+  maxSizeMB = REQUEST_ATTACHMENT_MAX_MB,
   disabled = false,
   files = [],
 }: {
   readonly onFilesChange: (files: UploadedFile[]) => void;
   readonly maxFiles?: number;
+  readonly maxSizeMB?: number;
   readonly disabled?: boolean;
   readonly files?: UploadedFile[];
 }) {
   const t = useTranslations("ui.fileUpload");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(files);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync internal state with external files prop only when files prop actually changes
   React.useEffect(() => {
     setUploadedFiles(files);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(files)]);
 
   const uploadFile = async (file: File): Promise<UploadedFile | null> => {
-    if (!ALLOWED_TYPES.has(file.type)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
       toast.error(t("invalidFileType"));
       return null;
     }
 
-    const maxSizeBytes = 10 * 1024 * 1024;
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
     if (file.size > maxSizeBytes) {
-      toast.error(t("fileTooLargeShort"));
+      toast.error(t("fileTooLargeShort", { maxSize: maxSizeMB }));
       return null;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const data = await uploadFileToServer(file, {
+        maxSizeBytes,
+        onProgress: (p) => setUploadPercent(p.percent),
       });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const data = await response.json();
       return {
         url: data.url,
         filename: data.filename,
@@ -350,8 +320,8 @@ export function InlineFileUpload({
     }
   };
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const handleFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
 
     const remainingSlots = maxFiles - uploadedFiles.length;
     if (remainingSlots <= 0) {
@@ -359,11 +329,15 @@ export function InlineFileUpload({
       return;
     }
 
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    const filesToUpload = Array.from(fileList).slice(0, remainingSlots);
     setIsUploading(true);
+    setUploadPercent(0);
 
-    const results = await Promise.all(filesToUpload.map(uploadFile));
-    const successfulUploads = results.filter((r): r is UploadedFile => r !== null);
+    const successfulUploads: UploadedFile[] = [];
+    for (const file of filesToUpload) {
+      const result = await uploadFile(file);
+      if (result) successfulUploads.push(result);
+    }
 
     if (successfulUploads.length > 0) {
       const newFiles = [...uploadedFiles, ...successfulUploads];
@@ -372,6 +346,7 @@ export function InlineFileUpload({
     }
 
     setIsUploading(false);
+    setUploadPercent(null);
   };
 
   const removeFile = createRemoveFileHandler(uploadedFiles, setUploadedFiles, onFilesChange);
@@ -387,7 +362,7 @@ export function InlineFileUpload({
         ref={inputRef}
         type="file"
         multiple
-        accept="image/*,.pdf,.zip,audio/*"
+        accept={UPLOAD_ACCEPT_ATTR}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
         disabled={disabled || isUploading}
@@ -407,7 +382,13 @@ export function InlineFileUpload({
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          <span>{isUploading ? t("uploading") : t("attachFiles")}</span>
+          <span>
+            {isUploading
+              ? uploadPercent === null
+                ? t("uploading")
+                : t("uploadingProgress", { percent: uploadPercent })
+              : t("attachFiles")}
+          </span>
         </Button>
 
         {uploadedFiles.length > 0 && (

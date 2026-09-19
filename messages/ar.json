@@ -1033,6 +1033,7 @@
       "dragAndDrop": "أو اسحب وأسقط",
       "attachedFiles": "الملفات المرفقة",
       "uploading": "جاري التحميل...",
+      "uploadingProgress": "جاري التحميل… {percent}%",
       "uploadComplete": "اكتمل التحميل",
       "maximumFilesReached": "تم الوصول للحد الأقصى من الملفات",
       "invalidFileType": "نوع ملف غير صالح",
@@ -1043,13 +1044,13 @@
       "maximumFilesDesc": "يمكنك تحميل حتى {maxFiles} ملف فقط.",
       "uploadCompleteDesc": "{count, plural, zero {لا توجد ملفات} one {تم تحميل ملف واحد بنجاح} two {تم تحميل ملفين بنجاح} few {تم تحميل # ملفات بنجاح} many {تم تحميل # ملفاً بنجاح} other {تم تحميل # ملف بنجاح}}",
       "uploadFailedDesc": "فشل تحميل الملف",
-      "fileTypesInfo": "صور، PDF، أو ZIP (بحد أقصى {maxSize}ميجابايت لكل ملف، بحد أقصى {maxFiles} ملف)",
+      "fileTypesInfo": "صور، PDF، ZIP، صوت أو فيديو (بحد أقصى {maxSize}ميجابايت لكل ملف، بحد أقصى {maxFiles} ملف)",
       "attachedCount": "الملفات المرفقة ({count}/{maxFiles})",
       "attachFiles": "إرفاق ملفات",
       "filesAttached": "{count, plural, zero {لا توجد ملفات} one {ملف واحد مرفق} two {ملفان مرفقان} few {# ملفات مرفقة} many {# ملفاً مرفقاً} other {# ملف مرفق}}",
       "clearAll": "مسح الكل",
       "maxFilesShort": "بحد أقصى {maxFiles} ملف",
-      "fileTooLargeShort": "الملف كبير جداً (بحد أقصى 10ميجابايت)"
+      "fileTooLargeShort": "الملف كبير جداً (بحد أقصى {maxSize}ميجابايت)"
     }
   },
   "requests": {

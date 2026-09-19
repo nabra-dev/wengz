@@ -418,7 +418,7 @@ export default function NewRequestPage() {
               <FileUpload
                 onFilesChange={setAttachments}
                 maxFiles={5}
-                maxSizeMB={10}
+                maxSizeMB={500}
                 disabled={!hasCredits || createRequest.isPending}
               />
             </div>

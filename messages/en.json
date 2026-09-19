@@ -1033,6 +1033,7 @@
       "dragAndDrop": "or drag and drop",
       "attachedFiles": "Attached Files",
       "uploading": "Uploading...",
+      "uploadingProgress": "Uploading… {percent}%",
       "uploadComplete": "Upload complete",
       "maximumFilesReached": "Maximum files reached",
       "invalidFileType": "Invalid file type",
@@ -1043,13 +1044,13 @@
       "maximumFilesDesc": "You can only upload up to {maxFiles} files.",
       "uploadCompleteDesc": "{count, plural, one {# file uploaded successfully.} other {# files uploaded successfully.}}",
       "uploadFailedDesc": "Failed to upload file",
-      "fileTypesInfo": "Images, PDFs, or ZIP files (max {maxSize}MB each, up to {maxFiles} files)",
+      "fileTypesInfo": "Images, PDFs, ZIP, audio, or video (max {maxSize}MB each, up to {maxFiles} files)",
       "attachedCount": "Attached Files ({count}/{maxFiles})",
       "attachFiles": "Attach Files",
       "filesAttached": "{count, plural, one {# file attached} other {# files attached}}",
       "clearAll": "Clear all",
       "maxFilesShort": "Max {maxFiles} files",
-      "fileTooLargeShort": "File too large (max 10MB)"
+      "fileTooLargeShort": "File too large (max {maxSize}MB)"
     }
   },
   "requests": {

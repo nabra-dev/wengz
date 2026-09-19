@@ -384,6 +384,7 @@ export function MessagesCard({
               <InlineFileUpload
                 onFilesChange={setCommentFiles}
                 maxFiles={3}
+                maxSizeMB={500}
                 disabled={addComment.isPending}
                 files={commentFiles}
               />

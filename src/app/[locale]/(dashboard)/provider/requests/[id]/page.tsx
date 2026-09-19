@@ -460,7 +460,7 @@ export default function ProviderRequestDetailPage() {
                   <FileUpload
                     onFilesChange={setDeliverableFiles}
                     maxFiles={10}
-                    maxSizeMB={10}
+                    maxSizeMB={500}
                     disabled={deliverWork.isPending}
                     className="bg-white/50"
                   />
@@ -676,6 +676,7 @@ export default function ProviderRequestDetailPage() {
                     <InlineFileUpload
                       onFilesChange={setCommentFiles}
                       maxFiles={3}
+                      maxSizeMB={500}
                       disabled={addComment.isPending}
                       files={commentFiles}
                     />

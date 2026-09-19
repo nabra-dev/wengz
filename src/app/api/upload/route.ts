@@ -5,37 +5,23 @@ import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { logger } from "@/lib/logger";
+import {
+  isAllowedUploadMime,
+  REQUEST_ATTACHMENT_MAX_BYTES,
+  REQUEST_ATTACHMENT_MAX_MB,
+  SINGLE_SHOT_UPLOAD_MAX_BYTES,
+} from "@/lib/upload-limits";
+import { buildFinalObjectKey, STORAGE_ROOT } from "@/lib/upload-storage";
 
 export const runtime = "nodejs";
 
 // Uploads are authenticated but still abuse-prone (disk + bandwidth).
 const UPLOAD_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
-const STORAGE_ROOT = process.env.LOCAL_UPLOAD_DIR || path.join(process.cwd(), "storage");
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  // Audio types for voice notes
-  "audio/webm",
-  "audio/mpeg",
-  "audio/ogg",
-  "audio/mp4",
-  "audio/wav",
-  "audio/m4a",
-  "audio/aac",
-  // Video types
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-  "video/x-msvideo",
-  "video/x-matroska",
-  "video/mpeg",
-]);
-
+/**
+ * Single-shot multipart upload for smaller files.
+ * Heavy files should use /api/upload/init → chunk → complete.
+ */
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -61,18 +47,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.has(file.type)) {
+    if (!isAllowedUploadMime(file.type)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: "File too large. Maximum size is 10MB" }, { status: 400 });
+    // Single-shot capped so this path never buffers a 500MB body in RAM.
+    const maxForSingleShot = Math.min(SINGLE_SHOT_UPLOAD_MAX_BYTES, REQUEST_ATTACHMENT_MAX_BYTES);
+    if (file.size > maxForSingleShot) {
+      return NextResponse.json(
+        {
+          error: `File too large for single upload. Use chunked upload for files over ${Math.floor(maxForSingleShot / (1024 * 1024))}MB (max ${REQUEST_ATTACHMENT_MAX_MB}MB).`,
+        },
+        { status: 400 }
+      );
     }
 
-    const timestamp = Date.now();
-    const sanitizedFileName = file.name.replaceAll(/[^a-zA-Z0-9.-]/g, "_");
-    const key = `uploads/${session.user.id}/${timestamp}-${sanitizedFileName}`;
-
+    const key = buildFinalObjectKey(session.user.id, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = path.join(STORAGE_ROOT, key);
     const metadataPath = `${filePath}.meta.json`;

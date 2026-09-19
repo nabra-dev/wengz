@@ -48,6 +48,9 @@ next-env.d.ts
 # Prisma
 prisma/migrations
 
+# Local file uploads
+storage/
+
 # IDE
 .idea
 .vscode
