@@ -519,21 +519,19 @@ function BankDetailsCard({
   );
 }
 
-function methodIcon(id: PaymentMethodId) {
+function MethodIcon({ id, className }: { id: PaymentMethodId; className?: string }) {
   switch (id) {
     case "bank_transfer":
-      return Landmark;
+      return <Landmark className={className} />;
     case "instapay":
-      return Smartphone;
+      return <Smartphone className={className} />;
     case "fawry":
-      return Receipt;
+      return <Receipt className={className} />;
     case "meeza":
-      return CreditCard;
     case "visa":
     case "mastercard":
-      return CreditCard;
     default:
-      return CreditCard;
+      return <CreditCard className={className} />;
   }
 }
 
@@ -569,7 +567,6 @@ function PaymentMethodPicker({
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {group.items.map((method) => {
-                const Icon = methodIcon(method.id);
                 const isSelected = selected === method.id;
                 const disabled = !method.available || method.comingSoon;
 
@@ -586,7 +583,7 @@ function PaymentMethodPicker({
                   >
                     <div className="flex items-start gap-3">
                       <div className="rounded-lg bg-muted p-2">
-                        <Icon className="h-5 w-5" />
+                        <MethodIcon id={method.id} className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{t(`items.${method.id}.name`)}</p>
@@ -625,14 +622,13 @@ function PaymentMethodPicker({
 
 function ComingSoonPanel({ methodId }: { methodId: PaymentMethodId }) {
   const t = useTranslations("client.payment.methods");
-  const Icon = methodIcon(methodId);
 
   return (
     <Card className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-muted/40" />
       <CardContent className="relative py-16 text-center space-y-4">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-          <Icon className="h-7 w-7" />
+          <MethodIcon id={methodId} className="h-7 w-7" />
         </div>
         <div className="space-y-2">
           <Badge variant="secondary" className="gap-1">
