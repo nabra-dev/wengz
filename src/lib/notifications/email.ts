@@ -26,6 +26,9 @@ function getTransporter() {
       // Gmail app passwords are often copied with spaces; strip whitespace safely.
       pass: process.env.EMAIL_PASSWORD?.replaceAll(/\s+/g, ""),
     },
+    connectionTimeout: 5_000,
+    greetingTimeout: 5_000,
+    socketTimeout: 10_000,
   };
 
   transporter = nodemailer.createTransport(emailConfig);

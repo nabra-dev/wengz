@@ -115,6 +115,7 @@ export async function sendWhatsAppTemplate(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8_000),
   });
 
   if (!res.ok) {

@@ -291,57 +291,45 @@ export const adminRouter = router({
       })
     )
     .query(async ({ ctx }) => {
-      const [
-        totalUsers,
-        clients,
-        providers,
-        totalRequests,
-        activeRequests,
-        pendingRequests,
-        completedRequests,
-        activeSubscriptions,
-        serviceTypes,
-        avgRating,
-        // Use raw SQL aggregate for efficient revenue calculation
-        revenueData,
-      ] = await Promise.all([
-        ctx.db.user.count(),
-        ctx.db.user.count({ where: { role: "CLIENT" } }),
-        ctx.db.user.count({ where: { role: "PROVIDER" } }),
-        ctx.db.request.count(),
-        ctx.db.request.count({
-          where: { status: { in: ["PENDING", "IN_PROGRESS", "REVISION_REQUESTED"] } },
-        }),
-        ctx.db.request.count({ where: { status: "PENDING" } }),
-        ctx.db.request.count({ where: { status: "COMPLETED" } }),
-        ctx.db.clientSubscription.count({
-          where: { isActive: true, endDate: { gte: new Date() } },
-        }),
-        ctx.db.serviceType.count({ where: { isActive: true } }),
-        ctx.db.rating.aggregate({ _avg: { rating: true } }),
-        // Efficient revenue calculation using aggregate
-        ctx.db.$queryRaw<[{ total: number }]>`
-        SELECT COALESCE(SUM(p.price), 0) as total
-        FROM "ClientSubscription" cs
-        JOIN "Package" p ON cs."packageId" = p.id
-        WHERE cs."isActive" = true
-      `,
-      ]);
+      const ACTIVE_STATUSES = ["PENDING", "IN_PROGRESS", "REVISION_REQUESTED"] as const;
 
-      const revenue = Number(revenueData[0]?.total ?? 0);
+      const [userRoles, requestStatuses, activeSubscriptions, serviceTypes, avgRating, revenueData] =
+        await Promise.all([
+          ctx.db.user.groupBy({ by: ["role"], _count: { id: true } }),
+          ctx.db.request.groupBy({ by: ["status"], _count: { id: true } }),
+          ctx.db.clientSubscription.count({
+            where: { isActive: true, endDate: { gte: new Date() } },
+          }),
+          ctx.db.serviceType.count({ where: { isActive: true } }),
+          ctx.db.rating.aggregate({ _avg: { rating: true } }),
+          ctx.db.$queryRaw<[{ total: number }]>`
+            SELECT COALESCE(SUM(p.price), 0) as total
+            FROM "ClientSubscription" cs
+            JOIN "Package" p ON cs."packageId" = p.id
+            WHERE cs."isActive" = true
+          `,
+        ]);
+
+      const roleCount = (role: string) =>
+        userRoles.find((r) => r.role === role)?._count.id ?? 0;
+      const statusCount = (status: string) =>
+        requestStatuses.find((r) => r.status === status)?._count.id ?? 0;
+      const totalUsers = userRoles.reduce((sum, r) => sum + r._count.id, 0);
+      const totalRequests = requestStatuses.reduce((sum, r) => sum + r._count.id, 0);
+      const activeRequests = ACTIVE_STATUSES.reduce((sum, s) => sum + statusCount(s), 0);
 
       return {
         totalUsers,
-        clients,
-        providers,
+        clients: roleCount("CLIENT"),
+        providers: roleCount("PROVIDER"),
         totalRequests,
         activeRequests,
-        pendingRequests,
-        completedRequests,
+        pendingRequests: statusCount("PENDING"),
+        completedRequests: statusCount("COMPLETED"),
         activeSubscriptions,
         serviceTypes,
         averageRating: avgRating._avg.rating,
-        totalRevenue: revenue,
+        totalRevenue: Number(revenueData[0]?.total ?? 0),
       };
     }),
 
@@ -370,7 +358,7 @@ export const adminRouter = router({
         serviceTypes,
         recentUsers,
         recentRequests,
-        subscriptions,
+        monthlyRevenueRows,
         topProviders,
       ] = await Promise.all([
         // Get requests by status for pie chart
@@ -401,12 +389,16 @@ export const adminRouter = router({
         ctx.db.request.count({
           where: { createdAt: { gte: thirtyDaysAgo } },
         }),
-        // Monthly revenue trend (last 6 months)
-        ctx.db.clientSubscription.findMany({
-          where: { createdAt: { gte: sixMonthsAgo } },
-          include: { package: { select: { price: true } } },
-          orderBy: { createdAt: "asc" },
-        }),
+        // Monthly revenue trend (last 6 months) — aggregate in SQL
+        ctx.db.$queryRaw<{ month: Date; revenue: number }[]>`
+          SELECT date_trunc('month', cs."createdAt") AS month,
+                 COALESCE(SUM(p.price), 0) AS revenue
+          FROM "ClientSubscription" cs
+          JOIN "Package" p ON cs."packageId" = p.id
+          WHERE cs."createdAt" >= ${sixMonthsAgo}
+          GROUP BY 1
+          ORDER BY 1
+        `,
         // Get top providers by completed requests
         ctx.db.request.groupBy({
           by: ["providerId"],
@@ -439,7 +431,7 @@ export const adminRouter = router({
         count: s._count.id,
       }));
 
-      // Build monthly revenue using pre-calculated data
+      // Build monthly revenue using SQL aggregates
       const months = [
         "Jan",
         "Feb",
@@ -454,6 +446,12 @@ export const adminRouter = router({
         "Nov",
         "Dec",
       ];
+      const revenueByKey = new Map(
+        monthlyRevenueRows.map((row) => {
+          const d = new Date(row.month);
+          return [`${d.getFullYear()}-${d.getMonth()}`, Number(row.revenue)];
+        })
+      );
       const monthlyRevenue: { month: string; revenue: number }[] = [];
 
       for (let i = 5; i >= 0; i--) {
@@ -461,14 +459,10 @@ export const adminRouter = router({
         date.setMonth(date.getMonth() - i);
         const targetMonth = date.getMonth();
         const targetYear = date.getFullYear();
-
-        const monthSubs = subscriptions.filter((s) => {
-          const subDate = new Date(s.createdAt);
-          return subDate.getMonth() === targetMonth && subDate.getFullYear() === targetYear;
+        monthlyRevenue.push({
+          month: months[targetMonth],
+          revenue: revenueByKey.get(`${targetYear}-${targetMonth}`) ?? 0,
         });
-
-        const revenue = monthSubs.reduce((sum, s) => sum + s.package.price, 0);
-        monthlyRevenue.push({ month: months[targetMonth], revenue });
       }
 
       // Fetch provider info for top providers - O(1) lookup with Map

@@ -46,10 +46,18 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
-  const { data: stats, isLoading: statsLoading } = trpc.admin.getStats.useQuery();
-  const { data: analytics, isLoading: analyticsLoading } = trpc.admin.getAnalytics.useQuery();
+  const { data: stats, isLoading: statsLoading } = trpc.admin.getStats.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+  const { data: analytics, isLoading: analyticsLoading } = trpc.admin.getAnalytics.useQuery(
+    undefined,
+    { staleTime: 60_000 }
+  );
   const { data: subscriptionsData, isLoading: subsLoading } =
-    trpc.admin.getAllSubscriptions.useQuery({ limit: 5 });
+    trpc.admin.getAllSubscriptions.useQuery(
+      { limit: 5 },
+      { staleTime: 60_000 }
+    );
   const t = useTranslations("admin.dashboard");
   const locale = useLocale();
 
@@ -73,7 +81,7 @@ export default function AdminDashboard() {
         {analytics?.topProviders?.map(
           (provider: { name: string; completedRequests: number }, index: number) => (
             <div
-              key={provider.name || index}
+              key={`${provider.name}-${index}`}
               className="flex items-center justify-between p-3 bg-muted rounded-lg"
             >
               <div className="flex items-center gap-3">

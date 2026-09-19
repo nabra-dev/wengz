@@ -187,11 +187,9 @@ export async function createNotification(data: NotificationData) {
     select: { email: true, phone: true, hasWhatsapp: true },
   });
 
-  // Send through all channels
-  if (shouldSendEmail) {
-    await sendEmailNotification(emailTemplate, user?.email);
-  }
-
+  // Persist in-app notification + SSE first (user-visible path).
+  // Email/WhatsApp are best-effort and must not block API response latency
+  // (failed SMTP/WA auth routinely cost 500ms–2s per call).
   await sendSseNotification(userId, {
     type,
     title,
@@ -202,14 +200,19 @@ export async function createNotification(data: NotificationData) {
     i18n: sseI18n,
   });
 
-  await sendWhatsAppNotificationIfOptedIn(
-    userId,
-    type,
-    message,
-    user?.phone,
-    user?.hasWhatsapp,
-    locale
-  );
+  void Promise.allSettled([
+    shouldSendEmail
+      ? sendEmailNotification(emailTemplate, user?.email)
+      : Promise.resolve(),
+    sendWhatsAppNotificationIfOptedIn(
+      userId,
+      type,
+      message,
+      user?.phone,
+      user?.hasWhatsapp,
+      locale
+    ),
+  ]);
 
   return notification;
 }
@@ -662,7 +665,8 @@ export async function sendWelcomeEmail(params: {
   const notificationLink = ROLE_NOTIFICATION_LINKS[userRole] || "/";
 
   try {
-    await sendEmail({
+    // Don't block registration on SMTP; in-app welcome still lands immediately.
+    void sendEmail({
       to: userEmail,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
@@ -684,8 +688,8 @@ export async function sendWelcomeEmail(params: {
       },
     });
 
-    logger.info(`✅ Welcome email sent to ${userEmail}`);
+    logger.info(`Welcome notification created for ${userEmail}`);
   } catch (error) {
-    logger.error(`❌ Failed to send welcome email to ${userEmail}:`, error);
+    logger.error(`Failed to send welcome notification to ${userEmail}:`, error);
   }
 }

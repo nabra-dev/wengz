@@ -19,7 +19,14 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ count });
+    return NextResponse.json(
+      { count },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=30",
+        },
+      }
+    );
   } catch (error) {
     logger.error("Error fetching unread count:", error);
     return NextResponse.json({ error: "Failed to fetch count" }, { status: 500 });
