@@ -1141,7 +1141,12 @@ export function buildOpenApiDocument(baseUrl: string) {
             type: "object",
             properties: {
               requestId: { type: "string" },
-              estimatedDeliveryMinutes: { type: "integer", minimum: 15, maximum: 480 },
+              estimatedDeliveryMinutes: {
+                type: "integer",
+                minimum: 15,
+                description:
+                  "Estimated delivery time in minutes. Maximum is the service's maxDeliveryMinutes setting.",
+              },
             },
             required: ["requestId", "estimatedDeliveryMinutes"],
           },

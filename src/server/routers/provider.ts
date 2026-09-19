@@ -598,8 +598,7 @@ export const providerRouter = router({
         requestId: z.string(),
         estimatedDeliveryMinutes: z
           .number()
-          .min(15, "Estimated delivery time must be at least 15 minutes")
-          .max(480, "Estimated delivery time cannot exceed 480 minutes (8 hours)"),
+          .min(15, "Estimated delivery time must be at least 15 minutes"),
       })
     )
     .output(z.object({ success: z.boolean(), request: z.any() }))
@@ -608,6 +607,11 @@ export const providerRouter = router({
 
       const request = await ctx.db.request.findUnique({
         where: { id: input.requestId },
+        include: {
+          serviceType: {
+            select: { maxDeliveryMinutes: true },
+          },
+        },
       });
 
       if (!request) {
@@ -628,6 +632,14 @@ export const providerRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Only pending requests can be started",
+        });
+      }
+
+      const maxDeliveryMinutes = request.serviceType.maxDeliveryMinutes ?? 480;
+      if (input.estimatedDeliveryMinutes > maxDeliveryMinutes) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Estimated delivery time cannot exceed ${maxDeliveryMinutes} minutes`,
         });
       }
 

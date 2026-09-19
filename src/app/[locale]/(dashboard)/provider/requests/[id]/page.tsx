@@ -44,17 +44,6 @@ export default function ProviderRequestDetailPage() {
   const [customEstimatedMinutes, setCustomEstimatedMinutes] = useState<string>("");
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const previousLastCommentIdRef = useRef<string | null>(null);
-  const selectedEstimateMinutesInput =
-    estimatedDeliveryMode === "custom" ? customEstimatedMinutes : estimatedPresetMinutes;
-  const parsedEstimatedMinutes = Number.parseInt(selectedEstimateMinutesInput, 10);
-  const isEstimatedMinutesValid =
-    !Number.isNaN(parsedEstimatedMinutes) &&
-    parsedEstimatedMinutes >= 15 &&
-    parsedEstimatedMinutes <= 480;
-  const showCustomEstimateValidation =
-    estimatedDeliveryMode === "custom" &&
-    customEstimatedMinutes.trim().length > 0 &&
-    !isEstimatedMinutesValid;
 
   const utils = trpc.useUtils();
 
@@ -69,6 +58,32 @@ export default function ProviderRequestDetailPage() {
       refetchOnWindowFocus: true,
     }
   );
+
+  const minEstimateMinutes = 15;
+  const maxDeliveryMinutes = request?.serviceType?.maxDeliveryMinutes ?? 480;
+  const estimatePresets = ESTIMATE_PRESET_MINUTES.filter(
+    (minutes) => minutes <= maxDeliveryMinutes
+  );
+  const selectedEstimateMinutesInput =
+    estimatedDeliveryMode === "custom" ? customEstimatedMinutes : estimatedPresetMinutes;
+  const parsedEstimatedMinutes = Number.parseInt(selectedEstimateMinutesInput, 10);
+  const isEstimatedMinutesValid =
+    !Number.isNaN(parsedEstimatedMinutes) &&
+    parsedEstimatedMinutes >= minEstimateMinutes &&
+    parsedEstimatedMinutes <= maxDeliveryMinutes;
+  const showCustomEstimateValidation =
+    estimatedDeliveryMode === "custom" &&
+    customEstimatedMinutes.trim().length > 0 &&
+    !isEstimatedMinutesValid;
+
+  useEffect(() => {
+    if (estimatedDeliveryMode !== "preset") return;
+    const presetValue = Number.parseInt(estimatedPresetMinutes, 10);
+    if (!Number.isNaN(presetValue) && presetValue <= maxDeliveryMinutes) return;
+    const fallback =
+      [...ESTIMATE_PRESET_MINUTES].reverse().find((minutes) => minutes <= maxDeliveryMinutes) ?? 15;
+    setEstimatedPresetMinutes(fallback.toString());
+  }, [estimatedDeliveryMode, estimatedPresetMinutes, maxDeliveryMinutes]);
 
   const addComment = trpc.request.addComment.useMutation({
     onSuccess: () => {
@@ -121,7 +136,10 @@ export default function ProviderRequestDetailPage() {
   const handleStartWork = () => {
     if (!isEstimatedMinutesValid) {
       toast.error(t("startWork.invalidInput"), {
-        description: t("startWork.invalidInputDesc"),
+        description: t("startWork.invalidInputDesc", {
+          min: minEstimateMinutes,
+          max: maxDeliveryMinutes,
+        }),
       });
       return;
     }
@@ -333,7 +351,7 @@ export default function ProviderRequestDetailPage() {
                       }}
                       className="flex text-black h-10 w-24 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {ESTIMATE_PRESET_MINUTES.map((minutes) => (
+                      {estimatePresets.map((minutes) => (
                         <option key={minutes} value={minutes.toString()}>
                           {minutes}
                         </option>
@@ -347,8 +365,8 @@ export default function ProviderRequestDetailPage() {
                       <input
                         id="customEstimatedMinutes"
                         type="number"
-                        min="15"
-                        max="480"
+                        min={minEstimateMinutes}
+                        max={maxDeliveryMinutes}
                         value={customEstimatedMinutes}
                         onChange={(e) => setCustomEstimatedMinutes(e.target.value)}
                         aria-invalid={showCustomEstimateValidation}
@@ -370,8 +388,11 @@ export default function ProviderRequestDetailPage() {
                       if (Number.isNaN(minutes) || minutes <= 0) {
                         return t("startWork.enterMinutes");
                       }
-                      if (minutes < 15 || minutes > 480) {
-                        return t("startWork.invalidInputDesc");
+                      if (minutes < minEstimateMinutes || minutes > maxDeliveryMinutes) {
+                        return t("startWork.invalidInputDesc", {
+                          min: minEstimateMinutes,
+                          max: maxDeliveryMinutes,
+                        });
                       }
                       if (minutes < 60) {
                         return `${minutes} ${
@@ -388,7 +409,12 @@ export default function ProviderRequestDetailPage() {
                       return `~${days} ${days === 1 ? t("startWork.day") : t("startWork.daysPlural")}`;
                     })()}
                   </p>
-                  <p className="text-xs text-blue-600">{t("startWork.estimateRange")}</p>
+                  <p className="text-xs text-blue-600">
+                    {t("startWork.estimateRange", {
+                      min: minEstimateMinutes,
+                      max: maxDeliveryMinutes,
+                    })}
+                  </p>
                 </div>
                 <Button
                   onClick={handleStartWork}

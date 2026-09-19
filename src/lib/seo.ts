@@ -17,7 +17,6 @@ export const SEO_DEFAULT_LOCALE: SeoLocale = "en";
 /** Public paths that should be crawled and listed in the sitemap (no locale prefix). */
 export const PUBLIC_SEO_PATHS = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
-  { path: "/forms/client", changeFrequency: "monthly" as const, priority: 0.9 },
   { path: "/forms/provider", changeFrequency: "monthly" as const, priority: 0.9 },
   { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.4 },
   { path: "/terms", changeFrequency: "yearly" as const, priority: 0.4 },

@@ -11,8 +11,8 @@ describe("seo helpers", () => {
   it("builds locale-aware absolute URLs with as-needed prefix", () => {
     expect(absoluteUrl("/", "en")).toBe(`${SITE_URL}/`);
     expect(absoluteUrl("/", "ar")).toBe(`${SITE_URL}/ar`);
-    expect(absoluteUrl("/forms/client", "en")).toBe(`${SITE_URL}/forms/client`);
-    expect(absoluteUrl("/forms/client", "ar")).toBe(`${SITE_URL}/ar/forms/client`);
+    expect(absoluteUrl("/forms/provider", "en")).toBe(`${SITE_URL}/forms/provider`);
+    expect(absoluteUrl("/forms/provider", "ar")).toBe(`${SITE_URL}/ar/forms/provider`);
   });
 
   it("builds canonical paths and hreflang maps", () => {

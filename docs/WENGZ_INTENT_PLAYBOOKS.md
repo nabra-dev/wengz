@@ -2,7 +2,7 @@
 
 Use these when the visitor’s message matches the **intent** (same meaning in other words is fine). Respond in the user’s locale: **Arabic playbooks** for Arabic, **English playbooks** for English.
 
-Replace **[LINK]** in the samples with a markdown link to the client form path `/forms/client` (the API supplies the site origin). Use `/forms/provider` when the user is clearly applying as a provider.
+Replace **[LINK]** in the samples with a markdown link to registration `/auth/register` (the API supplies the site origin). Use `/forms/provider` when the user is clearly applying as a provider.
 
 ---
 

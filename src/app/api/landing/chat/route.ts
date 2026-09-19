@@ -50,8 +50,12 @@ function detectPromptLocale(prompt: string, pageLocale: "en" | "ar"): "en" | "ar
   return arabicCount >= latinCount ? "ar" : "en";
 }
 
-function formPageUrl(origin: string, locale: "en" | "ar", kind: "client" | "provider") {
-  return `${origin}/${locale}/forms/${kind}`;
+function registerPageUrl(origin: string, locale: "en" | "ar") {
+  return `${origin}/${locale}/auth/register`;
+}
+
+function providerFormUrl(origin: string, locale: "en" | "ar") {
+  return `${origin}/${locale}/forms/provider`;
 }
 
 function getPublicOrigin(req: Request) {
@@ -65,8 +69,8 @@ function getPublicOrigin(req: Request) {
 }
 
 function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: string) {
-  const clientUrl = formPageUrl(origin, locale, "client");
-  const providerUrl = formPageUrl(origin, locale, "provider");
+  const registerUrl = registerPageUrl(origin, locale);
+  const providerUrl = providerFormUrl(origin, locale);
 
   const languageRule =
     locale === "ar"
@@ -78,9 +82,9 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
     locale === "ar"
       ? "For Arabic, mirror the Egyptian casual voice of the Arabic playbook (same energy; do not translate into formal Modern Standard Arabic unless the user writes formally)."
       : "For English, mirror the English playbook voice (direct, warm, marketing-casual).",
-    "When a playbook applies: do NOT use the mandatory fixed opening line from the default format below. Still end with at least one markdown link to the client form.",
+    "When a playbook applies: do NOT use the mandatory fixed opening line from the default format below. Still end with at least one markdown link to registration.",
     "Never output the literal placeholder [LINK]; replace it with a markdown link using an inviting label in the response language.",
-    `All form links MUST use this exact locale prefix in the path: /${locale}/forms/... — use markdown: [label](${clientUrl}) for the main CTA. Add [label](${providerUrl}) when the user is clearly asking about joining as a provider.`,
+    `All registration links MUST use this exact locale prefix: /${locale}/auth/register — use markdown: [label](${registerUrl}) for the main CTA. Add [label](${providerUrl}) when the user is clearly asking about joining as a provider.`,
     "If no playbook fits, use the default response format rules below.",
   ].join(" ");
 
@@ -93,7 +97,7 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
           "3) Then provide a practical direct answer to the user request.",
           "4) Never use refusal phrasing like 'لا أستطيع' or 'لا يمكنني المساعدة' for normal business/creative requests.",
           "5) If details are incomplete, ask the user to register/login and submit full request details so the team can serve accurately.",
-          `3) End with a registration CTA line that includes a markdown link to client form: [للتجربة والتسجيل](${clientUrl}).`,
+          `3) End with a registration CTA line that includes a markdown link: [للتجربة والتسجيل](${registerUrl}).`,
           `4) If the user asks about becoming a provider, also include a markdown link: [تسجيل المبدعين](${providerUrl}).`,
           "5) CTA tone should feel energetic and inviting (example: let's try me now).",
         ].join(" ")
@@ -104,7 +108,7 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
           "3) Then provide a practical direct answer to the user request.",
           "4) Never use refusal phrasing like 'I can't assist' for normal business/creative requests.",
           "5) If details are incomplete, ask the user to register/login and submit full request details so the team can serve accurately.",
-          `3) End with a registration CTA line that includes a markdown link to client form: [Let's register and try me](${clientUrl}).`,
+          `3) End with a registration CTA line that includes a markdown link: [Let's register and try me](${registerUrl}).`,
           `4) If the user asks about becoming a provider, also include a markdown link: [Provider registration](${providerUrl}).`,
           "5) CTA tone should feel energetic and inviting (example: let's try me now).",
         ].join(" ");
@@ -134,15 +138,15 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
 }
 
 function ensureFormLinks(reply: string, origin: string, locale: "en" | "ar") {
-  const clientUrl = formPageUrl(origin, locale, "client");
-  const providerUrl = formPageUrl(origin, locale, "provider");
-  const clientText = locale === "ar" ? "للتجربة والتسجيل" : "Let's register and try me";
+  const registerUrl = registerPageUrl(origin, locale);
+  const providerUrl = providerFormUrl(origin, locale);
+  const registerText = locale === "ar" ? "للتجربة والتسجيل" : "Let's register and try me";
   const providerText = locale === "ar" ? "تسجيل المبدعين" : "Provider registration";
 
-  const clientMd = `[${clientText}](${clientUrl})`;
+  const registerMd = `[${registerText}](${registerUrl})`;
   const providerMd = `[${providerText}](${providerUrl})`;
 
-  function rewriteFormHref(hrefRaw: string): string | null {
+  function rewriteHref(hrefRaw: string): string | null {
     const h = hrefRaw.trim();
     let pathname: string;
     try {
@@ -151,12 +155,16 @@ function ensureFormLinks(reply: string, origin: string, locale: "en" | "ar") {
     } catch {
       return null;
     }
+    // Legacy client-form links → registration
     if (
       pathname === "/forms/client" ||
       pathname === "/en/forms/client" ||
-      pathname === "/ar/forms/client"
+      pathname === "/ar/forms/client" ||
+      pathname === "/auth/register" ||
+      pathname === "/en/auth/register" ||
+      pathname === "/ar/auth/register"
     ) {
-      return clientUrl;
+      return registerUrl;
     }
     if (
       pathname === "/forms/provider" ||
@@ -169,20 +177,29 @@ function ensureFormLinks(reply: string, origin: string, locale: "en" | "ar") {
   }
 
   let out = reply.replaceAll(/\[([^\]]*)\]\(([^)]+)\)/g, (full, label: string, href: string) => {
-    const next = rewriteFormHref(href);
+    const next = rewriteHref(href);
     return next ? `[${label}](${next})` : full;
   });
 
   const originEsc = origin.replaceAll(".", String.raw`\.`);
   const bareReplacements: Array<[RegExp, string]> = [
-    [/(^|[\s(])\/forms\/client\b/g, `$1${clientMd}`],
+    [/(^|[\s(])\/forms\/client\b/g, `$1${registerMd}`],
+    [/(^|[\s(])\/auth\/register\b/g, `$1${registerMd}`],
     [/(^|[\s(])\/forms\/provider\b/g, `$1${providerMd}`],
-    [new RegExp(String.raw`(^|[\s(])${originEsc}/(?:en|ar)/forms/client\b`, "g"), `$1${clientMd}`],
+    [
+      new RegExp(String.raw`(^|[\s(])${originEsc}/(?:en|ar)/forms/client\b`, "g"),
+      `$1${registerMd}`,
+    ],
+    [
+      new RegExp(String.raw`(^|[\s(])${originEsc}/(?:en|ar)/auth/register\b`, "g"),
+      `$1${registerMd}`,
+    ],
     [
       new RegExp(String.raw`(^|[\s(])${originEsc}/(?:en|ar)/forms/provider\b`, "g"),
       `$1${providerMd}`,
     ],
-    [new RegExp(String.raw`(^|[\s(])${originEsc}/forms/client\b`, "g"), `$1${clientMd}`],
+    [new RegExp(String.raw`(^|[\s(])${originEsc}/forms/client\b`, "g"), `$1${registerMd}`],
+    [new RegExp(String.raw`(^|[\s(])${originEsc}/auth/register\b`, "g"), `$1${registerMd}`],
     [new RegExp(String.raw`(^|[\s(])${originEsc}/forms/provider\b`, "g"), `$1${providerMd}`],
   ];
   for (const [re, replacement] of bareReplacements) {

@@ -536,6 +536,7 @@ export const requestRouter = router({
               attributes: true,
               maxFreeRevisions: true,
               paidRevisionCost: true,
+              maxDeliveryMinutes: true,
               deletedAt: true,
             },
           },

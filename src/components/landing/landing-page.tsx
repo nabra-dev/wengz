@@ -27,7 +27,6 @@ import {
   Pause,
   Volume2,
   VolumeX,
-  Briefcase,
   Sparkles,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
@@ -189,7 +188,6 @@ export default function LandingPage() {
         { href: "#features", label: t("landing.nav.features") },
         { href: "#gallery", label: t("landing.nav.gallery") },
         { href: "#pricing", label: t("landing.nav.pricing") },
-        { href: "/forms/client", label: t("landing.nav.clientForm") },
         { href: "/forms/provider", label: t("landing.nav.providerForm") },
       ] as const,
     [t]
@@ -498,16 +496,14 @@ export default function LandingPage() {
                   {t("common.buttons.signIn")}
                 </Button>
               </Link>
-              {/*
-            <Link href="/auth/register">
-              <Button
-                size="sm"
-                className="h-9 rounded-md bg-[#690DD4] px-4 text-sm font-medium text-[#E0F840] shadow-[0_10px_30px_rgba(105,13,212,0.25)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.35)]"
-              >
-                {t("common.buttons.getStarted")}
-              </Button>
-            </Link>
-            */}
+              <Link href="/auth/register">
+                <Button
+                  size="sm"
+                  className="h-9 rounded-md bg-[#690DD4] px-4 text-sm font-medium text-[#E0F840] shadow-[0_10px_30px_rgba(105,13,212,0.25)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.35)]"
+                >
+                  {t("common.buttons.getStarted")}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -711,78 +707,35 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Client / Provider forms (CTA section) */}
+        {/* Provider form CTA */}
         <section className="relative w-full border-t border-border bg-background py-16 sm:py-24">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background/55 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/55 to-transparent" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(224,248,64,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(105,13,212,0.10),transparent_55%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.12),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.08),transparent_55%)]" />
 
           <div className="container relative z-10 px-4 sm:px-6">
-            <div className="mx-auto max-w-5xl text-center">
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-6`}>
-                {t("landing.forms.heading")}
-              </h2>
-              <p className={FONT_SIZES.body.normal}>{t("landing.forms.subheading")}</p>
-            </div>
+            <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-muted/40 via-muted/20 to-[#690DD4]/[0.08] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.35)] sm:p-10 md:p-12">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#690DD4]/55 to-transparent opacity-80" />
 
-            <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 items-stretch gap-5 sm:mt-14 sm:grid-cols-2 sm:gap-6">
-              <div className="group relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-muted/40 to-muted/15 p-7 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E0F840]/35 hover:shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-8">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E0F840]/55 to-transparent opacity-80" />
-                <div className="pointer-events-none absolute -inset-px rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#E0F840]/14 via-transparent to-[#690DD4]/8 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                <div className="flex flex-1 flex-row items-start gap-4 sm:gap-6">
-                  <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E0F840]/25 to-[#690DD4]/20 ring-1 ring-border/60 shadow-inner sm:h-12 sm:w-12"
-                    aria-hidden
-                  >
-                    <Briefcase className="h-5 w-5 text-foreground/90" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0 flex-1 text-start">
-                    <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                      {t("landing.forms.client.title")}
-                    </h3>
-                    <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
-                      {t("landing.forms.client.description")}
-                    </p>
-                  </div>
+              <div className="flex flex-col items-center text-center">
+                <div
+                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#690DD4]/30 to-[#E0F840]/20 ring-1 ring-border/60 shadow-inner"
+                  aria-hidden
+                >
+                  <Sparkles className="h-5 w-5 text-foreground/90" strokeWidth={1.75} />
                 </div>
-
-                <div className="mt-4 border-t border-border/50 pt-6 sm:mt-6">
-                  <Link href="/forms/client" className="block w-full sm:inline-block sm:w-auto">
-                    <Button className="h-11 w-full rounded-xl bg-[#690DD4] px-6 text-sm font-medium text-[#E0F840] shadow-[0_8px_28px_rgba(105,13,212,0.25)] transition-all hover:opacity-95 hover:shadow-[0_12px_36px_rgba(224,248,64,0.2)] sm:w-auto">
-                      {t("landing.forms.client.cta")}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="group relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-muted/40 to-muted/15 p-7 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#690DD4]/35 hover:shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:rounded-3xl sm:p-8">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#690DD4]/55 to-transparent opacity-80" />
-                <div className="pointer-events-none absolute -inset-px rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#690DD4]/14 via-transparent to-[#E0F840]/8 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                <div className="flex flex-1 flex-row items-start gap-4 sm:gap-6">
-                  <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#690DD4]/25 to-[#E0F840]/20 ring-1 ring-border/60 shadow-inner sm:h-12 sm:w-12"
-                    aria-hidden
-                  >
-                    <Sparkles className="h-5 w-5 text-foreground/90" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0 flex-1 text-start">
-                    <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                      {t("landing.forms.provider.title")}
-                    </h3>
-                    <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
-                      {t("landing.forms.provider.description")}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 border-t border-border/50 pt-6 sm:mt-6">
-                  <Link href="/forms/provider" className="block w-full sm:inline-block sm:w-auto">
-                    <Button
-                      variant="outline"
-                      className="h-11 w-full rounded-xl border-border/80 bg-background/40 px-6 text-sm font-medium text-foreground backdrop-blur-sm transition-all hover:border-[#690DD4]/40 hover:bg-muted/60 sm:w-auto"
-                    >
+                <h2 className={`${FONT_SIZES.sectionTitle.secondary} mb-3 text-foreground`}>
+                  {t("landing.forms.heading")}
+                </h2>
+                <p className={`${FONT_SIZES.body.normal} max-w-xl`}>
+                  {t("landing.forms.subheading")}
+                </p>
+                <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                  {t("landing.forms.provider.description")}
+                </p>
+                <div className="mt-8">
+                  <Link href="/forms/provider">
+                    <Button className="h-11 rounded-xl bg-[#690DD4] px-8 text-sm font-medium text-[#E0F840] shadow-[0_10px_32px_rgba(105,13,212,0.3)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.4)]">
                       {t("landing.forms.provider.cta")}
                     </Button>
                   </Link>
@@ -1322,13 +1275,11 @@ export default function LandingPage() {
                 transition={{ delay: 0.1 }}
                 className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4"
               >
-                {/*
                 <Link href="/auth/register">
-                  <Button className="h-11 rounded-md bg-white px-8 text-sm font-medium text-black hover:bg-zinc-200 sm:px-10">
+                  <Button className="h-11 rounded-md bg-[#690DD4] px-8 text-sm font-medium text-[#E0F840] shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:px-10">
                     {t("common.buttons.getStarted")}
                   </Button>
                 </Link>
-                */}
                 <Link href="#pricing">
                   <Button
                     variant="outline"

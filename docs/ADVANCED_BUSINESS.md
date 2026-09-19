@@ -51,6 +51,7 @@ Admins can also **record a payout** against a provider’s available balance whe
 - **Attributes** (structured Q&A, options, multiselect) that can **add to** the credit total.
 - **Priority surcharges** (low / medium / high) expressed as additional credits per service configuration.
 - **Revisions**: each service defines **free revision allowance**, **paid revision cost**, and whether paid revisions **reset** the free counter—so the business can tune quality-of-service vs. margin.
+- **Max delivery**: each service defines a **maximum estimated delivery time in minutes**; providers cannot set a start-work estimate above that cap.
 
 When a client creates a request, the system can persist **base**, **attribute**, and **priority** components of cost for auditing and display (`baseCreditCost`, `attributeCredits`, `priorityCreditCost`, `creditCost` on `Request`).
 

@@ -145,6 +145,7 @@ export default function AdminServicesPage() {
     priorityCostMediumValue: formData.get("priorityCostMedium") as string,
     priorityCostHighValue: formData.get("priorityCostHigh") as string,
     creditPriceEgpValue: formData.get("creditPriceEgp") as string,
+    maxDeliveryMinutesValue: formData.get("maxDeliveryMinutes") as string,
     nameEn: (formData.get("name_en") as string) || "",
     nameAr: (formData.get("name_ar") as string) || "",
     descEn: (formData.get("description_en") as string) || "",
@@ -183,6 +184,9 @@ export default function AdminServicesPage() {
       ? Number.parseInt(data.priorityCostHighValue, 10)
       : 2,
     creditPriceEgp: data.creditPriceEgpValue ? Number.parseFloat(data.creditPriceEgpValue) : 1,
+    maxDeliveryMinutes: data.maxDeliveryMinutesValue
+      ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
+      : 480,
     attributes: attributes.length > 0 ? attributes : undefined,
   });
 
@@ -219,6 +223,9 @@ export default function AdminServicesPage() {
         : undefined,
       creditPriceEgp: data.creditPriceEgpValue
         ? Number.parseFloat(data.creditPriceEgpValue)
+        : undefined,
+      maxDeliveryMinutes: data.maxDeliveryMinutesValue
+        ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
         : undefined,
     });
   };
@@ -433,7 +440,7 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      {/* Credit Value for Edit */}
+      {/* Credit Value & Max Delivery for Edit */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor={`creditPriceEgp-${service.id}`}>{t("fields.creditPriceEgp")}</Label>
@@ -447,6 +454,20 @@ export default function AdminServicesPage() {
             required
           />
           <p className="text-xs text-muted-foreground">{t("fields.creditPriceEgpHint")}</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`maxDeliveryMinutes-${service.id}`}>
+            {t("fields.maxDeliveryMinutes")}
+          </Label>
+          <Input
+            id={`maxDeliveryMinutes-${service.id}`}
+            name="maxDeliveryMinutes"
+            type="number"
+            min="15"
+            defaultValue={service.maxDeliveryMinutes ?? 480}
+            required
+          />
+          <p className="text-xs text-muted-foreground">{t("fields.maxDeliveryMinutesHint")}</p>
         </div>
       </div>
 
@@ -742,7 +763,7 @@ export default function AdminServicesPage() {
                 </div>
               </div>
 
-              {/* Credit Value */}
+              {/* Credit Value & Max Delivery */}
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="creditPriceEgp">{t("fields.creditPriceEgp")}</Label>
@@ -756,6 +777,20 @@ export default function AdminServicesPage() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">{t("fields.creditPriceEgpHint")}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxDeliveryMinutes">{t("fields.maxDeliveryMinutes")}</Label>
+                  <Input
+                    id="maxDeliveryMinutes"
+                    name="maxDeliveryMinutes"
+                    type="number"
+                    min="15"
+                    defaultValue="480"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("fields.maxDeliveryMinutesHint")}
+                  </p>
                 </div>
               </div>
 

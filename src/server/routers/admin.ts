@@ -1193,6 +1193,7 @@ export const adminRouter = router({
         priorityCostMedium: z.number().min(0).default(1), // Additional credits for medium priority
         priorityCostHigh: z.number().min(0).default(2), // Additional credits for high priority
         creditPriceEgp: z.number().min(0).default(1),
+        maxDeliveryMinutes: z.number().min(15).default(480), // Max estimated delivery time in minutes
         sortOrder: z.number().default(0),
       })
     )
@@ -1225,6 +1226,7 @@ export const adminRouter = router({
           priorityCostMedium: input.priorityCostMedium,
           priorityCostHigh: input.priorityCostHigh,
           creditPriceEgp: input.creditPriceEgp,
+          maxDeliveryMinutes: input.maxDeliveryMinutes,
           sortOrder: input.sortOrder,
         } as any,
       });
@@ -1255,6 +1257,7 @@ export const adminRouter = router({
         priorityCostMedium: z.number().min(0).optional(), // Additional credits for medium priority
         priorityCostHigh: z.number().min(0).optional(), // Additional credits for high priority
         creditPriceEgp: z.number().min(0).optional(),
+        maxDeliveryMinutes: z.number().min(15).optional(), // Max estimated delivery time in minutes
         sortOrder: z.number().optional(),
         isActive: z.boolean().optional(),
       })

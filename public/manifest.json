@@ -26,10 +26,10 @@
   "categories": ["business", "productivity"],
   "shortcuts": [
     {
-      "name": "Client form",
-      "short_name": "Client",
-      "description": "Submit a client project brief",
-      "url": "/forms/client",
+      "name": "Register",
+      "short_name": "Register",
+      "description": "Create a Wengz client account",
+      "url": "/auth/register",
       "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
     },
     {

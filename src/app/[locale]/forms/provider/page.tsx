@@ -21,5 +21,5 @@ export async function generateMetadata({
 }
 
 export default function ProviderFormPage() {
-  return <ContactFormPage variant="provider" />;
+  return <ContactFormPage />;
 }

@@ -125,6 +125,7 @@ model ServiceType {
   priorityCostMedium       Int                     @default(1) // Additional credits for medium priority
   priorityCostHigh         Int                     @default(2) // Additional credits for high priority
   creditPriceEgp           Float                   @default(1) // EGP value of one credit for this service
+  maxDeliveryMinutes       Int                     @default(480) // Max estimated delivery time in minutes for start-work
   isActive                 Boolean                 @default(true)
   sortOrder                Int                     @default(0)
   createdAt                DateTime                @default(now())

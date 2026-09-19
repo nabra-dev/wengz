@@ -52,7 +52,6 @@
       "features": "Features",
       "gallery": "Gallery",
       "pricing": "Pricing",
-      "clientForm": "Client form",
       "providerForm": "Provider form"
     },
     "notices": {
@@ -96,13 +95,8 @@
       }
     },
     "forms": {
-      "heading": "Choose your path",
-      "subheading": "Whether you’re hiring or creating, we’ll route you to the right form.",
-      "client": {
-        "title": "I’m a client",
-        "description": "Share what you need and we’ll reply with next steps.",
-        "cta": "Open client form"
-      },
+      "heading": "Creators, join the network",
+      "subheading": "Apply with your portfolio — we’ll review and get back to you.",
       "provider": {
         "title": "I’m a provider",
         "description": "Send your details and portfolio links — we’ll review and get back to you.",
@@ -189,17 +183,10 @@
       "website": "Website / links (optional)",
       "message": "Message"
     },
-    "client": {
-      "title": "Client form",
-      "subtitle": "Share your project details and we’ll get back to you with a clear plan for the best start.",
-      "pitchTitle": "What we need to get started",
-      "pitchBullet0": "Define your goal and what you want to achieve",
-      "pitchBullet1": "Add any links or examples (optional)",
-      "pitchBullet2": "We’ll review your request and respond with a clear plan"
-    },
     "provider": {
       "title": "Creators form",
       "subtitle": "Share your details and work so we can review them and get in touch.",
+      "badge": "Creator application",
       "pitchTitle": "Join the creators community",
       "pitchBullet0": "Tell us your field and professional experience",
       "pitchBullet1": "Share your portfolio / LinkedIn",
@@ -207,6 +194,8 @@
       "servicesLabel": "Services you provide",
       "servicesOptional": "optional",
       "servicesHint": "Select all areas you work in — we’ll include them in your application.",
+      "websitePlaceholder": "Portfolio / LinkedIn / social links",
+      "messagePlaceholder": "Tell us about your experience, strengths, and what you’re looking for…",
       "serviceOptions": {
         "design": "Design & branding (graphics, UI, identity)",
         "social": "Social media content",
@@ -655,7 +644,9 @@
         "resetFreeRevisionsOnPaid": "Reset free revisions on paid",
         "resetFreeRevisionsOnPaidHint": "Reset free revision count after a paid revision",
         "creditPriceEgp": "Credit Price (EGP)",
-        "creditPriceEgpHint": "EGP value of one credit for this service. Used to calculate provider wallet value."
+        "creditPriceEgpHint": "EGP value of one credit for this service. Used to calculate provider wallet value.",
+        "maxDeliveryMinutes": "Max Delivery (minutes)",
+        "maxDeliveryMinutesHint": "Maximum estimated delivery time providers can set when starting work"
       },
       "info": {
         "questions": "question",
@@ -1776,11 +1767,11 @@
         "hoursPlural": "hours",
         "day": "day",
         "daysPlural": "days",
-        "estimateRange": "Estimate between 15-480 minutes (up to 8 hours)",
+        "estimateRange": "Estimate between {min}-{max} minutes",
         "button": "Start Work",
         "starting": "Starting...",
         "invalidInput": "Invalid Input",
-        "invalidInputDesc": "Please enter a valid estimated time between 15 and 480 minutes (8 hours)."
+        "invalidInputDesc": "Please enter a valid estimated time between {min} and {max} minutes."
       },
       "submitDeliverable": {
         "title": "Submit Deliverable",
@@ -2121,21 +2112,21 @@
     },
     "contact": {
       "metaTitle": "Contact Wengz",
-      "metaDescription": "Contact Wengz for client projects, creator applications, or general support.",
+      "metaDescription": "Contact Wengz for account help, creator applications, or general support.",
       "title": "Contact",
       "updated": "We typically reply within 1–2 business days",
-      "intro": "Tell us whether you need help as a client or want to join as a creator — we’ll route you to the right next step.",
+      "intro": "Register for a client account, apply as a creator, or email us — we’ll help you take the next step.",
       "sections": {
         "email": {
           "title": "Email",
           "body": "Reach us at info@wengz.tech for general questions, partnerships, and support."
         },
         "forms": {
-          "title": "Intake forms",
-          "body": "Prefer a structured start? Use the client form for project briefs or the creator form to apply to the network."
+          "title": "Get started",
+          "body": "Create a client account to start requests, or use the creator form to apply to the network."
         }
       },
-      "ctaClient": "Client form",
+      "ctaRegister": "Register",
       "ctaProvider": "Creator form"
     }
   }
