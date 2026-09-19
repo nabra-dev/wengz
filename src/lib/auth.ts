@@ -17,7 +17,6 @@ declare module "next-auth" {
       role: UserRole;
       image?: string | null;
       phone?: string | null;
-      hasWhatsapp?: boolean;
     };
   }
 
@@ -28,7 +27,6 @@ declare module "next-auth" {
     role: UserRole;
     image?: string | null;
     phone?: string | null;
-    hasWhatsapp?: boolean;
   }
 }
 
@@ -37,7 +35,6 @@ declare module "next-auth/jwt" {
     id: string;
     role: UserRole;
     phone?: string | null;
-    hasWhatsapp?: boolean;
   }
 }
 
@@ -113,7 +110,6 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           image: user.image || DEFAULT_AVATAR,
           phone: user.phone,
-          hasWhatsapp: user.hasWhatsapp,
         };
       },
     }),
@@ -127,7 +123,6 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.picture = user.image || DEFAULT_AVATAR;
         token.phone = user.phone;
-        token.hasWhatsapp = user.hasWhatsapp;
       }
 
       // Update token when session is updated
@@ -136,7 +131,6 @@ export const authOptions: NextAuthOptions = {
         token.email = session.email ?? token.email;
         token.picture = session.image ?? token.picture ?? DEFAULT_AVATAR;
         token.phone = session.phone ?? token.phone;
-        token.hasWhatsapp = session.hasWhatsapp ?? token.hasWhatsapp;
       }
 
       return token;
@@ -149,7 +143,6 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         session.user.image = (token.picture as string | null) || DEFAULT_AVATAR;
         session.user.phone = token.phone;
-        session.user.hasWhatsapp = token.hasWhatsapp;
       }
       return session;
     },

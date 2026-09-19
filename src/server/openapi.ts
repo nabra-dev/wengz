@@ -63,8 +63,7 @@ export function buildOpenApiDocument(baseUrl: string) {
                     email: "jane@example.com",
                     password: "StrongP@ssw0rd",
                     phone: "+1-555-1234",
-                    hasWhatsapp: true,
-                  },
+                                      },
                 },
               },
             },
@@ -219,7 +218,7 @@ export function buildOpenApiDocument(baseUrl: string) {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/UpdateUserRequest" },
-                  example: { name: "Jane Doe", phone: "+1-555-1234", hasWhatsapp: true },
+                  example: { name: "Jane Doe", phone: "+1-555-1234" },
                 },
               },
             },
@@ -983,7 +982,6 @@ export function buildOpenApiDocument(baseUrl: string) {
               email: { type: "string", format: "email" },
               password: { type: "string" },
               phone: { type: "string" },
-              hasWhatsapp: { type: "boolean" },
             },
             required: ["name", "email", "password"],
           },
@@ -1031,7 +1029,6 @@ export function buildOpenApiDocument(baseUrl: string) {
               email: { type: "string", format: "email" },
               image: { type: "string" },
               phone: { type: "string" },
-              hasWhatsapp: { type: "boolean" },
             },
           },
           UpdateUserResponse: {
@@ -1247,13 +1244,14 @@ export function buildOpenApiDocument(baseUrl: string) {
             properties: {
               bankName: { type: "string" },
               accountName: { type: "string" },
-              instapayLink: { type: "string" },
               iban: { type: "string" },
               swiftCode: { type: "string" },
               currency: { type: "string" },
               note: { type: "string" },
+              instapayEnabled: { type: "boolean" },
+              instapayLink: { type: "string" },
             },
-            required: ["bankName", "accountName", "iban", "currency"],
+            required: ["bankName", "accountName", "iban", "currency", "instapayEnabled"],
           },
           SubmitPaymentProof: {
             type: "object",

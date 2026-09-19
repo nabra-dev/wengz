@@ -44,7 +44,7 @@ import {
   EyeOff,
   Trash,
   Edit,
-  MessageCircle,
+ 
 } from "lucide-react";
 
 type UserRole = "CLIENT" | "PROVIDER" | "SUPER_ADMIN";
@@ -56,7 +56,6 @@ type UserData = {
   name: string | null;
   email: string;
   phone?: string | null;
-  hasWhatsapp?: boolean;
   image: string | null;
   role: string;
   createdAt: Date;
@@ -201,7 +200,6 @@ function UserListItem({
     name: string | null;
     email: string;
     phone?: string | null;
-    hasWhatsapp?: boolean | null;
   }) => void;
   onDelete: (userId: string) => void;
   onRestore?: (userId: string) => void;
@@ -221,13 +219,6 @@ function UserListItem({
     return roleMap[role] || role;
   };
 
-  // Strip non-digits/plus and remove leading '+' for wa.me links
-  const whatsappHref = (() => {
-    if (!user.hasWhatsapp || !user.phone) return null;
-    const normalized = user.phone.replaceAll(/[^\d+]/g, "");
-    const withoutPlus = normalized.startsWith("+") ? normalized.slice(1) : normalized;
-    return withoutPlus && `https://wa.me/${withoutPlus}`;
-  })();
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-4">
@@ -242,22 +233,9 @@ function UserListItem({
           <p className="font-medium text-lg">{user.name || "No name"}</p>
           <p className="text-sm text-muted-foreground">{user.email}</p>
           {user.phone && (
-            <div className="flex items-center gap-2">
-              <p dir="ltr" className="text-sm rtl:text-right text-muted-foreground mb-0">
-                {user.phone}
-              </p>
-              {whatsappHref && (
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-green-600 hover:underline inline-flex items-center gap-1"
-                  aria-label={t("table.hasWhatsapp")}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </a>
-              )}
-            </div>
+            <p dir="ltr" className="text-sm rtl:text-right text-muted-foreground mb-0">
+              {user.phone}
+            </p>
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <Badge className={getRoleColor(user.role)}>{getRoleLabel(user.role)}</Badge>
@@ -344,7 +322,6 @@ export default function AdminUsersPage() {
     name: string | null;
     email: string;
     phone?: string | null;
-    hasWhatsapp?: boolean | null;
   } | null>(null);
   const [selectedProviderServices, setSelectedProviderServices] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
@@ -356,7 +333,6 @@ export default function AdminUsersPage() {
     password: "",
     countryCode: "+20", // Default to Egypt
     phone: "",
-    hasWhatsapp: false,
     role: "CLIENT" as UserRole,
     supportedServiceIds: [] as string[],
   });
@@ -381,7 +357,6 @@ export default function AdminUsersPage() {
         password: "",
         countryCode: "+20",
         phone: "",
-        hasWhatsapp: false,
         role: "CLIENT",
         supportedServiceIds: [],
       });
@@ -584,26 +559,6 @@ export default function AdminUsersPage() {
                     className="flex-1"
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="hasWhatsapp"
-                  checked={newUser.hasWhatsapp}
-                  onCheckedChange={(checked) =>
-                    setNewUser((prev) => ({ ...prev, hasWhatsapp: checked === true }))
-                  }
-                  disabled={newUser.phone === ""}
-                />
-                <label
-                  htmlFor="hasWhatsapp"
-                  className={`text-sm font-medium leading-none ${
-                    newUser.phone
-                      ? "peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      : "cursor-not-allowed opacity-50"
-                  }`}
-                >
-                  {t("dialog.fields.hasWhatsapp")}
-                </label>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{t("dialog.fields.password")} *</Label>

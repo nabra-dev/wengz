@@ -10,12 +10,6 @@ import {
   getWelcomeEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
-import {
-  isWhatsAppEnabled,
-  formatE164,
-  getTemplateConfigForType,
-  sendWhatsAppTemplate,
-} from "./whatsapp";
 import { getTranslation } from "./i18n-helper";
 import { logger } from "@/lib/logger";
 
@@ -118,44 +112,6 @@ async function sendSseNotification(
   }
 }
 
-async function sendWhatsAppNotificationIfOptedIn(
-  userId: string,
-  notificationType: string,
-  message: string,
-  userPhone: string | null | undefined,
-  userHasWhatsapp: boolean | undefined,
-  locale: string = "en"
-) {
-  if (!isWhatsAppEnabled() || !userHasWhatsapp) return;
-
-  const to = formatE164(userPhone);
-  if (!to) {
-    logger.warn("Skipped WhatsApp: invalid phone", { userId, type: notificationType });
-    return;
-  }
-
-  const templateConfig =
-    getTemplateConfigForType(notificationType) ?? getTemplateConfigForType("general");
-  if (!templateConfig) {
-    logger.warn("Skipped WhatsApp: no template configured", { userId, type: notificationType });
-    return;
-  }
-
-  const { name, paramCount } = templateConfig;
-  const bodyParams = paramCount > 0 && message ? [message].slice(0, paramCount) : undefined;
-
-  try {
-    // Map locale to WhatsApp language code (en -> en_US, ar -> ar)
-    const whatsappLocale = locale === "ar" ? "ar" : "en_US";
-    await sendWhatsAppTemplate(to, name, {
-      bodyParams,
-      languageCode: whatsappLocale,
-    });
-  } catch (err) {
-    logger.error("Failed to send WhatsApp notification:", err);
-  }
-}
-
 export async function createNotification(data: NotificationData) {
   const {
     userId,
@@ -164,7 +120,6 @@ export async function createNotification(data: NotificationData) {
     type = "general",
     link,
     sendEmail: shouldSendEmail = true,
-    locale = "en",
     emailTemplate,
     sseI18n,
   } = data;
@@ -181,15 +136,16 @@ export async function createNotification(data: NotificationData) {
     },
   });
 
-  // Fetch user info for channels (email, WhatsApp)
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { email: true, phone: true, hasWhatsapp: true },
-  });
+  // Fetch user email for optional email delivery
+  const user = shouldSendEmail
+    ? await db.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      })
+    : null;
 
   // Persist in-app notification + SSE first (user-visible path).
-  // Email/WhatsApp are best-effort and must not block API response latency
-  // (failed SMTP/WA auth routinely cost 500ms–2s per call).
+  // Email is best-effort and must not block API response latency.
   await sendSseNotification(userId, {
     type,
     title,
@@ -200,19 +156,9 @@ export async function createNotification(data: NotificationData) {
     i18n: sseI18n,
   });
 
-  void Promise.allSettled([
-    shouldSendEmail
-      ? sendEmailNotification(emailTemplate, user?.email)
-      : Promise.resolve(),
-    sendWhatsAppNotificationIfOptedIn(
-      userId,
-      type,
-      message,
-      user?.phone,
-      user?.hasWhatsapp,
-      locale
-    ),
-  ]);
+  if (shouldSendEmail) {
+    void sendEmailNotification(emailTemplate, user?.email);
+  }
 
   return notification;
 }

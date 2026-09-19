@@ -30,7 +30,7 @@ Registration and login are **credential-based** (email/password). Role is fixed 
 - **Credits** are the **unit of spend** for opening and evolving requests. A **client subscription** stores **remaining credits** and an **end date**; inactive or expired subscriptions stop new spend unless business rules allow otherwise in code.
 - **Free-trial semantics** exist in the data model (`isFreeTrialUsed`, `isFreePackage`) so the business can distinguish promotional or trial packages from paid tiers.
 
-**Payment in the field**: clients submit **payment proofs** (e.g. bank transfer details and a receipt image) tied to a subscription; **admins** review and approve or reject. Until approved, downstream fulfillment rules should align with your operational policy (the schema supports `PaymentProof` with `PENDING` / `APPROVED` / `REJECTED`).
+**Payment in the field**: clients choose a **payment method** on the payment page. **Bank transfer** and **InstaPay** (when enabled) are active and use **manual payment proofs** (receipt image + details) tied to a subscription; **admins** configure bank/InstaPay instructions under Settings and review approve/reject. Other methods (Fawry, Meeza, Visa, Mastercard) appear as **Coming soon**. Until approved, downstream fulfillment rules should align with your operational policy (the schema supports `PaymentProof` with `PENDING` / `APPROVED` / `REJECTED`).
 
 ## Provider earnings and withdrawals
 
@@ -86,7 +86,7 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 The business relies on **timely, localized** communication:
 
 - **In-app** notifications (stored per user, read/unread).
-- **Email** and **WhatsApp** where integrated, with templates that respect **locale** when invoked from server flows.
+- **Email** and **in-app** notifications, with templates that respect **locale** when invoked from server flows.
 
 Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval reminders**) are designed to run on a schedule via HTTP **cron** endpoints; see `src/app/api/cron/check-subscriptions/route.ts`, `src/app/api/cron/check-delivered-approvals/route.ts`, and your hosting provider’s scheduler.
 

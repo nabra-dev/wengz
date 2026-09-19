@@ -46,7 +46,7 @@ flowchart TB
     PG[(PostgreSQL)]
     Redis[(Redis)]
     S3[(Object storage)]
-    Email[Email / WhatsApp]
+    Email[Email / In-app]
   end
 
   Pages --> TRPCReact
@@ -75,7 +75,7 @@ flowchart TB
 | `src/lib/trpc/client.ts`                     | `createTRPCReact<AppRouter>()`                                                                                                                                                 |
 | `src/components/providers/trpc-provider.tsx` | React Query + tRPC provider wiring                                                                                                                                             |
 | `src/lib/error-handler.ts`                   | Sonner toasts + tRPC/Zod message mapping; optional `next-intl` `t`                                                                                                             |
-| `src/lib/notifications/`                     | Email, WhatsApp, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                             |
+| `src/lib/notifications/`                     | Email, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                                      |
 | `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), withdrawal holds, and manual payout recording |
 | `src/lib/finance-settings.ts`                | Loads global `credit_price_usd` and `provider_commission_percent` from `SystemSettings`                                                                 |
 | `src/proxy.ts`                               | **Middleware implementation**: `next-intl` + `withAuth`, locale rewrite, **role-based redirects** for `client` / `provider` / `admin` segments (`export const config.matcher`) |
@@ -137,7 +137,7 @@ Typical categories inferred from code and dependencies:
 - **Auth**: NextAuth `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 - **Redis / Upstash**: as consumed in `src/lib/cache.ts`
 - **S3 / B2**: upload and asset URLs (see `src/app/api/upload/` and image remote patterns in `next.config.js`)
-- **Email / WhatsApp**: nodemailer and WhatsApp integrations under `src/lib/notifications/`
+- **Email**: nodemailer under `src/lib/notifications/`
 - **Analytics**: `NEXT_PUBLIC_GTM_ID` (Google Tag Manager; defaults to `GTM-58DDFXLX` in locale layout)
 
 Treat this list as a **checklist**, not a complete `.env` template—verify each integration’s module for exact variable names.

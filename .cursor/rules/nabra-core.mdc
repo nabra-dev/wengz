@@ -17,7 +17,7 @@ Use these files as **source of truth** for intent and architecture; `.cursor/rul
 | Code (UX / messaging) | Purpose |
 |----------------------|---------|
 | `src/lib/error-handler.ts` | Sonner toasts; optional `t` from `useTranslations`; `errors.*` keys in `messages/en.json` & `messages/ar.json` |
-| `src/lib/notifications/` | Email, in-app, WhatsApp; pass **`locale`** (e.g. from `ctx`) into `notify*` helpers |
+| `src/lib/notifications/` | Email, in-app; pass **`locale`** (e.g. from `ctx`) into `notify*` helpers |
 
 If behavior is unclear in code, **prefer aligning with these docs** or update the doc when product intent changes.
 

@@ -125,7 +125,6 @@ export const userSelectPublic = {
 export const userSelectProfile = {
   ...userSelectPublic,
   phone: true,
-  hasWhatsapp: true,
   providerProfile: {
     select: {
       bio: true,

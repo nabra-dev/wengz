@@ -6,6 +6,10 @@ import { createNotification, notifyAdminsNewPendingPayment } from "@/lib/notific
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { logActivityAsync } from "@/lib/activity-log";
+import {
+  buildClientPaymentMethods,
+  getPaymentSettings,
+} from "@/lib/payment-settings";
 
 export const paymentRouter = router({
   // Get IBAN info for payment (public info clients need)
@@ -22,24 +26,43 @@ export const paymentRouter = router({
       z.object({
         bankName: z.string(),
         accountName: z.string(),
-        instapayLink: z.string().optional(),
         iban: z.string(),
         swiftCode: z.string(),
         currency: z.string(),
         note: z.string(),
+        instapayEnabled: z.boolean(),
+        instapayLink: z.string().optional(),
+        methods: z.array(
+          z.object({
+            id: z.enum([
+              "bank_transfer",
+              "instapay",
+              "fawry",
+              "meeza",
+              "visa",
+              "mastercard",
+            ]),
+            category: z.enum(["manual", "local", "international"]),
+            available: z.boolean(),
+            comingSoon: z.boolean(),
+          })
+        ),
       })
     )
-    .query(async () => {
-      // Return payment info object that can be localized on the client
-      // The client will display these bank details
+    .query(async ({ ctx }) => {
+      const settings = await getPaymentSettings(ctx.db);
+      const methods = buildClientPaymentMethods(settings);
+
       return {
-        bankName: "National Bank of Kuwait",
-        accountName: "NABRA E BUSINESS SOLUTIONS",
-        instapayLink: "https://ipn.eg/S/alaa.elsayed6355/instapay/0ee8nl",
-        iban: "EG490023002302302617611610010",
-        swiftCode: "WABAEGCXXXX",
-        currency: "USD",
-        note: "Please include your email address in the transfer reference for faster verification.",
+        bankName: settings.bankName,
+        accountName: settings.accountName,
+        iban: settings.iban,
+        swiftCode: settings.swiftCode,
+        currency: settings.currency,
+        note: settings.note,
+        instapayEnabled: settings.instapayEnabled,
+        instapayLink: settings.instapayEnabled ? settings.instapayLink : undefined,
+        methods,
       };
     }),
 

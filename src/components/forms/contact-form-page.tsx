@@ -100,7 +100,7 @@ export function ContactFormPage() {
       type: "provider" as const,
       fullName: getText("fullName"),
       email: getText("email"),
-      whatsapp: getText("whatsapp"),
+      phone: getText("phone"),
       company: getText("company"),
       website: getText("website"),
       message: getText("message"),
@@ -244,15 +244,15 @@ export function ContactFormPage() {
                     />
                   </div>
                   <div className="space-y-2 md:min-w-0">
-                    <Label htmlFor="whatsapp" className="text-sm font-medium">
-                      {t("forms.fields.whatsapp")}
+                    <Label htmlFor="phone" className="text-sm font-medium">
+                      {t("forms.fields.phone")}
                       <span className="ms-1 text-destructive" aria-hidden>
                         *
                       </span>
                     </Label>
                     <Input
-                      id="whatsapp"
-                      name="whatsapp"
+                      id="phone"
+                      name="phone"
                       required
                       maxLength={50}
                       className={fieldClass}

@@ -20,9 +20,7 @@ import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { getRequestThreadPollingInterval } from "@/lib/request-realtime";
-import { CheckCircle, RotateCcw, Star, CreditCard, MessageCircle } from "lucide-react";
-
-const ADMIN_WHATSAPP_NUMBER = "966506159409";
+import { CheckCircle, RotateCcw, Star, CreditCard } from "lucide-react";
 
 export default function RequestDetailPage() {
   const t = useTranslations("client.requestDetail");
@@ -107,26 +105,6 @@ export default function RequestDetailPage() {
   const handleSubmitRating = () => {
     if (rating === 0) return;
     submitRating.mutate({ requestId, rating, reviewText });
-  };
-
-  const handleReportIssue = () => {
-    if (!request) return;
-
-    const currentUrl =
-      typeof globalThis !== "undefined" && globalThis.window ? globalThis.window.location.href : "";
-
-    const whatsappNumber = ADMIN_WHATSAPP_NUMBER.replace(/^\+/, "");
-    const message = encodeURIComponent(
-      `I need to report an issue with this request: ${request.title}\n\nRequest Link: ${currentUrl}\n\nIssue Details: `
-    );
-
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
-
-    toast.info(t("reportIssue.sent", { defaultValue: "Issue report opened in WhatsApp" }), {
-      description: t("reportIssue.sentDesc", {
-        defaultValue: "Please describe your issue in WhatsApp",
-      }),
-    });
   };
 
   if (isLoading) {
@@ -226,14 +204,6 @@ export default function RequestDetailPage() {
                     {approveRequest.isPending
                       ? t("deliverableReady.approving")
                       : t("deliverableReady.approve")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleReportIssue}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    {t("reportIssue.button", { defaultValue: "Report Issue (WhatsApp)" })}
                   </Button>
                 </div>
 

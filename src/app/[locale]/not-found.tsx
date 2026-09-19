@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { WhatsAppLink } from "@/components/ui/whatsapp-support";
 import { FileQuestion, Home, ArrowLeft } from "lucide-react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
@@ -44,7 +43,10 @@ export default function NotFound() {
 
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              {t("needHelp")} <WhatsAppLink />
+              {t("needHelp")}{" "}
+              <Link href="/contact" className="text-primary underline-offset-4 hover:underline">
+                {tCommon("nav.contact")}
+              </Link>
             </p>
           </div>
         </CardContent>

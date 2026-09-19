@@ -9,7 +9,6 @@ import type { ComponentType, CSSProperties } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { WhatsAppSupport } from "@/components/ui/whatsapp-support";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import {
@@ -1321,8 +1320,6 @@ export default function LandingPage() {
           <p className="text-xs text-muted-foreground sm:text-sm">{t("common.footer.copyright")}</p>
         </div>
       </motion.footer>
-
-      <WhatsAppSupport />
     </div>
   );
 }

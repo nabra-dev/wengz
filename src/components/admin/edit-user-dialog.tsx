@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -32,7 +31,6 @@ interface EditUserDialogProps {
     name: string | null;
     email: string;
     phone?: string | null;
-    hasWhatsapp?: boolean | null;
   } | null;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -50,7 +48,6 @@ export function EditUserDialog({
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("+20");
   const [phone, setPhone] = useState("");
-  const [hasWhatsapp, setHasWhatsapp] = useState(false);
 
   const updateUser = trpc.admin.updateUser.useMutation();
 
@@ -59,7 +56,7 @@ export function EditUserDialog({
     setName(user.name || "");
     setEmail(user.email);
 
-    const rawPhone = (user as any).phone as string | undefined | null;
+    const rawPhone = user.phone;
     if (rawPhone) {
       const parts = rawPhone.split(" ");
       if (parts.length > 1 && parts[0].startsWith("+")) {
@@ -72,14 +69,7 @@ export function EditUserDialog({
       setPhone("");
       setCountryCode("+20");
     }
-
-    setHasWhatsapp(Boolean((user as any).hasWhatsapp));
   }, [user]);
-
-  useEffect(() => {
-    if (phone) return;
-    setHasWhatsapp(false);
-  }, [phone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +81,6 @@ export function EditUserDialog({
         name?: string;
         email?: string;
         phone?: string;
-        hasWhatsapp?: boolean;
       } = {};
 
       if (name === user.name) {
@@ -129,12 +118,8 @@ export function EditUserDialog({
         composedPhone = `${countryCode} ${phone}`;
       }
       // Only update phone when a valid phone is provided
-      if (composedPhone && composedPhone !== (user as any).phone) {
+      if (composedPhone && composedPhone !== user.phone) {
         updates.phone = composedPhone;
-      }
-
-      if (hasWhatsapp !== (user as any).hasWhatsapp) {
-        updates.hasWhatsapp = hasWhatsapp;
       }
 
       await updateUser.mutateAsync({
@@ -217,24 +202,6 @@ export function EditUserDialog({
                 placeholder="123456789"
                 className="flex-1"
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="edit-hasWhatsapp"
-                checked={hasWhatsapp}
-                onCheckedChange={(checked) => setHasWhatsapp(checked === true)}
-                disabled={!phone}
-              />
-              <label
-                htmlFor="edit-hasWhatsapp"
-                className={`text-sm font-medium leading-none ${
-                  phone
-                    ? "peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    : "cursor-not-allowed opacity-50"
-                }`}
-              >
-                {t("dialog.fields.hasWhatsapp")}
-              </label>
             </div>
           </div>
 

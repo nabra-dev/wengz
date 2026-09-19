@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -60,7 +59,6 @@ export function EditProfileForm() {
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("+20");
   const [phone, setPhone] = useState("");
-  const [hasWhatsapp, setHasWhatsapp] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -69,11 +67,6 @@ export function EditProfileForm() {
     toast.error(t("sessionExpired"));
     signOut({ callbackUrl: "/auth/login" });
   }, [profileError, t]);
-
-  useEffect(() => {
-    if (phone) return;
-    setHasWhatsapp(false);
-  }, [phone]);
 
   // Set form values when profile loads
   useEffect(() => {
@@ -94,7 +87,6 @@ export function EditProfileForm() {
       setPhone("");
       setCountryCode("+20");
     }
-    setHasWhatsapp(profile.hasWhatsapp ?? false);
   }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,7 +97,6 @@ export function EditProfileForm() {
         name?: string;
         email?: string;
         phone?: string;
-        hasWhatsapp?: boolean;
         image?: string;
       } = {};
 
@@ -143,10 +134,6 @@ export function EditProfileForm() {
 
       if (composedPhone && composedPhone !== profile?.phone) {
         updates.phone = composedPhone;
-      }
-
-      if (hasWhatsapp !== profile?.hasWhatsapp) {
-        updates.hasWhatsapp = hasWhatsapp;
       }
 
       if (isClient && profileImage && profileImage !== profile?.image) {
@@ -275,17 +262,6 @@ export function EditProfileForm() {
                 className="flex-1"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="hasWhatsapp"
-                checked={hasWhatsapp}
-                onCheckedChange={(checked) => setHasWhatsapp(checked === true)}
-                disabled={!phone}
-              />
-              <Label htmlFor="hasWhatsapp" className={`text-sm ${phone ? "" : "opacity-50"}`}>
-                {t("labels.hasWhatsapp")}
-              </Label>
-            </div>
             <p className="text-xs text-muted-foreground">{t("helperText.phone")}</p>
           </div>
 
@@ -368,7 +344,6 @@ export function EditProfileForm() {
                   setPhone("");
                   setCountryCode("+20");
                 }
-                setHasWhatsapp(profile?.hasWhatsapp ?? false);
               }}
             >
               {t("buttons.reset")}

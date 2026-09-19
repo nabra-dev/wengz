@@ -16,7 +16,6 @@ model User {
   password            String?
   image               String?
   phone               String?
-  hasWhatsapp         Boolean                 @default(false)
   role                Role                    @default(CLIENT)
   registrationIp      String? // IP address during registration for abuse prevention
   createdAt           DateTime                @default(now())

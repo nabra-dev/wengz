@@ -124,7 +124,6 @@ Typical flow:
 
 - In-app notifications.
 - Email notifications.
-- WhatsApp notifications (where integration is enabled).
 - Notifications should respect the user locale (English/Arabic).
 
 ## Operations and Scheduling

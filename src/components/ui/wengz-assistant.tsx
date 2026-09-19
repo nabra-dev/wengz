@@ -181,7 +181,7 @@ export function WengzAssistant({
                         🚀 {t("getStarted", { defaultValue: "Get Started" })}
                       </Button>
                     </Link>
-                    <a href="https://wa.me/966506159409" target="_blank" rel="noopener noreferrer">
+                    <Link href="/contact">
                       <Button
                         variant="outline"
                         size="sm"
@@ -189,7 +189,7 @@ export function WengzAssistant({
                       >
                         💬 {t("contact", { defaultValue: "Contact Us" })}
                       </Button>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>

@@ -178,7 +178,6 @@
       "fullName": "Full name",
       "email": "Email",
       "phone": "Phone (optional)",
-      "whatsapp": "WhatsApp number",
       "company": "Company (optional)",
       "website": "Website / links (optional)",
       "message": "Message"
@@ -277,10 +276,9 @@
       "nameLabel": "Full Name",
       "namePlaceholder": "John Doe",
       "nameHint": "2-100 characters",
-      "phoneLabel": "Phone (WhatsApp preferred)",
+      "phoneLabel": "Phone",
       "phonePlaceholder": "1234567890",
       "phoneHint": "Enter phone number only (country code selected above)",
-      "hasWhatsappLabel": "This number has WhatsApp",
       "emailLabel": "Email",
       "emailPlaceholder": "name@example.com",
       "emailHint": "Valid email address required",
@@ -318,6 +316,22 @@
         "save": "Save finance settings",
         "saving": "Saving...",
         "saved": "Finance settings saved"
+      },
+      "payment": {
+        "title": "Client payment instructions",
+        "description": "Bank transfer and InstaPay details shown on the client payment page. Other methods (Fawry, Visa, Meeza, etc.) stay as Coming soon.",
+        "bankName": "Bank name",
+        "accountName": "Account name",
+        "iban": "IBAN",
+        "swiftCode": "SWIFT / BIC",
+        "currency": "Currency",
+        "note": "Client note",
+        "instapayEnabled": "Show InstaPay option",
+        "instapayHint": "When enabled, clients can choose InstaPay and open the link you provide.",
+        "instapayLink": "InstaPay link",
+        "save": "Save payment instructions",
+        "saving": "Saving...",
+        "saved": "Payment instructions saved"
       }
     },
     "notificationsPage": {
@@ -425,8 +439,7 @@
         "actions": "Actions",
         "noUsers": "No users found",
         "allUsers": "Users",
-        "tryAdjusting": "Try adjusting your search or filters",
-        "hasWhatsapp": "Has WhatsApp"
+        "tryAdjusting": "Try adjusting your search or filters"
       },
       "dialog": {
         "create": {
@@ -445,7 +458,6 @@
           "name": "Full Name",
           "email": "Email Address",
           "phone": "Phone Number",
-          "hasWhatsapp": "Has WhatsApp",
           "password": "Password",
           "role": "User Role",
           "services": "Supported Services",
@@ -789,7 +801,7 @@
         "title": "Review withdrawal",
         "description": "Mark as paid after you transfer the money, or reject and return the funds.",
         "reason": "Reason",
-        "reasonPlaceholder": "e.g. Transferred via Instapay, ref 123 — or why it was rejected",
+        "reasonPlaceholder": "e.g. Bank transfer ref 123 — or why it was rejected",
         "approve": "Mark as paid",
         "reject": "Reject",
         "submitting": "Saving..."
@@ -1138,8 +1150,7 @@
         "name": "Full Name",
         "email": "Email Address",
         "profileImage": "Profile Photo (optional)",
-        "phone": "Phone Number",
-        "hasWhatsapp": "This number uses WhatsApp"
+        "phone": "Phone Number"
       },
       "placeholders": {
         "name": "Enter your name",
@@ -1284,12 +1295,15 @@
       "bankDetails": {
         "title": "Bank Transfer Details",
         "description": "Send payment to the following account via international bank transfer (IBAN)",
-        "instapay": "InstaPay Link",
         "bankName": "Bank Name",
         "accountName": "Account Name",
         "iban": "IBAN",
         "swiftCode": "SWIFT/BIC",
-        "note": "Please include your email address in the transfer reference for faster verification."
+        "note": "Please include your email address in the transfer reference for faster verification.",
+        "instapay": "InstaPay link",
+        "instapayTitle": "InstaPay payment",
+        "instapayDescription": "Open the InstaPay link, complete the transfer, then upload your receipt.",
+        "instapayNote": "After paying via InstaPay, upload the receipt on the right so we can verify your subscription."
       },
       "uploadProof": {
         "title": "Upload Payment Proof",
@@ -1344,6 +1358,44 @@
       "completePayment": {
         "title": "Complete Payment",
         "subtitle": "Transfer payment and upload proof to activate your subscription"
+      },
+      "methods": {
+        "title": "Choose a payment method",
+        "subtitle": "Bank transfer and InstaPay are available now. Card and wallet options are coming soon.",
+        "comingSoon": "Coming soon",
+        "unavailable": "Unavailable",
+        "comingSoonDescription": "This payment method is not available yet. Please use bank transfer or InstaPay, then upload your receipt.",
+        "categories": {
+          "manual": "Manual transfer",
+          "local": "Local methods",
+          "international": "International cards"
+        },
+        "items": {
+          "bank_transfer": {
+            "name": "Bank transfer",
+            "hint": "Pay via IBAN and upload the receipt"
+          },
+          "instapay": {
+            "name": "InstaPay",
+            "hint": "Pay with InstaPay then upload proof"
+          },
+          "fawry": {
+            "name": "Fawry",
+            "hint": "Pay at Fawry outlets or digitally"
+          },
+          "meeza": {
+            "name": "Meeza",
+            "hint": "Egyptian national card network"
+          },
+          "visa": {
+            "name": "Visa",
+            "hint": "International card payments"
+          },
+          "mastercard": {
+            "name": "Mastercard",
+            "hint": "International card payments"
+          }
+        }
       }
     },
     "profile": {
@@ -1372,11 +1424,6 @@
         "description": "Review the deliverable and either approve or request a revision.",
         "approve": "Approve & Complete",
         "approving": "Approving..."
-      },
-      "reportIssue": {
-        "button": "Report Issue (WhatsApp)",
-        "sent": "WhatsApp message opened",
-        "sentDesc": "We opened WhatsApp with a pre-filled message for your request."
       },
       "requestRevision": {
         "title": "Request Revision",

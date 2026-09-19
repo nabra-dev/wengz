@@ -12,7 +12,7 @@ const BodySchema = z.object({
   type: z.enum(["client", "provider"]),
   fullName: z.string().min(2).max(100),
   email: z.string().email().max(254),
-  whatsapp: z.string().min(3).max(50),
+  phone: z.string().min(3).max(50),
   company: z.string().max(120).optional().default(""),
   website: z.string().max(300).optional().default(""),
   message: z.string().max(4000).optional().default(""),
@@ -33,7 +33,7 @@ async function sendViaWeb3Forms(payload: {
   type: "client" | "provider";
   fullName: string;
   email: string;
-  whatsapp: string;
+  phone: string;
   company: string;
   website: string;
   message: string;
@@ -49,7 +49,7 @@ async function sendViaWeb3Forms(payload: {
     `Type: ${payload.type}`,
     `Name: ${payload.fullName}`,
     `Email: ${payload.email}`,
-    `WhatsApp: ${payload.whatsapp}`,
+    `Phone: ${payload.phone}`,
     `Company: ${payload.company || "-"}`,
     `Website: ${payload.website || "-"}`,
     `Message: ${payload.message || "-"}`,
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         <table style="width: 100%; border-collapse: collapse; margin: 14px 0;">
           <tr><td style="padding: 6px 0; color: #555; width: 160px;">Name</td><td style="padding: 6px 0;"><strong>${escapeHtml(body.fullName)}</strong></td></tr>
           <tr><td style="padding: 6px 0; color: #555;">Email</td><td style="padding: 6px 0;">${escapeHtml(body.email)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #555;">WhatsApp</td><td style="padding: 6px 0;">${escapeHtml(body.whatsapp)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #555;">Phone</td><td style="padding: 6px 0;">${escapeHtml(body.phone)}</td></tr>
           <tr><td style="padding: 6px 0; color: #555;">Company</td><td style="padding: 6px 0;">${escapeHtml(body.company || "-")}</td></tr>
           <tr><td style="padding: 6px 0; color: #555;">Website</td><td style="padding: 6px 0;">${escapeHtml(body.website || "-")}</td></tr>
           ${
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       type: body.type,
       fullName: body.fullName,
       email: body.email,
-      whatsapp: body.whatsapp,
+      phone: body.phone,
       company: body.company,
       website: body.website,
       message: body.message,

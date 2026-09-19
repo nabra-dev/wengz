@@ -34,7 +34,6 @@ function sessionFor(user) {
       role: user.role,
       image: user.image,
       phone: user.phone,
-      hasWhatsapp: user.hasWhatsapp,
     },
     expires: new Date(Date.now() + 86400000).toISOString(),
   };

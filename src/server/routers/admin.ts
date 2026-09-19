@@ -13,6 +13,11 @@ import {
   getFinanceSettings as loadFinanceSettings,
   PROVIDER_COMMISSION_PERCENT_KEY,
 } from "@/lib/finance-settings";
+import {
+  getPaymentSettings as loadPaymentSettings,
+  PAYMENT_INSTRUCTIONS_KEY,
+  type ManualPaymentSettings,
+} from "@/lib/payment-settings";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -193,6 +198,106 @@ export const adminRouter = router({
         creditPriceUsd: input.creditPriceUsd,
         commissionPercent: input.commissionPercent,
       };
+    }),
+
+  getPaymentSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/settings/payment",
+        tags: ["admin"],
+        summary: "Get manual payment instructions (bank + InstaPay)",
+      },
+    })
+    .output(
+      z.object({
+        bankName: z.string(),
+        accountName: z.string(),
+        iban: z.string(),
+        swiftCode: z.string(),
+        currency: z.string(),
+        note: z.string(),
+        instapayEnabled: z.boolean(),
+        instapayLink: z.string(),
+      })
+    )
+    .query(async ({ ctx }) => loadPaymentSettings(ctx.db)),
+
+  setPaymentSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/settings/payment",
+        tags: ["admin"],
+        summary: "Update manual payment instructions (bank + InstaPay)",
+      },
+    })
+    .input(
+      z.object({
+        bankName: z.string().min(2).max(120),
+        accountName: z.string().min(2).max(120),
+        iban: z.string().min(8).max(64),
+        swiftCode: z.string().min(4).max(20),
+        currency: z.string().min(3).max(8),
+        note: z.string().min(5).max(500),
+        instapayEnabled: z.boolean(),
+        instapayLink: z
+          .string()
+          .max(500)
+          .refine(
+            (value) => value.trim() === "" || /^https?:\/\//i.test(value.trim()),
+            "InstaPay link must be a valid URL"
+          ),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        settings: z.object({
+          bankName: z.string(),
+          accountName: z.string(),
+          iban: z.string(),
+          swiftCode: z.string(),
+          currency: z.string(),
+          note: z.string(),
+          instapayEnabled: z.boolean(),
+          instapayLink: z.string(),
+        }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const settings: ManualPaymentSettings = {
+        bankName: input.bankName.trim(),
+        accountName: input.accountName.trim(),
+        iban: input.iban.trim(),
+        swiftCode: input.swiftCode.trim(),
+        currency: input.currency.trim().toUpperCase(),
+        note: input.note.trim(),
+        instapayEnabled: input.instapayEnabled,
+        instapayLink: input.instapayLink.trim(),
+      };
+
+      if (settings.instapayEnabled && !settings.instapayLink) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "InstaPay link is required when InstaPay is enabled",
+        });
+      }
+
+      await ctx.db.systemSettings.upsert({
+        where: { key: PAYMENT_INSTRUCTIONS_KEY },
+        update: {
+          value: settings,
+          description: "Manual client payment instructions (bank transfer + InstaPay).",
+        },
+        create: {
+          key: PAYMENT_INSTRUCTIONS_KEY,
+          value: settings,
+          description: "Manual client payment instructions (bank transfer + InstaPay).",
+        },
+      });
+
+      return { success: true, settings };
     }),
 
   // Get all active service types (public - for landing page)
@@ -1146,7 +1251,6 @@ export const adminRouter = router({
             name: true,
             email: true,
             phone: true,
-            hasWhatsapp: true,
             image: true,
             role: true,
             createdAt: true,
@@ -1887,7 +1991,6 @@ export const adminRouter = router({
         password: z.string().min(6),
         role: z.enum(["CLIENT", "PROVIDER", "SUPER_ADMIN"]),
         phone: phoneWithCountryCodeSchema,
-        hasWhatsapp: z.boolean().optional(),
         supportedServiceIds: z.array(z.string()).optional(), // For providers only
       })
     )
@@ -1915,7 +2018,6 @@ export const adminRouter = router({
           password: hashedPassword,
           role: input.role,
           phone: input.phone,
-          hasWhatsapp: input.hasWhatsapp ?? false,
         },
       });
 
@@ -2145,11 +2247,10 @@ export const adminRouter = router({
         name: z.string().min(2, "Name must be at least 2 characters").optional(),
         email: z.string().email("Invalid email address").toLowerCase().optional(),
         phone: phoneWithCountryCodeSchema,
-        hasWhatsapp: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { userId, name, email, phone, hasWhatsapp } = input;
+      const { userId, name, email, phone } = input;
 
       // Check if user exists
       const user = await ctx.db.user.findUnique({
@@ -2187,14 +2288,12 @@ export const adminRouter = router({
           ...(name && { name }),
           ...(email && { email }),
           ...(phone !== undefined && { phone }),
-          ...(hasWhatsapp !== undefined && { hasWhatsapp }),
         },
         select: {
           id: true,
           name: true,
           email: true,
           phone: true,
-          hasWhatsapp: true,
           role: true,
         },
       });

@@ -28,7 +28,6 @@ export const authRouter = router({
         email: z.string().email("Invalid email address").toLowerCase(),
         password: z.string().min(6, "Password must be at least 6 characters"),
         phone: phoneWithCountryCodeSchema,
-        hasWhatsapp: z.boolean().optional(),
       })
     )
     .output(
@@ -96,7 +95,6 @@ export const authRouter = router({
           email: input.email,
           password: hashedPassword,
           phone: input.phone || null,
-          hasWhatsapp: input.hasWhatsapp ?? false,
           image: DEFAULT_AVATAR,
           role: "CLIENT", // Default role
           registrationIp: ip,

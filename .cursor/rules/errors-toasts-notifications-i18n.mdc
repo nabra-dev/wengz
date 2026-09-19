@@ -11,7 +11,7 @@ alwaysApply: false
 | Concern | Where |
 |---------|--------|
 | Sonner toasts, `showError` / `showSuccess`, `errors.*` keys | `src/lib/error-handler.ts`; translation keys in `messages/en.json` & `messages/ar.json` |
-| `notify*`, email, in-app, WhatsApp, **`locale`** from `ctx` | `src/lib/notifications/`; context locale from `src/server/trpc.ts` |
+| `notify*`, email, in-app, **`locale`** from `ctx` | `src/lib/notifications/`; context locale from `src/server/trpc.ts` |
 | Channels and subscription cron (business framing) | `docs/ADVANCED_BUSINESS.md` |
 | SSE/cron path pointers | `docs/ADVANCED_TECHNICAL.md` |
 

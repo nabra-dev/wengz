@@ -37,7 +37,12 @@ import {
   Building2,
   Calendar as CalendarIcon,
   Receipt,
+  Smartphone,
+  CreditCard,
+  Landmark,
+  Sparkles,
 } from "lucide-react";
+import type { PaymentMethodId } from "@/lib/payment-settings";
 
 // Explicit types for the data
 interface PaymentProof {
@@ -65,14 +70,23 @@ interface PendingSubscription {
   paymentProof: PaymentProof | null;
 }
 
+interface PaymentMethodInfo {
+  id: PaymentMethodId;
+  category: "manual" | "local" | "international";
+  available: boolean;
+  comingSoon: boolean;
+}
+
 interface PaymentInfo {
   bankName: string;
   accountName: string;
-  instapayLink?: string;
   iban: string;
   swiftCode: string;
   currency: string;
   note: string;
+  instapayEnabled: boolean;
+  instapayLink?: string;
+  methods: PaymentMethodInfo[];
 }
 
 interface FormData {
@@ -374,26 +388,31 @@ function TransactionsSection({ locale }: { locale: string }) {
 function BankDetailsCard({
   subscription,
   paymentInfo,
+  selectedMethod,
   copied,
   onCopy,
   locale,
 }: {
   subscription: PendingSubscription;
   paymentInfo: PaymentInfo;
+  selectedMethod: "bank_transfer" | "instapay";
   copied: string | null;
   onCopy: (text: string, field: string) => void;
   locale: string;
 }) {
   const t = useTranslations("client.payment");
+  const showInstapay = selectedMethod === "instapay" && Boolean(paymentInfo.instapayLink);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          {t("bankDetails.title")}
+          {showInstapay ? <Smartphone className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+          {showInstapay ? t("bankDetails.instapayTitle") : t("bankDetails.title")}
         </CardTitle>
-        <CardDescription>{t("bankDetails.description")}</CardDescription>
+        <CardDescription>
+          {showInstapay ? t("bankDetails.instapayDescription") : t("bankDetails.description")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Package Info */}
@@ -413,11 +432,11 @@ function BankDetailsCard({
           <p className="text-2xl font-bold">{formatCurrency(subscription.package.price, locale)}</p>
         </div>
 
-        {/* Bank Details */}
+        {/* Transfer Details */}
         <div className="space-y-3">
-          {paymentInfo.instapayLink && (
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div>
+          {showInstapay && paymentInfo.instapayLink && (
+            <div className="flex items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">{t("bankDetails.instapay")}</p>
                 <a
                   href={paymentInfo.instapayLink}
@@ -437,62 +456,199 @@ function BankDetailsCard({
             </div>
           )}
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("bankDetails.bankName")}</p>
-              <p className="font-medium">{paymentInfo.bankName}</p>
-            </div>
-            <CopyButton
-              field="bankName"
-              value={paymentInfo.bankName}
-              copied={copied}
-              onCopy={onCopy}
-            />
-          </div>
+          {!showInstapay && (
+            <>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("bankDetails.bankName")}</p>
+                  <p className="font-medium">{paymentInfo.bankName}</p>
+                </div>
+                <CopyButton
+                  field="bankName"
+                  value={paymentInfo.bankName}
+                  copied={copied}
+                  onCopy={onCopy}
+                />
+              </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("bankDetails.accountName")}</p>
-              <p className="font-medium">{paymentInfo.accountName}</p>
-            </div>
-            <CopyButton
-              field="accountName"
-              value={paymentInfo.accountName}
-              copied={copied}
-              onCopy={onCopy}
-            />
-          </div>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("bankDetails.accountName")}</p>
+                  <p className="font-medium">{paymentInfo.accountName}</p>
+                </div>
+                <CopyButton
+                  field="accountName"
+                  value={paymentInfo.accountName}
+                  copied={copied}
+                  onCopy={onCopy}
+                />
+              </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("bankDetails.iban")}</p>
-              <p className="font-mono font-medium">{paymentInfo.iban}</p>
-            </div>
-            <CopyButton field="iban" value={paymentInfo.iban} copied={copied} onCopy={onCopy} />
-          </div>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("bankDetails.iban")}</p>
+                  <p className="font-mono font-medium">{paymentInfo.iban}</p>
+                </div>
+                <CopyButton field="iban" value={paymentInfo.iban} copied={copied} onCopy={onCopy} />
+              </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("bankDetails.swiftCode")}</p>
-              <p className="font-mono font-medium">{paymentInfo.swiftCode}</p>
-            </div>
-            <CopyButton
-              field="swiftCode"
-              value={paymentInfo.swiftCode}
-              copied={copied}
-              onCopy={onCopy}
-            />
-          </div>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("bankDetails.swiftCode")}</p>
+                  <p className="font-mono font-medium">{paymentInfo.swiftCode}</p>
+                </div>
+                <CopyButton
+                  field="swiftCode"
+                  value={paymentInfo.swiftCode}
+                  copied={copied}
+                  onCopy={onCopy}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{t("bankDetails.note")}</AlertDescription>
+          <AlertDescription>
+            {showInstapay ? t("bankDetails.instapayNote") : paymentInfo.note || t("bankDetails.note")}
+          </AlertDescription>
         </Alert>
       </CardContent>
     </Card>
   );
 }
+
+function methodIcon(id: PaymentMethodId) {
+  switch (id) {
+    case "bank_transfer":
+      return Landmark;
+    case "instapay":
+      return Smartphone;
+    case "fawry":
+      return Receipt;
+    case "meeza":
+      return CreditCard;
+    case "visa":
+    case "mastercard":
+      return CreditCard;
+    default:
+      return CreditCard;
+  }
+}
+
+function PaymentMethodPicker({
+  methods,
+  selected,
+  onSelect,
+}: {
+  methods: PaymentMethodInfo[];
+  selected: PaymentMethodId;
+  onSelect: (id: PaymentMethodId) => void;
+}) {
+  const t = useTranslations("client.payment.methods");
+
+  const groups: Array<{ key: "manual" | "local" | "international"; items: PaymentMethodInfo[] }> = [
+    { key: "manual", items: methods.filter((m) => m.category === "manual") },
+    { key: "local", items: methods.filter((m) => m.category === "local") },
+    { key: "international", items: methods.filter((m) => m.category === "international") },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-lg font-semibold">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      </div>
+
+      {groups.map((group) =>
+        group.items.length === 0 ? null : (
+          <div key={group.key} className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t(`categories.${group.key}`)}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {group.items.map((method) => {
+                const Icon = methodIcon(method.id);
+                const isSelected = selected === method.id;
+                const disabled = !method.available || method.comingSoon;
+
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => onSelect(method.id)}
+                    className={`relative overflow-hidden rounded-xl border p-4 text-start transition ${
+                      isSelected && !disabled
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-lg bg-muted p-2">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{t(`items.${method.id}.name`)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {t(`items.${method.id}.hint`)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {method.comingSoon && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/75 backdrop-blur-[2px]">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-semibold shadow-sm">
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                          {t("comingSoon")}
+                        </span>
+                      </div>
+                    )}
+
+                    {!method.comingSoon && !method.available && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-[1px]">
+                        <span className="rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                          {t("unavailable")}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function ComingSoonPanel({ methodId }: { methodId: PaymentMethodId }) {
+  const t = useTranslations("client.payment.methods");
+  const Icon = methodIcon(methodId);
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-muted/40" />
+      <CardContent className="relative py-16 text-center space-y-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+          <Icon className="h-7 w-7" />
+        </div>
+        <div className="space-y-2">
+          <Badge variant="secondary" className="gap-1">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("comingSoon")}
+          </Badge>
+          <h3 className="text-xl font-semibold">{t(`items.${methodId}.name`)}</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            {t("comingSoonDescription")}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // Component for payment proof form
 function PaymentProofForm({
@@ -768,6 +924,7 @@ export default function PaymentPage() {
   const t = useTranslations("client.payment");
   const locale = useLocale();
   const [copied, setCopied] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>("bank_transfer");
 
   const { data: pendingSubscriptionData, isLoading: subLoading } =
     trpc.subscription.getPending.useQuery(undefined, {
@@ -799,6 +956,17 @@ export default function PaymentPage() {
     setCopied(field);
     setTimeout(() => setCopied(null), 2000);
   };
+
+  const availableMethods = paymentInfo?.methods?.filter((m) => m.available && !m.comingSoon) ?? [];
+  const activeSelected =
+    paymentInfo?.methods?.some((m) => m.id === selectedMethod)
+      ? selectedMethod
+      : availableMethods[0]?.id ?? "bank_transfer";
+  const selectedMeta = paymentInfo?.methods?.find((m) => m.id === activeSelected);
+  const isManualMethod = activeSelected === "bank_transfer" || activeSelected === "instapay";
+  const showManualFlow = Boolean(
+    selectedMeta?.available && !selectedMeta.comingSoon && isManualMethod
+  );
 
   // Loading state
   if (isLoading) {
@@ -835,7 +1003,7 @@ export default function PaymentPage() {
   // Show payment form
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold">{t("completePayment.title")}</h1>
           <p className="text-muted-foreground">{t("completePayment.subtitle")}</p>
@@ -849,22 +1017,39 @@ export default function PaymentPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {paymentInfo && (
-          <BankDetailsCard
-            subscription={pendingSubscription}
-            paymentInfo={paymentInfo}
-            copied={copied}
-            onCopy={copyToClipboard}
-            locale={locale}
-          />
-        )}
-        <PaymentProofForm
-          subscriptionId={pendingSubscription.id}
-          packagePrice={pendingSubscription.package.price}
-          onSuccess={() => utils.subscription.getPending.invalidate()}
+      {paymentInfo?.methods && (
+        <PaymentMethodPicker
+          methods={paymentInfo.methods}
+          selected={activeSelected}
+          onSelect={setSelectedMethod}
         />
-      </div>
+      )}
+
+      {(() => {
+        if (selectedMeta?.comingSoon || !selectedMeta?.available) {
+          return <ComingSoonPanel methodId={activeSelected} />;
+        }
+        if (showManualFlow && paymentInfo) {
+          return (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <BankDetailsCard
+                subscription={pendingSubscription}
+                paymentInfo={paymentInfo}
+                selectedMethod={activeSelected as "bank_transfer" | "instapay"}
+                copied={copied}
+                onCopy={copyToClipboard}
+                locale={locale}
+              />
+              <PaymentProofForm
+                subscriptionId={pendingSubscription.id}
+                packagePrice={pendingSubscription.package.price}
+                onSuccess={() => utils.subscription.getPending.invalidate()}
+              />
+            </div>
+          );
+        }
+        return <ComingSoonPanel methodId={activeSelected} />;
+      })()}
 
       {/* Transaction history */}
       <TransactionsSection locale={locale} />

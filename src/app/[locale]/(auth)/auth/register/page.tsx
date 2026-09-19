@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -62,12 +61,6 @@ export default function RegisterPage() {
 
   const [countryCode, setCountryCode] = useState("+20");
   const [phoneInput, setPhoneInput] = useState("");
-  const [hasWhatsapp, setHasWhatsapp] = useState(false);
-
-  useEffect(() => {
-    if (phoneInput) return;
-    setHasWhatsapp(false);
-  }, [phoneInput]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -145,7 +138,7 @@ export default function RegisterPage() {
       return;
     }
 
-    registerMutation.mutate({ name, email, password, phone, hasWhatsapp });
+    registerMutation.mutate({ name, email, password, phone });
   }
 
   return (
@@ -234,20 +227,6 @@ export default function RegisterPage() {
                   title="Phone number must be 7-15 digits"
                   className="flex-1"
                 />
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="hasWhatsapp"
-                  checked={hasWhatsapp}
-                  onCheckedChange={(checked) => setHasWhatsapp(checked === true)}
-                  disabled={registerMutation.isPending || !phoneInput}
-                />
-                <Label
-                  htmlFor="hasWhatsapp"
-                  className={`text-sm ${phoneInput ? "" : "opacity-50"}`}
-                >
-                  {t("hasWhatsappLabel")}
-                </Label>
               </div>
               <p className="text-xs text-muted-foreground">{t("phoneHint")}</p>
             </div>
