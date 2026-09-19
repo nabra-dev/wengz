@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { getFinanceSettings } from "@/lib/finance-settings";
 
 export type PayoutMethodValue = "BANK" | "E_WALLET";
 
@@ -21,19 +22,35 @@ export type NormalizedPayoutDetails = {
 
 type TransactionClient = Prisma.TransactionClient;
 
-function roundEgp(amount: number) {
+function roundUsd(amount: number) {
   return Math.round(amount * 100) / 100;
 }
 
-export function calculateProviderFinance(totalCredits: number, creditPriceEgp: number) {
-  const normalizedCreditPriceEgp = Math.max(0, creditPriceEgp);
-  const totalAmountEgp = roundEgp(totalCredits * normalizedCreditPriceEgp);
+export function calculateProviderFinance(
+  totalCredits: number,
+  creditPriceUsd: number,
+  commissionPercent: number
+) {
+  const normalizedCredits = Math.max(0, Math.floor(totalCredits));
+  const normalizedCreditPriceUsd = Math.max(0, creditPriceUsd);
+  const normalizedCommissionPercent = Math.min(100, Math.max(0, commissionPercent));
+
+  const totalAmountUsd = roundUsd(normalizedCredits * normalizedCreditPriceUsd);
+  const platformAmountUsd = roundUsd(totalAmountUsd * (normalizedCommissionPercent / 100));
+  const providerAmountUsd = roundUsd(totalAmountUsd - platformAmountUsd);
+
+  const platformCredits = Math.round(normalizedCredits * (normalizedCommissionPercent / 100));
+  const providerCredits = normalizedCredits - platformCredits;
 
   return {
-    providerCredits: totalCredits,
-    creditPriceEgp: normalizedCreditPriceEgp,
-    totalAmountEgp,
-    providerAmountEgp: totalAmountEgp,
+    totalCredits: normalizedCredits,
+    providerCredits,
+    platformCredits,
+    creditPriceUsd: normalizedCreditPriceUsd,
+    commissionPercent: normalizedCommissionPercent,
+    totalAmountUsd,
+    platformAmountUsd,
+    providerAmountUsd,
   };
 }
 
@@ -56,8 +73,11 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
 
   const request = await tx.request.findUnique({
     where: { id: requestId },
-    include: {
-      serviceType: true,
+    select: {
+      id: true,
+      creditCost: true,
+      providerId: true,
+      serviceTypeId: true,
     },
   });
 
@@ -75,9 +95,11 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
     });
   }
 
+  const settings = await getFinanceSettings(tx);
   const finance = calculateProviderFinance(
     request.creditCost,
-    request.serviceType.creditPriceEgp ?? 1
+    settings.creditPriceUsd,
+    settings.commissionPercent
   );
 
   await getOrCreateProviderWallet(tx, request.providerId);
@@ -87,11 +109,14 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
       requestId,
       providerId: request.providerId,
       serviceTypeId: request.serviceTypeId,
-      totalCredits: request.creditCost,
+      totalCredits: finance.totalCredits,
       providerCredits: finance.providerCredits,
-      creditPriceEgp: finance.creditPriceEgp,
-      totalAmountEgp: finance.totalAmountEgp,
-      providerAmountEgp: finance.providerAmountEgp,
+      platformCredits: finance.platformCredits,
+      creditPriceUsd: finance.creditPriceUsd,
+      commissionPercent: finance.commissionPercent,
+      totalAmountUsd: finance.totalAmountUsd,
+      platformAmountUsd: finance.platformAmountUsd,
+      providerAmountUsd: finance.providerAmountUsd,
       status: "AVAILABLE",
       settledAt: new Date(),
     },
@@ -103,8 +128,8 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
       balanceCredits: {
         increment: finance.providerCredits,
       },
-      balanceEgp: {
-        increment: finance.providerAmountEgp,
+      balanceUsd: {
+        increment: finance.providerAmountUsd,
       },
     },
   });
@@ -181,17 +206,17 @@ export function payoutDetailsFromProfile(profile: {
 }
 
 export function allocateWithdrawalAmounts(
-  amountEgp: number,
-  balanceEgp: number,
+  amountUsd: number,
+  balanceUsd: number,
   balanceCredits: number
 ) {
-  const requested = roundEgp(amountEgp);
-  const available = roundEgp(balanceEgp);
+  const requested = roundUsd(amountUsd);
+  const available = roundUsd(balanceUsd);
 
   if (!Number.isFinite(requested) || requested < 1) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Minimum withdrawal amount is 1 EGP",
+      message: "Minimum withdrawal amount is 1 USD",
     });
   }
 
@@ -211,7 +236,7 @@ export function allocateWithdrawalAmounts(
 
   if (requested === available) {
     return {
-      amountEgp: available,
+      amountUsd: available,
       amountCredits: Math.max(0, balanceCredits),
     };
   }
@@ -222,7 +247,7 @@ export function allocateWithdrawalAmounts(
       : 0;
 
   return {
-    amountEgp: requested,
+    amountUsd: requested,
     amountCredits,
   };
 }
@@ -256,7 +281,7 @@ export async function requestProviderWithdrawal(
   tx: TransactionClient,
   params: {
     providerId: string;
-    amountEgp: number;
+    amountUsd: number;
     providerNote?: string | null;
   }
 ) {
@@ -299,15 +324,15 @@ export async function requestProviderWithdrawal(
   }
 
   const allocation = allocateWithdrawalAmounts(
-    params.amountEgp,
-    wallet.balanceEgp,
+    params.amountUsd,
+    wallet.balanceUsd,
     wallet.balanceCredits
   );
 
   const withdrawal = await tx.withdrawalRequest.create({
     data: {
       providerId: params.providerId,
-      amountEgp: allocation.amountEgp,
+      amountUsd: allocation.amountUsd,
       amountCredits: allocation.amountCredits,
       payoutMethod: payout.payoutMethod,
       accountHolder: payout.accountHolder,
@@ -325,8 +350,8 @@ export async function requestProviderWithdrawal(
     data: {
       balanceCredits: wallet.balanceCredits - allocation.amountCredits,
       pendingCredits: wallet.pendingCredits + allocation.amountCredits,
-      balanceEgp: roundEgp(wallet.balanceEgp - allocation.amountEgp),
-      pendingEgp: roundEgp(wallet.pendingEgp + allocation.amountEgp),
+      balanceUsd: roundUsd(wallet.balanceUsd - allocation.amountUsd),
+      pendingUsd: roundUsd(wallet.pendingUsd + allocation.amountUsd),
     },
   });
 
@@ -383,8 +408,8 @@ export async function reviewProviderWithdrawal(
       data: {
         pendingCredits: Math.max(0, wallet.pendingCredits - withdrawal.amountCredits),
         paidCredits: wallet.paidCredits + withdrawal.amountCredits,
-        pendingEgp: roundEgp(Math.max(0, wallet.pendingEgp - withdrawal.amountEgp)),
-        paidEgp: roundEgp(wallet.paidEgp + withdrawal.amountEgp),
+        pendingUsd: roundUsd(Math.max(0, wallet.pendingUsd - withdrawal.amountUsd)),
+        paidUsd: roundUsd(wallet.paidUsd + withdrawal.amountUsd),
       },
     });
   } else {
@@ -393,8 +418,8 @@ export async function reviewProviderWithdrawal(
       data: {
         pendingCredits: Math.max(0, wallet.pendingCredits - withdrawal.amountCredits),
         balanceCredits: wallet.balanceCredits + withdrawal.amountCredits,
-        pendingEgp: roundEgp(Math.max(0, wallet.pendingEgp - withdrawal.amountEgp)),
-        balanceEgp: roundEgp(wallet.balanceEgp + withdrawal.amountEgp),
+        pendingUsd: roundUsd(Math.max(0, wallet.pendingUsd - withdrawal.amountUsd)),
+        balanceUsd: roundUsd(wallet.balanceUsd + withdrawal.amountUsd),
       },
     });
   }
@@ -415,7 +440,7 @@ export async function sendProviderPayout(
   params: {
     providerId: string;
     adminId: string;
-    amountEgp: number;
+    amountUsd: number;
     reason: string;
   }
 ) {
@@ -448,8 +473,8 @@ export async function sendProviderPayout(
   const payout = payoutDetailsFromProfile(profile);
   const wallet = await loadWalletForUpdate(tx, params.providerId);
   const allocation = allocateWithdrawalAmounts(
-    params.amountEgp,
-    wallet.balanceEgp,
+    params.amountUsd,
+    wallet.balanceUsd,
     wallet.balanceCredits
   );
   const now = new Date();
@@ -457,7 +482,7 @@ export async function sendProviderPayout(
   const withdrawal = await tx.withdrawalRequest.create({
     data: {
       providerId: params.providerId,
-      amountEgp: allocation.amountEgp,
+      amountUsd: allocation.amountUsd,
       amountCredits: allocation.amountCredits,
       payoutMethod: payout.payoutMethod,
       accountHolder: payout.accountHolder,
@@ -477,8 +502,8 @@ export async function sendProviderPayout(
     data: {
       balanceCredits: wallet.balanceCredits - allocation.amountCredits,
       paidCredits: wallet.paidCredits + allocation.amountCredits,
-      balanceEgp: roundEgp(wallet.balanceEgp - allocation.amountEgp),
-      paidEgp: roundEgp(wallet.paidEgp + allocation.amountEgp),
+      balanceUsd: roundUsd(wallet.balanceUsd - allocation.amountUsd),
+      paidUsd: roundUsd(wallet.paidUsd + allocation.amountUsd),
     },
   });
 

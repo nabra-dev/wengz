@@ -8,6 +8,11 @@ import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import { reviewProviderWithdrawal, sendProviderPayout, settleCompletedRequest } from "@/lib/provider-wallet";
 import { logActivityAsync } from "@/lib/activity-log";
+import {
+  CREDIT_PRICE_USD_KEY,
+  getFinanceSettings as loadFinanceSettings,
+  PROVIDER_COMMISSION_PERCENT_KEY,
+} from "@/lib/finance-settings";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -113,6 +118,80 @@ export const adminRouter = router({
       return {
         success: true,
         enabled: Boolean(value?.enabled),
+      };
+    }),
+
+  getFinanceSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/settings/finance",
+        tags: ["admin"],
+        summary: "Get global credit price and commission settings",
+      },
+    })
+    .output(
+      z.object({
+        creditPriceUsd: z.number(),
+        commissionPercent: z.number(),
+      })
+    )
+    .query(async ({ ctx }) => loadFinanceSettings(ctx.db)),
+
+  setFinanceSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/settings/finance",
+        tags: ["admin"],
+        summary: "Set global credit price and commission settings",
+      },
+    })
+    .input(
+      z.object({
+        creditPriceUsd: z.number().min(0),
+        commissionPercent: z.number().min(0).max(100),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        creditPriceUsd: z.number(),
+        commissionPercent: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.$transaction([
+        ctx.db.systemSettings.upsert({
+          where: { key: CREDIT_PRICE_USD_KEY },
+          update: {
+            value: { amount: input.creditPriceUsd },
+            description: "Global USD value of one credit for provider settlement.",
+          },
+          create: {
+            key: CREDIT_PRICE_USD_KEY,
+            value: { amount: input.creditPriceUsd },
+            description: "Global USD value of one credit for provider settlement.",
+          },
+        }),
+        ctx.db.systemSettings.upsert({
+          where: { key: PROVIDER_COMMISSION_PERCENT_KEY },
+          update: {
+            value: { percent: input.commissionPercent },
+            description: "Platform commission percent taken from provider settlement.",
+          },
+          create: {
+            key: PROVIDER_COMMISSION_PERCENT_KEY,
+            value: { percent: input.commissionPercent },
+            description: "Platform commission percent taken from provider settlement.",
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        creditPriceUsd: input.creditPriceUsd,
+        commissionPercent: input.commissionPercent,
       };
     }),
 
@@ -567,14 +646,16 @@ export const adminRouter = router({
     })
     .output(z.any())
     .query(async ({ ctx }) => {
-      const [ledgerTotals, walletTotals, providers, unsettledCompletedRequests, pendingWithdrawals] =
+      const [ledgerTotals, walletTotals, providers, unsettledCompletedRequests, pendingWithdrawals, financeSettings] =
         await Promise.all([
           ctx.db.providerFinanceLedger.aggregate({
             _sum: {
               totalCredits: true,
               providerCredits: true,
-              totalAmountEgp: true,
-              providerAmountEgp: true,
+              platformCredits: true,
+              totalAmountUsd: true,
+              providerAmountUsd: true,
+              platformAmountUsd: true,
             },
             _count: true,
           }),
@@ -583,9 +664,9 @@ export const adminRouter = router({
               balanceCredits: true,
               pendingCredits: true,
               paidCredits: true,
-              balanceEgp: true,
-              pendingEgp: true,
-              paidEgp: true,
+              balanceUsd: true,
+              pendingUsd: true,
+              paidUsd: true,
             },
           }),
           ctx.db.user.findMany({
@@ -627,6 +708,7 @@ export const adminRouter = router({
           ctx.db.withdrawalRequest.count({
             where: { status: "PENDING" },
           }),
+          loadFinanceSettings(ctx.db),
         ]);
 
       const providerWallets = providers.map((provider) => ({
@@ -639,9 +721,9 @@ export const adminRouter = router({
         balanceCredits: provider.providerWallet?.balanceCredits ?? 0,
         pendingCredits: provider.providerWallet?.pendingCredits ?? 0,
         paidCredits: provider.providerWallet?.paidCredits ?? 0,
-        balanceEgp: provider.providerWallet?.balanceEgp ?? 0,
-        pendingEgp: provider.providerWallet?.pendingEgp ?? 0,
-        paidEgp: provider.providerWallet?.paidEgp ?? 0,
+        balanceUsd: provider.providerWallet?.balanceUsd ?? 0,
+        pendingUsd: provider.providerWallet?.pendingUsd ?? 0,
+        paidUsd: provider.providerWallet?.paidUsd ?? 0,
         requestCount: provider._count.providerRequests,
         ledgerCount: provider._count.providerFinance,
         payout: provider.providerProfile
@@ -660,16 +742,20 @@ export const adminRouter = router({
           totalSettledRequests: ledgerTotals._count,
           totalRequestCredits: ledgerTotals._sum.totalCredits ?? 0,
           totalProviderCredits: ledgerTotals._sum.providerCredits ?? 0,
-          totalRequestAmountEgp: ledgerTotals._sum.totalAmountEgp ?? 0,
-          totalProviderAmountEgp: ledgerTotals._sum.providerAmountEgp ?? 0,
+          totalPlatformCredits: ledgerTotals._sum.platformCredits ?? 0,
+          totalRequestAmountUsd: ledgerTotals._sum.totalAmountUsd ?? 0,
+          totalProviderAmountUsd: ledgerTotals._sum.providerAmountUsd ?? 0,
+          totalPlatformAmountUsd: ledgerTotals._sum.platformAmountUsd ?? 0,
           totalWalletBalanceCredits: walletTotals._sum.balanceCredits ?? 0,
           totalPendingCredits: walletTotals._sum.pendingCredits ?? 0,
           totalPaidCredits: walletTotals._sum.paidCredits ?? 0,
-          totalWalletBalanceEgp: walletTotals._sum.balanceEgp ?? 0,
-          totalPendingEgp: walletTotals._sum.pendingEgp ?? 0,
-          totalPaidEgp: walletTotals._sum.paidEgp ?? 0,
+          totalWalletBalanceUsd: walletTotals._sum.balanceUsd ?? 0,
+          totalPendingUsd: walletTotals._sum.pendingUsd ?? 0,
+          totalPaidUsd: walletTotals._sum.paidUsd ?? 0,
           unsettledCompletedRequests,
           pendingWithdrawals,
+          creditPriceUsd: financeSettings.creditPriceUsd,
+          commissionPercent: financeSettings.commissionPercent,
         },
         providerWallets,
       };
@@ -818,21 +904,21 @@ export const adminRouter = router({
       await notifyProviderWithdrawalReviewed({
         providerId: withdrawal.providerId,
         status: input.status,
-        amountEgp: withdrawal.amountEgp,
+        amountUsd: withdrawal.amountUsd,
         reason: input.reason.trim(),
         locale: ctx.locale,
       });
 
       logActivityAsync({
         action: "wallet.withdraw_review",
-        message: `Withdrawal ${input.status.toLowerCase()}: ${withdrawal.amountEgp} EGP`,
+        message: `Withdrawal ${input.status.toLowerCase()}: ${withdrawal.amountUsd} USD`,
         actorId: ctx.session.user.id,
         actorRole: "SUPER_ADMIN",
         entityType: "WithdrawalRequest",
         entityId: withdrawal.id,
         metadata: {
           status: input.status,
-          amountEgp: withdrawal.amountEgp,
+          amountUsd: withdrawal.amountUsd,
           providerId: withdrawal.providerId,
           reason: input.reason.trim(),
         },
@@ -853,7 +939,7 @@ export const adminRouter = router({
     .input(
       z.object({
         providerId: z.string(),
-        amountEgp: z.number().positive(),
+        amountUsd: z.number().positive(),
         reason: z.string().min(5).max(500),
       })
     )
@@ -863,7 +949,7 @@ export const adminRouter = router({
         sendProviderPayout(tx, {
           providerId: input.providerId,
           adminId: ctx.session.user.id,
-          amountEgp: input.amountEgp,
+          amountUsd: input.amountUsd,
           reason: input.reason,
         })
       );
@@ -871,20 +957,20 @@ export const adminRouter = router({
       await notifyProviderWithdrawalReviewed({
         providerId: withdrawal.providerId,
         status: "APPROVED",
-        amountEgp: withdrawal.amountEgp,
+        amountUsd: withdrawal.amountUsd,
         reason: input.reason.trim(),
         locale: ctx.locale,
       });
 
       logActivityAsync({
         action: "wallet.payout",
-        message: `Admin payout ${withdrawal.amountEgp} EGP to provider`,
+        message: `Admin payout ${withdrawal.amountUsd} USD to provider`,
         actorId: ctx.session.user.id,
         actorRole: "SUPER_ADMIN",
         entityType: "WithdrawalRequest",
         entityId: withdrawal.id,
         metadata: {
-          amountEgp: withdrawal.amountEgp,
+          amountUsd: withdrawal.amountUsd,
           providerId: input.providerId,
           reason: input.reason.trim(),
         },
@@ -1192,7 +1278,6 @@ export const adminRouter = router({
         priorityCostLow: z.number().min(0).default(0), // Additional credits for low priority
         priorityCostMedium: z.number().min(0).default(1), // Additional credits for medium priority
         priorityCostHigh: z.number().min(0).default(2), // Additional credits for high priority
-        creditPriceEgp: z.number().min(0).default(1),
         maxDeliveryMinutes: z.number().min(15).default(480), // Max estimated delivery time in minutes
         sortOrder: z.number().default(0),
       })
@@ -1225,7 +1310,6 @@ export const adminRouter = router({
           priorityCostLow: input.priorityCostLow,
           priorityCostMedium: input.priorityCostMedium,
           priorityCostHigh: input.priorityCostHigh,
-          creditPriceEgp: input.creditPriceEgp,
           maxDeliveryMinutes: input.maxDeliveryMinutes,
           sortOrder: input.sortOrder,
         } as any,
@@ -1256,7 +1340,6 @@ export const adminRouter = router({
         priorityCostLow: z.number().min(0).optional(), // Additional credits for low priority
         priorityCostMedium: z.number().min(0).optional(), // Additional credits for medium priority
         priorityCostHigh: z.number().min(0).optional(), // Additional credits for high priority
-        creditPriceEgp: z.number().min(0).optional(),
         maxDeliveryMinutes: z.number().min(15).optional(), // Max estimated delivery time in minutes
         sortOrder: z.number().optional(),
         isActive: z.boolean().optional(),

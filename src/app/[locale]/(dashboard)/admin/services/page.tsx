@@ -144,7 +144,6 @@ export default function AdminServicesPage() {
     priorityCostLowValue: formData.get("priorityCostLow") as string,
     priorityCostMediumValue: formData.get("priorityCostMedium") as string,
     priorityCostHighValue: formData.get("priorityCostHigh") as string,
-    creditPriceEgpValue: formData.get("creditPriceEgp") as string,
     maxDeliveryMinutesValue: formData.get("maxDeliveryMinutes") as string,
     nameEn: (formData.get("name_en") as string) || "",
     nameAr: (formData.get("name_ar") as string) || "",
@@ -183,7 +182,6 @@ export default function AdminServicesPage() {
     priorityCostHigh: data.priorityCostHighValue
       ? Number.parseInt(data.priorityCostHighValue, 10)
       : 2,
-    creditPriceEgp: data.creditPriceEgpValue ? Number.parseFloat(data.creditPriceEgpValue) : 1,
     maxDeliveryMinutes: data.maxDeliveryMinutesValue
       ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
       : 480,
@@ -220,9 +218,6 @@ export default function AdminServicesPage() {
         : undefined,
       priorityCostHigh: data.priorityCostHighValue
         ? Number.parseInt(data.priorityCostHighValue, 10)
-        : undefined,
-      creditPriceEgp: data.creditPriceEgpValue
-        ? Number.parseFloat(data.creditPriceEgpValue)
         : undefined,
       maxDeliveryMinutes: data.maxDeliveryMinutesValue
         ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
@@ -440,21 +435,8 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      {/* Credit Value & Max Delivery for Edit */}
+      {/* Max Delivery for Edit */}
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor={`creditPriceEgp-${service.id}`}>{t("fields.creditPriceEgp")}</Label>
-          <Input
-            id={`creditPriceEgp-${service.id}`}
-            name="creditPriceEgp"
-            type="number"
-            min="0"
-            step="0.01"
-            defaultValue={service.creditPriceEgp ?? 1}
-            required
-          />
-          <p className="text-xs text-muted-foreground">{t("fields.creditPriceEgpHint")}</p>
-        </div>
         <div className="space-y-2">
           <Label htmlFor={`maxDeliveryMinutes-${service.id}`}>
             {t("fields.maxDeliveryMinutes")}
@@ -525,9 +507,6 @@ export default function AdminServicesPage() {
               ) : (
                 <span className="text-xs text-red-600">❌ {t("display.noResetOnPaid")}</span>
               )}
-            </p>
-            <p className="text-xs font-medium text-muted-foreground">
-              {t("display.creditPriceEgp", { price: service.creditPriceEgp ?? 1 })}
             </p>
           </div>
         </div>
@@ -763,21 +742,8 @@ export default function AdminServicesPage() {
                 </div>
               </div>
 
-              {/* Credit Value & Max Delivery */}
+              {/* Max Delivery */}
               <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="creditPriceEgp">{t("fields.creditPriceEgp")}</Label>
-                  <Input
-                    id="creditPriceEgp"
-                    name="creditPriceEgp"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    defaultValue="1"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">{t("fields.creditPriceEgpHint")}</p>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="maxDeliveryMinutes">{t("fields.maxDeliveryMinutes")}</Label>
                   <Input

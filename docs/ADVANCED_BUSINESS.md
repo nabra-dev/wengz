@@ -34,12 +34,21 @@ Registration and login are **credential-based** (email/password). Role is fixed 
 
 ## Provider earnings and withdrawals
 
-Completed request work is credited to a **provider wallet** (credits + EGP). Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal**. That request holds the amount as pending until a super admin reviews it **manually**:
+Completed request work is settled into a **provider wallet** (credits + USD) using two **global** settings (not per service):
+
+- **Credit price (USD)** — value of one credit for settlement (e.g. `$1`).
+- **Platform commission (%)** — share taken from gross settlement before the provider is credited (e.g. `10%`).
+
+Example: a request costing `500` credits with `$1`/credit and `10%` commission settles as **$500** gross, **$50** platform, **$450** / **450** credits to the provider.
+
+Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal**. That request holds the amount as pending until a super admin reviews it **manually**:
 
 - **Approve / mark as paid** after sending the money off-platform, with a **reason** (for example a transfer reference).
 - **Reject** with a **reason**, which returns the held funds to the available balance.
 
 Admins can also **record a payout** against a provider’s available balance when they send money without a prior request. There is no automated payout gateway; operations handle the transfer, then record status and reason in the app.
+
+Settlement value is independent of what the client paid for a **package**; packages remain the client subscription product.
 
 ---
 
@@ -99,7 +108,7 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 | **Service type**  | Configurable line of work with pricing, attributes, and revision rules           |
 | **Request**       | A unit of client–provider work tracked through statuses, comments, and ratings   |
 | **Payment proof** | Client-submitted evidence for manual verification of off-platform payment        |
-| **Provider wallet** | Provider earnings from completed requests, tracked in credits and EGP          |
+| **Provider wallet** | Provider earnings from completed requests, tracked in credits and USD          |
 | **Withdrawal**    | Provider request (or admin-recorded payout) reviewed manually with status + reason |
 
 ---

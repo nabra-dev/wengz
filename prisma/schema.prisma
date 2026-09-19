@@ -124,7 +124,6 @@ model ServiceType {
   priorityCostLow          Int                     @default(0) // Additional credits for low priority
   priorityCostMedium       Int                     @default(1) // Additional credits for medium priority
   priorityCostHigh         Int                     @default(2) // Additional credits for high priority
-  creditPriceEgp           Float                   @default(1) // EGP value of one credit for this service
   maxDeliveryMinutes       Int                     @default(480) // Max estimated delivery time in minutes for start-work
   isActive                 Boolean                 @default(true)
   sortOrder                Int                     @default(0)
@@ -273,9 +272,9 @@ model ProviderWallet {
   balanceCredits Int      @default(0)
   pendingCredits Int      @default(0)
   paidCredits    Int      @default(0)
-  balanceEgp     Float    @default(0)
-  pendingEgp     Float    @default(0)
-  paidEgp        Float    @default(0)
+  balanceUsd     Float    @default(0)
+  pendingUsd     Float    @default(0)
+  paidUsd        Float    @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   provider       User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -286,7 +285,7 @@ model ProviderWallet {
 model WithdrawalRequest {
   id            String           @id @default(cuid())
   providerId    String
-  amountEgp     Float
+  amountUsd     Float
   amountCredits Int              @default(0)
   payoutMethod  PayoutMethod
   accountHolder String
@@ -309,22 +308,25 @@ model WithdrawalRequest {
 }
 
 model ProviderFinanceLedger {
-  id                String                @id @default(cuid())
-  requestId         String                @unique
-  providerId        String
-  serviceTypeId     String
-  totalCredits      Int
-  providerCredits   Int
-  creditPriceEgp    Float
-  totalAmountEgp    Float
-  providerAmountEgp Float
-  status            ProviderFinanceStatus @default(AVAILABLE)
-  settledAt         DateTime              @default(now())
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-  provider          User                  @relation("ProviderFinanceLedger", fields: [providerId], references: [id], onDelete: Cascade)
-  request           Request               @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  serviceType       ServiceType           @relation(fields: [serviceTypeId], references: [id])
+  id                 String                @id @default(cuid())
+  requestId          String                @unique
+  providerId         String
+  serviceTypeId      String
+  totalCredits       Int
+  providerCredits    Int
+  platformCredits    Int                  @default(0)
+  creditPriceUsd     Float
+  commissionPercent  Float                @default(0)
+  totalAmountUsd     Float
+  platformAmountUsd  Float                @default(0)
+  providerAmountUsd  Float
+  status             ProviderFinanceStatus @default(AVAILABLE)
+  settledAt          DateTime              @default(now())
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  provider           User                  @relation("ProviderFinanceLedger", fields: [providerId], references: [id], onDelete: Cascade)
+  request            Request               @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  serviceType        ServiceType           @relation(fields: [serviceTypeId], references: [id])
 
   @@index([providerId, status])
   @@index([settledAt])

@@ -307,7 +307,18 @@
   "admin": {
     "settings": {
       "title": "الإعدادات",
-      "subtitle": "تكوين خيارات المنصة على مستوى النظام"
+      "subtitle": "تكوين خيارات المنصة على مستوى النظام",
+      "finance": {
+        "title": "تسوية المبدعين",
+        "description": "سعر الكريدت العالمي بالدولار ونسبة عمولة المنصة المستخدمة في مدفوعات المبدعين (وليست الاشتراكات).",
+        "creditPriceUsd": "سعر الكريدت (دولار)",
+        "creditPriceUsdHint": "قيمة الكريدت الواحد بالدولار عند تسوية الطلبات المكتملة.",
+        "commissionPercent": "عمولة المنصة (%)",
+        "commissionPercentHint": "النسبة المقتطعة من إجمالي التسوية قبل إضافة رصيد المبدع.",
+        "save": "حفظ إعدادات المالية",
+        "saving": "جاري الحفظ...",
+        "saved": "تم حفظ إعدادات المالية"
+      }
     },
     "notificationsPage": {
       "title": "الإشعارات",
@@ -643,8 +654,6 @@
         "paidRevisionCostHint": "الكريدت المحملة للمراجعات المدفوعة",
         "resetFreeRevisionsOnPaid": "إعادة تعيين المراجعات المجانية عند الدفع",
         "resetFreeRevisionsOnPaidHint": "إعادة تعيين عدد المراجعات المجانية بعد مراجعة مدفوعة",
-        "creditPriceEgp": "سعر الكريدت (جنيه)",
-        "creditPriceEgpHint": "قيمة الكريدت الواحد بالجنيه لهذه الخدمة. تُستخدم لحساب قيمة محفظة المبدع.",
         "maxDeliveryMinutes": "الحد الأقصى للتسليم (دقائق)",
         "maxDeliveryMinutesHint": "أقصى وقت تقديري للتسليم يمكن للمبدع تعيينه عند بدء العمل"
       },
@@ -687,39 +696,43 @@
         "creditsLabel": "كريدت",
         "revisionInfo": "{freeRevisions} مجاني، ثم {paidCost} {creditLabel}/تعديل",
         "resetsOnPaid": "يتم إعادة التعيين عند الدفع",
-        "noResetOnPaid": "لا يتم إعادة التعيين عند الدفع",
-        "creditPriceEgp": "{price} جنيه لكل كريدت"
+        "noResetOnPaid": "لا يتم إعادة التعيين عند الدفع"
       }
     },
     "finance": {
       "title": "محافظ المبدعين",
-      "subtitle": "تابع أرباح المبدعين والسحوبات المعلقة والتحويلات اليدوية",
+      "subtitle": "تتبع قيمة التسوية وعمولة المنصة ومحافظ المبدعين والمدفوعات اليدوية (دولار)",
       "summary": {
         "providerCredits": "كريدت المبدعين",
-        "providerAmount": "مبلغ المبدعين",
-        "providerCreditsDesc": "إجمالي الكريدت المضافة للمبدعين",
+        "providerAmount": "صافي المبدع",
+        "providerCreditsDesc": "المبلغ الصافي المضاف للمبدعين بعد العمولة",
         "walletBalance": "رصيد المحافظ",
         "walletBalanceDesc": "أرصدة محافظ المبدعين المتاحة حالياً",
         "settledRequests": "طلبات مسواة",
         "settledRequestsDesc": "طلبات مكتملة تمت إضافتها للمبدعين",
         "paidOut": "المدفوع",
         "paidOutDesc": "إجمالي المبالغ التي تم تحويلها للمبدعين",
-        "creditDetail": "{credits} كريدت"
+        "creditDetail": "{credits} كريدت",
+        "grossAmount": "إجمالي التسوية",
+        "grossAmountDesc": "قيمة تسوية الطلبات قبل العمولة",
+        "platformAmount": "عمولة المنصة",
+        "platformAmountDesc": "حصة المنصة بنسبة {percent}%",
+        "settingsHint": "الإعدادات الحالية: {price} لكل كريدت · عمولة {percent}%"
       },
       "wallets": {
         "title": "محافظ المبدعين",
         "description": "كل المبدعين وحالة محافظ الكريدت الحالية",
         "provider": "المبدع",
         "balance": "الرصيد",
-        "balanceEgp": "المتاح بالجنيه",
-        "pendingEgp": "المعلق بالجنيه",
         "paid": "المدفوع",
-        "paidEgp": "المدفوع بالجنيه",
         "requests": "الطلبات",
         "ledger": "قيود المالية",
         "actions": "الإجراءات",
         "viewLedger": "عرض القيود",
-        "showAll": "عرض الكل"
+        "showAll": "عرض الكل",
+        "balanceUsd": "المتاح بالدولار",
+        "pendingUsd": "المعلق بالدولار",
+        "paidUsd": "المدفوع بالدولار"
       },
       "ledger": {
         "title": "سجل المالية",
@@ -735,9 +748,12 @@
         "total": "الإجمالي",
         "creditPrice": "سعر الكريدت",
         "providerCredits": "المبدع",
-        "providerAmount": "جنيه المبدع",
+        "providerAmount": "دولار المبدع",
         "status": "الحالة",
-        "settledAt": "تاريخ التسوية"
+        "settledAt": "تاريخ التسوية",
+        "commission": "العمولة",
+        "grossAmount": "الإجمالي",
+        "platformAmount": "المنصة"
       },
       "status": {
         "AVAILABLE": "متاح",
@@ -781,7 +797,7 @@
         "title": "إرسال صرف",
         "description": "سجّل تحويلاً يدوياً لهذا المبدع. يُخصم المبلغ من الرصيد المتاح فوراً.",
         "send": "إرسال صرف",
-        "amount": "المبلغ (جنيه)",
+        "amount": "المبلغ (دولار)",
         "reason": "السبب / مرجع التحويل",
         "reasonPlaceholder": "مثال: تحويل بنكي رقم 45821",
         "noDetails": "هذا المبدع لم يضف حساباً بنكياً أو رقم محفظة إلكترونية.",
@@ -1635,13 +1651,13 @@
       "subtitle": "تابع أرباحك المضافة من الطلبات بالكريدت",
       "summary": {
         "balance": "رصيد المحفظة",
-        "balanceDesc": "القيمة بالجنيه من الأعمال المعتمدة",
+        "balanceDesc": "القيمة بالدولار من الأعمال المعتمدة",
         "pending": "سحب معلق",
         "pendingDesc": "المبلغ المحجوز أثناء مراجعة طلب السحب",
         "paid": "المدفوع",
         "paidDesc": "إجمالي ما تم تحويله إليك",
         "periodEarnings": "آخر 30 يوم",
-        "periodEarningsDesc": "القيمة بالجنيه المضافة في الفترة الحالية",
+        "periodEarningsDesc": "القيمة بالدولار المضافة في الفترة الحالية",
         "completed": "طلبات مسواة",
         "completedDesc": "طلبات معتمدة لها قيود في المحفظة",
         "creditDetail": "{credits} كريدت"
@@ -1655,7 +1671,7 @@
         "total": "كريدت الطلب",
         "creditPrice": "سعر الكريدت",
         "providerCredits": "كريدتك",
-        "providerAmount": "جنيهك",
+        "providerAmount": "دولارك",
         "status": "الحالة",
         "settledAt": "تاريخ التسوية"
       },
@@ -1681,7 +1697,7 @@
       "withdraw": {
         "title": "طلب سحب",
         "description": "يتم حجز الرصيد المتاح أثناء مراجعة الأدمن للطلب وتحويل المبلغ يدوياً.",
-        "amount": "المبلغ (جنيه)",
+        "amount": "المبلغ (دولار)",
         "amountHint": "المتاح: {amount}",
         "note": "ملاحظة للأدمن (اختياري)",
         "notePlaceholder": "مثال: الرجاء التحويل إلى فودافون كاش",
@@ -2007,15 +2023,15 @@
     },
     "withdrawalRequested": {
       "title": "طلب سحب جديد",
-      "message": "{providerNameOrEmail} طلب سحب {amount} جنيه."
+      "message": "{providerNameOrEmail} طلب سحب {amount} دولار."
     },
     "withdrawalApproved": {
       "title": "تم دفع السحب",
-      "message": "تم تعليم سحبك بقيمة {amount} جنيه كمدفوع. {reason}"
+      "message": "تم تعليم سحبك بقيمة {amount} دولار كمدفوع. {reason}"
     },
     "withdrawalRejected": {
       "title": "تم رفض السحب",
-      "message": "تم رفض سحبك بقيمة {amount} جنيه. السبب: {reason}"
+      "message": "تم رفض سحبك بقيمة {amount} دولار. السبب: {reason}"
     },
     "subscriptionCancelled": {
       "title": "تم إلغاء الاشتراك",

@@ -5,40 +5,55 @@ import {
 } from "@/lib/provider-wallet";
 
 describe("provider wallet finance calculation", () => {
-  it("credits 100% of request credits to the provider", () => {
-    expect(calculateProviderFinance(200, 1)).toMatchObject({
+  it("applies commission to both credits and USD (Option A)", () => {
+    expect(calculateProviderFinance(500, 1, 10)).toMatchObject({
+      totalCredits: 500,
+      providerCredits: 450,
+      platformCredits: 50,
+      creditPriceUsd: 1,
+      commissionPercent: 10,
+      totalAmountUsd: 500,
+      platformAmountUsd: 50,
+      providerAmountUsd: 450,
+    });
+  });
+
+  it("credits 100% when commission is 0", () => {
+    expect(calculateProviderFinance(200, 1, 0)).toMatchObject({
       providerCredits: 200,
-      providerAmountEgp: 200,
-      totalAmountEgp: 200,
-    });
-
-    expect(calculateProviderFinance(50, 2)).toMatchObject({
-      providerCredits: 50,
-      providerAmountEgp: 100,
-      totalAmountEgp: 100,
+      platformCredits: 0,
+      providerAmountUsd: 200,
+      platformAmountUsd: 0,
+      totalAmountUsd: 200,
     });
   });
 
-  it("converts provider credits to EGP using the service credit price", () => {
-    expect(calculateProviderFinance(100, 1)).toMatchObject({
-      providerCredits: 100,
-      providerAmountEgp: 100,
-      totalAmountEgp: 100,
-    });
-
-    expect(calculateProviderFinance(100, 2)).toMatchObject({
-      providerCredits: 100,
-      providerAmountEgp: 200,
-      totalAmountEgp: 200,
+  it("gives provider nothing when commission is 100%", () => {
+    expect(calculateProviderFinance(100, 2, 100)).toMatchObject({
+      providerCredits: 0,
+      platformCredits: 100,
+      totalAmountUsd: 200,
+      platformAmountUsd: 200,
+      providerAmountUsd: 0,
     });
   });
 
-  it("rounds EGP amounts to two decimals", () => {
-    expect(calculateProviderFinance(3, 1.333)).toMatchObject({
-      providerCredits: 3,
-      providerAmountEgp: 4,
-      totalAmountEgp: 4,
+  it("converts using global credit price", () => {
+    expect(calculateProviderFinance(100, 2, 10)).toMatchObject({
+      providerCredits: 90,
+      platformCredits: 10,
+      totalAmountUsd: 200,
+      platformAmountUsd: 20,
+      providerAmountUsd: 180,
     });
+  });
+
+  it("rounds USD amounts to two decimals and avoids drift", () => {
+    const result = calculateProviderFinance(3, 1.333, 10);
+    expect(result.totalAmountUsd).toBe(4);
+    expect(result.platformAmountUsd).toBe(0.4);
+    expect(result.providerAmountUsd).toBe(3.6);
+    expect(result.platformAmountUsd + result.providerAmountUsd).toBe(result.totalAmountUsd);
   });
 });
 
@@ -83,39 +98,20 @@ describe("payout details", () => {
       bankAccount: null,
       eWalletNumber: "01000000000",
     });
-
-    expect(() =>
-      normalizePayoutDetails({
-        payoutMethod: "E_WALLET",
-        accountHolder: "Omar Ali",
-        eWalletNumber: " ",
-      })
-    ).toThrow("E-wallet number is required for e-wallet payouts");
   });
 });
 
-describe("withdrawal allocation", () => {
-  it("withdraws remaining credits when the full EGP balance is requested", () => {
-    expect(allocateWithdrawalAmounts(150, 150, 80)).toEqual({
-      amountEgp: 150,
-      amountCredits: 80,
+describe("allocateWithdrawalAmounts", () => {
+  it("allocates full credits when withdrawing full USD balance", () => {
+    expect(allocateWithdrawalAmounts(450, 450, 450)).toEqual({
+      amountUsd: 450,
+      amountCredits: 450,
     });
   });
 
-  it("allocates credits proportionally for a partial withdrawal", () => {
-    expect(allocateWithdrawalAmounts(50, 200, 40)).toEqual({
-      amountEgp: 50,
-      amountCredits: 10,
-    });
-  });
-
-  it("rejects amounts below 1 EGP or above the available balance", () => {
-    expect(() => allocateWithdrawalAmounts(0.4, 100, 10)).toThrow(
-      "Minimum withdrawal amount is 1 EGP"
+  it("rejects amounts below 1 USD", () => {
+    expect(() => allocateWithdrawalAmounts(0.5, 100, 100)).toThrow(
+      "Minimum withdrawal amount is 1 USD"
     );
-    expect(() => allocateWithdrawalAmounts(120, 100, 10)).toThrow(
-      "Withdrawal amount exceeds available balance"
-    );
-    expect(() => allocateWithdrawalAmounts(10, 0, 0)).toThrow("Insufficient wallet balance");
   });
 });

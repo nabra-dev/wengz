@@ -292,10 +292,10 @@ export const providerRouter = router({
         balanceCredits: z.number(),
         pendingCredits: z.number(),
         paidCredits: z.number(),
-        balanceEgp: z.number(),
-        pendingEgp: z.number(),
-        paidEgp: z.number(),
-        totalEarningsEgp: z.number(),
+        balanceUsd: z.number(),
+        pendingUsd: z.number(),
+        paidUsd: z.number(),
+        totalEarningsUsd: z.number(),
         period: z.object({ start: z.date(), end: z.date() }),
         requests: z.array(z.any()),
         ledger: z.array(z.any()),
@@ -358,7 +358,7 @@ export const providerRouter = router({
           },
           select: {
             providerCredits: true,
-            providerAmountEgp: true,
+            providerAmountUsd: true,
           },
         }),
         ctx.db.providerProfile.findUnique({
@@ -389,9 +389,12 @@ export const providerRouter = router({
         finance: {
           totalCredits: entry.totalCredits,
           providerCredits: entry.providerCredits,
-          creditPriceEgp: entry.creditPriceEgp,
-          totalAmountEgp: entry.totalAmountEgp,
-          providerAmountEgp: entry.providerAmountEgp,
+          platformCredits: entry.platformCredits,
+          creditPriceUsd: entry.creditPriceUsd,
+          commissionPercent: entry.commissionPercent,
+          totalAmountUsd: entry.totalAmountUsd,
+          platformAmountUsd: entry.platformAmountUsd,
+          providerAmountUsd: entry.providerAmountUsd,
           status: entry.status,
           settledAt: entry.settledAt,
         },
@@ -401,14 +404,14 @@ export const providerRouter = router({
         (
           sum: {
             providerCredits: number;
-            providerAmountEgp: number;
+            providerAmountUsd: number;
           },
           entry
         ) => ({
           providerCredits: sum.providerCredits + entry.providerCredits,
-          providerAmountEgp: sum.providerAmountEgp + entry.providerAmountEgp,
+          providerAmountUsd: sum.providerAmountUsd + entry.providerAmountUsd,
         }),
-        { providerCredits: 0, providerAmountEgp: 0 }
+        { providerCredits: 0, providerAmountUsd: 0 }
       );
 
       return {
@@ -417,10 +420,10 @@ export const providerRouter = router({
         balanceCredits: wallet?.balanceCredits ?? 0,
         pendingCredits: wallet?.pendingCredits ?? 0,
         paidCredits: wallet?.paidCredits ?? 0,
-        balanceEgp: wallet?.balanceEgp ?? 0,
-        pendingEgp: wallet?.pendingEgp ?? 0,
-        paidEgp: wallet?.paidEgp ?? 0,
-        totalEarningsEgp: periodTotals.providerAmountEgp,
+        balanceUsd: wallet?.balanceUsd ?? 0,
+        pendingUsd: wallet?.pendingUsd ?? 0,
+        paidUsd: wallet?.paidUsd ?? 0,
+        totalEarningsUsd: periodTotals.providerAmountUsd,
         period: {
           start: startDate,
           end: endDate,
@@ -828,7 +831,7 @@ export const providerRouter = router({
     })
     .input(
       z.object({
-        amountEgp: z.number().positive(),
+        amountUsd: z.number().positive(),
         providerNote: z.string().max(500).optional().nullable(),
       })
     )
@@ -843,7 +846,7 @@ export const providerRouter = router({
       const withdrawal = await ctx.db.$transaction((tx) =>
         requestProviderWithdrawal(tx, {
           providerId: userId,
-          amountEgp: input.amountEgp,
+          amountUsd: input.amountUsd,
           providerNote: input.providerNote,
         })
       );
@@ -851,7 +854,7 @@ export const providerRouter = router({
       const providerNameOrEmail = ctx.session.user.name || ctx.session.user.email || "Provider";
       await notifyAdminsNewWithdrawal({
         providerNameOrEmail,
-        amountEgp: withdrawal.amountEgp,
+        amountUsd: withdrawal.amountUsd,
         locale: ctx.locale,
       });
 

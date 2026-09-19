@@ -263,10 +263,10 @@ export async function notifyAdminsNewPendingPayment(params: {
 
 export async function notifyAdminsNewWithdrawal(params: {
   providerNameOrEmail: string;
-  amountEgp: number;
+  amountUsd: number;
   locale?: string;
 }) {
-  const { providerNameOrEmail, amountEgp, locale = "en" } = params;
+  const { providerNameOrEmail, amountUsd, locale = "en" } = params;
 
   const admins = await db.user.findMany({
     where: { role: "SUPER_ADMIN" },
@@ -276,7 +276,7 @@ export async function notifyAdminsNewWithdrawal(params: {
   const title = await getTranslation(locale, "notifications.withdrawalRequested.title");
   const message = await getTranslation(locale, "notifications.withdrawalRequested.message", {
     providerNameOrEmail,
-    amount: amountEgp.toFixed(2),
+    amount: amountUsd.toFixed(2),
   });
 
   await Promise.all(
@@ -294,7 +294,7 @@ export async function notifyAdminsNewWithdrawal(params: {
           messageKey: "notifications.withdrawalRequested.message",
           messageParams: {
             providerNameOrEmail,
-            amount: amountEgp.toFixed(2),
+            amount: amountUsd.toFixed(2),
           },
         },
       })
@@ -305,16 +305,16 @@ export async function notifyAdminsNewWithdrawal(params: {
 export async function notifyProviderWithdrawalReviewed(params: {
   providerId: string;
   status: "APPROVED" | "REJECTED";
-  amountEgp: number;
+  amountUsd: number;
   reason: string;
   locale?: string;
 }) {
-  const { providerId, status, amountEgp, reason, locale = "en" } = params;
+  const { providerId, status, amountUsd, reason, locale = "en" } = params;
   const key = status === "APPROVED" ? "withdrawalApproved" : "withdrawalRejected";
 
   const title = await getTranslation(locale, `notifications.${key}.title`);
   const message = await getTranslation(locale, `notifications.${key}.message`, {
-    amount: amountEgp.toFixed(2),
+    amount: amountUsd.toFixed(2),
     reason,
   });
 
@@ -330,7 +330,7 @@ export async function notifyProviderWithdrawalReviewed(params: {
       titleKey: `notifications.${key}.title`,
       messageKey: `notifications.${key}.message`,
       messageParams: {
-        amount: amountEgp.toFixed(2),
+        amount: amountUsd.toFixed(2),
         reason,
       },
     },

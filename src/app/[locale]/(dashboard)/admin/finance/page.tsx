@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
-import { CheckCircle, Clock, CreditCard, Wallet } from "lucide-react";
+import { CheckCircle, Clock, CreditCard, Percent, Wallet } from "lucide-react";
 
 type PayoutMethod = "BANK" | "E_WALLET";
 type WithdrawalStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -48,9 +48,9 @@ type ProviderWalletRow = {
   balanceCredits: number;
   pendingCredits: number;
   paidCredits: number;
-  balanceEgp: number;
-  pendingEgp: number;
-  paidEgp: number;
+  balanceUsd: number;
+  pendingUsd: number;
+  paidUsd: number;
   requestCount: number;
   ledgerCount: number;
   payout: PayoutDetails | null;
@@ -60,9 +60,12 @@ type LedgerEntry = {
   id: string;
   totalCredits: number;
   providerCredits: number;
-  creditPriceEgp: number;
-  totalAmountEgp: number;
-  providerAmountEgp: number;
+  platformCredits: number;
+  creditPriceUsd: number;
+  commissionPercent: number;
+  totalAmountUsd: number;
+  platformAmountUsd: number;
+  providerAmountUsd: number;
   status: "AVAILABLE" | "PAID" | "VOIDED";
   settledAt: string | Date;
   provider: { name: string | null; email: string };
@@ -76,7 +79,7 @@ type LedgerEntry = {
 
 type WithdrawalRow = {
   id: string;
-  amountEgp: number;
+  amountUsd: number;
   amountCredits: number;
   payoutMethod: PayoutMethod;
   accountHolder: string;
@@ -95,8 +98,8 @@ function formatCredits(value: number) {
   return value.toLocaleString();
 }
 
-function formatEgp(value: number) {
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} EGP`;
+function formatMoney(value: number) {
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDestination(entry: {
@@ -189,8 +192,28 @@ export default function AdminFinancePage() {
 
   const summaryCards = [
     {
+      title: t("summary.grossAmount"),
+      value: formatMoney(finance?.summary.totalRequestAmountUsd ?? 0),
+      description: t("summary.grossAmountDesc"),
+      detail: t("summary.creditDetail", {
+        credits: finance?.summary.totalRequestCredits ?? 0,
+      }),
+      icon: CreditCard,
+    },
+    {
+      title: t("summary.platformAmount"),
+      value: formatMoney(finance?.summary.totalPlatformAmountUsd ?? 0),
+      description: t("summary.platformAmountDesc", {
+        percent: finance?.summary.commissionPercent ?? 0,
+      }),
+      detail: t("summary.creditDetail", {
+        credits: finance?.summary.totalPlatformCredits ?? 0,
+      }),
+      icon: Percent,
+    },
+    {
       title: t("summary.providerAmount"),
-      value: formatEgp(finance?.summary.totalProviderAmountEgp ?? 0),
+      value: formatMoney(finance?.summary.totalProviderAmountUsd ?? 0),
       description: t("summary.providerCreditsDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalProviderCredits ?? 0,
@@ -199,7 +222,7 @@ export default function AdminFinancePage() {
     },
     {
       title: t("summary.walletBalance"),
-      value: formatEgp(finance?.summary.totalWalletBalanceEgp ?? 0),
+      value: formatMoney(finance?.summary.totalWalletBalanceUsd ?? 0),
       description: t("summary.walletBalanceDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalWalletBalanceCredits ?? 0,
@@ -210,12 +233,12 @@ export default function AdminFinancePage() {
       title: t("pending.title"),
       value: formatCredits(finance?.summary.pendingWithdrawals ?? 0),
       description: t("pending.description"),
-      detail: formatEgp(finance?.summary.totalPendingEgp ?? 0),
+      detail: formatMoney(finance?.summary.totalPendingUsd ?? 0),
       icon: Clock,
     },
     {
       title: t("summary.paidOut"),
-      value: formatEgp(finance?.summary.totalPaidEgp ?? 0),
+      value: formatMoney(finance?.summary.totalPaidUsd ?? 0),
       description: t("summary.paidOutDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalPaidCredits ?? 0,
@@ -243,9 +266,17 @@ export default function AdminFinancePage() {
       <div>
         <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("subtitle")}</p>
+        {!financeLoading && finance?.summary && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("summary.settingsHint", {
+              price: formatMoney(finance.summary.creditPriceUsd ?? 1),
+              percent: finance.summary.commissionPercent ?? 0,
+            })}
+          </p>
+        )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {summaryCards.map((card) => (
           <Card key={card.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -317,7 +348,7 @@ export default function AdminFinancePage() {
                       </div>
                       <div className="text-xs text-muted-foreground">{entry.provider.email}</div>
                     </TableCell>
-                    <TableCell>{formatEgp(entry.amountEgp)}</TableCell>
+                    <TableCell>{formatMoney(entry.amountUsd)}</TableCell>
                     <TableCell>{t(`methods.${entry.payoutMethod}`)}</TableCell>
                     <TableCell className="max-w-xs text-sm">
                       {formatDestination(entry)}
@@ -374,9 +405,9 @@ export default function AdminFinancePage() {
                 <TableRow>
                   <TableHead>{t("wallets.provider")}</TableHead>
                   <TableHead>{t("withdrawals.destination")}</TableHead>
-                  <TableHead>{t("wallets.balanceEgp")}</TableHead>
-                  <TableHead>{t("wallets.pendingEgp")}</TableHead>
-                  <TableHead>{t("wallets.paidEgp")}</TableHead>
+                  <TableHead>{t("wallets.balanceUsd")}</TableHead>
+                  <TableHead>{t("wallets.pendingUsd")}</TableHead>
+                  <TableHead>{t("wallets.paidUsd")}</TableHead>
                   <TableHead>{t("wallets.requests")}</TableHead>
                   <TableHead>{t("wallets.actions")}</TableHead>
                 </TableRow>
@@ -393,9 +424,9 @@ export default function AdminFinancePage() {
                     <TableCell className="max-w-xs text-sm">
                       {formatDestination(wallet.payout ?? { payoutMethod: null, accountHolder: null, bankName: null, bankAccount: null, eWalletNumber: null })}
                     </TableCell>
-                    <TableCell>{formatEgp(wallet.balanceEgp)}</TableCell>
-                    <TableCell>{formatEgp(wallet.pendingEgp)}</TableCell>
-                    <TableCell>{formatEgp(wallet.paidEgp)}</TableCell>
+                    <TableCell>{formatMoney(wallet.balanceUsd)}</TableCell>
+                    <TableCell>{formatMoney(wallet.pendingUsd)}</TableCell>
+                    <TableCell>{formatMoney(wallet.paidUsd)}</TableCell>
                     <TableCell>{wallet.requestCount}</TableCell>
                     <TableCell className="flex flex-wrap gap-2">
                       <Button
@@ -421,7 +452,7 @@ export default function AdminFinancePage() {
                         onClick={() => {
                           setPayoutTarget(wallet);
                           setPayoutAmount(
-                            wallet.balanceEgp > 0 ? String(wallet.balanceEgp) : ""
+                            wallet.balanceUsd > 0 ? String(wallet.balanceUsd) : ""
                           );
                           setPayoutReason("");
                         }}
@@ -490,6 +521,9 @@ export default function AdminFinancePage() {
                   <TableHead>{t("ledger.service")}</TableHead>
                   <TableHead>{t("ledger.total")}</TableHead>
                   <TableHead>{t("ledger.creditPrice")}</TableHead>
+                  <TableHead>{t("ledger.commission")}</TableHead>
+                  <TableHead>{t("ledger.grossAmount")}</TableHead>
+                  <TableHead>{t("ledger.platformAmount")}</TableHead>
                   <TableHead>{t("ledger.providerCredits")}</TableHead>
                   <TableHead>{t("ledger.providerAmount")}</TableHead>
                   <TableHead>{t("ledger.status")}</TableHead>
@@ -510,9 +544,17 @@ export default function AdminFinancePage() {
                       )}
                     </TableCell>
                     <TableCell>{formatCredits(entry.totalCredits)}</TableCell>
-                    <TableCell>{formatEgp(entry.creditPriceEgp)}</TableCell>
+                    <TableCell>{formatMoney(entry.creditPriceUsd)}</TableCell>
+                    <TableCell>{entry.commissionPercent}%</TableCell>
+                    <TableCell>{formatMoney(entry.totalAmountUsd)}</TableCell>
+                    <TableCell>
+                      {formatMoney(entry.platformAmountUsd)}
+                      <span className="block text-xs text-muted-foreground">
+                        {t("summary.creditDetail", { credits: entry.platformCredits })}
+                      </span>
+                    </TableCell>
                     <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
-                    <TableCell>{formatEgp(entry.providerAmountEgp)}</TableCell>
+                    <TableCell>{formatMoney(entry.providerAmountUsd)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{t("status.AVAILABLE")}</Badge>
                     </TableCell>
@@ -544,7 +586,7 @@ export default function AdminFinancePage() {
               <p>
                 <span className="font-medium">{reviewTarget.provider.name || reviewTarget.provider.email}</span>
                 {" · "}
-                {formatEgp(reviewTarget.amountEgp)}
+                {formatMoney(reviewTarget.amountUsd)}
               </p>
               <p className="text-muted-foreground">{formatDestination(reviewTarget)}</p>
               {reviewTarget.providerNote && (
@@ -624,7 +666,7 @@ export default function AdminFinancePage() {
                   <AlertDescription>{t("payout.noDetails")}</AlertDescription>
                 </Alert>
               )}
-              {payoutTarget.balanceEgp < 1 && (
+              {payoutTarget.balanceUsd < 1 && (
                 <Alert variant="warning">
                   <AlertDescription>{t("payout.noBalance")}</AlertDescription>
                 </Alert>
@@ -636,10 +678,10 @@ export default function AdminFinancePage() {
                   type="number"
                   min="1"
                   step="0.01"
-                  max={payoutTarget.balanceEgp}
+                  max={payoutTarget.balanceUsd}
                   value={payoutAmount}
                   onChange={(event) => setPayoutAmount(event.target.value)}
-                  disabled={!hasCompletePayout(payoutTarget.payout) || payoutTarget.balanceEgp < 1}
+                  disabled={!hasCompletePayout(payoutTarget.payout) || payoutTarget.balanceUsd < 1}
                 />
               </div>
               <div className="space-y-2">
@@ -649,7 +691,7 @@ export default function AdminFinancePage() {
                   value={payoutReason}
                   onChange={(event) => setPayoutReason(event.target.value)}
                   placeholder={t("payout.reasonPlaceholder")}
-                  disabled={!hasCompletePayout(payoutTarget.payout) || payoutTarget.balanceEgp < 1}
+                  disabled={!hasCompletePayout(payoutTarget.payout) || payoutTarget.balanceUsd < 1}
                 />
               </div>
             </div>
@@ -660,7 +702,7 @@ export default function AdminFinancePage() {
                 sendPayoutMutation.isPending ||
                 !payoutTarget ||
                 !hasCompletePayout(payoutTarget.payout) ||
-                payoutTarget.balanceEgp < 1 ||
+                payoutTarget.balanceUsd < 1 ||
                 payoutReason.trim().length < 5 ||
                 Number(payoutAmount) < 1
               }
@@ -668,7 +710,7 @@ export default function AdminFinancePage() {
                 if (!payoutTarget) return;
                 sendPayoutMutation.mutate({
                   providerId: payoutTarget.provider.id,
-                  amountEgp: Number(payoutAmount),
+                  amountUsd: Number(payoutAmount),
                   reason: payoutReason,
                 });
               }}

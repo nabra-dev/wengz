@@ -307,7 +307,18 @@
   "admin": {
     "settings": {
       "title": "Settings",
-      "subtitle": "Configure platform-wide options"
+      "subtitle": "Configure platform-wide options",
+      "finance": {
+        "title": "Provider settlement",
+        "description": "Global USD credit price and platform commission used for provider payouts (not package subscriptions).",
+        "creditPriceUsd": "Credit price (USD)",
+        "creditPriceUsdHint": "USD value of one credit when settling completed requests.",
+        "commissionPercent": "Platform commission (%)",
+        "commissionPercentHint": "Percent taken from gross settlement before crediting the provider.",
+        "save": "Save finance settings",
+        "saving": "Saving...",
+        "saved": "Finance settings saved"
+      }
     },
     "notificationsPage": {
       "title": "Notifications",
@@ -643,8 +654,6 @@
         "paidRevisionCostHint": "Credits charged for paid revisions",
         "resetFreeRevisionsOnPaid": "Reset free revisions on paid",
         "resetFreeRevisionsOnPaidHint": "Reset free revision count after a paid revision",
-        "creditPriceEgp": "Credit Price (EGP)",
-        "creditPriceEgpHint": "EGP value of one credit for this service. Used to calculate provider wallet value.",
         "maxDeliveryMinutes": "Max Delivery (minutes)",
         "maxDeliveryMinutesHint": "Maximum estimated delivery time providers can set when starting work"
       },
@@ -687,39 +696,43 @@
         "creditsLabel": "credits",
         "revisionInfo": "{freeRevisions} free, then {paidCost} {creditLabel}/revision",
         "resetsOnPaid": "Resets on paid",
-        "noResetOnPaid": "No reset on paid",
-        "creditPriceEgp": "{price} EGP per credit"
+        "noResetOnPaid": "No reset on paid"
       }
     },
     "finance": {
       "title": "Provider Wallets",
-      "subtitle": "Track provider earnings, pending withdrawals, and manual payouts",
+      "subtitle": "Track settlement value, platform commission, provider wallets, and manual payouts (USD)",
       "summary": {
         "providerCredits": "Provider Credits",
-        "providerAmount": "Provider Amount",
-        "providerCreditsDesc": "Total credits credited to providers",
+        "providerAmount": "Provider net",
+        "providerCreditsDesc": "Net amount credited to providers after commission",
         "walletBalance": "Wallet Balance",
         "walletBalanceDesc": "Current available provider wallet balances",
         "settledRequests": "Settled Requests",
         "settledRequestsDesc": "Completed requests credited to providers",
         "paidOut": "Paid Out",
         "paidOutDesc": "Total amount already paid to providers",
-        "creditDetail": "{credits} credits"
+        "creditDetail": "{credits} credits",
+        "grossAmount": "Gross settlement",
+        "grossAmountDesc": "Total request settlement value before commission",
+        "platformAmount": "Platform commission",
+        "platformAmountDesc": "Platform share at {percent}%",
+        "settingsHint": "Current settings: {price} per credit · {percent}% commission"
       },
       "wallets": {
         "title": "Provider Wallets",
         "description": "All providers and their current credit wallet status",
         "provider": "Provider",
         "balance": "Balance",
-        "balanceEgp": "Available EGP",
-        "pendingEgp": "Pending EGP",
         "paid": "Paid",
-        "paidEgp": "Paid EGP",
         "requests": "Requests",
         "ledger": "Ledger Entries",
         "actions": "Actions",
         "viewLedger": "View Ledger",
-        "showAll": "Show All"
+        "showAll": "Show All",
+        "balanceUsd": "Available USD",
+        "pendingUsd": "Pending USD",
+        "paidUsd": "Paid USD"
       },
       "ledger": {
         "title": "Finance Ledger",
@@ -735,9 +748,12 @@
         "total": "Total",
         "creditPrice": "Credit Price",
         "providerCredits": "Provider",
-        "providerAmount": "Provider EGP",
+        "providerAmount": "Provider USD",
         "status": "Status",
-        "settledAt": "Settled"
+        "settledAt": "Settled",
+        "commission": "Commission",
+        "grossAmount": "Gross",
+        "platformAmount": "Platform"
       },
       "status": {
         "AVAILABLE": "Available",
@@ -781,7 +797,7 @@
         "title": "Send payout",
         "description": "Record a manual transfer to this provider. Funds leave the available balance immediately.",
         "send": "Send payout",
-        "amount": "Amount (EGP)",
+        "amount": "Amount (USD)",
         "reason": "Reason / transfer reference",
         "reasonPlaceholder": "e.g. Bank transfer ref 45821",
         "noDetails": "This provider has not added a bank account or e-wallet number.",
@@ -1635,13 +1651,13 @@
       "subtitle": "Track your credited request earnings in tokens/credits",
       "summary": {
         "balance": "Wallet Balance",
-        "balanceDesc": "Available EGP value from approved work",
+        "balanceDesc": "Available USD value from approved work",
         "pending": "Pending withdrawal",
         "pendingDesc": "Amount held while a withdrawal is under review",
         "paid": "Paid out",
         "paidDesc": "Lifetime amount already paid to you",
         "periodEarnings": "Last 30 Days",
-        "periodEarningsDesc": "EGP value credited in the current period",
+        "periodEarningsDesc": "USD value credited in the current period",
         "completed": "Settled Requests",
         "completedDesc": "Approved requests with wallet entries",
         "creditDetail": "{credits} credits"
@@ -1655,7 +1671,7 @@
         "total": "Request Credits",
         "creditPrice": "Credit Price",
         "providerCredits": "Your Credits",
-        "providerAmount": "Your EGP",
+        "providerAmount": "Your USD",
         "status": "Status",
         "settledAt": "Settled"
       },
@@ -1681,7 +1697,7 @@
       "withdraw": {
         "title": "Request withdrawal",
         "description": "Available balance is held while admin reviews your request and sends the money manually.",
-        "amount": "Amount (EGP)",
+        "amount": "Amount (USD)",
         "amountHint": "Available: {amount}",
         "note": "Note for admin (optional)",
         "notePlaceholder": "e.g. Please send to Vodafone Cash",
@@ -2007,15 +2023,15 @@
     },
     "withdrawalRequested": {
       "title": "New withdrawal request",
-      "message": "{providerNameOrEmail} requested a withdrawal of {amount} EGP."
+      "message": "{providerNameOrEmail} requested a withdrawal of {amount} USD."
     },
     "withdrawalApproved": {
       "title": "Withdrawal paid",
-      "message": "Your withdrawal of {amount} EGP was marked as paid. {reason}"
+      "message": "Your withdrawal of {amount} USD was marked as paid. {reason}"
     },
     "withdrawalRejected": {
       "title": "Withdrawal rejected",
-      "message": "Your withdrawal of {amount} EGP was rejected. Reason: {reason}"
+      "message": "Your withdrawal of {amount} USD was rejected. Reason: {reason}"
     },
     "subscriptionCancelled": {
       "title": "Subscription Cancelled",

@@ -37,9 +37,9 @@ type WalletLedgerEntry = {
   id: string;
   totalCredits: number;
   providerCredits: number;
-  creditPriceEgp: number;
-  totalAmountEgp: number;
-  providerAmountEgp: number;
+  creditPriceUsd: number;
+  totalAmountUsd: number;
+  providerAmountUsd: number;
   status: "AVAILABLE" | "PAID" | "VOIDED";
   settledAt: string | Date;
   request: {
@@ -54,7 +54,7 @@ type WalletLedgerEntry = {
 
 type WithdrawalEntry = {
   id: string;
-  amountEgp: number;
+  amountUsd: number;
   amountCredits: number;
   payoutMethod: PayoutMethod;
   accountHolder: string;
@@ -71,8 +71,8 @@ function formatCredits(value: number) {
   return value.toLocaleString();
 }
 
-function formatEgp(value: number) {
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} EGP`;
+function formatMoney(value: number) {
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDestination(entry: {
@@ -122,7 +122,7 @@ export default function ProviderWalletPage() {
   const [bankName, setBankName] = useState("");
   const [bankAccount, setBankAccount] = useState("");
   const [eWalletNumber, setEWalletNumber] = useState("");
-  const [amountEgp, setAmountEgp] = useState("");
+  const [amountUsd, setAmountUsd] = useState("");
   const [providerNote, setProviderNote] = useState("");
 
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function ProviderWalletPage() {
   }, [data?.payout]);
 
   const payoutReady = hasCompletePayout(data?.payout ?? null);
-  const availableBalance = data?.balanceEgp ?? 0;
+  const availableBalance = data?.balanceUsd ?? 0;
   const canRequest =
     payoutReady && availableBalance >= 1 && !data?.hasPendingWithdrawal && !isLoading;
 
@@ -150,7 +150,7 @@ export default function ProviderWalletPage() {
   const requestWithdrawal = trpc.provider.requestWithdrawal.useMutation({
     onSuccess: () => {
       showSuccess(t("withdraw.requested"));
-      setAmountEgp("");
+      setAmountUsd("");
       setProviderNote("");
       utils.provider.getEarnings.invalidate();
     },
@@ -161,28 +161,28 @@ export default function ProviderWalletPage() {
     () => [
       {
         title: t("summary.balance"),
-        value: formatEgp(data?.balanceEgp ?? 0),
+        value: formatMoney(data?.balanceUsd ?? 0),
         description: t("summary.balanceDesc"),
         detail: t("summary.creditDetail", { credits: data?.balanceCredits ?? 0 }),
         icon: Wallet,
       },
       {
         title: t("summary.pending"),
-        value: formatEgp(data?.pendingEgp ?? 0),
+        value: formatMoney(data?.pendingUsd ?? 0),
         description: t("summary.pendingDesc"),
         detail: t("summary.creditDetail", { credits: data?.pendingCredits ?? 0 }),
         icon: Clock,
       },
       {
         title: t("summary.paid"),
-        value: formatEgp(data?.paidEgp ?? 0),
+        value: formatMoney(data?.paidUsd ?? 0),
         description: t("summary.paidDesc"),
         detail: t("summary.creditDetail", { credits: data?.paidCredits ?? 0 }),
         icon: History,
       },
       {
         title: t("summary.periodEarnings"),
-        value: formatEgp(data?.totalEarningsEgp ?? 0),
+        value: formatMoney(data?.totalEarningsUsd ?? 0),
         description: t("summary.periodEarningsDesc"),
         detail: t("summary.creditDetail", { credits: data?.totalEarnings ?? 0 }),
         icon: CreditCard,
@@ -225,7 +225,7 @@ export default function ProviderWalletPage() {
         <TableBody>
           {withdrawals.map((entry) => (
             <TableRow key={entry.id}>
-              <TableCell className="font-medium">{formatEgp(entry.amountEgp)}</TableCell>
+              <TableCell className="font-medium">{formatMoney(entry.amountUsd)}</TableCell>
               <TableCell>
                 {entry.payoutMethod === "BANK" ? t("payout.bank") : t("payout.eWallet")}
               </TableCell>
@@ -288,9 +288,9 @@ export default function ProviderWalletPage() {
                 {resolveLocalizedText(entry.serviceType.nameI18n, locale, entry.serviceType.name)}
               </TableCell>
               <TableCell>{formatCredits(entry.totalCredits)}</TableCell>
-              <TableCell>{formatEgp(entry.creditPriceEgp)}</TableCell>
+              <TableCell>{formatMoney(entry.creditPriceUsd)}</TableCell>
               <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
-              <TableCell>{formatEgp(entry.providerAmountEgp)}</TableCell>
+              <TableCell>{formatMoney(entry.providerAmountUsd)}</TableCell>
               <TableCell>
                 <Badge variant="secondary">{t(`status.${entry.status}`)}</Badge>
               </TableCell>
@@ -431,28 +431,28 @@ export default function ProviderWalletPage() {
               className="space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
-                const parsed = Number(amountEgp);
+                const parsed = Number(amountUsd);
                 requestWithdrawal.mutate({
-                  amountEgp: parsed,
+                  amountUsd: parsed,
                   providerNote: providerNote.trim() || null,
                 });
               }}
             >
               <div className="space-y-2">
-                <Label htmlFor="amountEgp">{t("withdraw.amount")}</Label>
+                <Label htmlFor="amountUsd">{t("withdraw.amount")}</Label>
                 <Input
-                  id="amountEgp"
+                  id="amountUsd"
                   type="number"
                   min="1"
                   step="0.01"
                   max={availableBalance}
-                  value={amountEgp}
-                  onChange={(event) => setAmountEgp(event.target.value)}
+                  value={amountUsd}
+                  onChange={(event) => setAmountUsd(event.target.value)}
                   required
                   disabled={!canRequest}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {t("withdraw.amountHint", { amount: formatEgp(availableBalance) })}
+                  {t("withdraw.amountHint", { amount: formatMoney(availableBalance) })}
                 </p>
               </div>
               <div className="space-y-2">
