@@ -1590,6 +1590,7 @@
         "subscribe": "Subscribe",
         "processing": "Processing...",
         "currentPlan": "Current Plan",
+        "upgradeCta": "Upgrade",
         "cancelFirstToSwitch": "Cancel first to switch",
         "noPlans": "No plans available",
         "noPlansDesc": "Please check back soon or contact support",
@@ -1609,7 +1610,8 @@
         "creditsUsed": "Credits Used"
       },
       "confirmations": {
-        "cancel": "Are you sure you want to cancel your subscription?"
+        "cancel": "Are you sure you want to cancel your subscription?",
+        "upgrade": "Start an upgrade? Your current plan stays active until the new payment is approved."
       },
       "toast": {
         "subscribed": "Subscription created! Please complete the payment.",

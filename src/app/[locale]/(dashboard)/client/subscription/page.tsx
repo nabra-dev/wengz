@@ -54,7 +54,10 @@ export default function SubscriptionPage() {
 
   const isLoading = subLoading || pkgLoading;
 
-  const handleSubscribe = (packageId: string) => {
+  const handleSubscribe = (packageId: string, isUpgrade: boolean) => {
+    if (isUpgrade && !confirm(t("confirmations.upgrade"))) {
+      return;
+    }
     subscribeMutation.mutate({ packageId });
   };
 
@@ -237,13 +240,13 @@ export default function SubscriptionPage() {
                   <CardFooter className="mt-auto">
                     <Button
                       className="w-full"
-                      disabled={isCurrentPlan || subscribeMutation.isPending || !!subscription}
-                      onClick={() => handleSubscribe(pkg.id)}
+                      disabled={isCurrentPlan || subscribeMutation.isPending}
+                      onClick={() => handleSubscribe(pkg.id, !!subscription && !isCurrentPlan)}
                     >
                       {(() => {
                         if (subscribeMutation.isPending) return t("plans.processing");
                         if (isCurrentPlan) return t("plans.currentPlan");
-                        if (subscription) return t("plans.cancelFirstToSwitch");
+                        if (subscription) return t("plans.upgradeCta");
                         return t("plans.subscribe");
                       })()}
                     </Button>

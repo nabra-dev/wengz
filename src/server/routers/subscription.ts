@@ -184,11 +184,10 @@ export const subscriptionRouter = router({
         },
       });
 
-      if (existingSubscription) {
+      if (existingSubscription?.packageId === input.packageId) {
         throw new TRPCError({
           code: "CONFLICT",
-          message:
-            "You already have an active subscription. Please cancel it first or wait for it to expire.",
+          message: "You are already on this plan.",
         });
       }
 
@@ -215,9 +214,23 @@ export const subscriptionRouter = router({
         });
       }
 
-      // Create subscription as INACTIVE (pending payment verification)
+      // Drop unfinished upgrade attempts (inactive, no pending proof) so we don't stack orphans.
+      await ctx.db.clientSubscription.updateMany({
+        where: {
+          userId,
+          isActive: false,
+          cancelledAt: null,
+          paymentProof: { is: null },
+        },
+        data: { cancelledAt: new Date() },
+      });
+
+      // Create subscription as INACTIVE (pending payment verification).
+      // If the client already has an active plan, it stays active until admin
+      // approves this payment (approvePayment deactivates the old one).
       const now = new Date();
       const endDate = new Date(Date.now() + pkg.durationDays * 24 * 60 * 60 * 1000);
+      const isUpgrade = !!existingSubscription;
 
       const subscription = await ctx.db.clientSubscription.create({
         data: {
@@ -237,7 +250,9 @@ export const subscriptionRouter = router({
         success: true,
         subscription,
         requiresPayment: true,
-        message: `Please complete the payment for ${pkg.name} to activate your subscription.`,
+        message: isUpgrade
+          ? `Upgrade started for ${pkg.name}. Complete payment to switch plans — your current plan stays active until payment is approved.`
+          : `Please complete the payment for ${pkg.name} to activate your subscription.`,
       };
     }),
 
