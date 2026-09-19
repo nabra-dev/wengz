@@ -1227,7 +1227,7 @@
         "activeRequests": "Active Requests",
         "completed": "Completed",
         "subscription": "Subscription",
-        "plan": "{name} plan",
+        "plan": "{name}",
         "noActivePlan": "No active plan",
         "inProgressOrPending": "In progress or pending",
         "allTime": "All time",
@@ -1500,7 +1500,7 @@
       "title": "Subscription",
       "subtitle": "Manage your subscription and credits",
       "currentSubscription": {
-        "title": "{name} Plan",
+        "title": "{name}",
         "description": "Your current active subscription",
         "active": "Active",
         "creditsRemaining": "Credits Remaining",

@@ -35,12 +35,13 @@ export function calculateProviderFinance(
   const normalizedCreditPriceUsd = Math.max(0, creditPriceUsd);
   const normalizedCommissionPercent = Math.min(100, Math.max(0, commissionPercent));
 
-  const totalAmountUsd = roundUsd(normalizedCredits * normalizedCreditPriceUsd);
-  const platformAmountUsd = roundUsd(totalAmountUsd * (normalizedCommissionPercent / 100));
-  const providerAmountUsd = roundUsd(totalAmountUsd - platformAmountUsd);
-
+  // Split credits first so wallet credit/USD balances stay aligned (no 4 credits / $4.50 drift).
   const platformCredits = Math.round(normalizedCredits * (normalizedCommissionPercent / 100));
   const providerCredits = normalizedCredits - platformCredits;
+
+  const totalAmountUsd = roundUsd(normalizedCredits * normalizedCreditPriceUsd);
+  const platformAmountUsd = roundUsd(platformCredits * normalizedCreditPriceUsd);
+  const providerAmountUsd = roundUsd(providerCredits * normalizedCreditPriceUsd);
 
   return {
     totalCredits: normalizedCredits,

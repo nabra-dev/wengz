@@ -69,26 +69,37 @@ export function DashboardShell({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { unreadCount } = useRealtimeNotifications();
   const tNav = useTranslations("dashboard.nav");
 
-  const role = session?.user?.role;
+  // While session is loading, infer role from the URL so the sidebar does not
+  // briefly flash the client nav on admin/provider routes.
+  const roleFromPath = (() => {
+    if (pathname.startsWith("/admin")) return "SUPER_ADMIN" as const;
+    if (pathname.startsWith("/provider")) return "PROVIDER" as const;
+    if (pathname.startsWith("/client")) return "CLIENT" as const;
+    return null;
+  })();
+  const role = session?.user?.role ?? (sessionStatus === "loading" ? roleFromPath : null);
 
   const getNavItems = () => {
     if (role === "SUPER_ADMIN")
       return adminNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
     if (role === "PROVIDER")
       return providerNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
-    return clientNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
+    if (role === "CLIENT")
+      return clientNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
+    return [];
   };
 
   const getBasePath = () => {
     if (role === "SUPER_ADMIN") return "/admin";
     if (role === "PROVIDER") return "/provider";
-    return "/client";
+    if (role === "CLIENT") return "/client";
+    return "/";
   };
 
   const navItems = getNavItems();

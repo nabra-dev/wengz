@@ -48,11 +48,26 @@ describe("provider wallet finance calculation", () => {
     });
   });
 
-  it("rounds USD amounts to two decimals and avoids drift", () => {
+  it("derives USD from credit split so credits and dollars stay aligned", () => {
+    const result = calculateProviderFinance(5, 1, 10);
+    expect(result).toMatchObject({
+      platformCredits: 1,
+      providerCredits: 4,
+      platformAmountUsd: 1,
+      providerAmountUsd: 4,
+      totalAmountUsd: 5,
+    });
+    expect(result.platformAmountUsd + result.providerAmountUsd).toBe(result.totalAmountUsd);
+  });
+
+  it("rounds USD from credits when credit price is fractional", () => {
     const result = calculateProviderFinance(3, 1.333, 10);
+    // 10% of 3 credits rounds to 0 platform credits → all USD goes to provider
+    expect(result.platformCredits).toBe(0);
+    expect(result.providerCredits).toBe(3);
     expect(result.totalAmountUsd).toBe(4);
-    expect(result.platformAmountUsd).toBe(0.4);
-    expect(result.providerAmountUsd).toBe(3.6);
+    expect(result.platformAmountUsd).toBe(0);
+    expect(result.providerAmountUsd).toBe(4);
     expect(result.platformAmountUsd + result.providerAmountUsd).toBe(result.totalAmountUsd);
   });
 });

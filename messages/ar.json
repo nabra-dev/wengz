@@ -1227,7 +1227,7 @@
         "activeRequests": "الطلبات النشطة",
         "completed": "مكتملة",
         "subscription": "الاشتراك",
-        "plan": "باقة {name}",
+        "plan": "{name}",
         "noActivePlan": "لا توجد باقة نشطة",
         "inProgressOrPending": "قيد التنفيذ أو الانتظار",
         "allTime": "إجمالي",
@@ -1495,7 +1495,7 @@
       "title": "الاشتراك",
       "subtitle": "إدارة اشتراكك والكريدت",
       "currentSubscription": {
-        "title": "باقة {name}",
+        "title": "{name}",
         "description": "اشتراكك النشط الحالي",
         "active": "نشط",
         "creditsRemaining": "الكريدت المتبقي",
