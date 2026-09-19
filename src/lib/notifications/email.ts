@@ -158,6 +158,36 @@ export async function getAssignmentEmailTemplate(
   };
 }
 
+export async function getApprovalReminderEmailTemplate(
+  requestTitle: string,
+  locale: string = "en"
+) {
+  const subject = await getTranslation(locale, "notifications.approvalReminder.emailSubject", {
+    requestTitle,
+  });
+  const heading = await getTranslation(locale, "notifications.approvalReminder.emailBody.heading");
+  const intro = await getTranslation(locale, "notifications.approvalReminder.emailBody.intro", {
+    requestTitle,
+  });
+  const body = await getTranslation(locale, "notifications.approvalReminder.emailBody.message");
+  const viewButton = await getTranslation(
+    locale,
+    "notifications.approvalReminder.emailBody.viewButton"
+  );
+
+  return {
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">${heading}</h2>
+        <p>${intro}</p>
+        <p>${body}</p>
+        <p><a href="${process.env.NEXTAUTH_URL}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${viewButton}</a></p>
+      </div>
+    `,
+  };
+}
+
 export async function getSubscriptionExpiringEmailTemplate(
   packageName: string,
   daysRemaining: number,

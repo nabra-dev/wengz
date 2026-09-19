@@ -8,6 +8,11 @@ import { getPriorityCostsForService } from "@/lib/priority-costs";
 import { settleCompletedRequest } from "@/lib/provider-wallet";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
+  getProviderWorkload,
+  canStartNewInProgressWork,
+  PROVIDER_AT_CAPACITY_MESSAGE,
+} from "@/lib/provider-workload";
+import {
   createNotification,
   getLocalizedRequestStatusLabel,
   notifyNewMessage,
@@ -634,6 +639,14 @@ export const requestRouter = router({
             message: "This request is not in your supported services",
           });
         }
+
+        const workload = await getProviderWorkload(userId);
+        if (!canStartNewInProgressWork(workload)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: PROVIDER_AT_CAPACITY_MESSAGE,
+          });
+        }
       }
 
       const estimatedDelivery = input.estimatedDays
@@ -742,6 +755,21 @@ export const requestRouter = router({
         });
       }
 
+      if (
+        input.status === "IN_PROGRESS" &&
+        request.status !== "IN_PROGRESS" &&
+        ctx.session.user.role !== "SUPER_ADMIN" &&
+        request.providerId === userId
+      ) {
+        const workload = await getProviderWorkload(userId);
+        if (!canStartNewInProgressWork(workload)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: PROVIDER_AT_CAPACITY_MESSAGE,
+          });
+        }
+      }
+
       try {
         assertAllowedUploadUrls(input.files, userId);
       } catch {
@@ -753,7 +781,15 @@ export const requestRouter = router({
 
       const updatedRequest = await ctx.db.request.update({
         where: { id: input.requestId },
-        data: { status: input.status },
+        data:
+          input.status === "DELIVERED"
+            ? {
+                status: "DELIVERED",
+                deliveredAt: new Date(),
+                approvalReminderSentAt: null,
+                needsManualApproval: false,
+              }
+            : { status: input.status },
       });
 
       // Create comment
@@ -892,6 +928,7 @@ export const requestRouter = router({
           data: {
             status: "COMPLETED",
             completedAt: new Date(),
+            needsManualApproval: false,
           },
         });
 

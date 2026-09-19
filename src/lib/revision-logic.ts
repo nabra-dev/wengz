@@ -113,6 +113,8 @@ export async function handleRevisionRequest(
           status: "REVISION_REQUESTED",
           isRevision: true,
           revisionType: "free",
+          needsManualApproval: false,
+          approvalReminderSentAt: null,
         },
       });
 
@@ -222,6 +224,8 @@ export async function handleRevisionRequest(
         isRevision: true,
         revisionType: "paid",
         creditCost: { increment: paidRevisionCost },
+        needsManualApproval: false,
+        approvalReminderSentAt: null,
       },
     });
 

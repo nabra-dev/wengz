@@ -4,6 +4,7 @@ import {
   getNewMessageEmailTemplate,
   getStatusChangeEmailTemplate,
   getAssignmentEmailTemplate,
+  getApprovalReminderEmailTemplate,
   getSubscriptionExpiringEmailTemplate,
   getSubscriptionExpiredEmailTemplate,
   getWelcomeEmailTemplate,
@@ -521,6 +522,42 @@ export async function notifyProviderAssignment(params: {
     link: `/provider/my-requests`,
     locale,
     emailTemplate,
+  });
+}
+
+export async function notifyApprovalReminder(params: {
+  requestId: string;
+  clientId: string;
+  locale?: string;
+}) {
+  const { requestId, clientId, locale = "en" } = params;
+
+  const request = await db.request.findUnique({
+    where: { id: requestId },
+    select: { title: true },
+  });
+
+  if (!request) return;
+
+  const title = await getTranslation(locale, "notifications.approvalReminder.title");
+  const message = await getTranslation(locale, "notifications.approvalReminder.message", {
+    requestTitle: request.title,
+  });
+  const emailTemplate = await getApprovalReminderEmailTemplate(request.title, locale);
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "status_change",
+    link: `/client/requests/${requestId}`,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.approvalReminder.title",
+      messageKey: "notifications.approvalReminder.message",
+      messageParams: { requestTitle: request.title },
+    },
   });
 }
 

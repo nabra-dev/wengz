@@ -35,6 +35,7 @@ interface RequestCardProps {
   readonly actions?: React.ReactNode;
   readonly variant?: "compact" | "detailed";
   readonly showProviderAsBrand?: boolean;
+  readonly needsManualApproval?: boolean;
 }
 
 export function RequestCard({
@@ -57,6 +58,7 @@ export function RequestCard({
   actions,
   variant = "compact",
   showProviderAsBrand = false,
+  needsManualApproval = false,
 }: RequestCardProps) {
   const tCommon = useTranslations("common");
   const tCard = useTranslations("requests.card");
@@ -83,6 +85,14 @@ export function RequestCard({
           <Badge variant={null} className={`${getStatusColor(status)} text-xs`}>
             {tCommon(`requestStatus.${status}` as any)}
           </Badge>
+          {needsManualApproval && (
+            <Badge
+              variant="outline"
+              className="text-xs border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300"
+            >
+              {tCard("needsManualApproval")}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">

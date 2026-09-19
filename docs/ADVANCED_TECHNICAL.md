@@ -105,6 +105,7 @@ flowchart TB
 ## Background and scheduled work
 
 - **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (GitHub Actions, system cron, etc.); scans subscriptions for expiry notifications and related updates. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
+- **`src/app/api/cron/check-delivered-approvals/route.ts`**: Suggested every **~15 minutes**. For `DELIVERED` requests: sends a client approval reminder after **1 hour** (`approvalReminderSentAt`), and sets `needsManualApproval` after **12 hours**. Auth uses `Authorization: Bearer ${CRON_SECRET}` (same pattern as subscription cron).
 
 ---
 

@@ -57,7 +57,11 @@ export default function AdminRequestsPage() {
   const requests: any[] = data?.requests || [];
 
   const filteredRequests = requests.filter((request: any) => {
-    const matchesStatus = statusFilter === "all" || request.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "needsManualApproval"
+        ? request.needsManualApproval === true
+        : request.status === statusFilter);
     const matchesSearch =
       searchQuery === "" ||
       request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -164,6 +168,9 @@ export default function AdminRequestsPage() {
                 <SelectItem value="REVISION_REQUESTED">{t("filters.revisionRequested")}</SelectItem>
                 <SelectItem value="COMPLETED">{t("filters.completed")}</SelectItem>
                 <SelectItem value="CANCELLED">{t("filters.cancelled")}</SelectItem>
+                <SelectItem value="needsManualApproval">
+                  {t("filters.needsManualApproval")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -200,6 +207,7 @@ export default function AdminRequestsPage() {
                   serviceType={request.serviceType}
                   client={request.client}
                   provider={request.provider}
+                  needsManualApproval={request.needsManualApproval === true}
                   href={`/admin/requests/${request.id}`}
                   variant="compact"
                   actions={

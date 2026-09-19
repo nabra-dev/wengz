@@ -7,6 +7,12 @@ import {
   normalizePayoutDetails,
   requestProviderWithdrawal,
 } from "@/lib/provider-wallet";
+import {
+  getProviderWorkload,
+  canClaimAdditionalRequest,
+  canStartNewInProgressWork,
+  PROVIDER_AT_CAPACITY_MESSAGE,
+} from "@/lib/provider-workload";
 
 const payoutDetailsInputSchema = z.object({
   payoutMethod: z.enum(["BANK", "E_WALLET"]),
@@ -552,6 +558,17 @@ export const providerRouter = router({
         });
       }
 
+      // Light capacity guard for new claims only (already-assigned PENDING is fine)
+      if (request.providerId !== userId) {
+        const workload = await getProviderWorkload(userId);
+        if (!canClaimAdditionalRequest(workload)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: PROVIDER_AT_CAPACITY_MESSAGE,
+          });
+        }
+      }
+
       // Atomic claim: only succeeds if the request is still pending and
       // unassigned (or already ours). Prevents two providers claiming at once.
       const claimed = await ctx.db.request.updateMany({
@@ -635,6 +652,14 @@ export const providerRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Only pending requests can be started",
+        });
+      }
+
+      const workload = await getProviderWorkload(userId);
+      if (!canStartNewInProgressWork(workload)) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: PROVIDER_AT_CAPACITY_MESSAGE,
         });
       }
 
@@ -739,10 +764,15 @@ export const providerRouter = router({
         });
       }
 
-      // Update request status
+      // Update request status — fresh delivery resets approval SLA timers
       const updatedRequest = await ctx.db.request.update({
         where: { id: input.requestId },
-        data: { status: "DELIVERED" },
+        data: {
+          status: "DELIVERED",
+          deliveredAt: new Date(),
+          approvalReminderSentAt: null,
+          needsManualApproval: false,
+        },
       });
 
       // Add deliverable comment

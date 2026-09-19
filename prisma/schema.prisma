@@ -243,26 +243,30 @@ model Request {
   formData             Json?
   attributeResponses   Json? // Client's answers to service-specific Q&A: [{question: string, answer: string}]
   attachments          String[]               @default([])
-  estimatedDelivery    DateTime?
-  currentRevisionCount Int                    @default(0)
-  totalRevisions       Int                    @default(0)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  completedAt          DateTime?
-  deletedAt            DateTime?
-  rating               Rating?
-  client               User                   @relation("ClientRequests", fields: [clientId], references: [id], onDelete: Cascade)
-  provider             User?                  @relation("ProviderRequests", fields: [providerId], references: [id])
-  serviceType          ServiceType            @relation(fields: [serviceTypeId], references: [id])
-  comments             RequestComment[]
-  watchers             RequestWatcher[]
-  providerFinance      ProviderFinanceLedger?
+  estimatedDelivery       DateTime?
+  deliveredAt             DateTime? // Set whenever status becomes DELIVERED
+  approvalReminderSentAt  DateTime? // Set when 1h client approval reminder email is sent
+  needsManualApproval     Boolean                @default(false) // True when DELIVERED ≥12h without client approval
+  currentRevisionCount    Int                    @default(0)
+  totalRevisions          Int                    @default(0)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  completedAt             DateTime?
+  deletedAt               DateTime?
+  rating                  Rating?
+  client                  User                   @relation("ClientRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  provider                User?                  @relation("ProviderRequests", fields: [providerId], references: [id])
+  serviceType             ServiceType            @relation(fields: [serviceTypeId], references: [id])
+  comments                RequestComment[]
+  watchers                RequestWatcher[]
+  providerFinance         ProviderFinanceLedger?
 
   @@index([clientId, status])
   @@index([clientId, createdAt]) // For client dashboard pagination
   @@index([providerId, status])
   @@index([providerId, createdAt]) // For provider dashboard pagination
   @@index([status, createdAt]) // For filtering by status and sorting
+  @@index([status, deliveredAt]) // For delivered-approval SLA cron scans
   @@index([deletedAt])
 }
 

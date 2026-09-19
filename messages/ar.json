@@ -499,7 +499,8 @@
         "delivered": "تم التسليم",
         "revisionRequested": "طلب مراجعة",
         "completed": "مكتمل",
-        "cancelled": "ملغي"
+        "cancelled": "ملغي",
+        "needsManualApproval": "يحتاج موافقة يدوية"
       },
       "table": {
         "noRequests": "لم يتم العثور على طلبات",
@@ -1112,6 +1113,7 @@
       "freeRevision": "مجانًا",
       "paidRevision": "مدفوع",
       "unassigned": "غير معيّن",
+      "needsManualApproval": "يحتاج موافقة يدوية",
       "client": "عميل",
       "provider": "مبدع",
       "messages": "{count, plural, zero {لا توجد رسائل} one {رسالة واحدة} two {رسالتان} few {# رسائل} many {# رسالة} other {# رسالة}}"
@@ -1879,6 +1881,7 @@
     "notFound": "لم يتم العثور على المورد المطلوب",
     "badRequest": "طلب غير صالح. يرجى التحقق من المدخلات.",
     "conflict": "حدث تعارض. يرجى المحاولة مرة أخرى.",
+    "providerAtCapacity": "يمكنك العمل على طلب واحد فقط في نفس الوقت. سلّم عملك الحالي أولاً، أو أنهِ المراجعة قبل بدء طلب آخر.",
     "internalError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.",
     "somethingWrong": "حدث خطأ ما",
     "validationError": "حدث خطأ في التحقق من الصحة",
@@ -1917,6 +1920,17 @@
         "heading": "تم تعيين طلب جديد",
         "intro": "تم تعيينك للعمل على: <strong>{requestTitle}</strong>",
         "viewButton": "عرض الطلب"
+      }
+    },
+    "approvalReminder": {
+      "title": "يرجى مراجعة التسليم",
+      "message": "تم تسليم طلبك \"{requestTitle}\" منذ أكثر من ساعة وما زال بانتظار موافقتك.",
+      "emailSubject": "تذكير: وافق على \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "التسليم بانتظار الموافقة",
+        "intro": "تم تسليم طلبك <strong>{requestTitle}</strong> وما زال بانتظار مراجعتك.",
+        "message": "يرجى الموافقة على العمل أو طلب مراجعة حتى يتمكن المبدع من المتابعة.",
+        "viewButton": "مراجعة الطلب"
       }
     },
     "subscriptionExpiring": {

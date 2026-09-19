@@ -88,6 +88,7 @@ export default function AdminRequestDetailPage() {
         createdAt={request.createdAt}
         backUrl="/admin/requests"
         backLabel={t("title")}
+        needsManualApproval={(request as any).needsManualApproval === true}
       />
 
       <div className="grid gap-6 md:grid-cols-3">

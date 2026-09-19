@@ -72,8 +72,10 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 
 1. **Creation** — Client spends credits according to service rules; optional attachments and structured answers are stored on the request.
 2. **Assignment** — A provider may be linked to the request; “available” listings help providers discover unassigned work where the product supports it.
-3. **Collaboration** — **Comments** support messages, system lines, and deliverable-style posts; unread flags support inbox-style UX.
-4. **Completion and reputation** — A **rating** can tie to a completed request, feeding provider quality signals.
+3. **Active work (provider concurrency)** — A provider may actively work on **one** request at a time (`IN_PROGRESS` or `REVISION_REQUESTED`). Delivering frees the slot. Exception: if they have a **revision requested**, they may also start **one** additional `IN_PROGRESS` job (revision + one new). Assigned-but-not-started (`PENDING`) and `DELIVERED` (awaiting client) do not consume the slot.
+4. **Collaboration** — **Comments** support messages, system lines, and deliverable-style posts; unread flags support inbox-style UX.
+5. **Delivery approval SLA** — When work is **delivered**, `deliveredAt` is recorded. If the client has not approved within **1 hour**, they receive a reminder email/notification. If still not approved after **12 hours**, the request is flagged `needsManualApproval` for admins (label only; no auto-approve).
+6. **Completion and reputation** — A **rating** can tie to a completed request, feeding provider quality signals.
 
 **Watchers** on a request allow additional stakeholders to follow activity where the product uses that relation.
 
@@ -86,7 +88,7 @@ The business relies on **timely, localized** communication:
 - **In-app** notifications (stored per user, read/unread).
 - **Email** and **WhatsApp** where integrated, with templates that respect **locale** when invoked from server flows.
 
-Operational jobs (e.g. **subscription expiry warnings**) are designed to run on a schedule via an HTTP **cron** endpoint; see `src/app/api/cron/check-subscriptions/route.ts` and your hosting provider’s scheduler.
+Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval reminders**) are designed to run on a schedule via HTTP **cron** endpoints; see `src/app/api/cron/check-subscriptions/route.ts`, `src/app/api/cron/check-delivered-approvals/route.ts`, and your hosting provider’s scheduler.
 
 ---
 

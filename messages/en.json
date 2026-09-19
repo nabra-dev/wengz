@@ -499,7 +499,8 @@
         "delivered": "Delivered",
         "revisionRequested": "Revision Requested",
         "completed": "Completed",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "needsManualApproval": "Needs manual approval"
       },
       "table": {
         "noRequests": "No requests found",
@@ -1112,6 +1113,7 @@
       "freeRevision": "Free",
       "paidRevision": "Paid",
       "unassigned": "Unassigned",
+      "needsManualApproval": "Needs manual approval",
       "client": "Client",
       "provider": "Provider",
       "messages": "{count, plural, one {# message} other {# messages}}"
@@ -1879,6 +1881,7 @@
     "notFound": "The requested resource was not found",
     "badRequest": "Invalid request. Please check your input.",
     "conflict": "A conflict occurred. Please try again.",
+    "providerAtCapacity": "You can only work on one request at a time. Deliver your current work first, or finish a revision before starting another.",
     "internalError": "An unexpected error occurred. Please try again later.",
     "somethingWrong": "Something went wrong",
     "validationError": "Validation error occurred",
@@ -1917,6 +1920,17 @@
         "heading": "New Request Assigned",
         "intro": "You have been assigned to work on: <strong>{requestTitle}</strong>",
         "viewButton": "View Request"
+      }
+    },
+    "approvalReminder": {
+      "title": "Please review your deliverable",
+      "message": "Your request \"{requestTitle}\" was delivered over an hour ago and is waiting for your approval.",
+      "emailSubject": "Reminder: approve \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Deliverable waiting for approval",
+        "intro": "Your request <strong>{requestTitle}</strong> was delivered and is still waiting for your review.",
+        "message": "Please approve the work or request a revision so your provider can continue.",
+        "viewButton": "Review Request"
       }
     },
     "subscriptionExpiring": {

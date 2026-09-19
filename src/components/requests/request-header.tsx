@@ -22,6 +22,7 @@ interface RequestHeaderProps {
   readonly backUrl: string;
   readonly backLabel?: string;
   readonly actions?: React.ReactNode;
+  readonly needsManualApproval?: boolean;
 }
 
 interface CreditBreakdownData {
@@ -162,9 +163,11 @@ export function RequestHeader({
   backUrl,
   backLabel = "Back",
   actions,
+  needsManualApproval = false,
 }: RequestHeaderProps) {
   const t = useTranslations("requests.header");
   const tCommon = useTranslations("common");
+  const tCard = useTranslations("requests.card");
   const locale = useLocale();
 
   const getPriorityKey = (priority: number): "LOW" | "MEDIUM" | "HIGH" => {
@@ -197,6 +200,14 @@ export function RequestHeader({
             <Badge variant={null} className={getStatusColor(status)}>
               {tCommon(`requestStatus.${status}` as any)}
             </Badge>
+            {needsManualApproval && (
+              <Badge
+                variant="outline"
+                className="border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300"
+              >
+                {tCard("needsManualApproval")}
+              </Badge>
+            )}
             {!(priority === 1 && priorityCreditCost === 0) && (
               <Badge variant={null} className={getPriorityColor(priority)}>
                 {tCommon(`priority.${getPriorityKey(priority)}` as any)} {t("priority")}
