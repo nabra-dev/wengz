@@ -1516,20 +1516,21 @@
         "upgradePackage": "ترقية الباقة"
       },
       "fields": {
-        "serviceType": "نوع الخدمة *",
+        "serviceType": "نوع الخدمة",
         "serviceTypePlaceholder": "حدد نوع الخدمة",
-        "title": "العنوان *",
+        "title": "العنوان",
         "titlePlaceholder": "الهدف من التصميم الخاص بي",
-        "titleHint": "5-200 حرف - كن واضحاً وموجزاً",
-        "description": "الوصف *",
+        "titleHint": "5-200 حرف — كن واضحاً وموجزاً",
+        "description": "الوصف",
         "descriptionPlaceholder": "صف مشروعك بالتفصيل. قم بتضمين أي متطلبات محددة أو تفضيلات أو مراجع...",
-        "descriptionHint": "20-5000 حرف - قدم متطلبات وتوقعات مفصلة",
+        "descriptionHint": "20-5000 حرف — قدم متطلبات وتوقعات مفصلة",
         "priority": "الأولوية",
         "priorityLow": "منخفضة (+{cost} كريدت)",
         "priorityMedium": "متوسطة (+{cost} {credit})",
         "priorityHigh": "عالية (+{cost} كريدت)",
         "priorityHint": "الأولوية تضاف للتكلفة الأساسية: منخفضة=+{low}، متوسطة=+{medium}، عالية=+{high} كريدت",
-        "attachments": "المرفقات (اختياري)"
+        "attachments": "المرفقات (اختياري)",
+        "charCount": "{count}/{max}"
       },
       "serviceQuestions": {
         "title": "أسئلة خاصة بالخدمة",
@@ -1539,7 +1540,8 @@
         "extraCostWithIncluded": "+{cost} كريدت لكل {unit} (أول {included} مشمول)",
         "selection": "اختيار",
         "unit": "وحدة",
-        "credit": "كريدت"
+        "credit": "كريدت",
+        "required": "هذا الحقل مطلوب"
       },
       "actions": {
         "cancel": "إلغاء",
@@ -1550,8 +1552,12 @@
       "validation": {
         "selectService": "يرجى تحديد نوع الخدمة",
         "titleTooShort": "يجب أن يكون العنوان 5 أحرف على الأقل",
+        "titleTooLong": "يجب ألا يتجاوز العنوان 200 حرف",
         "descriptionTooShort": "يجب أن يكون الوصف 20 حرفاً على الأقل",
-        "requiredAttribute": "يرجى الإجابة على السؤال المطلوب: {field}"
+        "descriptionTooLong": "يجب ألا يتجاوز الوصف 5000 حرف",
+        "requiredAttribute": "يرجى الإجابة على السؤال المطلوب: {field}",
+        "requiredField": "هذا الحقل مطلوب",
+        "fixErrors": "يرجى تصحيح الحقول المميزة قبل الإرسال"
       },
       "toast": {
         "created": "تم إنشاء الطلب!",

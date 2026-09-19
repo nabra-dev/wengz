@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter, Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -28,6 +28,20 @@ import type { AttributeResponse, ServiceAttribute } from "@/types/service-attrib
 import { calculateAttributeCredits } from "@/lib/attribute-validation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+const TITLE_MIN = 4;
+const TITLE_MAX = 200;
+const DESCRIPTION_MIN = 10;
+const DESCRIPTION_MAX = 5000;
+
+type FieldKey = "serviceType" | "title" | "description";
+
+function isAttrAnswerEmpty(answer: string | string[] | undefined): boolean {
+  if (answer === undefined || answer === null) return true;
+  if (typeof answer === "string") return answer.trim() === "";
+  return answer.length === 0;
+}
 
 export default function NewRequestPage() {
   const t = useTranslations("client.newRequest");
@@ -38,7 +52,8 @@ export default function NewRequestPage() {
   const [attributeResponses, setAttributeResponses] = useState<AttributeResponse[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-
+  const [touched, setTouched] = useState<Partial<Record<FieldKey | string, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const { data: serviceTypes } = trpc.request.getServiceTypes.useQuery();
   const locale = useLocale();
   const { data: subscription } = trpc.subscription.getActive.useQuery();
@@ -49,14 +64,14 @@ export default function NewRequestPage() {
     queueMicrotask(() => {
       setDescription(draft);
       const firstLine = draft.split("\n")[0]?.trim() ?? "";
-      let nextTitle = firstLine.slice(0, 200);
-      if (nextTitle.length < 5) {
-        nextTitle = draft.trim().slice(0, 200);
+      let nextTitle = firstLine.slice(0, TITLE_MAX);
+      if (nextTitle.length < TITLE_MIN) {
+        nextTitle = draft.trim().slice(0, TITLE_MAX);
       }
-      if (nextTitle.length < 5) {
+      if (nextTitle.length < TITLE_MIN) {
         nextTitle = t("draftTitleFallback");
       }
-      setTitle(nextTitle.slice(0, 200));
+      setTitle(nextTitle.slice(0, TITLE_MAX));
       clearPendingRequestDescription();
       toast.success(t("draftRestored"));
     });
@@ -69,7 +84,16 @@ export default function NewRequestPage() {
 
   // Reset attribute responses when service type changes
   useEffect(() => {
-    queueMicrotask(() => setAttributeResponses([]));
+    queueMicrotask(() => {
+      setAttributeResponses([]);
+      setTouched((prev) => {
+        const next = { ...prev };
+        for (const key of Object.keys(next)) {
+          if (key.startsWith("attr:")) delete next[key];
+        }
+        return next;
+      });
+    });
   }, [selectedServiceType]);
 
   const createRequest = trpc.request.create.useMutation({
@@ -113,57 +137,93 @@ export default function NewRequestPage() {
     buttonText = t("actions.createCredits", { cost: totalCreditCost });
   }
 
+  const markTouched = useCallback((key: string) => {
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  }, []);
+
+  const getTitleError = useCallback(
+    (value: string): string | null => {
+      const trimmed = value.trim();
+      if (!trimmed) return t("validation.requiredField");
+      if (trimmed.length < TITLE_MIN) return t("validation.titleTooShort");
+      if (value.length > TITLE_MAX) return t("validation.titleTooLong");
+      return null;
+    },
+    [t]
+  );
+
+  const getDescriptionError = useCallback(
+    (value: string): string | null => {
+      const trimmed = value.trim();
+      if (!trimmed) return t("validation.requiredField");
+      if (trimmed.length < DESCRIPTION_MIN) return t("validation.descriptionTooShort");
+      if (value.length > DESCRIPTION_MAX) return t("validation.descriptionTooLong");
+      return null;
+    },
+    [t]
+  );
+
+  const getServiceError = useCallback(
+    (value: string): string | null => {
+      if (!value) return t("validation.selectService");
+      return null;
+    },
+    [t]
+  );
+
+  const getAttributeErrors = useCallback((): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const attributes = ((selectedService as any)?.attributes || []) as ServiceAttribute[];
+    for (const attr of attributes) {
+      if (!attr.required) continue;
+      const response = attributeResponses.find((r) => r.question === attr.question);
+      if (isAttrAnswerEmpty(response?.answer)) {
+        const label = resolveLocalizedText((attr as any).questionI18n, locale, attr.question);
+        errors[attr.question] = t("validation.requiredAttribute", { field: label });
+      }
+    }
+    return errors;
+  }, [selectedService, attributeResponses, locale, t]);
+
+  const showFieldError = (key: string) => submitAttempted || !!touched[key];
+
+  const serviceError = showFieldError("serviceType") ? getServiceError(selectedServiceType) : null;
+  const titleError = showFieldError("title") ? getTitleError(title) : null;
+  const descriptionError = showFieldError("description") ? getDescriptionError(description) : null;
+  const attributeErrors = getAttributeErrors();
+  const visibleAttributeErrors = Object.fromEntries(
+    Object.entries(attributeErrors).filter(
+      ([question]) => submitAttempted || touched[`attr:${question}`]
+    )
+  );
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSubmitAttempted(true);
 
     const formData = new FormData(e.currentTarget);
     const formPriority = Number.parseInt(formData.get("priority") as string) || 1;
 
-    if (!selectedServiceType) {
+    const nextServiceError = getServiceError(selectedServiceType);
+    const nextTitleError = getTitleError(title);
+    const nextDescriptionError = getDescriptionError(description);
+    const nextAttrErrors = getAttributeErrors();
+
+    if (
+      nextServiceError ||
+      nextTitleError ||
+      nextDescriptionError ||
+      Object.keys(nextAttrErrors).length > 0
+    ) {
       toast.error(t("toast.validationError"), {
-        description: t("validation.selectService"),
+        description: t("validation.fixErrors"),
       });
       return;
-    }
-
-    if (title.length < 5) {
-      toast.error(t("toast.validationError"), {
-        description: t("validation.titleTooShort"),
-      });
-      return;
-    }
-
-    if (description.length < 20) {
-      toast.error(t("toast.validationError"), {
-        description: t("validation.descriptionTooShort"),
-      });
-      return;
-    }
-
-    // Validate required service attributes
-    if (selectedService && (selectedService as any).attributes) {
-      const attributes = (selectedService as any).attributes as any[];
-      const requiredAttributes = attributes.filter((attr: any) => attr.required);
-
-      for (const reqAttr of requiredAttributes) {
-        const response = attributeResponses.find((r) => r.question === reqAttr.question);
-        if (
-          !response ||
-          !response.answer ||
-          (typeof response.answer === "string" && response.answer.trim() === "") ||
-          (Array.isArray(response.answer) && response.answer.length === 0)
-        ) {
-          toast.error(t("toast.validationError"), {
-            description: t("validation.requiredAttribute", { field: reqAttr.question }),
-          });
-          return;
-        }
-      }
     }
 
     createRequest.mutate({
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       serviceTypeId: selectedServiceType,
       priority: formPriority,
       attachments: attachments.map((f) => f.url),
@@ -293,15 +353,28 @@ export default function NewRequestPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={onSubmit} className="space-y-6" noValidate>
             <div className="space-y-2">
-              <Label htmlFor="serviceType">{t("fields.serviceType")}</Label>
+              <Label htmlFor="serviceType" className="flex items-center gap-1">
+                {t("fields.serviceType")}
+                <span className="text-destructive" aria-hidden>
+                  *
+                </span>
+              </Label>
               <Select
                 value={selectedServiceType}
-                onValueChange={setSelectedServiceType}
+                onValueChange={(value) => {
+                  setSelectedServiceType(value);
+                  markTouched("serviceType");
+                }}
                 disabled={!hasCredits}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  id="serviceType"
+                  aria-invalid={!!serviceError}
+                  className={cn(serviceError && "border-destructive focus:ring-destructive")}
+                  onBlur={() => markTouched("serviceType")}
+                >
                   <SelectValue placeholder={t("fields.serviceTypePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,6 +412,11 @@ export default function NewRequestPage() {
                   })}
                 </SelectContent>
               </Select>
+              {serviceError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {serviceError}
+                </p>
+              )}
               {selectedService && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md space-y-2">
                   <p className="text-sm text-blue-800">
@@ -361,29 +439,91 @@ export default function NewRequestPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">{t("fields.title")}</Label>
+              <Label htmlFor="title" className="flex items-center gap-1">
+                {t("fields.title")}
+                <span className="text-destructive" aria-hidden>
+                  *
+                </span>
+              </Label>
               <Input
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value.slice(0, TITLE_MAX));
+                  markTouched("title");
+                }}
+                onBlur={() => markTouched("title")}
                 placeholder={t("fields.titlePlaceholder")}
-                required
                 disabled={!hasCredits || createRequest.isPending}
+                aria-invalid={!!titleError}
+                className={cn(titleError && "border-destructive focus-visible:ring-destructive")}
               />
-              <p className="text-xs text-muted-foreground">{t("fields.titleHint")}</p>
+              <div className="flex items-center justify-between gap-2">
+                {titleError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {titleError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("fields.titleHint")}</p>
+                )}
+                <p
+                  className={cn(
+                    "text-xs shrink-0",
+                    title.trim().length > 0 && title.trim().length < TITLE_MIN
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {t("fields.charCount", { count: title.length, max: TITLE_MAX })}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">{t("fields.description")}</Label>
+              <Label htmlFor="description" className="flex items-center gap-1">
+                {t("fields.description")}
+                <span className="text-destructive" aria-hidden>
+                  *
+                </span>
+              </Label>
               <Textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value.slice(0, DESCRIPTION_MAX));
+                  markTouched("description");
+                }}
+                onBlur={() => markTouched("description")}
                 placeholder={t("fields.descriptionPlaceholder")}
                 disabled={!hasCredits || createRequest.isPending}
                 rows={4}
+                aria-invalid={!!descriptionError}
+                className={cn(
+                  descriptionError && "border-destructive focus-visible:ring-destructive"
+                )}
               />
-              <p className="text-xs text-muted-foreground">{t("fields.descriptionHint")}</p>
+              <div className="flex items-center justify-between gap-2">
+                {descriptionError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {descriptionError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("fields.descriptionHint")}</p>
+                )}
+                <p
+                  className={cn(
+                    "text-xs shrink-0",
+                    description.trim().length > 0 && description.trim().length < DESCRIPTION_MIN
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {t("fields.charCount", {
+                    count: description.length,
+                    max: DESCRIPTION_MAX,
+                  })}
+                </p>
+              </div>
             </div>
 
             {/* <div className="space-y-2">
@@ -430,6 +570,10 @@ export default function NewRequestPage() {
                 responses={attributeResponses}
                 onChange={setAttributeResponses}
                 disabled={!hasCredits || createRequest.isPending}
+                showErrors={submitAttempted}
+                fieldErrors={visibleAttributeErrors}
+                onFieldBlur={(question) => markTouched(`attr:${question}`)}
+                onFieldChange={(question) => markTouched(`attr:${question}`)}
               />
             )}
 

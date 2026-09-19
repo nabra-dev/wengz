@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 interface ServiceAttributesFormProps {
@@ -20,6 +21,16 @@ interface ServiceAttributesFormProps {
   readonly responses: AttributeResponse[];
   readonly onChange: (responses: AttributeResponse[]) => void;
   readonly disabled?: boolean;
+  readonly showErrors?: boolean;
+  readonly fieldErrors?: Record<string, string>;
+  readonly onFieldBlur?: (question: string) => void;
+  readonly onFieldChange?: (question: string, answer: string | string[]) => void;
+}
+
+function isAnswerEmpty(answer: string | string[] | undefined): boolean {
+  if (answer === undefined || answer === null) return true;
+  if (typeof answer === "string") return answer.trim() === "";
+  return answer.length === 0;
 }
 
 export function ServiceAttributesForm({
@@ -27,6 +38,10 @@ export function ServiceAttributesForm({
   responses,
   onChange,
   disabled = false,
+  showErrors = false,
+  fieldErrors = {},
+  onFieldBlur,
+  onFieldChange,
 }: ServiceAttributesFormProps) {
   const t = useTranslations("client.newRequest.serviceQuestions");
   const locale = useLocale();
@@ -46,6 +61,7 @@ export function ServiceAttributesForm({
     }
 
     onChange(newResponses);
+    onFieldChange?.(question, answer);
   };
 
   const getResponse = (question: string): string | string[] => {
@@ -75,7 +91,6 @@ export function ServiceAttributesForm({
   ) => {
     const base = option.value;
     if (option.creditCost && option.creditCost > 0) {
-      const unit = attr.type === "select" ? t("selection") : t("unit");
       return `${base} • +${option.creditCost} ${t("credit")}`;
     }
     return base;
@@ -109,13 +124,23 @@ export function ServiceAttributesForm({
         <div className="space-y-6">
           {attributes.map((attr, index) => {
             const creditCostLabel = getCreditCostLabel(attr);
+            const answer = getResponse(attr.question);
+            const errorFromParent = fieldErrors[attr.question];
+            const localRequiredError =
+              showErrors && attr.required && isAnswerEmpty(answer) ? t("required") : null;
+            const error = errorFromParent || localRequiredError;
+            const invalid = !!error;
 
             return (
               <div key={`${attr.question}-${index}`} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor={`attr-${index}`} className="flex items-center gap-1">
                     {resolveLocalizedText((attr as any).questionI18n, locale, attr.question)}
-                    {attr.required && <span className="text-destructive">*</span>}
+                    {attr.required && (
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    )}
                   </Label>
                   {creditCostLabel && (
                     <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
@@ -130,7 +155,6 @@ export function ServiceAttributesForm({
                   </p>
                 )}
 
-                {/* Text Input */}
                 {attr.type === "text" && (
                   <Input
                     id={`attr-${index}`}
@@ -139,14 +163,16 @@ export function ServiceAttributesForm({
                       locale,
                       attr.placeholder
                     )}
-                    value={(getResponse(attr.question) as string) || ""}
+                    value={(answer as string) || ""}
                     onChange={(e) => updateResponse(attr.question, e.target.value)}
+                    onBlur={() => onFieldBlur?.(attr.question)}
                     required={attr.required}
                     disabled={disabled}
+                    aria-invalid={invalid}
+                    className={cn(invalid && "border-destructive focus-visible:ring-destructive")}
                   />
                 )}
 
-                {/* Textarea Input */}
                 {attr.type === "textarea" && (
                   <Textarea
                     id={`attr-${index}`}
@@ -155,15 +181,17 @@ export function ServiceAttributesForm({
                       locale,
                       attr.placeholder
                     )}
-                    value={(getResponse(attr.question) as string) || ""}
+                    value={(answer as string) || ""}
                     onChange={(e) => updateResponse(attr.question, e.target.value)}
+                    onBlur={() => onFieldBlur?.(attr.question)}
                     required={attr.required}
                     disabled={disabled}
                     rows={4}
+                    aria-invalid={invalid}
+                    className={cn(invalid && "border-destructive focus-visible:ring-destructive")}
                   />
                 )}
 
-                {/* Number Input */}
                 {attr.type === "number" && (
                   <Input
                     id={`attr-${index}`}
@@ -173,24 +201,31 @@ export function ServiceAttributesForm({
                       locale,
                       attr.placeholder
                     )}
-                    value={(getResponse(attr.question) as string) || ""}
+                    value={(answer as string) || ""}
                     onChange={(e) => updateResponse(attr.question, e.target.value)}
+                    onBlur={() => onFieldBlur?.(attr.question)}
                     required={attr.required}
                     disabled={disabled}
                     min={attr.min}
                     max={attr.max}
+                    aria-invalid={invalid}
+                    className={cn(invalid && "border-destructive focus-visible:ring-destructive")}
                   />
                 )}
 
-                {/* Select Input */}
                 {attr.type === "select" && (
                   <Select
-                    value={(getResponse(attr.question) as string) || ""}
+                    value={(answer as string) || ""}
                     onValueChange={(value) => updateResponse(attr.question, value)}
                     disabled={disabled}
                     required={attr.required}
                   >
-                    <SelectTrigger id={`attr-${index}`}>
+                    <SelectTrigger
+                      id={`attr-${index}`}
+                      aria-invalid={invalid}
+                      className={cn(invalid && "border-destructive focus:ring-destructive")}
+                      onBlur={() => onFieldBlur?.(attr.question)}
+                    >
                       <SelectValue placeholder={t("selectOption")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -203,17 +238,21 @@ export function ServiceAttributesForm({
                   </Select>
                 )}
 
-                {/* Multiselect Input */}
                 {attr.type === "multiselect" && (
-                  <div className="space-y-2 border rounded-md p-4">
+                  <div
+                    className={cn(
+                      "space-y-2 border rounded-md p-4",
+                      invalid && "border-destructive"
+                    )}
+                    onBlur={() => onFieldBlur?.(attr.question)}
+                  >
                     {getOptionsWithCosts(attr).map((option) => (
                       <div key={option.value} className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`${attr.question}-${option.value}`}
                             checked={
-                              Array.isArray(getResponse(attr.question)) &&
-                              (getResponse(attr.question) as string[]).includes(option.value)
+                              Array.isArray(answer) && (answer as string[]).includes(option.value)
                             }
                             onCheckedChange={() =>
                               toggleMultiselectOption(attr.question, option.value)
@@ -235,6 +274,12 @@ export function ServiceAttributesForm({
                       </div>
                     ))}
                   </div>
+                )}
+
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
                 )}
               </div>
             );

@@ -1521,20 +1521,21 @@
       "draftRestored": "We added your message from the home page to this request.",
       "draftTitleFallback": "New request",
       "fields": {
-        "serviceType": "Service Type *",
+        "serviceType": "Service Type",
         "serviceTypePlaceholder": "Select a service type",
-        "title": "Title *",
+        "title": "Title",
         "titlePlaceholder": "The goal of my project is to...",
-        "titleHint": "5-200 characters - Be clear and concise",
-        "description": "Description *",
+        "titleHint": "5-200 characters — be clear and concise",
+        "description": "Description",
         "descriptionPlaceholder": "Describe your project in detail. Include any specific requirements, preferences, or references...",
-        "descriptionHint": "20-5000 characters - Provide detailed requirements and expectations",
+        "descriptionHint": "20-5000 characters — provide detailed requirements and expectations",
         "priority": "Priority",
         "priorityLow": "Low (+{cost} credits)",
         "priorityMedium": "Medium (+{cost} {credit})",
         "priorityHigh": "High (+{cost} credits)",
         "priorityHint": "Priority adds to base cost: Low=+{low}, Medium=+{medium}, High=+{high} credits",
-        "attachments": "Attachments (Optional)"
+        "attachments": "Attachments (Optional)",
+        "charCount": "{count}/{max}"
       },
       "serviceQuestions": {
         "title": "Service-Specific Questions",
@@ -1544,7 +1545,8 @@
         "extraCostWithIncluded": "+{cost} credits per {unit} (first {included} included)",
         "selection": "selection",
         "unit": "unit",
-        "credit": "credit"
+        "credit": "credit",
+        "required": "This field is required"
       },
       "actions": {
         "cancel": "Cancel",
@@ -1555,8 +1557,12 @@
       "validation": {
         "selectService": "Please select a service type",
         "titleTooShort": "Title must be at least 5 characters",
+        "titleTooLong": "Title must be at most 200 characters",
         "descriptionTooShort": "Description must be at least 20 characters",
-        "requiredAttribute": "Please answer the required question: {field}"
+        "descriptionTooLong": "Description must be at most 5000 characters",
+        "requiredAttribute": "Please answer the required question: {field}",
+        "requiredField": "This field is required",
+        "fixErrors": "Please fix the highlighted fields before submitting"
       },
       "toast": {
         "created": "Request Created!",
