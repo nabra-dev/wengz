@@ -4,8 +4,7 @@ import { notifySubscriptionExpiring, notifySubscriptionExpired } from "@/lib/not
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
 
-// This endpoint should be called by a cron job (e.g., daily)
-// You can use services like Vercel Cron, GitHub Actions, or external cron services
+// This endpoint should be called by a cron job (e.g., daily via GitHub Actions or an external scheduler)
 export const dynamic = "force-dynamic";
 
 interface NotificationResults {

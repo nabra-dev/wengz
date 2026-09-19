@@ -80,7 +80,7 @@ export function rateLimit(
   };
 }
 
-/** Best-effort client IP from proxy headers (Nginx / Vercel). */
+/** Best-effort client IP from proxy headers (e.g. Nginx). */
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {

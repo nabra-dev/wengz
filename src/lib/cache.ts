@@ -61,7 +61,7 @@ export async function getRedisClient(): Promise<RedisClientType | UpstashRedis |
     }
   }
 
-  // Check for Upstash (Vercel/Serverless) - Priority 1
+  // Check for Upstash Redis REST - Priority 1
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       redisClient = new UpstashRedis({

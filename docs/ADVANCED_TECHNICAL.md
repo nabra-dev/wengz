@@ -103,7 +103,7 @@ flowchart TB
 
 ## Background and scheduled work
 
-- **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (Vercel Cron, GitHub Actions, etc.); scans subscriptions for expiry notifications and related updates. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
+- **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (GitHub Actions, system cron, etc.); scans subscriptions for expiry notifications and related updates. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
 
 ---
 

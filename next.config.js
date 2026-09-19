@@ -143,5 +143,4 @@ module.exports = withSentryConfig(withNextIntl(withPWA(nextConfig)), {
   // Upload source maps only when auth token is present (optional in CI).
   widenClientFileUpload: true,
   disableLogger: true,
-  automaticVercelMonitors: false,
 });
