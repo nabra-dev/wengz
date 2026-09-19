@@ -18,6 +18,13 @@ import {
   PAYMENT_INSTRUCTIONS_KEY,
   type ManualPaymentSettings,
 } from "@/lib/payment-settings";
+import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
+import {
+  invalidatePackageCache,
+  invalidateServiceTypesCache,
+  invalidateServiceTypeCache,
+} from "@/lib/cache-invalidation";
+import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -339,40 +346,45 @@ export const adminRouter = router({
     })
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
-      return ctx.db.package.findMany({
-        where: {
-          isActive: true,
-          deletedAt: null,
-          isFreePackage: false, // Don't show free package on landing page
-        },
-        select: {
-          id: true,
-          name: true,
-          nameI18n: true,
-          description: true,
-          descriptionI18n: true,
-          price: true,
-          credits: true,
-          durationDays: true,
-          features: true,
-          featuresI18n: true,
-          sortOrder: true,
-          isFeatured: true,
-          services: {
+      return getOrSetCached(
+        cacheKeys.PACKAGES,
+        () =>
+          ctx.db.package.findMany({
+            where: {
+              isActive: true,
+              deletedAt: null,
+              isFreePackage: false,
+            },
             select: {
-              serviceType: {
+              id: true,
+              name: true,
+              nameI18n: true,
+              description: true,
+              descriptionI18n: true,
+              price: true,
+              credits: true,
+              durationDays: true,
+              features: true,
+              featuresI18n: true,
+              sortOrder: true,
+              isFeatured: true,
+              services: {
                 select: {
-                  id: true,
-                  name: true,
-                  nameI18n: true,
-                  icon: true,
+                  serviceType: {
+                    select: {
+                      id: true,
+                      name: true,
+                      nameI18n: true,
+                      icon: true,
+                    },
+                  },
                 },
               },
             },
-          },
-        },
-        orderBy: { sortOrder: "asc" },
-      });
+            orderBy: { sortOrder: "asc" },
+          }),
+        cacheTTL.PACKAGES
+      );
     }),
 
   // Get dashboard stats
@@ -743,9 +755,18 @@ export const adminRouter = router({
         summary: "Get provider wallet finance overview",
       },
     })
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
     .output(z.any())
-    .query(async ({ ctx }) => {
-      const [ledgerTotals, walletTotals, providers, unsettledCompletedRequests, pendingWithdrawals, financeSettings] =
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const [ledgerTotals, walletTotals, providers, unsettledCompletedRequests, pendingWithdrawals, financeSettings, providerCount] =
         await Promise.all([
           ctx.db.providerFinanceLedger.aggregate({
             _sum: {
@@ -796,6 +817,8 @@ export const adminRouter = router({
               },
             },
             orderBy: { createdAt: "desc" },
+            take: limit + 1,
+            ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
           }),
           ctx.db.request.count({
             where: {
@@ -808,9 +831,18 @@ export const adminRouter = router({
             where: { status: "PENDING" },
           }),
           loadFinanceSettings(ctx.db),
+          ctx.db.user.count({
+            where: { role: "PROVIDER", deletedAt: null },
+          }),
         ]);
 
-      const providerWallets = providers.map((provider) => ({
+      let nextCursor: string | null = null;
+      const page = providers.length > limit ? providers.slice(0, limit) : providers;
+      if (providers.length > limit) {
+        nextCursor = page.at(-1)?.id ?? null;
+      }
+
+      const providerWallets = page.map((provider) => ({
         provider: {
           id: provider.id,
           name: provider.name,
@@ -855,8 +887,10 @@ export const adminRouter = router({
           pendingWithdrawals,
           creditPriceUsd: financeSettings.creditPriceUsd,
           commissionPercent: financeSettings.commissionPercent,
+          providerCount,
         },
         providerWallets,
+        nextCursor,
       };
     }),
 
@@ -1244,7 +1278,7 @@ export const adminRouter = router({
         where.deletedAt = { not: null };
       }
 
-      const [users, total] = await Promise.all([
+      const [users, total, ratingAvgs] = await Promise.all([
         ctx.db.user.findMany({
           where,
           select: {
@@ -1264,11 +1298,6 @@ export const adminRouter = router({
                 },
               },
             },
-            receivedRatings: {
-              select: {
-                rating: true,
-              },
-            },
             _count: {
               select: {
                 clientRequests: true,
@@ -1283,23 +1312,20 @@ export const adminRouter = router({
           orderBy: { createdAt: "desc" },
         }),
         ctx.db.user.count({ where }),
+        ctx.db.rating.groupBy({
+          by: ["providerId"],
+          _avg: { rating: true },
+        }),
       ]);
 
-      // Calculate average rating for each provider
-      const usersWithRating = users.map((user: any) => {
-        const ratings = user.receivedRatings;
-        const avgRating =
-          ratings.length > 0
-            ? ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) /
-              ratings.length
-            : null;
+      const avgByProvider = new Map(
+        ratingAvgs.map((row) => [row.providerId, row._avg.rating])
+      );
 
-        return {
-          ...user,
-          averageRating: avgRating,
-          receivedRatings: undefined, // Remove from response
-        };
-      });
+      const usersWithRating = users.map((user) => ({
+        ...user,
+        averageRating: avgByProvider.get(user.id) ?? null,
+      }));
 
       return {
         users: usersWithRating,
@@ -1415,6 +1441,8 @@ export const adminRouter = router({
         } as any,
       });
 
+      await invalidateServiceTypesCache();
+
       return {
         success: true,
         serviceType,
@@ -1459,6 +1487,8 @@ export const adminRouter = router({
         },
       });
 
+      await invalidateServiceTypeCache(id);
+
       return {
         success: true,
         serviceType,
@@ -1487,6 +1517,8 @@ export const adminRouter = router({
           ...(input.isActive ? { deletedAt: null } : {}),
         },
       });
+
+      await invalidateServiceTypeCache(input.id);
 
       return {
         success: true,
@@ -1562,6 +1594,8 @@ export const adminRouter = router({
         await clearFeaturedExcept(ctx.db, pkg.id);
       }
 
+      await invalidatePackageCache();
+
       return { success: true, package: pkg };
     }),
 
@@ -1634,6 +1668,8 @@ export const adminRouter = router({
         },
       });
 
+      await invalidatePackageCache();
+
       return { success: true, package: pkg };
     }),
 
@@ -1666,6 +1702,8 @@ export const adminRouter = router({
           ...(input.isActive ? { deletedAt: null } : {}),
         },
       });
+
+      await invalidatePackageCache();
 
       return {
         success: true,
@@ -1775,6 +1813,8 @@ export const adminRouter = router({
         where: { id: input.userId },
         data: { role: input.role },
       });
+
+      await invalidateSessionUserCache(input.userId);
 
       // Create provider profile if changing to provider
       if (input.role === "PROVIDER") {
@@ -2126,6 +2166,8 @@ export const adminRouter = router({
               accounts: { deleteMany: {} },
             },
       });
+
+      await invalidateSessionUserCache(input.userId);
 
       return {
         success: true,

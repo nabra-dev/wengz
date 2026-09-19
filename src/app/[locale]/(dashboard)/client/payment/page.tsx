@@ -1,12 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./datepicker.css";
+
+const DatePicker = dynamic(
+  () => import("react-datepicker").then((mod) => mod.default as unknown as React.ComponentType<any>),
+  { ssr: false }
+);
 import { Button } from "@/components/ui/button";
 import {
   Card,

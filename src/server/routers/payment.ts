@@ -10,6 +10,7 @@ import {
   buildClientPaymentMethods,
   getPaymentSettings,
 } from "@/lib/payment-settings";
+import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 
 export const paymentRouter = router({
   // Get IBAN info for payment (public info clients need)
@@ -202,6 +203,7 @@ export const paymentRouter = router({
           },
         },
         orderBy: { createdAt: "asc" },
+        take: 100,
       });
     }),
 
@@ -357,6 +359,8 @@ export const paymentRouter = router({
           },
         });
       });
+
+      await invalidateSubscriptionCache(payment.userId);
 
       // Notify the user (DB + SSE)
       const localizedPackageName = resolveLocalizedText(

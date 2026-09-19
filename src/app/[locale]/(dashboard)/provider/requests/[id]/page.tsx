@@ -54,7 +54,7 @@ export default function ProviderRequestDetailPage() {
         getRequestThreadPollingInterval(
           (query.state.data as { status?: string } | undefined)?.status
         ),
-      refetchIntervalInBackground: true,
+      refetchIntervalInBackground: false,
       refetchOnWindowFocus: true,
     }
   );

@@ -5,6 +5,8 @@ import { ZodError } from "zod";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import { revalidateSessionUser } from "@/lib/session-user-cache";
+import { measurePerformance } from "@/lib/performance";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -62,26 +64,9 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-/**
- * Revalidate the session user against the database on every protected call.
- * JWTs are long-lived (30 days), so role changes and soft-deletes must be
- * enforced from the DB, not the token. Returns the fresh role.
- */
-async function revalidateSessionUser(userId: string) {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true, deletedAt: true },
-  });
-
-  if (!user || user.deletedAt) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Your account is no longer active. Please sign in again.",
-    });
-  }
-
-  return user;
-}
+const performanceMiddleware = t.middleware(async ({ path, type, next }) => {
+  return measurePerformance(`${type}:${path}`)(() => next());
+});
 
 // Middleware to enforce authentication
 const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
@@ -99,7 +84,9 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+export const protectedProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserIsAuthed);
 
 // Middleware to enforce admin role
 const enforceUserIsAdmin = t.middleware(async ({ ctx, next }) => {
@@ -123,7 +110,7 @@ const enforceUserIsAdmin = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const adminProcedure = t.procedure.use(enforceUserIsAdmin);
+export const adminProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsAdmin);
 
 // Middleware to enforce provider role
 const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
@@ -147,7 +134,9 @@ const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const providerProcedure = t.procedure.use(enforceUserIsProvider);
+export const providerProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserIsProvider);
 
 // Middleware to enforce client role
 const enforceUserIsClient = t.middleware(async ({ ctx, next }) => {
@@ -171,4 +160,4 @@ const enforceUserIsClient = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const clientProcedure = t.procedure.use(enforceUserIsClient);
+export const clientProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsClient);

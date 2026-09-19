@@ -111,8 +111,13 @@ flowchart TB
 
 ## Caching and performance
 
-- `src/lib/cache.ts` — Redis key taxonomy (users, services, packages, subscriptions, requests, notifications). Invalidation helpers live alongside (`cache-invalidation.ts`, etc.).
-- `src/lib/performance.ts` — project-specific performance utilities as needed.
+- `src/lib/cache.ts` — Redis (Upstash REST or traditional) with SuperJSON serialization; key taxonomy for users, services, packages, subscriptions, notifications.
+- Hot reads use `getOrSetCached`: public packages, service types catalog, active subscription, unread notification counts. Mutations call helpers in `src/lib/cache-invalidation.ts`.
+- `src/lib/session-user-cache.ts` — short-TTL cache around JWT session revalidation (memory + Redis) so batched tRPC pages do not hit the DB once per procedure.
+- `src/lib/performance.ts` — wired as tRPC middleware on protected/admin/provider/client procedures.
+- Pattern deletes use `SCAN` (not `KEYS`) for traditional Redis.
+- Uploads are **local disk** via `src/app/api/upload/` (not S3 yet); `next.config.js` still allows remote image hosts for future object storage.
+- Landing media: prefer compressed assets under `public/images/landing`; gallery videos lazy-load via IntersectionObserver.
 
 ---
 
@@ -136,9 +141,8 @@ Typical categories inferred from code and dependencies:
 - **Database**: `DATABASE_URL`, `DIRECT_URL` (Prisma)
 - **Auth**: NextAuth `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 - **Redis / Upstash**: as consumed in `src/lib/cache.ts`
-- **S3 / B2**: upload and asset URLs (see `src/app/api/upload/` and image remote patterns in `next.config.js`)
-- **Email**: nodemailer under `src/lib/notifications/`
-- **Analytics**: `NEXT_PUBLIC_GTM_ID` (Google Tag Manager; defaults to `GTM-58DDFXLX` in locale layout)
+- **Analytics**: `NEXT_PUBLIC_GTM_ID` (Google Tag Manager; omitted when unset — no hardcoded fallback)
+- **Object storage (planned)**: AWS S3 / B2 SDKs may be present; current upload path is local filesystem
 
 Treat this list as a **checklist**, not a complete `.env` template—verify each integration’s module for exact variable names.
 

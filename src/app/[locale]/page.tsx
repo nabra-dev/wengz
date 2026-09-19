@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import LandingPage from "@/components/landing/landing-page";
 import { LandingServiceJsonLd } from "@/components/seo/json-ld";
+import { LandingClient } from "@/components/landing/landing-client";
 import { buildPageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -31,7 +31,7 @@ export default async function HomePage({
   return (
     <>
       <LandingServiceJsonLd locale={locale} />
-      <LandingPage />
+      <LandingClient />
     </>
   );
 }

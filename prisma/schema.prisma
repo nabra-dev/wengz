@@ -42,6 +42,7 @@ model User {
 
   @@index([deletedAt])
   @@index([registrationIp])
+  @@index([role])
 }
 
 model Account {
@@ -135,6 +136,7 @@ model ServiceType {
   packages                 PackageService[]
 
   @@index([deletedAt])
+  @@index([isActive, deletedAt])
 }
 
 model Package {
@@ -161,6 +163,8 @@ model Package {
   services           PackageService[]
 
   @@index([deletedAt])
+  @@index([isActive, deletedAt])
+  @@index([isActive, isFreePackage])
 }
 
 model PackageService {
@@ -195,6 +199,8 @@ model ClientSubscription {
 
   @@index([userId, isActive])
   @@index([userId, endDate]) // For credit availability checks
+  @@index([isActive, endDate])
+  @@index([packageId])
 }
 
 model PaymentProof {
@@ -222,6 +228,7 @@ model PaymentProof {
 
   @@index([status])
   @@index([userId])
+  @@index([status, createdAt])
 }
 
 model Request {
@@ -267,6 +274,7 @@ model Request {
   @@index([status, createdAt]) // For filtering by status and sorting
   @@index([status, deliveredAt]) // For delivered-approval SLA cron scans
   @@index([deletedAt])
+  @@index([serviceTypeId])
 }
 
 model ProviderWallet {

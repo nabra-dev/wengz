@@ -1,5 +1,6 @@
 import { createClient, type RedisClientType } from "redis";
 import { Redis as UpstashRedis } from "@upstash/redis";
+import superjson from "superjson";
 import { logger } from "@/lib/logger";
 
 let redisClient: RedisClientType | UpstashRedis | null = null;
@@ -128,12 +129,17 @@ export async function getCached<T>(key: string): Promise<T | null> {
     const data = await client.get(key);
     if (!data) return null;
 
-    // Upstash automatically handles JSON, traditional Redis needs parsing
-    if (isUpstash) {
-      return data as T;
-    } else {
-      return JSON.parse(data as string) as T;
+    // Upstash may return already-parsed objects; traditional Redis returns strings.
+    if (typeof data === "string") {
+      try {
+        return superjson.parse(data) as T;
+      } catch {
+        return JSON.parse(data) as T;
+      }
     }
+
+    // Legacy Upstash plain JSON objects
+    return data as T;
   } catch (error) {
     logger.error(`Cache get error for key ${key}:`, error);
     return null;
@@ -148,16 +154,16 @@ export async function setCached<T>(key: string, value: T, ttl?: number): Promise
     const client = await getRedisClient();
     if (!client) return;
 
+    // Persist via SuperJSON so Date/etc. revive correctly on read
+    const serialized = superjson.stringify(value);
+
     if (isUpstash) {
-      // Upstash handles JSON automatically
       if (ttl) {
-        await (client as UpstashRedis).set(key, value, { ex: ttl });
+        await (client as UpstashRedis).set(key, serialized, { ex: ttl });
       } else {
-        await (client as UpstashRedis).set(key, value);
+        await (client as UpstashRedis).set(key, serialized);
       }
     } else {
-      // Traditional Redis needs JSON serialization
-      const serialized = JSON.stringify(value);
       if (ttl) {
         await (client as RedisClientType).setEx(key, ttl, serialized);
       } else {
@@ -192,20 +198,32 @@ export async function deleteCached(key: string | string[]): Promise<void> {
 }
 
 /**
- * Delete all keys matching pattern
+ * Delete all keys matching pattern (SCAN — never KEYS on production Redis).
  */
 export async function deleteCachedPattern(pattern: string): Promise<void> {
   try {
     const client = await getRedisClient();
     if (!client) return;
 
-    const keys = await client.keys(pattern);
-    if (keys.length > 0) {
-      if (isUpstash) {
+    if (isUpstash) {
+      const keys = await (client as UpstashRedis).keys(pattern);
+      if (keys.length > 0) {
         await (client as UpstashRedis).del(...keys);
-      } else {
-        await (client as RedisClientType).del(keys);
       }
+      return;
+    }
+
+    const redis = client as RedisClientType;
+    let cursor = "0";
+    const matched: string[] = [];
+    do {
+      const result = await redis.scan(cursor, { MATCH: pattern, COUNT: 100 });
+      cursor = String(result.cursor);
+      matched.push(...result.keys);
+    } while (cursor !== "0");
+
+    if (matched.length > 0) {
+      await redis.del(matched);
     }
   } catch (error) {
     logger.error(`Cache pattern delete error:`, error);
@@ -233,28 +251,29 @@ export async function incrementCached(key: string, increment = 1): Promise<numbe
 }
 
 /**
- * Get or set value (cache-aside pattern)
+ * Get or set value (cache-aside pattern). Always returns fetcher data on miss/error.
  */
 export async function getOrSetCached<T>(
   key: string,
   fetcher: () => Promise<T>,
   ttl?: number
-): Promise<T | null> {
+): Promise<T> {
   try {
-    // Try to get from cache
     const cached = await getCached<T>(key);
-    if (cached) return cached;
+    if (cached !== null && cached !== undefined) return cached;
+  } catch (error) {
+    logger.error(`Cache get-or-set read error for key ${key}:`, error);
+  }
 
-    // Fetch fresh data
-    const data = await fetcher();
-    if (data) {
+  const data = await fetcher();
+  try {
+    if (data !== null && data !== undefined) {
       await setCached(key, data, ttl);
     }
-    return data;
   } catch (error) {
-    logger.error(`Cache get-or-set error for key ${key}:`, error);
-    return null;
+    logger.error(`Cache get-or-set write error for key ${key}:`, error);
   }
+  return data;
 }
 
 export const cacheKeys = CACHE_KEYS;

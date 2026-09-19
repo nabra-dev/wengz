@@ -1,6 +1,35 @@
 import { z } from "zod";
 import { router, publicProcedure, adminProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
+import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
+import { invalidatePackageCache } from "@/lib/cache-invalidation";
+
+const publicPackageSelect = {
+  id: true,
+  name: true,
+  description: true,
+  nameI18n: true,
+  descriptionI18n: true,
+  featuresI18n: true,
+  price: true,
+  credits: true,
+  durationDays: true,
+  features: true,
+  sortOrder: true,
+  isFeatured: true,
+  services: {
+    select: {
+      serviceType: {
+        select: {
+          id: true,
+          name: true,
+          nameI18n: true,
+          icon: true,
+        },
+      },
+    },
+  },
+} as const;
 
 export const packageRouter = router({
   // Get all active packages (public) - excludes free package
@@ -15,39 +44,20 @@ export const packageRouter = router({
     })
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
-      return ctx.db.package.findMany({
-        where: {
-          isActive: true,
-          isFreePackage: false, // Only show admin-created packages
-        },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          nameI18n: true,
-          descriptionI18n: true,
-          featuresI18n: true,
-          price: true,
-          credits: true,
-          durationDays: true,
-          features: true,
-          sortOrder: true,
-          isFeatured: true,
-          services: {
-            select: {
-              serviceType: {
-                select: {
-                  id: true,
-                  name: true,
-                  nameI18n: true,
-                  icon: true,
-                },
-              },
+      return getOrSetCached(
+        cacheKeys.PACKAGES,
+        () =>
+          ctx.db.package.findMany({
+            where: {
+              isActive: true,
+              isFreePackage: false,
+              deletedAt: null,
             },
-          },
-        },
-        orderBy: { sortOrder: "asc" },
-      });
+            select: publicPackageSelect,
+            orderBy: { sortOrder: "asc" },
+          }),
+        cacheTTL.PACKAGES
+      );
     }),
 
   // Get single package by ID
@@ -63,18 +73,24 @@ export const packageRouter = router({
     .input(z.object({ id: z.string() }))
     .output(z.any())
     .query(async ({ ctx, input }) => {
-      const pkg = await ctx.db.package.findUnique({
-        where: { id: input.id },
-      });
+      return getOrSetCached(
+        cacheKeys.PACKAGE(input.id),
+        async () => {
+          const pkg = await ctx.db.package.findUnique({
+            where: { id: input.id },
+          });
 
-      if (!pkg) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Package not found",
-        });
-      }
+          if (!pkg) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Package not found",
+            });
+          }
 
-      return pkg;
+          return pkg;
+        },
+        cacheTTL.PACKAGES
+      );
     }),
 
   // Create package (admin only)
@@ -111,6 +127,8 @@ export const packageRouter = router({
           sortOrder: input.sortOrder,
         },
       });
+
+      await invalidatePackageCache();
 
       return {
         success: true,
@@ -149,6 +167,8 @@ export const packageRouter = router({
         where: { id },
         data,
       });
+
+      await invalidatePackageCache();
 
       return {
         success: true,
@@ -201,6 +221,8 @@ export const packageRouter = router({
         where: { id: input.id },
         data: { isActive: false },
       });
+
+      await invalidatePackageCache();
 
       return {
         success: true,

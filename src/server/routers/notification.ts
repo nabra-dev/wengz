@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
+import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
+import { invalidateNotificationsCache } from "@/lib/cache-invalidation";
 
 export const notificationRouter = router({
   // Get notifications for current user
@@ -59,14 +61,19 @@ export const notificationRouter = router({
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
 
-      const count = await ctx.db.notification.count({
-        where: {
-          userId,
-          isRead: false,
+      return getOrSetCached(
+        cacheKeys.UNREAD_COUNT(userId),
+        async () => {
+          const count = await ctx.db.notification.count({
+            where: {
+              userId,
+              isRead: false,
+            },
+          });
+          return { count };
         },
-      });
-
-      return { count };
+        cacheTTL.NOTIFICATIONS
+      );
     }),
 
   // Mark notification as read
@@ -91,6 +98,8 @@ export const notificationRouter = router({
         },
         data: { isRead: true },
       });
+
+      await invalidateNotificationsCache(userId);
 
       return { success: notification.count > 0 };
     }),
@@ -117,6 +126,8 @@ export const notificationRouter = router({
         data: { isRead: true },
       });
 
+      await invalidateNotificationsCache(userId);
+
       return { success: true };
     }),
 
@@ -141,6 +152,8 @@ export const notificationRouter = router({
           userId,
         },
       });
+
+      await invalidateNotificationsCache(userId);
 
       return { success: result.count > 0 };
     }),

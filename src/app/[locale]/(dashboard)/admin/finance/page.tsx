@@ -142,7 +142,9 @@ export default function AdminFinancePage() {
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
 
-  const { data: finance, isLoading: financeLoading } = trpc.admin.getFinanceOverview.useQuery();
+  const { data: finance, isLoading: financeLoading } = trpc.admin.getFinanceOverview.useQuery({
+    limit: 100,
+  });
   const { data: ledgerData, isLoading: ledgerLoading } =
     trpc.admin.getProviderFinanceLedger.useQuery({
       providerId: selectedProviderId,

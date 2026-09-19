@@ -7,28 +7,28 @@ import type { Metadata } from "next";
 
 import { routing } from "@/i18n/routing";
 import { Toaster } from "@/components/ui/sonner";
-import { NotificationProvider } from "@/components/providers/notification-provider";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
-import { AuthProvider } from "@/components/providers/session-provider";
-import { TRPCProvider } from "@/components/providers/trpc-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteJsonLd } from "@/components/seo/json-ld";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
 import { brandName, buildPageMetadata } from "@/lib/seo";
+import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
 
-/** Google Tag Manager container ID */
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "GTM-58DDFXLX";
+/** Only inject GTM when explicitly configured — no hardcoded fallback. */
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
 const lato = Lato({
-  weight: ["300", "400", "700", "900"],
+  weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-lato",
+  display: "swap",
 });
 
 const cairo = Cairo({
-  weight: ["300", "400", "600", "700", "900"],
+  weight: ["400", "600", "700"],
   subsets: ["arabic", "latin"],
   variable: "--font-cairo",
+  display: "swap",
 });
 
 export function generateStaticParams() {
@@ -74,35 +74,26 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = (await import(`../../../messages/${locale}.json`)).default;
+  const allMessages = (await import(`../../../messages/${locale}.json`)).default;
+  const messages = pickPublicMessages(allMessages);
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const fontClass = locale === "ar" ? cairo.variable : lato.variable;
 
   return (
-    <html
-      lang={locale}
-      dir={dir}
-      className={`${lato.variable} ${cairo.variable}`}
-      suppressHydrationWarning
-    >
-      <GoogleTagManager gtmId={GTM_ID} />
+    <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
+      {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
       <head>
         <script>{`try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='light'?'light':'dark')}catch(e){}`}</script>
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <SiteJsonLd locale={locale} />
         <ThemeProvider>
-          <AuthProvider>
-            <TRPCProvider>
-              <NextIntlClientProvider locale={locale} messages={messages}>
-                <NotificationProvider>
-                  <GtmPageView />
-                  {children}
-                  <Toaster position="top-right" richColors closeButton />
-                  <PWAInstallPrompt />
-                </NotificationProvider>
-              </NextIntlClientProvider>
-            </TRPCProvider>
-          </AuthProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            {GTM_ID ? <GtmPageView /> : null}
+            {children}
+            <Toaster position="top-right" richColors closeButton />
+            <PWAInstallPrompt />
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>

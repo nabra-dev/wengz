@@ -31,6 +31,7 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
 
 // Typography (Lovable-style: large hero, restrained body)
 const FONT_SIZES = {
@@ -537,6 +538,7 @@ export default function LandingPage() {
             <video
               className="absolute inset-0 h-[115vh] w-full min-h-0 scale-110 object-cover blur-md"
               src="/images/hero.mp4"
+              poster="/images/landing/1.jpg"
               onLoadedData={() => setIsHeroVideoReady(true)}
               onCanPlay={() => setIsHeroVideoReady(true)}
               onError={() => setIsHeroVideoReady(true)}
@@ -544,7 +546,7 @@ export default function LandingPage() {
               muted
               loop
               playsInline
-              preload="auto"
+              preload="metadata"
               tabIndex={-1}
               aria-hidden
             />
@@ -882,14 +884,11 @@ export default function LandingPage() {
                         <div className="group relative overflow-hidden rounded-2xl border border-border bg-card sm:rounded-3xl">
                           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_30%_20%,rgba(224,248,64,0.16),transparent_55%),radial-gradient(circle_at_70%_80%,rgba(105,13,212,0.14),transparent_55%)]" />
-                          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                          <video
+                          <LazyGalleryVideo
                             className="aspect-[9/16] w-full object-cover"
-                            ref={setGalleryVideoRef(idx, strip as 0 | 1)}
-                            playsInline
+                            src={`/images/landing/${idx}.mp4`}
+                            videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
                             muted={videoMutedState[idx] ?? true}
-                            preload="metadata"
-                            tabIndex={-1}
                             onClick={() => {
                               toggleVideoPlayback(idx);
                             }}
@@ -943,9 +942,7 @@ export default function LandingPage() {
                                   }
                                 : undefined
                             }
-                          >
-                            <source src={`/images/landing/${idx}.mp4`} type="video/mp4" />
-                          </video>
+                          />
 
                           <div
                             className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pb-3 pt-12"

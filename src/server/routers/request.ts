@@ -551,7 +551,9 @@ export const requestRouter = router({
                 select: { id: true, name: true, email: true, image: true, role: true },
               },
             },
-            orderBy: { createdAt: "asc" },
+            // Latest N comments only — prevents unbounded chat payloads on poll.
+            orderBy: { createdAt: "desc" },
+            take: 100,
           },
           rating: true,
         },
@@ -567,6 +569,8 @@ export const requestRouter = router({
       // Access control
       validateRequestAccess(userId, role, request);
 
+      const commentsChronological = [...request.comments].reverse();
+
       // Providers viewing an unassigned pending request must not see client PII.
       const isProviderBrowsing =
         role === "PROVIDER" && request.providerId !== userId;
@@ -576,7 +580,10 @@ export const requestRouter = router({
             client: { ...request.client, email: null },
             comments: [],
           }
-        : request;
+        : {
+            ...request,
+            comments: commentsChronological,
+          };
 
       // Get revision info if client
       let revisionInfo = null;
@@ -591,6 +598,7 @@ export const requestRouter = router({
         ...visibleRequest,
         attributeCredits,
         revisionInfo,
+        commentsTruncated: !isProviderBrowsing && request.comments.length >= 100,
       } as any;
     }),
 
@@ -1171,6 +1179,7 @@ export const requestRouter = router({
   // Get service types
   getServiceTypes: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
+    const { getOrSetCached, cacheKeys, cacheTTL } = await import("@/lib/cache");
 
     // Get user's active subscription with package services
     const activeSubscription = (await ctx.db.clientSubscription.findFirst({
@@ -1181,10 +1190,12 @@ export const requestRouter = router({
       },
       include: {
         package: {
-          include: {
+          select: {
+            id: true,
+            supportAllServices: true,
             services: {
-              include: {
-                serviceType: true,
+              select: {
+                serviceType: { select: { id: true } },
               },
             },
           },
@@ -1197,65 +1208,66 @@ export const requestRouter = router({
       return [];
     }
 
-    // Get all active services with their package support info
-    const allServices = await ctx.db.serviceType.findMany({
-      where: { isActive: true, deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        nameI18n: true,
-        description: true,
-        descriptionI18n: true,
-        icon: true,
-        attributes: true,
-        creditCost: true,
-        priorityCostLow: true,
-        priorityCostMedium: true,
-        priorityCostHigh: true,
-        isActive: true,
-        sortOrder: true,
-      },
-      orderBy: { sortOrder: "asc" },
-    });
+    const allServices = await getOrSetCached(
+      cacheKeys.SERVICE_TYPES,
+      () =>
+        ctx.db.serviceType.findMany({
+          where: { isActive: true, deletedAt: null },
+          select: {
+            id: true,
+            name: true,
+            nameI18n: true,
+            description: true,
+            descriptionI18n: true,
+            icon: true,
+            attributes: true,
+            creditCost: true,
+            priorityCostLow: true,
+            priorityCostMedium: true,
+            priorityCostHigh: true,
+            isActive: true,
+            sortOrder: true,
+          },
+          orderBy: { sortOrder: "asc" },
+        }),
+      cacheTTL.SERVICE_TYPES
+    );
 
-    // Get all packages that support each service
     const packageServices = await ctx.db.packageService.findMany({
-      include: { package: true },
+      where: {
+        package: { isActive: true, deletedAt: null },
+      },
+      select: {
+        serviceId: true,
+        package: {
+          select: { id: true, name: true, nameI18n: true },
+        },
+      },
     });
 
-    // Create a map of service ID to packages that support it
-    const servicePackageMap = new Map<string, any[]>();
+    const servicePackageMap = new Map<string, { id: string; name: string; nameI18n: unknown }[]>();
     packageServices.forEach((ps) => {
-      const serviceId = ps.serviceId;
-      if (!servicePackageMap.has(serviceId)) {
-        servicePackageMap.set(serviceId, []);
+      if (!servicePackageMap.has(ps.serviceId)) {
+        servicePackageMap.set(ps.serviceId, []);
       }
-      servicePackageMap.get(serviceId)!.push(ps.package);
+      servicePackageMap.get(ps.serviceId)!.push(ps.package);
     });
 
-    // Check if package supports all services
     const supportAllServices = activeSubscription.package.supportAllServices;
-
-    // Get allowed service IDs if package doesn't support all
     const allowedServiceIds = supportAllServices
       ? null
       : new Set(
-          activeSubscription.package.services.map((ps: { serviceType: any }) => ps.serviceType.id)
+          activeSubscription.package.services.map((ps: { serviceType: { id: string } }) => ps.serviceType.id)
         );
 
-    // Return all services with isSupported flag and supportingPackages
-    return allServices.map((service: any) => {
+    return allServices.map((service) => {
       const isSupported = supportAllServices || allowedServiceIds?.has(service.id) || false;
       const supportingPackages = servicePackageMap.get(service.id) || [];
 
       return {
         ...service,
         isSupported,
-        supportingPackages: supportingPackages.map((pkg) => ({
-          id: pkg.id,
-          name: pkg.name,
-          nameI18n: pkg.nameI18n,
-        })),
+        supportingPackages,
       };
     });
   }),

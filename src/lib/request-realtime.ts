@@ -5,7 +5,8 @@ const ACTIVE_REQUEST_STATUSES = new Set([
   "DELIVERED",
 ]);
 
-const REQUEST_THREAD_POLLING_INTERVAL_MS = 4000;
+/** Fallback poll when SSE is quiet — keep light; prefer SSE invalidation. */
+const REQUEST_THREAD_POLLING_INTERVAL_MS = 15_000;
 
 export function getRequestThreadPollingInterval(status: unknown): number | false {
   if (typeof status !== "string") return REQUEST_THREAD_POLLING_INTERVAL_MS;

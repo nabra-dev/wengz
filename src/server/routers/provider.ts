@@ -326,7 +326,7 @@ export const providerRouter = router({
       const startDate = input?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = input?.endDate || new Date();
 
-      const [wallet, ledger, periodLedger, profile, withdrawals] = await Promise.all([
+      const [wallet, ledger, periodAgg, profile, withdrawals] = await Promise.all([
         ctx.db.providerWallet.findUnique({
           where: { providerId: userId },
         }),
@@ -354,7 +354,7 @@ export const providerRouter = router({
           orderBy: { settledAt: "desc" },
           take: 100,
         }),
-        ctx.db.providerFinanceLedger.findMany({
+        ctx.db.providerFinanceLedger.aggregate({
           where: {
             providerId: userId,
             settledAt: {
@@ -362,10 +362,11 @@ export const providerRouter = router({
               lte: endDate,
             },
           },
-          select: {
+          _sum: {
             providerCredits: true,
             providerAmountUsd: true,
           },
+          _count: true,
         }),
         ctx.db.providerProfile.findUnique({
           where: { userId },
@@ -406,30 +407,16 @@ export const providerRouter = router({
         },
       }));
 
-      const periodTotals = periodLedger.reduce(
-        (
-          sum: {
-            providerCredits: number;
-            providerAmountUsd: number;
-          },
-          entry
-        ) => ({
-          providerCredits: sum.providerCredits + entry.providerCredits,
-          providerAmountUsd: sum.providerAmountUsd + entry.providerAmountUsd,
-        }),
-        { providerCredits: 0, providerAmountUsd: 0 }
-      );
-
       return {
-        totalEarnings: periodTotals.providerCredits,
-        completedCount: periodLedger.length,
+        totalEarnings: periodAgg._sum.providerCredits ?? 0,
+        completedCount: periodAgg._count,
         balanceCredits: wallet?.balanceCredits ?? 0,
         pendingCredits: wallet?.pendingCredits ?? 0,
         paidCredits: wallet?.paidCredits ?? 0,
         balanceUsd: wallet?.balanceUsd ?? 0,
         pendingUsd: wallet?.pendingUsd ?? 0,
         paidUsd: wallet?.paidUsd ?? 0,
-        totalEarningsUsd: periodTotals.providerAmountUsd,
+        totalEarningsUsd: periodAgg._sum.providerAmountUsd ?? 0,
         period: {
           start: startDate,
           end: endDate,

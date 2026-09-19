@@ -4,6 +4,8 @@ import { TRPCError } from "@trpc/server";
 import { getCreditBalance } from "@/lib/credit-logic";
 import { createNotification } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
+import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
+import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 
 export const subscriptionRouter = router({
   // Get active subscription for current user
@@ -20,48 +22,53 @@ export const subscriptionRouter = router({
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
 
-      const subscription = (await ctx.db.clientSubscription.findFirst({
-        where: {
-          userId,
-          isActive: true,
-          endDate: { gte: new Date() },
-        },
-        include: {
-          package: {
+      return getOrSetCached(
+        cacheKeys.SUBSCRIPTION(userId),
+        async () => {
+          const subscription = (await ctx.db.clientSubscription.findFirst({
+            where: {
+              userId,
+              isActive: true,
+              endDate: { gte: new Date() },
+            },
             include: {
-              services: {
+              package: {
                 include: {
-                  serviceType: {
-                    select: {
-                      id: true,
-                      name: true,
-                      nameI18n: true,
-                      icon: true,
-                    } as any,
+                  services: {
+                    include: {
+                      serviceType: {
+                        select: {
+                          id: true,
+                          name: true,
+                          nameI18n: true,
+                          icon: true,
+                        } as any,
+                      },
+                    },
                   },
                 },
               },
             },
-          },
+            orderBy: { createdAt: "desc" },
+          })) as any;
+
+          if (!subscription) {
+            return null;
+          }
+
+          const now = Date.now();
+          const endDate = new Date(subscription.endDate).getTime();
+          const diffTime = endDate - now;
+          const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+          return {
+            ...subscription,
+            isExpiring: daysRemaining <= 7,
+            daysRemaining,
+          };
         },
-        orderBy: { createdAt: "desc" },
-      })) as any;
-
-      if (!subscription) {
-        return null;
-      }
-
-      // Calculate expiry info inline to avoid extra DB call
-      const now = Date.now();
-      const endDate = new Date(subscription.endDate).getTime();
-      const diffTime = endDate - now;
-      const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-      return {
-        ...subscription,
-        isExpiring: daysRemaining <= 7,
-        daysRemaining,
-      };
+        cacheTTL.SUBSCRIPTION
+      );
     }),
 
   // Get pending subscription awaiting payment verification

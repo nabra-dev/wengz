@@ -343,7 +343,7 @@ export default function NewRequestPage() {
                     {resolveLocalizedText(
                       (selectedService as any).descriptionI18n,
                       locale,
-                      selectedService.description
+                      selectedService.description ?? undefined
                     )}
                   </p>
                   {!selectedService.isSupported &&
