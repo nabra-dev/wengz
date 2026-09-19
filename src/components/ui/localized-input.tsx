@@ -14,6 +14,8 @@ interface LocalizedInputProps {
   readonly onChange: (next: LocalizedText) => void;
   readonly variant?: Variant;
   readonly id?: string;
+  /** Visible field label used for accessible names on each locale input */
+  readonly label?: string;
   readonly placeholder?: string | LocalizedText;
   readonly disabled?: boolean;
   readonly required?: boolean;
@@ -34,6 +36,7 @@ export function LocalizedInput({
   onChange,
   variant = "input",
   id,
+  label,
   placeholder,
   disabled,
   required,
@@ -67,32 +70,40 @@ export function LocalizedInput({
       </div>
 
       {/* Inputs per locale */}
-      {locales.map((loc) => (
-        <Tabs key={loc} value={active} onValueChange={setActive}>
-          <TabsContent value={loc} className="mt-1">
-            {variant === "input" ? (
-              <Input
-                id={id ? `${id}-${loc}` : undefined}
-                placeholder={placeholders[loc]}
-                value={normalized[loc]}
-                onChange={(e) => handleChange(loc, e.target.value)}
-                disabled={disabled}
-                required={required}
-              />
-            ) : (
-              <Textarea
-                id={id ? `${id}-${loc}` : undefined}
-                placeholder={placeholders[loc]}
-                value={normalized[loc]}
-                onChange={(e) => handleChange(loc, e.target.value)}
-                disabled={disabled}
-                required={required}
-                rows={4}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
-      ))}
+      {locales.map((loc) => {
+        const fieldId = id ? `${id}-${loc}` : undefined;
+        const accessibleName = label ? `${label} (${t(loc)})` : t(loc);
+        return (
+          <Tabs key={loc} value={active} onValueChange={setActive}>
+            <TabsContent value={loc} className="mt-1">
+              {variant === "input" ? (
+                <Input
+                  id={fieldId}
+                  name={fieldId}
+                  aria-label={accessibleName}
+                  placeholder={placeholders[loc]}
+                  value={normalized[loc]}
+                  onChange={(e) => handleChange(loc, e.target.value)}
+                  disabled={disabled}
+                  required={required}
+                />
+              ) : (
+                <Textarea
+                  id={fieldId}
+                  name={fieldId}
+                  aria-label={accessibleName}
+                  placeholder={placeholders[loc]}
+                  value={normalized[loc]}
+                  onChange={(e) => handleChange(loc, e.target.value)}
+                  disabled={disabled}
+                  required={required}
+                  rows={4}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        );
+      })}
     </div>
   );
 }

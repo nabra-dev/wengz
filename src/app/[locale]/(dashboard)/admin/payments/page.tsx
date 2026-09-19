@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Table,
   TableBody,
@@ -95,6 +96,7 @@ export default function AdminPaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<PaymentProof | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [approvePaymentId, setApprovePaymentId] = useState<string | null>(null);
 
   const { data: stats, isLoading: statsLoading } = trpc.payment.getStats.useQuery();
   const { data: pendingPayments, isLoading: pendingLoading } =
@@ -103,6 +105,7 @@ export default function AdminPaymentsPage() {
 
   const approveMutation = trpc.payment.approvePayment.useMutation({
     onSuccess: () => {
+      setApprovePaymentId(null);
       showSuccess(t("toast.approved"));
       utils.payment.getPendingPayments.invalidate();
       utils.payment.getAllPayments.invalidate();
@@ -130,9 +133,12 @@ export default function AdminPaymentsPage() {
   });
 
   const handleApprove = (paymentId: string) => {
-    if (confirm(t("confirmations.approve"))) {
-      approveMutation.mutate({ paymentId });
-    }
+    setApprovePaymentId(paymentId);
+  };
+
+  const handleConfirmApprove = () => {
+    if (!approvePaymentId) return;
+    approveMutation.mutate({ paymentId: approvePaymentId });
   };
 
   const handleReject = () => {
@@ -520,6 +526,18 @@ export default function AdminPaymentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!approvePaymentId}
+        onOpenChange={(open) => {
+          if (!open) setApprovePaymentId(null);
+        }}
+        title={t("buttons.approve")}
+        description={t("confirmations.approve")}
+        confirmLabel={t("buttons.approve")}
+        loading={approveMutation.isPending}
+        onConfirm={handleConfirmApprove}
+      />
     </div>
   );
 }

@@ -1217,7 +1217,7 @@ export const adminRouter = router({
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
           search: z.string().optional(),
-          showDeleted: z.boolean().optional(),
+          status: z.enum(["all", "active", "inactive"]).optional(),
         })
         .optional()
     )
@@ -1236,11 +1236,12 @@ export const adminRouter = router({
         ];
       }
 
-      // Filter by deletion status
-      if (input?.showDeleted) {
-        where.deletedAt = { not: null };
-      } else {
+      // Filter by active / inactive (inactive = soft-deleted)
+      const status = input?.status ?? "active";
+      if (status === "active") {
         where.deletedAt = null;
+      } else if (status === "inactive") {
+        where.deletedAt = { not: null };
       }
 
       const [users, total] = await Promise.all([
@@ -1254,6 +1255,7 @@ export const adminRouter = router({
             image: true,
             role: true,
             createdAt: true,
+            deletedAt: true,
             providerProfile: {
               select: {
                 id: true,
@@ -1463,36 +1465,9 @@ export const adminRouter = router({
       };
     }),
 
-  // Delete service type (soft delete)
-  deleteServiceType: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const serviceType = await ctx.db.serviceType.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!serviceType) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Service type not found",
-        });
-      }
-
-      // Soft delete the service type
-      await ctx.db.serviceType.update({
-        where: { id: input.id },
-        data: {
-          deletedAt: new Date(),
-          isActive: false,
-        },
-      });
-
-      return { success: true, message: `Service type "${serviceType.name}" has been deleted` };
-    }),
-
-  // Restore service type
-  restoreServiceType: adminProcedure
-    .input(z.object({ id: z.string() }))
+  // Set service type active / inactive
+  setServiceTypeActive: adminProcedure
+    .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const serviceType = await ctx.db.serviceType.findUnique({
         where: { id: input.id },
@@ -1508,12 +1483,15 @@ export const adminRouter = router({
       await ctx.db.serviceType.update({
         where: { id: input.id },
         data: {
-          deletedAt: null,
-          isActive: true,
+          isActive: input.isActive,
+          ...(input.isActive ? { deletedAt: null } : {}),
         },
       });
 
-      return { success: true, message: `Service type "${serviceType.name}" has been restored` };
+      return {
+        success: true,
+        message: `Service type "${serviceType.name}" has been ${input.isActive ? "activated" : "deactivated"}`,
+      };
     }),
 
   // Create package
@@ -1659,9 +1637,9 @@ export const adminRouter = router({
       return { success: true, package: pkg };
     }),
 
-  // Delete package (soft delete)
-  deletePackage: adminProcedure
-    .input(z.object({ id: z.string() }))
+  // Set package active / inactive
+  setPackageActive: adminProcedure
+    .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const pkg = await ctx.db.package.findUnique({
         where: { id: input.id },
@@ -1674,59 +1652,47 @@ export const adminRouter = router({
         });
       }
 
-      // Prevent deletion of free package
-      if (pkg.isFreePackage) {
+      if (pkg.isFreePackage && !input.isActive) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Cannot delete the free package",
-        });
-      }
-
-      // Soft delete the package
-      await ctx.db.package.update({
-        where: { id: input.id },
-        data: {
-          deletedAt: new Date(),
-          isActive: false,
-        },
-      });
-
-      return { success: true, message: `Package "${pkg.name}" has been deleted` };
-    }),
-
-  // Restore package
-  restorePackage: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const pkg = await ctx.db.package.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!pkg) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Package not found",
+          message: "Cannot deactivate the free package",
         });
       }
 
       await ctx.db.package.update({
         where: { id: input.id },
         data: {
-          deletedAt: null,
-          isActive: true,
+          isActive: input.isActive,
+          ...(input.isActive ? { deletedAt: null } : {}),
         },
       });
 
-      return { success: true, message: `Package "${pkg.name}" has been restored` };
+      return {
+        success: true,
+        message: `Package "${pkg.name}" has been ${input.isActive ? "activated" : "deactivated"}`,
+      };
     }),
 
   // Get all service types
   getServiceTypes: adminProcedure
-    .input(z.object({ showDeleted: z.boolean().optional() }).optional())
+    .input(
+      z
+        .object({
+          status: z.enum(["all", "active", "inactive"]).optional(),
+        })
+        .optional()
+    )
     .query(async ({ ctx, input }) => {
-      const showDeleted = input?.showDeleted ?? false;
+      const status = input?.status ?? "active";
+      const where =
+        status === "active"
+          ? { isActive: true }
+          : status === "inactive"
+            ? { isActive: false }
+            : {};
+
       return ctx.db.serviceType.findMany({
-        where: showDeleted ? { deletedAt: { not: null } } : { deletedAt: null },
+        where,
         orderBy: { sortOrder: "asc" },
         include: {
           _count: { select: { requests: true } },
@@ -1734,15 +1700,28 @@ export const adminRouter = router({
       });
     }),
 
-  // Get all packages (admin only, includes deleted)
+  // Get all packages (admin only)
   getPackages: adminProcedure
-    .input(z.object({ showDeleted: z.boolean().optional() }).optional())
+    .input(
+      z
+        .object({
+          status: z.enum(["all", "active", "inactive"]).optional(),
+        })
+        .optional()
+    )
     .query(async ({ ctx, input }) => {
-      const showDeleted = input?.showDeleted ?? false;
+      const status = input?.status ?? "active";
+      const where = {
+        isFreePackage: false,
+        ...(status === "active"
+          ? { isActive: true }
+          : status === "inactive"
+            ? { isActive: false }
+            : {}),
+      };
+
       return ctx.db.package.findMany({
-        where: showDeleted
-          ? { deletedAt: { not: null }, isFreePackage: false }
-          : { deletedAt: null, isFreePackage: false },
+        where,
         orderBy: { sortOrder: "asc" },
         select: {
           id: true,
@@ -2115,9 +2094,9 @@ export const adminRouter = router({
       };
     }),
 
-  // Delete user (soft delete)
-  deleteUser: adminProcedure
-    .input(z.object({ userId: z.string() }))
+  // Set user active / inactive (inactive uses soft-delete)
+  setUserActive: adminProcedure
+    .input(z.object({ userId: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
         where: { id: input.userId },
@@ -2130,55 +2109,28 @@ export const adminRouter = router({
         });
       }
 
-      // Prevent deletion of super admin
-      if (user.role === "SUPER_ADMIN") {
+      if (user.role === "SUPER_ADMIN" && !input.isActive) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Cannot delete a super admin user",
+          message: "Cannot deactivate a super admin user",
         });
       }
 
-      // Soft delete the user
-      const deletedUser = await ctx.db.user.update({
+      const updatedUser = await ctx.db.user.update({
         where: { id: input.userId },
-        data: {
-          deletedAt: new Date(),
-        },
+        data: input.isActive
+          ? { deletedAt: null }
+          : {
+              deletedAt: new Date(),
+              sessions: { deleteMany: {} },
+              accounts: { deleteMany: {} },
+            },
       });
 
       return {
         success: true,
-        message: `User ${user.email} has been deleted`,
-        user: deletedUser,
-      };
-    }),
-
-  // Restore user
-  restoreUser: adminProcedure
-    .input(z.object({ userId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const user = await ctx.db.user.findUnique({
-        where: { id: input.userId },
-      });
-
-      if (!user) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "User not found",
-        });
-      }
-
-      const restoredUser = await ctx.db.user.update({
-        where: { id: input.userId },
-        data: {
-          deletedAt: null,
-        },
-      });
-
-      return {
-        success: true,
-        message: `User ${user.email} has been restored`,
-        user: restoredUser,
+        message: `User ${user.email} has been ${input.isActive ? "activated" : "deactivated"}`,
+        user: updatedUser,
       };
     }),
 

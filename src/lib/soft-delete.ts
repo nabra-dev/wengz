@@ -29,28 +29,26 @@ export async function softDeleteUser(userId: string) {
 }
 
 /**
- * Soft delete a service type
+ * Deactivate a service type
  * Admin action: prevents new requests using this service
  */
 export async function softDeleteServiceType(serviceTypeId: string) {
   return db.serviceType.update({
     where: { id: serviceTypeId },
     data: {
-      deletedAt: new Date(),
       isActive: false,
     },
   });
 }
 
 /**
- * Soft delete a package
+ * Deactivate a package
  * Admin action: prevents new subscriptions to this package
  */
 export async function softDeletePackage(packageId: string) {
   return db.package.update({
     where: { id: packageId },
     data: {
-      deletedAt: new Date(),
       isActive: false,
     },
   });
@@ -82,7 +80,7 @@ export async function restoreUser(userId: string) {
 }
 
 /**
- * Restore a soft-deleted service type
+ * Reactivate a service type
  */
 export async function restoreServiceType(serviceTypeId: string) {
   return db.serviceType.update({
@@ -95,7 +93,7 @@ export async function restoreServiceType(serviceTypeId: string) {
 }
 
 /**
- * Restore a soft-deleted package
+ * Reactivate a package
  */
 export async function restorePackage(packageId: string) {
   return db.package.update({
@@ -133,24 +131,22 @@ export async function getActiveUsers(filter?: { role?: string }) {
 }
 
 /**
- * Get all active (non-deleted) service types
+ * Get all active service types
  */
 export async function getActiveServiceTypes() {
   return db.serviceType.findMany({
     where: {
-      deletedAt: null,
       isActive: true,
     },
   });
 }
 
 /**
- * Get all active (non-deleted) packages
+ * Get all active packages
  */
 export async function getActivePackages() {
   return db.package.findMany({
     where: {
-      deletedAt: null,
       isActive: true,
     },
   });

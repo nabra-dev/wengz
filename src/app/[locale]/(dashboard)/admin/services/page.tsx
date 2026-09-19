@@ -17,11 +17,14 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
-import { Plus, Edit, Trash, RotateCcw } from "lucide-react";
+import { Plus, Edit } from "lucide-react";
 import { AttributesManager } from "@/components/admin/attributes-manager";
 import type { ServiceAttribute } from "@/types/service-attributes";
 import { toast } from "sonner";
 import { LocalizedInput } from "@/components/ui/localized-input";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { showError } from "@/lib/error-handler";
 
 const EMOJI_LIST = [
   "🎨",
@@ -71,6 +74,8 @@ const EMOJI_LIST = [
   "🌻",
 ];
 
+type StatusFilter = "all" | "active" | "inactive";
+
 export default function AdminServicesPage() {
   const t = useTranslations("admin.services");
   const locale = useLocale();
@@ -79,7 +84,7 @@ export default function AdminServicesPage() {
   const [selectedIconField, setSelectedIconField] = useState<"create" | "edit" | null>(null);
   const [createAttributes, setCreateAttributes] = useState<ServiceAttribute[]>([]);
   const [editAttributes, setEditAttributes] = useState<ServiceAttribute[]>([]);
-  const [activeTab, setActiveTab] = useState<"active" | "deleted">("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   // Localized fields state for create/edit forms
   const [createNameI18n, setCreateNameI18n] = useState<{ en: string; ar: string }>({
     en: "",
@@ -91,9 +96,10 @@ export default function AdminServicesPage() {
   });
   const [editNameI18n, setEditNameI18n] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
   const [editDescI18n, setEditDescI18n] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
+  const [togglingServiceId, setTogglingServiceId] = useState<string | null>(null);
 
   const { data: services, isLoading } = trpc.admin.getServiceTypes.useQuery({
-    showDeleted: activeTab === "deleted",
+    status: statusFilter,
   });
   const utils = trpc.useUtils();
 
@@ -115,23 +121,15 @@ export default function AdminServicesPage() {
     },
   });
 
-  const deleteService = trpc.admin.deleteServiceType.useMutation({
-    onSuccess: () => {
+  const setServiceActive = trpc.admin.setServiceTypeActive.useMutation({
+    onSuccess: (_data, variables) => {
+      setTogglingServiceId(null);
       utils.admin.getServiceTypes.invalidate();
-      toast.success(t("toast.deleted"));
+      toast.success(variables.isActive ? t("toast.activated") : t("toast.deactivated"));
     },
-    onError: () => {
-      toast.error(t("toast.deleteFailed"));
-    },
-  });
-
-  const restoreService = trpc.admin.restoreServiceType.useMutation({
-    onSuccess: () => {
-      utils.admin.getServiceTypes.invalidate();
-      toast.success(t("toast.restored"));
-    },
-    onError: () => {
-      toast.error(t("toast.restoreFailed"));
+    onError: (error) => {
+      setTogglingServiceId(null);
+      showError(error, t("toast.statusFailed"));
     },
   });
 
@@ -248,18 +246,6 @@ export default function AdminServicesPage() {
     setEditAttributes([]);
   };
 
-  const handleDeleteClick = (id: string) => {
-    if (confirm(t("confirmations.delete"))) {
-      deleteService.mutate({ id });
-    }
-  };
-
-  const handleRestoreClick = (id: string) => {
-    if (confirm(t("confirmations.restore"))) {
-      restoreService.mutate({ id });
-    }
-  };
-
   const handleEditClick = (service: any) => {
     setEditingId(service.id);
     setEditAttributes(service.attributes || []);
@@ -305,6 +291,7 @@ export default function AdminServicesPage() {
                   <button
                     key={emoji}
                     type="button"
+                    aria-label={`Select icon ${emoji}`}
                     className="text-2xl hover:bg-background p-2 rounded transition-colors"
                     onClick={() => handleSelectEmoji(emoji)}
                   >
@@ -318,6 +305,8 @@ export default function AdminServicesPage() {
         <div className="space-y-2 md:col-span-2">
           <Label>{t("fields.localizedName")}</Label>
           <LocalizedInput
+            id="edit-service-name"
+            label={t("fields.localizedName")}
             value={editNameI18n}
             onChange={(next) => setEditNameI18n({ en: next.en || "", ar: next.ar || "" })}
             required
@@ -330,6 +319,8 @@ export default function AdminServicesPage() {
         <div className="space-y-2 md:col-span-3">
           <Label>{t("fields.localizedDescription")}</Label>
           <LocalizedInput
+            id="edit-service-description"
+            label={t("fields.localizedDescription")}
             value={editDescI18n}
             onChange={(next) => setEditDescI18n({ en: next.en || "", ar: next.ar || "" })}
             variant="input"
@@ -472,9 +463,14 @@ export default function AdminServicesPage() {
       <div className="flex items-center gap-4">
         {service.icon && <span className="text-2xl">{service.icon}</span>}
         <div>
-          <p className="font-medium">
-            {resolveLocalizedText((service as any).nameI18n, locale, service.name)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium">
+              {resolveLocalizedText((service as any).nameI18n, locale, service.name)}
+            </p>
+            <Badge variant={service.isActive ? "default" : "secondary"}>
+              {service.isActive ? t("badges.active") : t("badges.inactive")}
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
             {resolveLocalizedText((service as any).descriptionI18n, locale, service.description)}
           </p>
@@ -511,39 +507,33 @@ export default function AdminServicesPage() {
           </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        {activeTab === "active" && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleEditClick(service)}
-            className="flex items-center gap-1"
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleEditClick(service)}
+          className="flex items-center gap-1"
+        >
+          <Edit className="h-3 w-3" />
+          {t("buttons.edit")}
+        </Button>
+        <div className="flex items-center gap-2">
+          <Label
+            htmlFor={`service-active-${service.id}`}
+            className="text-sm text-muted-foreground cursor-pointer"
           >
-            <Edit className="h-3 w-3" />
-            {t("buttons.edit")}
-          </Button>
-        )}
-        {activeTab === "active" ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDeleteClick(service.id)}
-            className="flex items-center gap-1"
-          >
-            <Trash className="h-3 w-3" />
-            {t("buttons.delete")}
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => handleRestoreClick(service.id)}
-            className="flex items-center gap-1"
-          >
-            <RotateCcw className="h-3 w-3" />
-            {t("buttons.restore")}
-          </Button>
-        )}
+            {service.isActive ? t("badges.active") : t("badges.inactive")}
+          </Label>
+          <Switch
+            id={`service-active-${service.id}`}
+            checked={service.isActive}
+            disabled={togglingServiceId === service.id}
+            onCheckedChange={(checked: boolean) => {
+              setTogglingServiceId(service.id);
+              setServiceActive.mutate({ id: service.id, isActive: checked });
+            }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -603,6 +593,7 @@ export default function AdminServicesPage() {
                           <button
                             key={emoji}
                             type="button"
+                            aria-label={`Select icon ${emoji}`}
                             className="text-2xl hover:bg-background p-2 rounded transition-colors"
                             onClick={() => handleSelectEmoji(emoji)}
                           >
@@ -616,6 +607,8 @@ export default function AdminServicesPage() {
                 <div className="space-y-2 md:col-span-2">
                   <Label>{t("fields.localizedName")}</Label>
                   <LocalizedInput
+                    id="create-service-name"
+                    label={t("fields.localizedName")}
                     value={createNameI18n}
                     onChange={(next) => setCreateNameI18n({ en: next.en || "", ar: next.ar || "" })}
                     required
@@ -628,6 +621,8 @@ export default function AdminServicesPage() {
                 <div className="space-y-2 md:col-span-3">
                   <Label>{t("fields.localizedDescription")}</Label>
                   <LocalizedInput
+                    id="create-service-description"
+                    label={t("fields.localizedDescription")}
                     value={createDescI18n}
                     onChange={(next) => setCreateDescI18n({ en: next.en || "", ar: next.ar || "" })}
                     variant="input"
@@ -785,15 +780,16 @@ export default function AdminServicesPage() {
         </CardHeader>
         <CardContent>
           <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "active" | "deleted")}
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
             className="w-full"
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="active">{t("activeServices")}</TabsTrigger>
-              <TabsTrigger value="deleted">{t("deletedServices")}</TabsTrigger>
+              <TabsTrigger value="all">{t("filters.all")}</TabsTrigger>
+              <TabsTrigger value="active">{t("filters.active")}</TabsTrigger>
+              <TabsTrigger value="inactive">{t("filters.inactive")}</TabsTrigger>
             </TabsList>
-            <TabsContent value={activeTab}>
+            <TabsContent value={statusFilter}>
               {isLoading && (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
@@ -802,7 +798,9 @@ export default function AdminServicesPage() {
                 </div>
               )}
               {!isLoading && services?.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">{t("noServiceTypes")}</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  {statusFilter === "inactive" ? t("noInactiveServices") : t("noServiceTypes")}
+                </div>
               )}
               {!isLoading && (services?.length ?? 0) > 0 && (
                 <div className="space-y-4">
@@ -813,6 +811,7 @@ export default function AdminServicesPage() {
           </Tabs>
         </CardContent>
       </Card>
+
     </div>
   );
 }

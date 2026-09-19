@@ -9,6 +9,12 @@
       "goBack": "رجوع",
       "backHome": "العودة للصفحة الرئيسية"
     },
+    "confirmDialog": {
+      "confirm": "تأكيد",
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "restore": "استعادة"
+    },
     "credits": "كريدت",
     "footer": {
       "privacy": "الخصوصية",
@@ -420,7 +426,10 @@
         "allRoles": "جميع الأدوار",
         "client": "العملاء",
         "provider": "المبدعون",
-        "admin": "المديرون"
+        "admin": "المديرون",
+        "all": "الكل",
+        "active": "نشط",
+        "inactive": "غير نشط"
       },
       "tabs": {
         "allUsers": "جميع المستخدمين",
@@ -439,7 +448,8 @@
         "actions": "الإجراءات",
         "noUsers": "لم يتم العثور على مستخدمين",
         "allUsers": "المستخدمين",
-        "tryAdjusting": "حاول تعديل البحث أو الفلاتر"
+        "tryAdjusting": "حاول تعديل البحث أو الفلاتر",
+        "noInactiveUsers": "لا يوجد مستخدمون غير نشطين"
       },
       "dialog": {
         "create": {
@@ -450,15 +460,13 @@
           "title": "تعديل المستخدم",
           "description": "تحديث معلومات المستخدم"
         },
-        "delete": {
-          "title": "حذف المستخدم",
-          "description": "هل أنت متأكد من رغبتك في حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء."
-        },
         "fields": {
           "name": "الاسم الكامل",
           "email": "عنوان البريد الإلكتروني",
           "phone": "رقم الهاتف",
           "password": "كلمة المرور",
+          "showPassword": "إظهار كلمة المرور",
+          "hidePassword": "إخفاء كلمة المرور",
           "role": "دور المستخدم",
           "services": "الخدمات المدعومة",
           "selectServices": "حدد الخدمات التي يمكن للمبدع التعامل معها"
@@ -473,8 +481,10 @@
         "toast": {
           "created": "تم إنشاء المستخدم بنجاح",
           "updated": "تم تحديث المستخدم بنجاح",
-          "deleted": "تم حذف المستخدم بنجاح",
-          "error": "حدث خطأ"
+          "error": "حدث خطأ",
+          "activated": "تم تفعيل المستخدم بنجاح",
+          "deactivated": "تم إلغاء تفعيل المستخدم بنجاح",
+          "statusFailed": "فشل تحديث حالة المستخدم"
         },
         "validation": {
           "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
@@ -484,6 +494,14 @@
       "servicesBadge": {
         "noServices": "لم يتم تعيين خدمات",
         "more": "المزيد"
+      },
+      "badges": {
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "confirmations": {
+        "deactivate": "إلغاء تفعيل {email}؟ سيتم تسجيل خروجهم فوراً.",
+        "deactivateConfirm": "إلغاء التفعيل"
       }
     },
     "requests": {
@@ -522,6 +540,9 @@
         "view": "عرض التفاصيل",
         "assignProvider": "تعيين مبدع",
         "delete": "حذف الطلب"
+      },
+      "confirmations": {
+        "delete": "حذف \"{title}\"؟ لا يمكن التراجع عن هذا الإجراء."
       },
       "assignDialog": {
         "title": "تعيين مبدع",
@@ -566,12 +587,15 @@
       "addPackage": "إضافة باقة",
       "createNewPackage": "إنشاء باقة جديدة",
       "allPackages": "جميع الباقات",
-      "activePackages": "الباقات النشطة",
-      "deletedPackages": "الباقات المحذوفة",
       "noPackagesYet": "لا توجد باقات بعد",
-      "noDeletedPackages": "لا توجد باقات محذوفة",
+      "noInactivePackages": "لا توجد باقات غير نشطة",
       "createFirst": "أنشئ باقتك الأولى للبدء",
-      "deletedWillAppear": "ستظهر الباقات المحذوفة هنا",
+      "inactiveWillAppear": "ستظهر الباقات غير النشطة هنا",
+      "filters": {
+        "all": "الكل",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
       "fields": {
         "name": "الاسم",
         "nameRequired": "الاسم *",
@@ -597,7 +621,9 @@
         "noServicesConfigured": "لم يتم تكوين خدمات"
       },
       "badges": {
-        "featured": "مميزة"
+        "featured": "مميزة",
+        "active": "نشط",
+        "inactive": "غير نشط"
       },
       "info": {
         "credits": "كريدت",
@@ -612,24 +638,17 @@
         "create": "إنشاء باقة",
         "edit": "تعديل",
         "save": "حفظ",
-        "delete": "حذف",
-        "restore": "استعادة",
         "pick": "اختر",
         "hide": "إخفاء"
-      },
-      "confirmations": {
-        "delete": "حذف هذه الباقة؟",
-        "restore": "استعادة هذه الباقة؟"
       },
       "toast": {
         "created": "تم إنشاء الباقة بنجاح",
         "updated": "تم تحديث الباقة بنجاح",
-        "deleted": "تم حذف الباقة بنجاح",
-        "restored": "تم استعادة الباقة بنجاح",
+        "activated": "تم تفعيل الباقة بنجاح",
+        "deactivated": "تم إلغاء تفعيل الباقة بنجاح",
         "createFailed": "فشل إنشاء الباقة",
         "updateFailed": "فشل تحديث الباقة",
-        "deleteFailed": "فشل حذف الباقة",
-        "restoreFailed": "فشل استعادة الباقة"
+        "statusFailed": "فشل تحديث حالة الباقة"
       }
     },
     "services": {
@@ -638,9 +657,13 @@
       "addServiceType": "إضافة نوع خدمة",
       "createServiceType": "إنشاء نوع خدمة",
       "allServiceTypes": "جميع أنواع الخدمات",
-      "activeServices": "الخدمات النشطة",
-      "deletedServices": "الخدمات المحذوفة",
       "noServiceTypes": "لا توجد أنواع خدمات بعد",
+      "noInactiveServices": "لا توجد خدمات غير نشطة",
+      "filters": {
+        "all": "الكل",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
       "fields": {
         "icon": "أيقونة (إيموجي)",
         "iconOptional": "أيقونة (إيموجي) (اختياري)",
@@ -687,20 +710,17 @@
         "create": "إنشاء",
         "edit": "تعديل",
         "save": "حفظ",
-        "delete": "حذف",
-        "restore": "استعادة",
         "pick": "اختر",
         "hide": "إخفاء"
       },
-      "confirmations": {
-        "delete": "حذف نوع الخدمة هذا؟",
-        "restore": "استعادة نوع الخدمة هذا؟"
+      "badges": {
+        "active": "نشط",
+        "inactive": "غير نشط"
       },
       "toast": {
-        "deleted": "تم حذف الخدمة بنجاح",
-        "restored": "تم استعادة الخدمة بنجاح",
-        "deleteFailed": "فشل حذف الخدمة",
-        "restoreFailed": "فشل استعادة الخدمة"
+        "activated": "تم تفعيل الخدمة بنجاح",
+        "deactivated": "تم إلغاء تفعيل الخدمة بنجاح",
+        "statusFailed": "فشل تحديث حالة الخدمة"
       },
       "display": {
         "questionLabel": "سؤال",

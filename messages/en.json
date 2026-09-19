@@ -9,6 +9,12 @@
       "goBack": "Go Back",
       "backHome": "Back to Home"
     },
+    "confirmDialog": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "restore": "Restore"
+    },
     "credits": "Credits",
     "footer": {
       "privacy": "Privacy",
@@ -420,7 +426,10 @@
         "allRoles": "All Roles",
         "client": "Clients",
         "provider": "Providers",
-        "admin": "Admins"
+        "admin": "Admins",
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
       },
       "tabs": {
         "allUsers": "All Users",
@@ -439,7 +448,8 @@
         "actions": "Actions",
         "noUsers": "No users found",
         "allUsers": "Users",
-        "tryAdjusting": "Try adjusting your search or filters"
+        "tryAdjusting": "Try adjusting your search or filters",
+        "noInactiveUsers": "No inactive users"
       },
       "dialog": {
         "create": {
@@ -450,15 +460,13 @@
           "title": "Edit User",
           "description": "Update user information"
         },
-        "delete": {
-          "title": "Delete User",
-          "description": "Are you sure you want to delete this user? This action cannot be undone."
-        },
         "fields": {
           "name": "Full Name",
           "email": "Email Address",
           "phone": "Phone Number",
           "password": "Password",
+          "showPassword": "Show password",
+          "hidePassword": "Hide password",
           "role": "User Role",
           "services": "Supported Services",
           "selectServices": "Select the services this provider can handle"
@@ -473,8 +481,10 @@
         "toast": {
           "created": "User created successfully",
           "updated": "User updated successfully",
-          "deleted": "User deleted successfully",
-          "error": "An error occurred"
+          "error": "An error occurred",
+          "activated": "User activated successfully",
+          "deactivated": "User deactivated successfully",
+          "statusFailed": "Failed to update user status"
         },
         "validation": {
           "invalidEmail": "Please enter a valid email address",
@@ -484,6 +494,14 @@
       "servicesBadge": {
         "noServices": "No services assigned",
         "more": "more"
+      },
+      "badges": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "confirmations": {
+        "deactivate": "Deactivate {email}? They will be signed out immediately.",
+        "deactivateConfirm": "Deactivate"
       }
     },
     "requests": {
@@ -522,6 +540,9 @@
         "view": "View Details",
         "assignProvider": "Assign Provider",
         "delete": "Delete Request"
+      },
+      "confirmations": {
+        "delete": "Delete \"{title}\"? This action cannot be undone."
       },
       "assignDialog": {
         "title": "Assign Provider",
@@ -566,12 +587,15 @@
       "addPackage": "Add Package",
       "createNewPackage": "Create New Package",
       "allPackages": "All Packages",
-      "activePackages": "Active Packages",
-      "deletedPackages": "Deleted Packages",
       "noPackagesYet": "No packages yet",
-      "noDeletedPackages": "No deleted packages",
+      "noInactivePackages": "No inactive packages",
       "createFirst": "Create your first package to get started",
-      "deletedWillAppear": "Deleted packages will appear here",
+      "inactiveWillAppear": "Deactivated packages will appear here",
+      "filters": {
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
       "fields": {
         "name": "Name",
         "nameRequired": "Name *",
@@ -597,7 +621,9 @@
         "noServicesConfigured": "No services configured"
       },
       "badges": {
-        "featured": "Featured"
+        "featured": "Featured",
+        "active": "Active",
+        "inactive": "Inactive"
       },
       "info": {
         "credits": "credits",
@@ -612,24 +638,17 @@
         "create": "Create Package",
         "edit": "Edit",
         "save": "Save",
-        "delete": "Delete",
-        "restore": "Restore",
         "pick": "Pick",
         "hide": "Hide"
-      },
-      "confirmations": {
-        "delete": "Delete this package?",
-        "restore": "Restore this package?"
       },
       "toast": {
         "created": "Package created successfully",
         "updated": "Package updated successfully",
-        "deleted": "Package deleted successfully",
-        "restored": "Package restored successfully",
+        "activated": "Package activated successfully",
+        "deactivated": "Package deactivated successfully",
         "createFailed": "Failed to create package",
         "updateFailed": "Failed to update package",
-        "deleteFailed": "Failed to delete package",
-        "restoreFailed": "Failed to restore package"
+        "statusFailed": "Failed to update package status"
       }
     },
     "services": {
@@ -638,9 +657,13 @@
       "addServiceType": "Add Service Type",
       "createServiceType": "Create Service Type",
       "allServiceTypes": "All Service Types",
-      "activeServices": "Active Services",
-      "deletedServices": "Deleted Services",
       "noServiceTypes": "No service types yet",
+      "noInactiveServices": "No inactive services",
+      "filters": {
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
       "fields": {
         "icon": "Icon (emoji)",
         "iconOptional": "Icon (emoji) (optional)",
@@ -687,20 +710,17 @@
         "create": "Create",
         "edit": "Edit",
         "save": "Save",
-        "delete": "Delete",
-        "restore": "Restore",
         "pick": "Pick",
         "hide": "Hide"
       },
-      "confirmations": {
-        "delete": "Delete this service type?",
-        "restore": "Restore this service type?"
+      "badges": {
+        "active": "Active",
+        "inactive": "Inactive"
       },
       "toast": {
-        "deleted": "Service deleted successfully",
-        "restored": "Service restored successfully",
-        "deleteFailed": "Failed to delete service",
-        "restoreFailed": "Failed to restore service"
+        "activated": "Service activated successfully",
+        "deactivated": "Service deactivated successfully",
+        "statusFailed": "Failed to update service status"
       },
       "display": {
         "questionLabel": "question",

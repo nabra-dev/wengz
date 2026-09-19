@@ -17,12 +17,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Edit, Trash, Package, RotateCcw } from "lucide-react";
+import { Plus, Edit, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { showError } from "@/lib/error-handler";
 import { LocalizedInput } from "@/components/ui/localized-input";
+
+type StatusFilter = "all" | "active" | "inactive";
 
 export default function AdminPackagesPage() {
   const t = useTranslations("admin.packages");
@@ -34,7 +37,7 @@ export default function AdminPackagesPage() {
   const [createIsFeatured, setCreateIsFeatured] = useState(false);
   const [editSupportAllServices, setEditSupportAllServices] = useState(false);
   const [editIsFeatured, setEditIsFeatured] = useState(false);
-  const [activeTab, setActiveTab] = useState<"active" | "deleted">("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   // Localized inputs state
   const [createNameI18n, setCreateNameI18n] = useState<{ en: string; ar: string }>({
     en: "",
@@ -54,11 +57,12 @@ export default function AdminPackagesPage() {
     en: "",
     ar: "",
   });
+  const [togglingPackageId, setTogglingPackageId] = useState<string | null>(null);
 
   const { data: packages, isLoading } = trpc.admin.getPackages.useQuery({
-    showDeleted: activeTab === "deleted",
+    status: statusFilter,
   });
-  const { data: allServices } = trpc.admin.getServiceTypes.useQuery();
+  const { data: allServices } = trpc.admin.getServiceTypes.useQuery({ status: "all" });
   const utils = trpc.useUtils();
 
   const createPackage = trpc.admin.createPackage.useMutation({
@@ -92,26 +96,17 @@ export default function AdminPackagesPage() {
     },
   });
 
-  const deletePackage = trpc.admin.deletePackage.useMutation({
-    onSuccess: () => {
+  const setPackageActive = trpc.admin.setPackageActive.useMutation({
+    onSuccess: (_data, variables) => {
+      setTogglingPackageId(null);
       utils.admin.getPackages.invalidate();
-      toast.success(t("toast.deleted"));
+      toast.success(variables.isActive ? t("toast.activated") : t("toast.deactivated"));
     },
     onError: (error) => {
-      showError(error, t("toast.deleteFailed"));
+      setTogglingPackageId(null);
+      showError(error, t("toast.statusFailed"));
     },
   });
-
-  const restorePackage = trpc.admin.restorePackage.useMutation({
-    onSuccess: () => {
-      utils.admin.getPackages.invalidate();
-      toast.success(t("toast.restored"));
-    },
-    onError: (error) => {
-      showError(error, t("toast.restoreFailed"));
-    },
-  });
-
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -259,6 +254,8 @@ export default function AdminPackagesPage() {
                 <div className="space-y-2">
                   <Label>{t("fields.localizedName")}</Label>
                   <LocalizedInput
+                    id="create-package-name"
+                    label={t("fields.localizedName")}
                     value={createNameI18n}
                     onChange={(val) => setCreateNameI18n(val as { en: string; ar: string })}
                     required
@@ -294,6 +291,8 @@ export default function AdminPackagesPage() {
               <div className="space-y-2">
                 <Label>{t("fields.localizedDescription")}</Label>
                 <LocalizedInput
+                  id="create-package-description"
+                  label={t("fields.localizedDescription")}
                   value={createDescI18n}
                   onChange={(val) => setCreateDescI18n(val as { en: string; ar: string })}
                   variant="textarea"
@@ -305,6 +304,8 @@ export default function AdminPackagesPage() {
               <div className="space-y-2">
                 <Label>{t("fields.localizedFeatures")}</Label>
                 <LocalizedInput
+                  id="create-package-features"
+                  label={t("fields.localizedFeatures")}
                   value={createFeaturesI18n}
                   onChange={(val) => setCreateFeaturesI18n(val as { en: string; ar: string })}
                   variant="textarea"
@@ -319,7 +320,7 @@ export default function AdminPackagesPage() {
                 <Checkbox
                   id="support-all-services"
                   checked={createSupportAllServices}
-                  onCheckedChange={(checked) => setCreateSupportAllServices(checked as boolean)}
+                  onCheckedChange={(checked: boolean) => setCreateSupportAllServices(checked as boolean)}
                 />
                 <Label htmlFor="support-all-services" className="cursor-pointer font-medium flex-1">
                   {t("fields.supportAllServices") || "Support All Services"}
@@ -330,7 +331,7 @@ export default function AdminPackagesPage() {
                 <Checkbox
                   id="create-is-featured"
                   checked={createIsFeatured}
-                  onCheckedChange={(checked) => setCreateIsFeatured(checked as boolean)}
+                  onCheckedChange={(checked: boolean) => setCreateIsFeatured(checked as boolean)}
                 />
                 <Label htmlFor="create-is-featured" className="cursor-pointer font-medium flex-1">
                   {t("fields.isFeatured")}
@@ -383,25 +384,26 @@ export default function AdminPackagesPage() {
         </CardHeader>
         <CardContent>
           <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "active" | "deleted")}
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
             className="w-full"
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="active">{t("activePackages")}</TabsTrigger>
-              <TabsTrigger value="deleted">{t("deletedPackages")}</TabsTrigger>
+              <TabsTrigger value="all">{t("filters.all")}</TabsTrigger>
+              <TabsTrigger value="active">{t("filters.active")}</TabsTrigger>
+              <TabsTrigger value="inactive">{t("filters.inactive")}</TabsTrigger>
             </TabsList>
-            <TabsContent value={activeTab}>
+            <TabsContent value={statusFilter}>
               <div className="grid gap-6 md:grid-cols-3">
                 {isLoading && [1, 2, 3].map((i) => <Skeleton key={i} className="h-64" />)}
                 {!isLoading && (!packages || packages.length === 0) && (
                   <div className="col-span-full text-center py-12 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p className="text-lg font-medium">
-                      {activeTab === "active" ? t("noPackagesYet") : t("noDeletedPackages")}
+                      {statusFilter === "inactive" ? t("noInactivePackages") : t("noPackagesYet")}
                     </p>
                     <p className="text-sm">
-                      {activeTab === "active" ? t("createFirst") : t("deletedWillAppear")}
+                      {statusFilter === "inactive" ? t("inactiveWillAppear") : t("createFirst")}
                     </p>
                   </div>
                 )}
@@ -416,6 +418,8 @@ export default function AdminPackagesPage() {
                             <div className="space-y-2">
                               <Label>{t("fields.localizedName")}</Label>
                               <LocalizedInput
+                                id={`edit-package-name-${pkg.id}`}
+                                label={t("fields.localizedName")}
                                 value={editNameI18n}
                                 onChange={(val) =>
                                   setEditNameI18n(val as { en: string; ar: string })
@@ -443,6 +447,8 @@ export default function AdminPackagesPage() {
                             <div className="space-y-2">
                               <Label>{t("fields.localizedDescription")}</Label>
                               <LocalizedInput
+                                id={`edit-package-description-${pkg.id}`}
+                                label={t("fields.localizedDescription")}
                                 value={editDescI18n}
                                 onChange={(val) =>
                                   setEditDescI18n(val as { en: string; ar: string })
@@ -455,6 +461,8 @@ export default function AdminPackagesPage() {
                             <div className="space-y-2">
                               <Label>{t("fields.localizedFeatures")}</Label>
                               <LocalizedInput
+                                id={`edit-package-features-${pkg.id}`}
+                                label={t("fields.localizedFeatures")}
                                 value={editFeaturesI18n}
                                 onChange={(val) =>
                                   setEditFeaturesI18n(val as { en: string; ar: string })
@@ -473,7 +481,7 @@ export default function AdminPackagesPage() {
                               <Checkbox
                                 id="edit-support-all-services"
                                 checked={editSupportAllServices}
-                                onCheckedChange={(checked) =>
+                                onCheckedChange={(checked: boolean) =>
                                   setEditSupportAllServices(checked as boolean)
                                 }
                               />
@@ -489,7 +497,7 @@ export default function AdminPackagesPage() {
                               <Checkbox
                                 id="edit-is-featured"
                                 checked={editIsFeatured}
-                                onCheckedChange={(checked) => setEditIsFeatured(checked as boolean)}
+                                onCheckedChange={(checked: boolean) => setEditIsFeatured(checked as boolean)}
                               />
                               <Label
                                 htmlFor="edit-is-featured"
@@ -544,11 +552,16 @@ export default function AdminPackagesPage() {
                         <CardHeader>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1 space-y-2">
-                              {pkg.isFeatured && (
-                                <Badge className="border-0 bg-[#690DD4] text-[#E0F840] hover:opacity-95">
-                                  {t("badges.featured")}
+                              <div className="flex flex-wrap items-center gap-2">
+                                {pkg.isFeatured && (
+                                  <Badge className="border-0 bg-[#690DD4] text-[#E0F840] hover:opacity-95">
+                                    {t("badges.featured")}
+                                  </Badge>
+                                )}
+                                <Badge variant={pkg.isActive ? "default" : "secondary"}>
+                                  {pkg.isActive ? t("badges.active") : t("badges.inactive")}
                                 </Badge>
-                              )}
+                              </div>
                               <CardTitle>{pkg.nameI18n?.[locale] || pkg.name}</CardTitle>
                             </div>
                             <Package className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -615,44 +628,33 @@ export default function AdminPackagesPage() {
                               </div>
                             )}
                         </CardContent>
-                        <CardFooter className="gap-2">
-                          {activeTab === "active" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditPackage(pkg)}
-                              className="flex items-center gap-1"
-                            >
-                              <Edit className="h-3 w-3" />
-                              {t("buttons.edit")}
-                            </Button>
-                          )}
+                        <CardFooter className="flex flex-wrap items-center gap-3">
                           <Button
-                            variant={activeTab === "active" ? "destructive" : "default"}
+                            variant="outline"
                             size="sm"
-                            onClick={() => {
-                              if (activeTab === "active") {
-                                if (confirm(t("confirmations.delete"))) {
-                                  deletePackage.mutate({ id: pkg.id });
-                                }
-                              } else if (confirm(t("confirmations.restore"))) {
-                                restorePackage.mutate({ id: pkg.id });
-                              }
-                            }}
+                            onClick={() => handleEditPackage(pkg)}
                             className="flex items-center gap-1"
                           >
-                            {activeTab === "active" ? (
-                              <>
-                                <Trash className="h-3 w-3" />
-                                {t("buttons.delete")}
-                              </>
-                            ) : (
-                              <>
-                                <RotateCcw className="h-3 w-3" />
-                                {t("buttons.restore")}
-                              </>
-                            )}
+                            <Edit className="h-3 w-3" />
+                            {t("buttons.edit")}
                           </Button>
+                          <div className="flex items-center gap-2 ms-auto">
+                            <Label
+                              htmlFor={`package-active-${pkg.id}`}
+                              className="text-sm text-muted-foreground cursor-pointer"
+                            >
+                              {pkg.isActive ? t("badges.active") : t("badges.inactive")}
+                            </Label>
+                            <Switch
+                              id={`package-active-${pkg.id}`}
+                              checked={pkg.isActive}
+                              disabled={togglingPackageId === pkg.id}
+                              onCheckedChange={(checked: boolean) => {
+                                setTogglingPackageId(pkg.id);
+                                setPackageActive.mutate({ id: pkg.id, isActive: checked });
+                              }}
+                            />
+                          </div>
                         </CardFooter>
                       </Card>
                     )
@@ -662,6 +664,7 @@ export default function AdminPackagesPage() {
           </Tabs>
         </CardContent>
       </Card>
+
     </div>
   );
 }

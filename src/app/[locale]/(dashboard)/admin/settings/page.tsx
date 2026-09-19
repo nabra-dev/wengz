@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,15 +57,20 @@ export default function AdminSettingsPage() {
   const [note, setNote] = useState("");
   const [instapayEnabled, setInstapayEnabled] = useState(true);
   const [instapayLink, setInstapayLink] = useState("");
+  const financeHydrated = useRef(false);
+  const paymentHydrated = useRef(false);
 
+  // Seed local draft once when server values first arrive — do not overwrite while editing.
   useEffect(() => {
-    if (!financeSettings) return;
+    if (!financeSettings || financeHydrated.current) return;
+    financeHydrated.current = true;
     setCreditPriceUsd(String(financeSettings.creditPriceUsd));
     setCommissionPercent(String(financeSettings.commissionPercent));
   }, [financeSettings]);
 
   useEffect(() => {
-    if (!paymentSettings) return;
+    if (!paymentSettings || paymentHydrated.current) return;
+    paymentHydrated.current = true;
     setBankName(paymentSettings.bankName);
     setAccountName(paymentSettings.accountName);
     setIban(paymentSettings.iban);
@@ -252,6 +257,8 @@ export default function AdminSettingsPage() {
               <Label htmlFor="note">{tPayment("note")}</Label>
               <Textarea
                 id="note"
+                name="note"
+                aria-label={tPayment("note")}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={paymentBusy}

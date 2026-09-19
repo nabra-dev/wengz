@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditUserDialog } from "@/components/admin/edit-user-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate, getInitials } from "@/lib/utils";
 import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
@@ -42,14 +43,15 @@ import {
   Settings,
   Eye,
   EyeOff,
-  Trash,
   Edit,
- 
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 type UserRole = "CLIENT" | "PROVIDER" | "SUPER_ADMIN";
 
 type ServiceType = { id: string; name: string; nameI18n?: Record<string, string> };
+
+type StatusFilter = "all" | "active" | "inactive";
 
 type UserData = {
   id: string;
@@ -59,6 +61,7 @@ type UserData = {
   image: string | null;
   role: string;
   createdAt: Date;
+  deletedAt?: Date | string | null;
   averageRating?: number | null;
   providerProfile: {
     id: string;
@@ -188,9 +191,8 @@ function UserListItem({
   getRoleColor,
   onEditServices,
   onEdit,
-  onDelete,
-  onRestore,
-  isDeleted,
+  onActiveChange,
+  isToggling,
 }: {
   user: UserData;
   getRoleColor: (role: string) => string;
@@ -201,14 +203,14 @@ function UserListItem({
     email: string;
     phone?: string | null;
   }) => void;
-  onDelete: (userId: string) => void;
-  onRestore?: (userId: string) => void;
-  isDeleted?: boolean;
+  onActiveChange: (userId: string, isActive: boolean) => void;
+  isToggling?: boolean;
 }): JSX.Element {
   const t = useTranslations("admin.users");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const providerServices = user.providerProfile?.supportedServices || [];
+  const isActive = !user.deletedAt;
 
   const getRoleLabel = (role: string): string => {
     const roleMap: Record<string, string> = {
@@ -218,7 +220,6 @@ function UserListItem({
     };
     return roleMap[role] || role;
   };
-
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-4">
@@ -239,6 +240,9 @@ function UserListItem({
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <Badge className={getRoleColor(user.role)}>{getRoleLabel(user.role)}</Badge>
+            <Badge variant={isActive ? "default" : "secondary"}>
+              {isActive ? t("badges.active") : t("badges.inactive")}
+            </Badge>
             <span className="text-xs text-muted-foreground">
               {t("table.joined")} {formatDate(user.createdAt, locale)}
             </span>
@@ -260,49 +264,33 @@ function UserListItem({
             onEditServices={onEditServices}
           />
         )}
-        {isDeleted
-          ? user.role !== "SUPER_ADMIN" &&
-            onRestore && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (confirm(`${t("dialog.buttons.update")} ${user.email}?`)) {
-                    onRestore(user.id);
-                  }
-                }}
-                className="flex items-center gap-1"
+        {user.role !== "SUPER_ADMIN" && (
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(user)}
+              className="flex items-center gap-1"
+            >
+              <Edit className="h-4 w-4" />
+              {t("dialog.edit.title")}
+            </Button>
+            <div className="flex items-center gap-2">
+              <Label
+                htmlFor={`user-active-${user.id}`}
+                className="text-sm text-muted-foreground cursor-pointer"
               >
-                <CheckCircle className="h-4 w-4" />
-                {t("dialog.buttons.update")}
-              </Button>
-            )
-          : user.role !== "SUPER_ADMIN" && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEdit(user)}
-                  className="flex items-center gap-1"
-                >
-                  <Edit className="h-4 w-4" />
-                  {t("dialog.edit.title")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm(`Delete user ${user.email}? This action cannot be undone.`)) {
-                      onDelete(user.id);
-                    }
-                  }}
-                  className="flex items-center gap-1"
-                >
-                  <Trash className="h-4 w-4" />
-                  {t("dialog.delete.title")}
-                </Button>
-              </div>
-            )}
+                {isActive ? t("badges.active") : t("badges.inactive")}
+              </Label>
+              <Switch
+                id={`user-active-${user.id}`}
+                checked={isActive}
+                disabled={isToggling}
+                onCheckedChange={(checked: boolean) => onActiveChange(user.id, checked)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -312,11 +300,16 @@ export default function AdminUsersPage() {
   const t = useTranslations("admin.users");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"active" | "deleted">("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
   const [editingUser, setEditingUser] = useState<{
     id: string;
     name: string | null;
@@ -340,10 +333,10 @@ export default function AdminUsersPage() {
   const { data: users, isLoading } = trpc.admin.getUsers.useQuery({
     search: search || undefined,
     role: roleFilter === "all" ? undefined : (roleFilter as UserRole),
-    showDeleted: activeTab === "deleted",
+    status: statusFilter,
   });
 
-  const { data: serviceTypes } = trpc.admin.getServiceTypes.useQuery();
+  const { data: serviceTypes } = trpc.admin.getServiceTypes.useQuery({ status: "all" });
 
   const utils = trpc.useUtils();
 
@@ -379,25 +372,29 @@ export default function AdminUsersPage() {
     },
   });
 
-  const deleteUser = trpc.admin.deleteUser.useMutation({
-    onSuccess: (data) => {
+  const setUserActive = trpc.admin.setUserActive.useMutation({
+    onSuccess: (_data, variables) => {
+      setTogglingUserId(null);
+      setConfirmDeactivate(null);
       utils.admin.getUsers.invalidate();
-      toast.success(t("dialog.toast.deleted"));
+      toast.success(
+        variables.isActive ? t("dialog.toast.activated") : t("dialog.toast.deactivated")
+      );
     },
     onError: (error) => {
-      toast.error(error.message);
+      setTogglingUserId(null);
+      toast.error(error.message || t("dialog.toast.statusFailed"));
     },
   });
 
-  const restoreUser = trpc.admin.restoreUser.useMutation({
-    onSuccess: (data) => {
-      utils.admin.getUsers.invalidate();
-      toast.success(t("dialog.toast.updated"));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const handleActiveChange = (userId: string, email: string, isActive: boolean) => {
+    if (!isActive) {
+      setConfirmDeactivate({ id: userId, email });
+      return;
+    }
+    setTogglingUserId(userId);
+    setUserActive.mutate({ userId, isActive: true });
+  };
 
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
@@ -565,8 +562,11 @@ export default function AdminUsersPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     placeholder={t("dialog.fields.password")}
+                    aria-label={t("dialog.fields.password")}
                     value={newUser.password}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
                   />
@@ -575,6 +575,11 @@ export default function AdminUsersPage() {
                     variant="ghost"
                     size="icon"
                     className="absolute end-0 top-0 h-full px-3"
+                    aria-label={
+                      showPassword
+                        ? t("dialog.fields.hidePassword")
+                        : t("dialog.fields.showPassword")
+                    }
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -710,15 +715,16 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as "active" | "deleted")}
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="active">{t("tabs.allUsers")}</TabsTrigger>
-              <TabsTrigger value="deleted">{t("table.noUsers")}</TabsTrigger>
+              <TabsTrigger value="all">{t("filters.all")}</TabsTrigger>
+              <TabsTrigger value="active">{t("filters.active")}</TabsTrigger>
+              <TabsTrigger value="inactive">{t("filters.inactive")}</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="active" className="space-y-4">
+            <TabsContent value={statusFilter} className="space-y-4">
               {isLoading && (
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -727,7 +733,9 @@ export default function AdminUsersPage() {
                 </div>
               )}
               {!isLoading && users?.users.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">{t("table.noUsers")}</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  {statusFilter === "inactive" ? t("table.noInactiveUsers") : t("table.noUsers")}
+                </div>
               )}
               {!isLoading && (users?.users.length ?? 0) > 0 && (
                 <div className="space-y-4">
@@ -743,56 +751,14 @@ export default function AdminUsersPage() {
                         setSelectedProviderServices(serviceIds);
                         setIsServicesOpen(true);
                       }}
-                      onEdit={(user) => {
-                        setEditingUser(user);
+                      onEdit={(target) => {
+                        setEditingUser(target);
                         setIsEditOpen(true);
                       }}
-                      onDelete={(userId) => {
-                        deleteUser.mutate({ userId });
+                      onActiveChange={(userId, isActive) => {
+                        handleActiveChange(userId, user.email, isActive);
                       }}
-                      isDeleted={false}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="deleted" className="space-y-4">
-              {isLoading && (
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-20 w-full" />
-                  ))}
-                </div>
-              )}
-              {!isLoading && users?.users.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">{t("table.noUsers")}</div>
-              )}
-              {!isLoading && (users?.users.length ?? 0) > 0 && (
-                <div className="space-y-4">
-                  {(users?.users as unknown as UserData[]).map((user) => (
-                    <UserListItem
-                      key={user.id}
-                      user={user}
-                      getRoleColor={getRoleColor}
-                      onEditServices={() => {
-                        setSelectedUserId(user.id);
-                        const serviceIds =
-                          user.providerProfile?.supportedServices?.map((s) => s.id) || [];
-                        setSelectedProviderServices(serviceIds);
-                        setIsServicesOpen(true);
-                      }}
-                      onEdit={(user) => {
-                        setEditingUser(user);
-                        setIsEditOpen(true);
-                      }}
-                      onDelete={(userId) => {
-                        deleteUser.mutate({ userId });
-                      }}
-                      onRestore={(userId) => {
-                        restoreUser.mutate({ userId });
-                      }}
-                      isDeleted={true}
+                      isToggling={togglingUserId === user.id}
                     />
                   ))}
                 </div>
@@ -849,6 +815,27 @@ export default function AdminUsersPage() {
         onOpenChange={setIsEditOpen}
         onSuccess={() => {
           utils.admin.getUsers.invalidate();
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeactivate}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeactivate(null);
+        }}
+        title={t("confirmations.deactivateConfirm")}
+        description={
+          confirmDeactivate
+            ? t("confirmations.deactivate", { email: confirmDeactivate.email })
+            : undefined
+        }
+        confirmLabel={t("confirmations.deactivateConfirm")}
+        variant="destructive"
+        loading={setUserActive.isPending}
+        onConfirm={() => {
+          if (!confirmDeactivate) return;
+          setTogglingUserId(confirmDeactivate.id);
+          setUserActive.mutate({ userId: confirmDeactivate.id, isActive: false });
         }}
       />
     </div>

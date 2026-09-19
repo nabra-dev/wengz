@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import {
@@ -45,11 +46,13 @@ export default function AdminRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
   const { data, isLoading, refetch } = trpc.admin.getAllRequests.useQuery();
   const deleteRequest = trpc.admin.deleteRequest.useMutation({
     onSuccess: () => {
+      setConfirmDelete(null);
       refetch();
     },
   });
@@ -232,15 +235,9 @@ export default function AdminRequestsPage() {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `${t("actions.delete")} "${request.title}"? This action cannot be undone.`
-                            )
-                          ) {
-                            deleteRequest.mutate({ requestId: request.id });
-                          }
-                        }}
+                        onClick={() =>
+                          setConfirmDelete({ id: request.id, title: request.title })
+                        }
                         disabled={deleteRequest.isPending}
                         className="flex items-center gap-1"
                       >
@@ -265,6 +262,27 @@ export default function AdminRequestsPage() {
           onAssigned={() => refetch()}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null);
+        }}
+        title={t("actions.delete")}
+        description={
+          confirmDelete
+            ? t("confirmations.delete", { title: confirmDelete.title })
+            : undefined
+        }
+        confirmLabel={t("actions.delete")}
+        variant="destructive"
+        loading={deleteRequest.isPending}
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteRequest.mutate({ requestId: confirmDelete.id });
+          }
+        }}
+      />
     </div>
   );
 }
