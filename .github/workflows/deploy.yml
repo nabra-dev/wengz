@@ -65,4 +65,8 @@ jobs:
           script: |
             set -euo pipefail
             export DEPLOY_BRANCH=main
-            /usr/local/bin/deploy-nabra.sh
+            if ! /usr/local/bin/deploy-nabra.sh; then
+              echo "=== deploy failed — last 80 lines of /var/log/nabra-deploy.log ==="
+              tail -n 80 /var/log/nabra-deploy.log || true
+              exit 1
+            fi

@@ -16,7 +16,8 @@ SCHEMA_HASH_FILE="${STATE_DIR}/prisma-schema.sha256"
 
 mkdir -p "$(dirname "$LOG_FILE")" "$STATE_DIR"
 
-exec >>"$LOG_FILE" 2>&1
+# Keep Actions/SSH stdout visible while still appending to the deploy log.
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 log() {
   printf '[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"
@@ -32,8 +33,13 @@ cleanup() {
 trap cleanup EXIT
 
 if [[ -f "$LOCK_FILE" ]]; then
-  log "ERROR: deploy already in progress (lock: $LOCK_FILE)"
-  exit 1
+  LOCK_PID="$(tr -d '[:space:]' <"$LOCK_FILE" || true)"
+  if [[ -n "$LOCK_PID" ]] && kill -0 "$LOCK_PID" 2>/dev/null; then
+    log "ERROR: deploy already in progress (pid=$LOCK_PID lock=$LOCK_FILE)"
+    exit 1
+  fi
+  log "WARN: clearing stale deploy lock (pid=$LOCK_PID no longer running)"
+  rm -f "$LOCK_FILE"
 fi
 echo $$ >"$LOCK_FILE"
 
