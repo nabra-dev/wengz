@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -82,7 +83,7 @@ export default function ProviderRequestDetailPage() {
     if (!Number.isNaN(presetValue) && presetValue <= maxDeliveryMinutes) return;
     const fallback =
       [...ESTIMATE_PRESET_MINUTES].reverse().find((minutes) => minutes <= maxDeliveryMinutes) ?? 15;
-    setEstimatedPresetMinutes(fallback.toString());
+    queueMicrotask(() => setEstimatedPresetMinutes(fallback.toString()));
   }, [estimatedDeliveryMode, estimatedPresetMinutes, maxDeliveryMinutes]);
 
   const addComment = trpc.request.addComment.useMutation({

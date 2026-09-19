@@ -53,22 +53,24 @@ export function EditUserDialog({
 
   useEffect(() => {
     if (!user) return;
-    setName(user.name || "");
-    setEmail(user.email);
+    queueMicrotask(() => {
+      setName(user.name || "");
+      setEmail(user.email);
 
-    const rawPhone = user.phone;
-    if (rawPhone) {
-      const parts = rawPhone.split(" ");
-      if (parts.length > 1 && parts[0].startsWith("+")) {
-        setCountryCode(parts[0]);
-        setPhone(parts.slice(1).join(" "));
+      const rawPhone = user.phone;
+      if (rawPhone) {
+        const parts = rawPhone.split(" ");
+        if (parts.length > 1 && parts[0].startsWith("+")) {
+          setCountryCode(parts[0]);
+          setPhone(parts.slice(1).join(" "));
+        } else {
+          setPhone(rawPhone);
+        }
       } else {
-        setPhone(rawPhone);
+        setPhone("");
+        setCountryCode("+20");
       }
-    } else {
-      setPhone("");
-      setCountryCode("+20");
-    }
+    });
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {

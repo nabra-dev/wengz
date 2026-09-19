@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { db } from "@/lib/db";
-import { getCached, setCached, deleteCached, cacheKeys } from "@/lib/cache";
+import { setCached, deleteCached, cacheKeys } from "@/lib/cache";
 
 const SESSION_USER_TTL_SECONDS = 45;
 const MEMORY_TTL_MS = SESSION_USER_TTL_SECONDS * 1000;
@@ -23,8 +23,8 @@ function sessionUserCacheKey(userId: string) {
 }
 
 /**
- * Revalidate JWT session user against DB with a short TTL cache.
- * Role changes / soft-deletes still apply within ~45s; avoids N DB hits per batched page.
+ * Revalidate JWT session user against DB with an in-memory short TTL.
+ * Redis is best-effort (fire-and-forget) so a dead Redis never stalls auth.
  */
 export async function revalidateSessionUser(userId: string): Promise<SessionUserSnapshot> {
   const now = Date.now();
@@ -39,19 +39,6 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
     return mem.value;
   }
 
-  const cacheKey = sessionUserCacheKey(userId);
-  const cached = await getCached<SessionUserSnapshot>(cacheKey);
-  if (cached) {
-    memoryCache.set(userId, { value: cached, expiresAt: now + MEMORY_TTL_MS });
-    if (cached.deletedAt) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Your account is no longer active. Please sign in again.",
-      });
-    }
-    return cached;
-  }
-
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { id: true, role: true, deletedAt: true },
@@ -59,7 +46,7 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
 
   if (!user || user.deletedAt) {
     memoryCache.delete(userId);
-    await deleteCached(cacheKey);
+    void deleteCached([sessionUserCacheKey(userId), cacheKeys.USER(userId)]);
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Your account is no longer active. Please sign in again.",
@@ -73,9 +60,8 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
   };
 
   memoryCache.set(userId, { value: snapshot, expiresAt: now + MEMORY_TTL_MS });
-  await setCached(cacheKey, snapshot, SESSION_USER_TTL_SECONDS);
-  // Also keep taxonomy key warm for invalidation helpers
-  await setCached(cacheKeys.USER(userId), snapshot, SESSION_USER_TTL_SECONDS);
+  void setCached(sessionUserCacheKey(userId), snapshot, SESSION_USER_TTL_SECONDS);
+  void setCached(cacheKeys.USER(userId), snapshot, SESSION_USER_TTL_SECONDS);
 
   return snapshot;
 }
@@ -83,5 +69,5 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
 /** Call after admin role changes or soft-deletes so the next request sees fresh state. */
 export async function invalidateSessionUserCache(userId: string): Promise<void> {
   memoryCache.delete(userId);
-  await deleteCached([sessionUserCacheKey(userId), cacheKeys.USER(userId)]);
+  void deleteCached([sessionUserCacheKey(userId), cacheKeys.USER(userId)]);
 }

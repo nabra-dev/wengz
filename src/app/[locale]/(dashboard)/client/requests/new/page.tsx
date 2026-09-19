@@ -46,18 +46,20 @@ export default function NewRequestPage() {
   useEffect(() => {
     const draft = getPendingRequestDescription();
     if (!draft?.trim()) return;
-    setDescription(draft);
-    const firstLine = draft.split("\n")[0]?.trim() ?? "";
-    let nextTitle = firstLine.slice(0, 200);
-    if (nextTitle.length < 5) {
-      nextTitle = draft.trim().slice(0, 200);
-    }
-    if (nextTitle.length < 5) {
-      nextTitle = t("draftTitleFallback");
-    }
-    setTitle(nextTitle.slice(0, 200));
-    clearPendingRequestDescription();
-    toast.success(t("draftRestored"));
+    queueMicrotask(() => {
+      setDescription(draft);
+      const firstLine = draft.split("\n")[0]?.trim() ?? "";
+      let nextTitle = firstLine.slice(0, 200);
+      if (nextTitle.length < 5) {
+        nextTitle = draft.trim().slice(0, 200);
+      }
+      if (nextTitle.length < 5) {
+        nextTitle = t("draftTitleFallback");
+      }
+      setTitle(nextTitle.slice(0, 200));
+      clearPendingRequestDescription();
+      toast.success(t("draftRestored"));
+    });
   }, [t]);
 
   const selectedService = useMemo(
@@ -67,7 +69,7 @@ export default function NewRequestPage() {
 
   // Reset attribute responses when service type changes
   useEffect(() => {
-    setAttributeResponses([]);
+    queueMicrotask(() => setAttributeResponses([]));
   }, [selectedServiceType]);
 
   const createRequest = trpc.request.create.useMutation({

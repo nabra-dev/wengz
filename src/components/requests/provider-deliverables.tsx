@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations, useLocale } from "next-intl";

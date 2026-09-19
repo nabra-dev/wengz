@@ -64,21 +64,25 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (!financeSettings || financeHydrated.current) return;
     financeHydrated.current = true;
-    setCreditPriceUsd(String(financeSettings.creditPriceUsd));
-    setCommissionPercent(String(financeSettings.commissionPercent));
+    queueMicrotask(() => {
+      setCreditPriceUsd(String(financeSettings.creditPriceUsd));
+      setCommissionPercent(String(financeSettings.commissionPercent));
+    });
   }, [financeSettings]);
 
   useEffect(() => {
     if (!paymentSettings || paymentHydrated.current) return;
     paymentHydrated.current = true;
-    setBankName(paymentSettings.bankName);
-    setAccountName(paymentSettings.accountName);
-    setIban(paymentSettings.iban);
-    setSwiftCode(paymentSettings.swiftCode);
-    setCurrency(paymentSettings.currency);
-    setNote(paymentSettings.note);
-    setInstapayEnabled(paymentSettings.instapayEnabled);
-    setInstapayLink(paymentSettings.instapayLink);
+    queueMicrotask(() => {
+      setBankName(paymentSettings.bankName);
+      setAccountName(paymentSettings.accountName);
+      setIban(paymentSettings.iban);
+      setSwiftCode(paymentSettings.swiftCode);
+      setCurrency(paymentSettings.currency);
+      setNote(paymentSettings.note);
+      setInstapayEnabled(paymentSettings.instapayEnabled);
+      setInstapayLink(paymentSettings.instapayLink ?? "");
+    });
   }, [paymentSettings]);
 
   const maintenanceEnabled = maintenance?.enabled ?? false;

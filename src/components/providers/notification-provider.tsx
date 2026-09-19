@@ -94,7 +94,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
   // Check initial permission
   useEffect(() => {
     if (globalThis.window !== undefined && "Notification" in globalThis) {
-      setHasPermission(Notification.permission === "granted");
+      queueMicrotask(() => setHasPermission(Notification.permission === "granted"));
     }
   }, []);
 
@@ -115,8 +115,22 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
   // Fetch initial count
   useEffect(() => {
-    fetchUnreadCount();
-  }, [fetchUnreadCount]);
+    let cancelled = false;
+    void (async () => {
+      if (status !== "authenticated" || !session?.user) return;
+      try {
+        const response = await fetch("/api/notifications/unread-count");
+        if (!response.ok || cancelled) return;
+        const data = await response.json();
+        if (!cancelled) setUnreadCount(data.count || 0);
+      } catch {
+        // ignore network errors for badge count
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session, status]);
 
   const requestPermission = useCallback(async () => {
     if (globalThis.window === undefined || !("Notification" in globalThis)) {

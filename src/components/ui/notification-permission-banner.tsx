@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, X } from "lucide-react";
@@ -9,51 +9,26 @@ import { isMobileDevice, supportsDesktopNotifications } from "@/lib/device-detec
 
 export function NotificationPermissionBanner() {
   const { hasPermission, requestPermission, isConnected } = useRealtimeNotifications();
-  const [isDismissed, setIsDismissed] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [supportsNotifications, setSupportsNotifications] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (globalThis.window === undefined) return false;
+    return localStorage.getItem("notificationBannerDismissed") === "true";
+  });
+  const isMobile = useMemo(() => isMobileDevice(), []);
+  const supportsNotifications = useMemo(() => supportsDesktopNotifications(), []);
 
-  useEffect(() => {
-    // Detect device type on client-side only
-    setIsMobile(isMobileDevice());
-    setSupportsNotifications(supportsDesktopNotifications());
-
-    // Check if banner was dismissed before
-    const dismissed = localStorage.getItem("notificationBannerDismissed");
-    if (dismissed) {
-      setIsDismissed(true);
-    }
-
-    // Show banner only if:
-    // 1. Not dismissed
-    // 2. No permission yet
-    // 3. Connected to SSE
-    // 4. Device supports desktop notifications (not mobile)
-    if (!dismissed && !hasPermission && isConnected && supportsDesktopNotifications()) {
-      setShowBanner(true);
-    }
-  }, [hasPermission, isConnected]);
+  const showBanner =
+    !isDismissed && !hasPermission && isConnected && supportsNotifications && !isMobile;
 
   const handleRequest = async () => {
-    const granted = await requestPermission();
-    if (granted) {
-      setShowBanner(false);
-    }
+    await requestPermission();
   };
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    setShowBanner(false);
     localStorage.setItem("notificationBannerDismissed", "true");
   };
 
-  // Don't show on mobile devices
-  if (isMobile || !supportsNotifications) {
-    return null;
-  }
-
-  if (!showBanner || isDismissed || hasPermission) {
+  if (!showBanner) {
     return null;
   }
 
@@ -70,8 +45,8 @@ export function NotificationPermissionBanner() {
           </Button>
         </div>
         <CardDescription>
-          Get instant notifications for new messages and status updates, even when you're on another
-          tab.
+          Get instant notifications for new messages and status updates, even when you&apos;re on
+          another tab.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">

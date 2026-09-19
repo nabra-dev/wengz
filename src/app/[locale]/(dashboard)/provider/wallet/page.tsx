@@ -126,12 +126,15 @@ export default function ProviderWalletPage() {
   const [providerNote, setProviderNote] = useState("");
 
   useEffect(() => {
-    if (!data?.payout) return;
-    setPayoutMethod(data.payout.payoutMethod ?? "BANK");
-    setAccountHolder(data.payout.accountHolder ?? "");
-    setBankName(data.payout.bankName ?? "");
-    setBankAccount(data.payout.bankAccount ?? "");
-    setEWalletNumber(data.payout.eWalletNumber ?? "");
+    const payout = data?.payout;
+    if (!payout) return;
+    queueMicrotask(() => {
+      setPayoutMethod(payout.payoutMethod ?? "BANK");
+      setAccountHolder(payout.accountHolder ?? "");
+      setBankName(payout.bankName ?? "");
+      setBankAccount(payout.bankAccount ?? "");
+      setEWalletNumber(payout.eWalletNumber ?? "");
+    });
   }, [data?.payout]);
 
   const payoutReady = hasCompletePayout(data?.payout ?? null);

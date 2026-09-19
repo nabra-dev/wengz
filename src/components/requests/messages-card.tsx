@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

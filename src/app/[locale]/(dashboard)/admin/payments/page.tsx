@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";

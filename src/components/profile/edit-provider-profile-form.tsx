@@ -44,11 +44,13 @@ export function EditProviderProfileForm() {
   }, [profileError, t]);
 
   useEffect(() => {
-    if (profile?.providerProfile) {
-      setBio(profile.providerProfile.bio || "");
-      setPortfolio(profile.providerProfile.portfolio || "");
-      setSkills(profile.providerProfile.skillsTags?.join(", ") || "");
-    }
+    const providerProfile = profile?.providerProfile;
+    if (!providerProfile) return;
+    queueMicrotask(() => {
+      setBio(providerProfile.bio || "");
+      setPortfolio(providerProfile.portfolio || "");
+      setSkills(providerProfile.skillsTags?.join(", ") || "");
+    });
   }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {

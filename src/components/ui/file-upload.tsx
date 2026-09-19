@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Upload, FileIcon, Image, FileText, Loader2 } from "lucide-react";
+import { X, Upload, FileIcon, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -62,53 +62,55 @@ export function FileUpload({
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const uploadFile = async (file: File): Promise<UploadedFile | null> => {
-    // Validate file type
-    if (!ALLOWED_TYPES.has(file.type)) {
-      toast.error(t("invalidFileType"), {
-        description: t("invalidFileTypeDesc", { filename: file.name }),
-      });
-      return null;
-    }
-
-    // Validate file size
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      toast.error(t("fileTooLarge"), {
-        description: t("fileTooLargeDesc", { filename: file.name, maxSize: maxSizeMB }),
-      });
-      return null;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Upload failed");
+  const uploadFile = useCallback(
+    async (file: File): Promise<UploadedFile | null> => {
+      // Validate file type
+      if (!ALLOWED_TYPES.has(file.type)) {
+        toast.error(t("invalidFileType"), {
+          description: t("invalidFileTypeDesc", { filename: file.name }),
+        });
+        return null;
       }
 
-      const data = await response.json();
-      return {
-        url: data.url,
-        filename: data.filename,
-        size: data.size,
-        type: data.type,
-      };
-    } catch (error) {
+      // Validate file size
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        toast.error(t("fileTooLarge"), {
+          description: t("fileTooLargeDesc", { filename: file.name, maxSize: maxSizeMB }),
+        });
+        return null;
+      }
 
-      toast.error(t("uploadFailed"), {
-        description: error instanceof Error ? error.message : t("uploadFailedDesc"),
-      });
-      return null;
-    }
-  };
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || t("uploadFailedDesc"));
+        }
+
+        const data = await response.json();
+        return {
+          url: data.url,
+          filename: data.filename,
+          size: data.size,
+          type: data.type,
+        };
+      } catch (error) {
+        toast.error(t("uploadFailed"), {
+          description: error instanceof Error ? error.message : t("uploadFailedDesc"),
+        });
+        return null;
+      }
+    },
+    [maxSizeMB, t]
+  );
 
   const handleFiles = useCallback(
     async (files: FileList | null) => {
@@ -139,7 +141,7 @@ export function FileUpload({
 
       setIsUploading(false);
     },
-    [uploadedFiles, maxFiles, onFilesChange]
+    [uploadedFiles, maxFiles, onFilesChange, t, uploadFile]
   );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -168,7 +170,7 @@ export function FileUpload({
 
   const getFileIcon = (type: string) => {
     if (type.startsWith("image/")) {
-      return <Image className="h-4 w-4 text-blue-500" />;
+      return <ImageIcon className="h-4 w-4 text-blue-500" aria-hidden />;
     }
     if (type === "application/pdf") {
       return <FileText className="h-4 w-4 text-red-500" />;

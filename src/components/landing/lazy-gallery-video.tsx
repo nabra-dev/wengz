@@ -32,16 +32,14 @@ export function LazyGalleryVideo({
   children,
 }: LazyGalleryVideoProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(
+    () => typeof IntersectionObserver === "undefined"
+  );
 
   useEffect(() => {
+    if (shouldLoad) return;
     const el = containerRef.current;
-    if (!el || shouldLoad) return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      setShouldLoad(true);
-      return;
-    }
+    if (!el || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       (entries) => {

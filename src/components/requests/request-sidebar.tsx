@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertCircle } from "lucide-react";
 import { formatDateTime, getInitials } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
+import { useState, useEffect } from "react";
 
 interface UserInfo {
   name: string | null;
@@ -28,6 +29,42 @@ interface RequestSidebarProps {
     maxFree: number;
     nextRevisionCost: number;
   };
+}
+
+function DeliveryCountdown({
+  estimatedDelivery,
+  t,
+  locale,
+}: {
+  estimatedDelivery: Date;
+  t: ReturnType<typeof useTranslations<"requests.sidebar">>;
+  locale: string;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const deliveryMs = new Date(estimatedDelivery).getTime();
+  const isFuture = deliveryMs > now;
+  const hoursRemaining = Math.max(0, Math.round((deliveryMs - now) / (1000 * 60 * 60)));
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{t("estimatedDelivery")}</p>
+      <p className="font-medium">{formatDateTime(estimatedDelivery, locale)}</p>
+      {isFuture ? (
+        <p className="text-xs text-blue-600 mt-1">
+          {hoursRemaining < 24
+            ? t("hoursRemaining", { hours: hoursRemaining })
+            : t("daysRemaining", { days: Math.round(hoursRemaining / 24) })}
+        </p>
+      ) : (
+        <p className="text-xs text-amber-600 mt-1">{t("deliveryTimePassed")}</p>
+      )}
+    </div>
+  );
 }
 
 export function RequestSidebar({
@@ -127,36 +164,8 @@ export function RequestSidebar({
               <p className="font-medium">{formatDateTime(updatedAt, locale)}</p>
             </div>
           )}
-          {estimatedDelivery && (
-            <div>
-              <p className="text-sm text-muted-foreground">{t("estimatedDelivery")}</p>
-              <p className="font-medium">{formatDateTime(estimatedDelivery, locale)}</p>
-              {new Date(estimatedDelivery) > new Date() && (
-                <p className="text-xs text-blue-600 mt-1">
-                  {(() => {
-                    const hoursRemaining = Math.max(
-                      0,
-                      Math.round(
-                        (new Date(estimatedDelivery).getTime() - Date.now()) / (1000 * 60 * 60)
-                      )
-                    );
-                    if (hoursRemaining < 24) {
-                      return t("hoursRemaining", {
-                        hours: hoursRemaining,
-                      });
-                    } else {
-                      const daysRemaining = Math.round(hoursRemaining / 24);
-                      return t("daysRemaining", {
-                        days: daysRemaining,
-                      });
-                    }
-                  })()}
-                </p>
-              )}
-              {new Date(estimatedDelivery) <= new Date() && (
-                <p className="text-xs text-amber-600 mt-1">{t("deliveryTimePassed")}</p>
-              )}
-            </div>
+              {estimatedDelivery && (
+            <DeliveryCountdown estimatedDelivery={estimatedDelivery} t={t} locale={locale} />
           )}
           {completedAt && (
             <div>
