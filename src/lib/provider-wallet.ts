@@ -2,6 +2,9 @@ import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { getFinanceSettings } from "@/lib/finance-settings";
 
+/** Days after client approval before settled earnings become withdrawable. */
+export const PROVIDER_EARNINGS_HOLD_DAYS = 7;
+
 export type PayoutMethodValue = "BANK" | "E_WALLET";
 
 export type PayoutDetailsInput = {
@@ -105,6 +108,11 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
 
   await getOrCreateProviderWallet(tx, request.providerId);
 
+  const settledAt = new Date();
+  const availableAt = new Date(
+    settledAt.getTime() + PROVIDER_EARNINGS_HOLD_DAYS * 24 * 60 * 60 * 1000
+  );
+
   const ledger = await tx.providerFinanceLedger.create({
     data: {
       requestId,
@@ -118,24 +126,109 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
       totalAmountUsd: finance.totalAmountUsd,
       platformAmountUsd: finance.platformAmountUsd,
       providerAmountUsd: finance.providerAmountUsd,
-      status: "AVAILABLE",
-      settledAt: new Date(),
+      status: "HOLD",
+      settledAt,
+      availableAt,
     },
   });
 
   await tx.providerWallet.update({
     where: { providerId: request.providerId },
     data: {
-      balanceCredits: {
+      heldCredits: {
         increment: finance.providerCredits,
       },
-      balanceUsd: {
+      heldUsd: {
         increment: finance.providerAmountUsd,
       },
     },
   });
 
   return ledger;
+}
+
+/**
+ * Move HOLD ledger rows whose availableAt has passed into AVAILABLE wallet balance.
+ * Uses per-row CAS so concurrent cron runs do not double-release.
+ */
+export async function releaseDueHeldEarnings(
+  db: {
+    providerFinanceLedger: TransactionClient["providerFinanceLedger"];
+    $transaction: <T>(fn: (tx: TransactionClient) => Promise<T>) => Promise<T>;
+  },
+  options?: { now?: Date; take?: number }
+) {
+  const now = options?.now ?? new Date();
+  const take = options?.take ?? 200;
+
+  const dueLedgers = await db.providerFinanceLedger.findMany({
+    where: {
+      status: "HOLD",
+      availableAt: { lte: now },
+    },
+    select: {
+      id: true,
+      providerId: true,
+      providerCredits: true,
+      providerAmountUsd: true,
+    },
+    orderBy: { availableAt: "asc" },
+    take,
+  });
+
+  let released = 0;
+
+  for (const entry of dueLedgers) {
+    const didRelease = await db.$transaction(async (tx) => {
+      const claimed = await tx.providerFinanceLedger.updateMany({
+        where: {
+          id: entry.id,
+          status: "HOLD",
+        },
+        data: {
+          status: "AVAILABLE",
+        },
+      });
+
+      if (claimed.count === 0) {
+        return false;
+      }
+
+      await getOrCreateProviderWallet(tx, entry.providerId);
+      await tx.$queryRaw`
+        SELECT id FROM "ProviderWallet" WHERE "providerId" = ${entry.providerId} FOR UPDATE
+      `;
+
+      const wallet = await tx.providerWallet.findUnique({
+        where: { providerId: entry.providerId },
+      });
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Provider wallet not found",
+        });
+      }
+
+      await tx.providerWallet.update({
+        where: { providerId: entry.providerId },
+        data: {
+          heldCredits: Math.max(0, wallet.heldCredits - entry.providerCredits),
+          heldUsd: roundUsd(Math.max(0, wallet.heldUsd - entry.providerAmountUsd)),
+          balanceCredits: wallet.balanceCredits + entry.providerCredits,
+          balanceUsd: roundUsd(wallet.balanceUsd + entry.providerAmountUsd),
+        },
+      });
+
+      return true;
+    });
+
+    if (didRelease) {
+      released += 1;
+    }
+  }
+
+  return { released, scanned: dueLedgers.length };
 }
 
 export function normalizePayoutDetails(input: PayoutDetailsInput): NormalizedPayoutDetails {

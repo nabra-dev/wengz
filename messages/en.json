@@ -741,6 +741,8 @@
         "providerCreditsDesc": "Net amount credited to providers after commission",
         "walletBalance": "Wallet Balance",
         "walletBalanceDesc": "Current available provider wallet balances",
+        "held": "On hold",
+        "heldDesc": "Approved earnings still in the 7-day release window",
         "settledRequests": "Settled Requests",
         "settledRequestsDesc": "Completed requests credited to providers",
         "paidOut": "Paid Out",
@@ -764,6 +766,7 @@
         "viewLedger": "View Ledger",
         "showAll": "Show All",
         "balanceUsd": "Available USD",
+        "heldUsd": "On hold USD",
         "pendingUsd": "Pending USD",
         "paidUsd": "Paid USD"
       },
@@ -783,12 +786,14 @@
         "providerCredits": "Provider",
         "providerAmount": "Provider USD",
         "status": "Status",
+        "availableAt": "Available on",
         "settledAt": "Settled",
         "commission": "Commission",
         "grossAmount": "Gross",
         "platformAmount": "Platform"
       },
       "status": {
+        "HOLD": "On hold",
         "AVAILABLE": "Available",
         "PAID": "Paid",
         "VOIDED": "Voided"
@@ -1729,7 +1734,9 @@
       "subtitle": "Track your credited request earnings in tokens/credits",
       "summary": {
         "balance": "Wallet Balance",
-        "balanceDesc": "Available USD value from approved work",
+        "balanceDesc": "Available USD value ready to withdraw",
+        "held": "On hold",
+        "heldDesc": "Approved earnings releasing after 7 days",
         "pending": "Pending withdrawal",
         "pendingDesc": "Amount held while a withdrawal is under review",
         "paid": "Paid out",
@@ -1751,9 +1758,11 @@
         "providerCredits": "Your Credits",
         "providerAmount": "Your USD",
         "status": "Status",
+        "availableAt": "Available on",
         "settledAt": "Settled"
       },
       "status": {
+        "HOLD": "On hold",
         "AVAILABLE": "Available",
         "PAID": "Paid",
         "VOIDED": "Voided"

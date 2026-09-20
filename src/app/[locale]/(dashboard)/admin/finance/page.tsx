@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
-import { CheckCircle, Clock, CreditCard, Percent, Wallet } from "lucide-react";
+import { CheckCircle, Clock, CreditCard, Hourglass, Percent, Wallet } from "lucide-react";
 
 type PayoutMethod = "BANK" | "E_WALLET";
 type WithdrawalStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -46,9 +46,11 @@ type PayoutDetails = {
 type ProviderWalletRow = {
   provider: { id: string; name: string | null; email: string };
   balanceCredits: number;
+  heldCredits: number;
   pendingCredits: number;
   paidCredits: number;
   balanceUsd: number;
+  heldUsd: number;
   pendingUsd: number;
   paidUsd: number;
   requestCount: number;
@@ -66,8 +68,9 @@ type LedgerEntry = {
   totalAmountUsd: number;
   platformAmountUsd: number;
   providerAmountUsd: number;
-  status: "AVAILABLE" | "PAID" | "VOIDED";
+  status: "HOLD" | "AVAILABLE" | "PAID" | "VOIDED";
   settledAt: string | Date;
+  availableAt?: string | Date | null;
   provider: { name: string | null; email: string };
   request: { title: string };
   serviceType: {
@@ -230,6 +233,15 @@ export default function AdminFinancePage() {
         credits: finance?.summary.totalWalletBalanceCredits ?? 0,
       }),
       icon: CreditCard,
+    },
+    {
+      title: t("summary.held"),
+      value: formatMoney(finance?.summary.totalHeldUsd ?? 0),
+      description: t("summary.heldDesc"),
+      detail: t("summary.creditDetail", {
+        credits: finance?.summary.totalHeldCredits ?? 0,
+      }),
+      icon: Hourglass,
     },
     {
       title: t("pending.title"),
@@ -408,6 +420,7 @@ export default function AdminFinancePage() {
                   <TableHead>{t("wallets.provider")}</TableHead>
                   <TableHead>{t("withdrawals.destination")}</TableHead>
                   <TableHead>{t("wallets.balanceUsd")}</TableHead>
+                  <TableHead>{t("wallets.heldUsd")}</TableHead>
                   <TableHead>{t("wallets.pendingUsd")}</TableHead>
                   <TableHead>{t("wallets.paidUsd")}</TableHead>
                   <TableHead>{t("wallets.requests")}</TableHead>
@@ -427,6 +440,7 @@ export default function AdminFinancePage() {
                       {formatDestination(wallet.payout ?? { payoutMethod: null, accountHolder: null, bankName: null, bankAccount: null, eWalletNumber: null })}
                     </TableCell>
                     <TableCell>{formatMoney(wallet.balanceUsd)}</TableCell>
+                    <TableCell>{formatMoney(wallet.heldUsd)}</TableCell>
                     <TableCell>{formatMoney(wallet.pendingUsd)}</TableCell>
                     <TableCell>{formatMoney(wallet.paidUsd)}</TableCell>
                     <TableCell>{wallet.requestCount}</TableCell>
@@ -529,6 +543,7 @@ export default function AdminFinancePage() {
                   <TableHead>{t("ledger.providerCredits")}</TableHead>
                   <TableHead>{t("ledger.providerAmount")}</TableHead>
                   <TableHead>{t("ledger.status")}</TableHead>
+                  <TableHead>{t("ledger.availableAt")}</TableHead>
                   <TableHead>{t("ledger.settledAt")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -558,7 +573,14 @@ export default function AdminFinancePage() {
                     <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
                     <TableCell>{formatMoney(entry.providerAmountUsd)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{t("status.AVAILABLE")}</Badge>
+                      <Badge variant={entry.status === "HOLD" ? "outline" : "secondary"}>
+                        {t(`status.${entry.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {entry.status === "HOLD" && entry.availableAt
+                        ? new Date(entry.availableAt).toLocaleDateString(locale)
+                        : "—"}
                     </TableCell>
                     <TableCell>{new Date(entry.settledAt).toLocaleDateString(locale)}</TableCell>
                   </TableRow>

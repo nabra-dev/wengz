@@ -253,13 +253,28 @@ async function main() {
     requestId,
     status: final?.status,
     rating: final?.rating?.rating,
-    walletPendingCredits: wallet?.pendingCredits,
+    walletHeldCredits: wallet?.heldCredits,
     walletBalanceCredits: wallet?.balanceCredits,
+    walletPendingCredits: wallet?.pendingCredits,
+    ledgerStatus: ledger?.status,
+    ledgerAvailableAt: ledger?.availableAt,
     ledgerProviderCredits: ledger?.providerCredits,
     ledgerProviderUsd: ledger?.providerAmountUsd,
     clientEmail,
     providerEmail,
   });
+
+  if (ledger?.status !== "HOLD") {
+    throw new Error(`Expected ledger HOLD after approve, got ${ledger?.status}`);
+  }
+  if ((wallet?.heldCredits ?? 0) <= 0) {
+    throw new Error("Expected wallet heldCredits > 0 after approve");
+  }
+  if ((ledger?.providerCredits ?? 0) !== (wallet?.heldCredits ?? -1)) {
+    throw new Error(
+      `Expected heldCredits (${wallet?.heldCredits}) to match ledger providerCredits (${ledger?.providerCredits})`
+    );
+  }
 
   console.log("\n=== TIMINGS (ms) ===");
   console.table(timings);

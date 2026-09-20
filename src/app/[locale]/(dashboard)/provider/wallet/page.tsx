@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
-import { Clock, CreditCard, History, Wallet } from "lucide-react";
+import { Clock, CreditCard, History, Hourglass, Wallet } from "lucide-react";
 
 type PayoutMethod = "BANK" | "E_WALLET";
 type WithdrawalStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -40,8 +40,9 @@ type WalletLedgerEntry = {
   creditPriceUsd: number;
   totalAmountUsd: number;
   providerAmountUsd: number;
-  status: "AVAILABLE" | "PAID" | "VOIDED";
+  status: "HOLD" | "AVAILABLE" | "PAID" | "VOIDED";
   settledAt: string | Date;
+  availableAt?: string | Date | null;
   request: {
     title: string;
   };
@@ -170,6 +171,13 @@ export default function ProviderWalletPage() {
         icon: Wallet,
       },
       {
+        title: t("summary.held"),
+        value: formatMoney(data?.heldUsd ?? 0),
+        description: t("summary.heldDesc"),
+        detail: t("summary.creditDetail", { credits: data?.heldCredits ?? 0 }),
+        icon: Hourglass,
+      },
+      {
         title: t("summary.pending"),
         value: formatMoney(data?.pendingUsd ?? 0),
         description: t("summary.pendingDesc"),
@@ -279,6 +287,7 @@ export default function ProviderWalletPage() {
             <TableHead>{t("ledger.providerCredits")}</TableHead>
             <TableHead>{t("ledger.providerAmount")}</TableHead>
             <TableHead>{t("ledger.status")}</TableHead>
+            <TableHead>{t("ledger.availableAt")}</TableHead>
             <TableHead>{t("ledger.settledAt")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -295,7 +304,14 @@ export default function ProviderWalletPage() {
               <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
               <TableCell>{formatMoney(entry.providerAmountUsd)}</TableCell>
               <TableCell>
-                <Badge variant="secondary">{t(`status.${entry.status}`)}</Badge>
+                <Badge variant={entry.status === "HOLD" ? "outline" : "secondary"}>
+                  {t(`status.${entry.status}`)}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {entry.status === "HOLD" && entry.availableAt
+                  ? new Date(entry.availableAt).toLocaleDateString(locale)
+                  : "—"}
               </TableCell>
               <TableCell>{new Date(entry.settledAt).toLocaleDateString(locale)}</TableCell>
             </TableRow>
@@ -312,7 +328,7 @@ export default function ProviderWalletPage() {
         <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {summaryCards.map((card) => (
           <Card key={card.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

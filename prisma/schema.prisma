@@ -281,9 +281,11 @@ model ProviderWallet {
   id             String   @id @default(cuid())
   providerId     String   @unique
   balanceCredits Int      @default(0)
+  heldCredits    Int      @default(0)
   pendingCredits Int      @default(0)
   paidCredits    Int      @default(0)
   balanceUsd     Float    @default(0)
+  heldUsd        Float    @default(0)
   pendingUsd     Float    @default(0)
   paidUsd        Float    @default(0)
   createdAt      DateTime @default(now())
@@ -333,6 +335,7 @@ model ProviderFinanceLedger {
   providerAmountUsd  Float
   status             ProviderFinanceStatus @default(AVAILABLE)
   settledAt          DateTime              @default(now())
+  availableAt        DateTime?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   provider           User                  @relation("ProviderFinanceLedger", fields: [providerId], references: [id], onDelete: Cascade)
@@ -340,6 +343,7 @@ model ProviderFinanceLedger {
   serviceType        ServiceType           @relation(fields: [serviceTypeId], references: [id])
 
   @@index([providerId, status])
+  @@index([status, availableAt])
   @@index([settledAt])
   @@index([serviceTypeId])
 }
@@ -450,6 +454,7 @@ enum PaymentStatus {
 }
 
 enum ProviderFinanceStatus {
+  HOLD
   AVAILABLE
   PAID
   VOIDED

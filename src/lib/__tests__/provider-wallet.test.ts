@@ -2,6 +2,7 @@ import {
   allocateWithdrawalAmounts,
   calculateProviderFinance,
   normalizePayoutDetails,
+  PROVIDER_EARNINGS_HOLD_DAYS,
 } from "@/lib/provider-wallet";
 
 describe("provider wallet finance calculation", () => {
@@ -69,6 +70,22 @@ describe("provider wallet finance calculation", () => {
     expect(result.platformAmountUsd).toBe(0);
     expect(result.providerAmountUsd).toBe(4);
     expect(result.platformAmountUsd + result.providerAmountUsd).toBe(result.totalAmountUsd);
+  });
+});
+
+describe("earnings hold window", () => {
+  it("uses a 7-day hold before earnings become withdrawable", () => {
+    expect(PROVIDER_EARNINGS_HOLD_DAYS).toBe(7);
+  });
+
+  it("withdrawal allocation only considers available balance (not held)", () => {
+    // Held earnings are tracked separately on the wallet; allocateWithdrawalAmounts
+    // only receives the available balanceUsd/balanceCredits.
+    expect(() => allocateWithdrawalAmounts(100, 0, 0)).toThrow("Insufficient wallet balance");
+    expect(allocateWithdrawalAmounts(50, 100, 100)).toEqual({
+      amountUsd: 50,
+      amountCredits: 50,
+    });
   });
 });
 

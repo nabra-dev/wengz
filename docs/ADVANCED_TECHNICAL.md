@@ -76,7 +76,7 @@ flowchart TB
 | `src/components/providers/trpc-provider.tsx` | React Query + tRPC provider wiring                                                                                                                                             |
 | `src/lib/error-handler.ts`                   | Sonner toasts + tRPC/Zod message mapping; optional `next-intl` `t`                                                                                                             |
 | `src/lib/notifications/`                     | Email, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                                      |
-| `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), withdrawal holds, and manual payout recording |
+| `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), 7-day earnings hold (`held*` / ledger `HOLD` + `availableAt`), withdrawal holds, and manual payout recording |
 | `src/lib/finance-settings.ts`                | Loads global `credit_price_usd` and `provider_commission_percent` from `SystemSettings`                                                                 |
 | `src/proxy.ts`                               | **Middleware implementation**: `next-intl` + `withAuth`, locale rewrite, **role-based redirects** for `client` / `provider` / `admin` segments (`export const config.matcher`) |
 
@@ -106,6 +106,7 @@ flowchart TB
 
 - **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (GitHub Actions, system cron, etc.); scans subscriptions for expiry notifications and related updates. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
 - **`src/app/api/cron/check-delivered-approvals/route.ts`**: Suggested every **~15 minutes**. For `DELIVERED` requests: sends a client approval reminder after **1 hour** (`approvalReminderSentAt`), and sets `needsManualApproval` after **12 hours**. Auth uses `Authorization: Bearer ${CRON_SECRET}` (same pattern as subscription cron).
+- **`src/app/api/cron/release-provider-holds/route.ts`**: Suggested every **~1 hour**. Releases `ProviderFinanceLedger` rows in `HOLD` whose `availableAt` has passed into wallet **available** balance (`held*` → `balance*`). Auth uses `Authorization: Bearer ${CRON_SECRET}`.
 
 ---
 

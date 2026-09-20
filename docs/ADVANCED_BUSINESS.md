@@ -41,7 +41,9 @@ Completed request work is settled into a **provider wallet** (credits + USD) usi
 
 Example: a request costing `500` credits with `$1`/credit and `10%` commission settles as **$500** gross, **$50** platform, **$450** / **450** credits to the provider.
 
-Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal**. That request holds the amount as pending until a super admin reviews it **manually**:
+**Settlement is not immediately withdrawable.** On client approval, the provider share is credited as **on hold** for **7 days** (`PROVIDER_EARNINGS_HOLD_DAYS`). It appears in the wallet (held balance + ledger status) but cannot be withdrawn until a release job moves it to **available**. Withdrawal requests only draw from available balance.
+
+Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal** from available funds. That request holds the amount as pending until a super admin reviews it **manually**:
 
 - **Approve / mark as paid** after sending the money off-platform, with a **reason** (for example a transfer reference).
 - **Reject** with a **reason**, which returns the held funds to the available balance.
@@ -88,7 +90,7 @@ The business relies on **timely, localized** communication:
 - **In-app** notifications (stored per user, read/unread).
 - **Email** and **in-app** notifications, with templates that respect **locale** when invoked from server flows.
 
-Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval reminders**) are designed to run on a schedule via HTTP **cron** endpoints; see `src/app/api/cron/check-subscriptions/route.ts`, `src/app/api/cron/check-delivered-approvals/route.ts`, and your hosting provider’s scheduler.
+Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval reminders**, **provider earnings hold release**) are designed to run on a schedule via HTTP **cron** endpoints; see `src/app/api/cron/check-subscriptions/route.ts`, `src/app/api/cron/check-delivered-approvals/route.ts`, `src/app/api/cron/release-provider-holds/route.ts`, and your hosting provider’s scheduler.
 
 ---
 
@@ -110,7 +112,7 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 | **Service type**  | Configurable line of work with pricing, attributes, and revision rules           |
 | **Request**       | A unit of client–provider work tracked through statuses, comments, and ratings   |
 | **Payment proof** | Client-submitted evidence for manual verification of off-platform payment        |
-| **Provider wallet** | Provider earnings from completed requests, tracked in credits and USD          |
+| **Provider wallet** | Provider earnings from completed requests (available + 7-day hold + withdrawal pending), tracked in credits and USD |
 | **Withdrawal**    | Provider request (or admin-recorded payout) reviewed manually with status + reason |
 
 ---

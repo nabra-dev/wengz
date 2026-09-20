@@ -741,6 +741,8 @@
         "providerCreditsDesc": "المبلغ الصافي المضاف للمبدعين بعد العمولة",
         "walletBalance": "رصيد المحافظ",
         "walletBalanceDesc": "أرصدة محافظ المبدعين المتاحة حالياً",
+        "held": "قيد الاحتجاز",
+        "heldDesc": "أرباح معتمدة لا تزال ضمن فترة التحرير لمدة 7 أيام",
         "settledRequests": "طلبات مسواة",
         "settledRequestsDesc": "طلبات مكتملة تمت إضافتها للمبدعين",
         "paidOut": "المدفوع",
@@ -764,6 +766,7 @@
         "viewLedger": "عرض القيود",
         "showAll": "عرض الكل",
         "balanceUsd": "المتاح بالدولار",
+        "heldUsd": "قيد الاحتجاز بالدولار",
         "pendingUsd": "المعلق بالدولار",
         "paidUsd": "المدفوع بالدولار"
       },
@@ -783,12 +786,14 @@
         "providerCredits": "المبدع",
         "providerAmount": "دولار المبدع",
         "status": "الحالة",
+        "availableAt": "متاح في",
         "settledAt": "تاريخ التسوية",
         "commission": "العمولة",
         "grossAmount": "الإجمالي",
         "platformAmount": "المنصة"
       },
       "status": {
+        "HOLD": "قيد الاحتجاز",
         "AVAILABLE": "متاح",
         "PAID": "مدفوع",
         "VOIDED": "ملغي"
@@ -1729,7 +1734,9 @@
       "subtitle": "تابع أرباحك المضافة من الطلبات بالكريدت",
       "summary": {
         "balance": "رصيد المحفظة",
-        "balanceDesc": "القيمة بالدولار من الأعمال المعتمدة",
+        "balanceDesc": "القيمة بالدولار المتاحة للسحب",
+        "held": "قيد الاحتجاز",
+        "heldDesc": "أرباح معتمدة تُحرَّر بعد 7 أيام",
         "pending": "سحب معلق",
         "pendingDesc": "المبلغ المحجوز أثناء مراجعة طلب السحب",
         "paid": "المدفوع",
@@ -1751,9 +1758,11 @@
         "providerCredits": "كريدتك",
         "providerAmount": "دولارك",
         "status": "الحالة",
+        "availableAt": "متاح في",
         "settledAt": "تاريخ التسوية"
       },
       "status": {
+        "HOLD": "قيد الاحتجاز",
         "AVAILABLE": "متاح",
         "PAID": "مدفوع",
         "VOIDED": "ملغي"
