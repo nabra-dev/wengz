@@ -38,10 +38,20 @@ function LogoMark({
 
 export function BrandLogo({ className, tone = "auto", style }: Readonly<BrandLogoProps>) {
   if (tone === "auto") {
+    // Use html.dark / html.light (set by the boot script) with classes that do not
+    // depend on Tailwind being loaded — otherwise both marks stack after a bad deploy.
     return (
       <>
-        <LogoMark fill={FILL.purple} style={style} className={cn("dark:hidden", className)} />
-        <LogoMark fill={FILL.yellow} style={style} className={cn("hidden dark:block", className)} />
+        <LogoMark
+          fill={FILL.purple}
+          style={style}
+          className={cn("brand-logo-light", className)}
+        />
+        <LogoMark
+          fill={FILL.yellow}
+          style={style}
+          className={cn("brand-logo-dark", className)}
+        />
       </>
     );
   }

@@ -6,6 +6,18 @@ const withPWA = require("next-pwa")({
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
+      // Hashed Next build assets — first match wins; keep ahead of generic JS/CSS rules.
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "next-static-assets",
+        expiration: {
+          maxEntries: 128,
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year (filenames are content-hashed)
+        },
+      },
+    },
+    {
       urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
       handler: "CacheFirst",
       options: {
@@ -67,11 +79,12 @@ const withPWA = require("next-pwa")({
       handler: "NetworkOnly",
     },
     {
+      // HTML / RSC / everything else — prefer network so deploys pick up new chunk hashes.
       urlPattern: /.*/i,
       handler: "NetworkFirst",
       options: {
         cacheName: "others",
-        networkTimeoutSeconds: 10,
+        networkTimeoutSeconds: 3,
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours

@@ -1975,7 +1975,13 @@
     "validationError": "حدث خطأ في التحقق من الصحة",
     "networkError": "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.",
     "unexpectedError": "حدث خطأ غير متوقع",
-    "invalidValue": "قيمة غير صالحة"
+    "invalidValue": "قيمة غير صالحة",
+    "deployment": {
+      "title": "يحتاج التطبيق إلى تحديث",
+      "description": "ربما تم نشر نسخة جديدة. أعد التحميل للحصول على أحدث الملفات.",
+      "reload": "إعادة التحميل",
+      "tryAgain": "حاول مرة أخرى"
+    }
   },
   "notifications": {
     "newMessage": {

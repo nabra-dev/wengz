@@ -13,6 +13,7 @@ import { SiteJsonLd } from "@/components/seo/json-ld";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
 import { brandName, buildPageMetadata } from "@/lib/seo";
 import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
+import { DeploymentRecovery } from "@/components/system/deployment-recovery";
 
 /** Only inject GTM when explicitly configured — no hardcoded fallback. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -84,12 +85,15 @@ export default async function LocaleLayout({
       {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
       <head>
         <script>{`try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='light'?'light':'dark')}catch(e){}`}</script>
+        {/* Critical: keep one brand mark visible even if the main CSS bundle fails to load after deploy. */}
+        <style>{`html:not(.dark) .brand-logo-dark{display:none!important}html.dark .brand-logo-light{display:none!important}`}</style>
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <SiteJsonLd locale={locale} />
         <ThemeProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {GTM_ID ? <GtmPageView /> : null}
+            <DeploymentRecovery />
             {children}
             <Toaster position="top-right" richColors closeButton />
             <PWAInstallPrompt />

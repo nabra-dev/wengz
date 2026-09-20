@@ -1975,7 +1975,13 @@
     "validationError": "Validation error occurred",
     "networkError": "Unable to connect to the server. Please check your internet connection.",
     "unexpectedError": "An unexpected error occurred",
-    "invalidValue": "Invalid value"
+    "invalidValue": "Invalid value",
+    "deployment": {
+      "title": "App needs a refresh",
+      "description": "A new version may have just deployed. Reload to load the latest files.",
+      "reload": "Reload",
+      "tryAgain": "Try again"
+    }
   },
   "notifications": {
     "newMessage": {
