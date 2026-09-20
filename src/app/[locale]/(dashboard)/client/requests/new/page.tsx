@@ -56,7 +56,15 @@ export default function NewRequestPage() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const { data: serviceTypes } = trpc.request.getServiceTypes.useQuery();
   const locale = useLocale();
-  const { data: subscription } = trpc.subscription.getActive.useQuery();
+  const utils = trpc.useUtils();
+  const {
+    data: subscription,
+    isFetched: subscriptionFetched,
+    isLoading: subscriptionLoading,
+  } = trpc.subscription.getActive.useQuery(undefined, {
+    refetchOnMount: "always",
+    staleTime: 0,
+  });
 
   useEffect(() => {
     const draft = getPendingRequestDescription();
@@ -98,6 +106,7 @@ export default function NewRequestPage() {
 
   const createRequest = trpc.request.create.useMutation({
     onSuccess: (data) => {
+      void utils.subscription.getActive.invalidate();
       toast.success(t("toast.created"), {
         description: t("toast.createdDesc"),
       });
@@ -108,7 +117,8 @@ export default function NewRequestPage() {
     },
   });
 
-  const hasCredits = subscription && subscription.remainingCredits > 0;
+  const hasCredits = Boolean(subscription && subscription.remainingCredits > 0);
+  const showNoSubscription = subscriptionFetched && !subscriptionLoading && !subscription;
   const baseCreditCost = (selectedService as { creditCost?: number })?.creditCost || 1;
 
   // Calculate attribute credits dynamically
@@ -128,7 +138,13 @@ export default function NewRequestPage() {
   const priorityCost = priorityCostsMap[priority] ?? lowCost;
   const totalCreditCost = baseCreditCost + attributeCredits + priorityCost;
 
-  const canAffordService = subscription && subscription.remainingCredits >= totalCreditCost;
+  const canAffordService = Boolean(
+    subscription && subscription.remainingCredits >= totalCreditCost
+  );
+  const showInsufficientCredits =
+    subscriptionFetched &&
+    Boolean(subscription) &&
+    (!hasCredits || (Boolean(selectedServiceType) && !canAffordService));
 
   let buttonText = t("actions.create", { cost: 1 });
   if (createRequest.isPending) {
@@ -245,23 +261,27 @@ export default function NewRequestPage() {
         </div>
       </div>
 
-      {selectedServiceType && !canAffordService && (
-        <Card className="border-orange-200 bg-orange-50">
+      {showInsufficientCredits && (
+        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/40">
           <CardHeader>
-            <CardTitle className="text-orange-800">{t("insufficientCredits.title")}</CardTitle>
-            <CardDescription className="text-orange-700">
-              {t(
-                priorityCost > 0
-                  ? "insufficientCredits.description"
-                  : "insufficientCredits.descriptionNoPriority",
-                {
-                  required: totalCreditCost,
-                  credit: totalCreditCost === 1 ? t("credit") : t("credits"),
-                  baseCost: baseCreditCost,
-                  priorityCost,
-                  available: subscription?.remainingCredits || 0,
-                }
-              )}
+            <CardTitle className="text-orange-800 dark:text-orange-200">
+              {t("insufficientCredits.title")}
+            </CardTitle>
+            <CardDescription className="text-orange-700 dark:text-orange-300">
+              {selectedServiceType
+                ? t(
+                    priorityCost > 0
+                      ? "insufficientCredits.description"
+                      : "insufficientCredits.descriptionNoPriority",
+                    {
+                      required: totalCreditCost,
+                      credit: totalCreditCost === 1 ? t("credit") : t("credits"),
+                      baseCost: baseCreditCost,
+                      priorityCost,
+                      available: subscription?.remainingCredits || 0,
+                    }
+                  )
+                : t("insufficientCredits.zeroCredits")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -272,11 +292,13 @@ export default function NewRequestPage() {
         </Card>
       )}
 
-      {!subscription && (
-        <Card className="border-yellow-200 bg-yellow-50">
+      {showNoSubscription && (
+        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/40">
           <CardHeader>
-            <CardTitle className="text-yellow-800">{t("noSubscription.title")}</CardTitle>
-            <CardDescription className="text-yellow-700">
+            <CardTitle className="text-yellow-800 dark:text-yellow-200">
+              {t("noSubscription.title")}
+            </CardTitle>
+            <CardDescription className="text-yellow-700 dark:text-yellow-300">
               {t("noSubscription.description")}
             </CardDescription>
           </CardHeader>

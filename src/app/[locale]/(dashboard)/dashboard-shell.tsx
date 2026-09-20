@@ -31,6 +31,7 @@ import {
 import { useState } from "react";
 import { getInitials } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { trpc } from "@/lib/trpc/client";
 
 const clientNavConfig = [
   { href: "/client", labelKey: "client.dashboard", icon: LayoutDashboard },
@@ -85,6 +86,16 @@ export function DashboardShell({
   })();
   const role = session?.user?.role ?? (sessionStatus === "loading" ? roleFromPath : null);
 
+  const isClient = role === "CLIENT";
+  const { data: clientSubscription, isFetched: clientCreditsFetched } =
+    trpc.subscription.getActive.useQuery(undefined, {
+      enabled: isClient && sessionStatus === "authenticated",
+      refetchOnWindowFocus: true,
+    });
+  const clientCredits =
+    isClient && clientCreditsFetched ? (clientSubscription?.remainingCredits ?? 0) : null;
+  const creditsLow = clientCredits !== null && clientCredits <= 0;
+
   const getNavItems = () => {
     if (role === "SUPER_ADMIN")
       return adminNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
@@ -125,6 +136,17 @@ export function DashboardShell({
           <BrandLogo className="h-6 sm:h-7" />
         </Link>
         <div className="flex items-center gap-2">
+          {clientCredits !== null && (
+            <Link href="/client/subscription" className="shrink-0">
+              <Badge
+                variant={creditsLow ? "destructive" : "secondary"}
+                className="h-6 gap-1 px-2 text-xs font-medium tabular-nums"
+              >
+                <CreditCard className="h-3 w-3" />
+                {tNav("creditsCount", { count: clientCredits })}
+              </Badge>
+            </Link>
+          )}
           <ThemeSwitcher />
           <LanguageSwitcher />
           {unreadCount > 0 && (
@@ -181,6 +203,27 @@ export function DashboardShell({
               );
             })}
           </nav>
+
+          {clientCredits !== null && (
+            <>
+              <Separator />
+              <div className="px-2 sm:px-3 py-2 sm:py-3">
+                <Link
+                  href="/client/subscription"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors ${
+                    creditsLow
+                      ? "bg-destructive/10 text-destructive hover:bg-destructive/15"
+                      : "bg-muted/60 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="flex-1">{tNav("credits")}</span>
+                  <span className="tabular-nums font-semibold">{clientCredits}</span>
+                </Link>
+              </div>
+            </>
+          )}
 
           <Separator />
 

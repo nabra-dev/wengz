@@ -252,7 +252,9 @@
         "settings": "Settings",
         "profile": "Profile"
       },
-      "signOut": "Sign Out"
+      "signOut": "Sign Out",
+      "credits": "Credits",
+      "creditsCount": "{count, plural, one {# credit} other {# credits}}"
     }
   },
   "auth": {
@@ -1511,6 +1513,7 @@
         "title": "Insufficient Credits",
         "description": "This request requires {required} {credit} ({baseCost} base + {priorityCost} priority) but you only have {available}. Please subscribe to a plan or purchase more credits.",
         "descriptionNoPriority": "This request requires {required} {credit} ({baseCost} base) but you only have {available}. Please subscribe to a plan or purchase more credits.",
+        "zeroCredits": "You have 0 credits remaining. Purchase a plan or top up before creating a request.",
         "viewPlans": "View Plans"
       },
       "noSubscription": {

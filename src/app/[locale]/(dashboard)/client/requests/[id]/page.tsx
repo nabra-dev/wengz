@@ -67,6 +67,7 @@ export default function RequestDetailPage() {
     onSuccess: () => {
       setRevisionFeedback("");
       utils.request.getById.invalidate({ id: requestId });
+      void utils.subscription.getActive.invalidate();
       toast.info(t("toast.revisionRequested"), {
         description: t("toast.revisionRequestedDesc"),
       });

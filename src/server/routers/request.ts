@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure, clientProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { checkAndDeductCredits } from "@/lib/credit-logic";
+import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 import { handleRevisionRequest, getRevisionInfo } from "@/lib/revision-logic";
 import { validateAttributeResponses, calculateAttributeCredits } from "@/lib/attribute-validation";
 import { getPriorityCostsForService } from "@/lib/priority-costs";
@@ -370,6 +371,8 @@ export const requestRouter = router({
 
         return { request, creditResult };
       });
+
+      await invalidateSubscriptionCache(userId);
 
       // Notify matching providers
       await notifyMatchingProviders(

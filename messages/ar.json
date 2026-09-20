@@ -252,7 +252,9 @@
         "settings": "الإعدادات",
         "profile": "الملف الشخصي"
       },
-      "signOut": "تسجيل الخروج"
+      "signOut": "تسجيل الخروج",
+      "credits": "الكريدت",
+      "creditsCount": "{count, plural, one {# كريدت} other {# كريدت}}"
     }
   },
   "auth": {
@@ -1508,6 +1510,7 @@
         "title": "كريدت غير كافٍ",
         "description": "يتطلب هذا الطلب {required} {credit} ({baseCost} أساسي + {priorityCost} أولوية) ولكن لديك {available} فقط. يرجى الاشتراك في باقة أو شراء المزيد من الكريدت.",
         "descriptionNoPriority": "يتطلب هذا الطلب {required} {credit} ({baseCost} أساسي) ولكن لديك {available} فقط. يرجى الاشتراك في باقة أو شراء المزيد من الكريدت.",
+        "zeroCredits": "ليس لديك كريدت متبقٍ. اشترِ باقة أو أضف رصيداً قبل إنشاء طلب.",
         "viewPlans": "عرض الباقات"
       },
       "noSubscription": {

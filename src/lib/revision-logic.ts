@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { deductCredits } from "@/lib/credit-logic";
+import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 import { notifyStatusChange } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 
@@ -268,6 +269,8 @@ export async function handleRevisionRequest(
       message: paidResult.message,
     };
   }
+
+  await invalidateSubscriptionCache(userId);
 
   if (request.providerId) {
     await notifyStatusChange({
