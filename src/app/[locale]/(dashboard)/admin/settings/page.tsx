@@ -165,7 +165,7 @@ export default function AdminSettingsPage() {
                 id="creditPriceUsd"
                 type="number"
                 min="0"
-                step="0.01"
+                step="any"
                 value={creditPriceUsd}
                 onChange={(event) => setCreditPriceUsd(event.target.value)}
                 disabled={financeLoading || setFinanceSettingsMutation.isPending}
