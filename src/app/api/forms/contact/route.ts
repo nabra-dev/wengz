@@ -10,13 +10,13 @@ const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 
 const BodySchema = z.object({
   type: z.enum(["client", "provider"]),
-  fullName: z.string().min(2).max(100),
-  email: z.string().email().max(254),
-  phone: z.string().min(3).max(50),
-  company: z.string().max(120).optional().default(""),
-  website: z.string().max(300).optional().default(""),
-  message: z.string().max(4000).optional().default(""),
-  serviceLabels: z.string().max(1000).optional().default(""),
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  company: z.string().optional().default(""),
+  website: z.string().optional().default(""),
+  message: z.string().optional().default(""),
+  serviceLabels: z.string().optional().default(""),
 });
 
 function escapeHtml(input: string) {

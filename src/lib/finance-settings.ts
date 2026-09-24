@@ -1,14 +1,21 @@
 import type { Prisma } from "@prisma/client";
+import { roundMoney } from "@/lib/utils";
 
 export const CREDIT_PRICE_USD_KEY = "credit_price_usd";
 export const PROVIDER_COMMISSION_PERCENT_KEY = "provider_commission_percent";
+export const MIN_WITHDRAWAL_USD_KEY = "min_withdrawal_usd";
+export const WITHDRAWAL_FEE_USD_KEY = "withdrawal_fee_usd";
 
 export const DEFAULT_CREDIT_PRICE_USD = 1;
 export const DEFAULT_PROVIDER_COMMISSION_PERCENT = 10;
+export const DEFAULT_MIN_WITHDRAWAL_USD = 1;
+export const DEFAULT_WITHDRAWAL_FEE_USD = 0;
 
 export type FinanceSettings = {
   creditPriceUsd: number;
   commissionPercent: number;
+  minWithdrawalUsd: number;
+  withdrawalFeeUsd: number;
 };
 
 type SettingsClient = {
@@ -40,6 +47,13 @@ function parsePercent(value: unknown, fallback: number): number {
   return Math.min(100, n);
 }
 
+export const FINANCE_SETTINGS_KEYS = [
+  CREDIT_PRICE_USD_KEY,
+  PROVIDER_COMMISSION_PERCENT_KEY,
+  MIN_WITHDRAWAL_USD_KEY,
+  WITHDRAWAL_FEE_USD_KEY,
+] as const;
+
 export function parseFinanceSettings(
   rows: Array<{ key: string; value: Prisma.JsonValue }>
 ): FinanceSettings {
@@ -47,15 +61,22 @@ export function parseFinanceSettings(
 
   const priceValue = asRecord(byKey.get(CREDIT_PRICE_USD_KEY));
   const commissionValue = asRecord(byKey.get(PROVIDER_COMMISSION_PERCENT_KEY));
+  const minWithdrawalValue = asRecord(byKey.get(MIN_WITHDRAWAL_USD_KEY));
+  const withdrawalFeeValue = asRecord(byKey.get(WITHDRAWAL_FEE_USD_KEY));
 
   return {
-    creditPriceUsd: parseNonNegativeNumber(
-      priceValue?.amount,
-      DEFAULT_CREDIT_PRICE_USD
+    creditPriceUsd: roundMoney(
+      parseNonNegativeNumber(priceValue?.amount, DEFAULT_CREDIT_PRICE_USD)
     ),
     commissionPercent: parsePercent(
       commissionValue?.percent,
       DEFAULT_PROVIDER_COMMISSION_PERCENT
+    ),
+    minWithdrawalUsd: roundMoney(
+      parseNonNegativeNumber(minWithdrawalValue?.amount, DEFAULT_MIN_WITHDRAWAL_USD)
+    ),
+    withdrawalFeeUsd: roundMoney(
+      parseNonNegativeNumber(withdrawalFeeValue?.amount, DEFAULT_WITHDRAWAL_FEE_USD)
     ),
   };
 }
@@ -64,7 +85,7 @@ export async function getFinanceSettings(db: SettingsClient): Promise<FinanceSet
   const rows = await db.systemSettings.findMany({
     where: {
       key: {
-        in: [CREDIT_PRICE_USD_KEY, PROVIDER_COMMISSION_PERCENT_KEY],
+        in: [...FINANCE_SETTINGS_KEYS],
       },
     },
     select: { key: true, value: true },

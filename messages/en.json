@@ -16,6 +16,12 @@
       "restore": "Restore"
     },
     "credits": "Credits",
+    "currency": {
+      "USD": "USD",
+      "EGP": "EGP",
+      "displayOnly": "Display",
+      "switchTo": "Switch display currency to {currency}"
+    },
     "footer": {
       "privacy": "Privacy",
       "terms": "Terms",
@@ -32,6 +38,8 @@
     },
     "roles": {
       "SUPER_ADMIN": "Super Admin",
+      "PROJECT_MANAGER": "Project Manager",
+      "FINANCE_MANAGER": "Finance Manager",
       "PROVIDER": "Provider",
       "CLIENT": "Client"
     },
@@ -161,7 +169,10 @@
       "heading": "Ready to get started?",
       "subheading": "Join thousands of creators using Wengz to bring their ideas to life",
       "startTrial": "Start Free Trial",
-      "viewPlans": "View Plans"
+      "viewPlans": "View Plans",
+      "appComingSoon": "Coming soon",
+      "iosApp": "iOS app",
+      "androidApp": "Android app"
     },
     "footer": {
       "privacy": "Privacy",
@@ -276,14 +287,43 @@
       "errorMessage": "An error occurred. Please try again.",
       "maintenanceNote": "Maintenance mode is active. Login is temporarily unavailable.",
       "maintenanceLoginBlocked": "Login restricted during maintenance",
-      "maintenanceLoginBlockedDesc": "Login is temporarily unavailable."
+      "maintenanceLoginBlockedDesc": "Login is temporarily unavailable.",
+      "forgotPassword": "Forgot password?"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "description": "Enter your email and we'll send you a reset link if an account exists.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "name@example.com",
+      "submitButton": "Send reset link",
+      "submitting": "Sending...",
+      "backToLogin": "Back to sign in",
+      "successTitle": "Check your email",
+      "successDescription": "If an account exists for that email, a password reset link has been sent.",
+      "errorFallback": "Could not send reset email. Please try again."
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "description": "Choose a new password for your account.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password",
+      "submitButton": "Update password",
+      "submitting": "Updating...",
+      "backToLogin": "Back to sign in",
+      "successTitle": "Password updated",
+      "successDescription": "You can now sign in with your new password.",
+      "mismatch": "Passwords do not match",
+      "required": "Password is required",
+      "missingToken": "This reset link is missing or invalid.",
+      "requestNewLink": "Request a new reset link",
+      "errorFallback": "Could not reset password. Please try again."
     },
     "register": {
       "title": "Create an account",
       "description": "Enter your details to get started",
       "nameLabel": "Full Name",
       "namePlaceholder": "John Doe",
-      "nameHint": "2-100 characters",
+      "nameHint": "Required",
       "phoneLabel": "Phone",
       "phonePlaceholder": "1234567890",
       "phoneHint": "Enter phone number only (country code selected above)",
@@ -291,7 +331,7 @@
       "emailPlaceholder": "name@example.com",
       "emailHint": "Valid email address required",
       "passwordLabel": "Password",
-      "passwordHint": "Minimum 6 characters required",
+      "passwordHint": "Required",
       "confirmPasswordLabel": "Confirm Password",
       "confirmPasswordHint": "Must match password above",
       "creatingAccount": "Creating account...",
@@ -316,11 +356,15 @@
       "subtitle": "Configure platform-wide options",
       "finance": {
         "title": "Provider settlement",
-        "description": "Global USD credit price and platform commission used for provider payouts (not package subscriptions).",
+        "description": "Global USD credit price, commission, and withdrawal rules for provider payouts (not package subscriptions).",
         "creditPriceUsd": "Credit price (USD)",
         "creditPriceUsdHint": "USD value of one credit when settling completed requests.",
         "commissionPercent": "Platform commission (%)",
         "commissionPercentHint": "Percent taken from gross settlement before crediting the provider.",
+        "minWithdrawalUsd": "Minimum withdrawal (USD)",
+        "minWithdrawalUsdHint": "Providers cannot request less than this amount.",
+        "withdrawalFeeUsd": "Withdrawal fee (USD)",
+        "withdrawalFeeUsdHint": "Fixed fee subtracted from each provider withdrawal. Admin should pay out amount minus fee.",
         "save": "Save finance settings",
         "saving": "Saving...",
         "saved": "Finance settings saved"
@@ -428,7 +472,9 @@
         "allRoles": "All Roles",
         "client": "Clients",
         "provider": "Providers",
-        "admin": "Admins",
+        "projectManager": "Project Managers",
+        "financeManager": "Finance Managers",
+        "admin": "Super Admins",
         "all": "All",
         "active": "Active",
         "inactive": "Inactive"
@@ -460,7 +506,8 @@
         },
         "edit": {
           "title": "Edit User",
-          "description": "Update user information"
+          "description": "Update user information and role",
+          "roleHint": "Clients with requests cannot become providers. Providers with requests cannot become clients. Super admin is not editable."
         },
         "fields": {
           "name": "Full Name",
@@ -601,7 +648,7 @@
       "fields": {
         "name": "Name",
         "nameRequired": "Name *",
-        "nameHint": "2-100 characters",
+        "nameHint": "Required",
         "localizedName": "Localized Name",
         "price": "Price ($)",
         "priceRequired": "Price ($) *",
@@ -613,7 +660,7 @@
         "durationRequired": "Duration (days) *",
         "durationHint": "Package validity period",
         "features": "Features (one per line)",
-        "featuresHint": "List key features, one per line (max 2000 characters)",
+        "featuresHint": "List key features, one per line",
         "featuresPlaceholder": "Feature 1\nFeature 2\nFeature 3",
         "localizedDescription": "Localized Description",
         "localizedFeatures": "Localized Features",
@@ -671,11 +718,11 @@
         "iconOptional": "Icon (emoji) (optional)",
         "name": "Name",
         "nameRequired": "Name *",
-        "nameHint": "2-100 characters",
+        "nameHint": "Required",
         "localizedName": "Localized Name",
         "description": "Description",
         "descriptionRequired": "Description *",
-        "descriptionHint": "10-500 characters",
+        "descriptionHint": "Optional",
         "localizedDescription": "Localized Description",
         "creditCost": "Base Credit Cost",
         "creditCostRequired": "Base Credit Cost *",
@@ -810,12 +857,16 @@
         "empty": "No withdrawal requests yet.",
         "provider": "Provider",
         "amount": "Amount",
+        "fee": "Fee",
+        "net": "Net payout",
         "method": "Method",
         "destination": "Destination",
         "status": "Status",
         "source": "Source",
         "providerNote": "Provider note",
         "adminReason": "Reason",
+        "proof": "Proof",
+        "viewProof": "View image",
         "requestedAt": "Requested",
         "actions": "Actions",
         "review": "Review",
@@ -826,9 +877,11 @@
       },
       "review": {
         "title": "Review withdrawal",
-        "description": "Mark as paid after you transfer the money, or reject and return the funds.",
+        "description": "Upload proof (transfer receipt or rejection evidence), add a reason, then approve or reject.",
         "reason": "Reason",
         "reasonPlaceholder": "e.g. Bank transfer ref 123 — or why it was rejected",
+        "image": "Proof image",
+        "imageHint": "Required. Upload a receipt for payouts, or supporting evidence when rejecting.",
         "approve": "Mark as paid",
         "reject": "Reject",
         "submitting": "Saving..."
@@ -857,15 +910,49 @@
       "toast": {
         "approved": "Withdrawal marked as paid",
         "rejected": "Withdrawal rejected and funds returned",
-        "sent": "Payout recorded"
+        "sent": "Payout recorded",
+        "disputeUpdated": "Dispute updated"
+      },
+      "disputes": {
+        "title": "Finance disputes",
+        "description": "Issues opened by providers against ledger settlements or withdrawals.",
+        "empty": "No disputes yet.",
+        "provider": "Provider",
+        "target": "Transaction",
+        "reason": "Provider reason",
+        "status": "Status",
+        "adminNote": "Admin note",
+        "requestedAt": "Opened",
+        "actions": "Actions",
+        "review": "Review",
+        "filterOpen": "Open",
+        "filterAll": "All",
+        "ledgerTarget": "Ledger · {title} · {amount}",
+        "withdrawalTarget": "Withdrawal · {amount}",
+        "reviewTitle": "Review dispute",
+        "reviewDescription": "Mark under review, resolve, or reject with a note for the provider.",
+        "note": "Admin note",
+        "notePlaceholder": "Explain the outcome or next steps…",
+        "markUnderReview": "Under review",
+        "resolve": "Resolve",
+        "reject": "Reject",
+        "submitting": "Saving..."
+      },
+      "disputeStatus": {
+        "OPEN": "Open",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Resolved",
+        "REJECTED": "Rejected"
       }
     },
     "activityLogs": {
       "title": "Activity history",
-      "subtitle": "Immutable audit trail of backend events (auth, payments, wallet, cron)",
+      "subtitle": "Immutable audit trail of backend events (requests, auth, payments, wallet, cron)",
       "tableTitle": "Recent activity",
-      "tableDescription": "Newest events first. Filter by level or action key.",
-      "actionPlaceholder": "Filter action (e.g. payment.approve)",
+      "tableDescription": "Newest events first. Filter by level, action key (e.g. request.), or request id.",
+      "actionPlaceholder": "Filter action (e.g. request.)",
+      "entityIdPlaceholder": "Filter by request id",
+      "reasonLabel": "Reason / note",
       "filterAll": "All",
       "filterInfo": "Info",
       "filterWarn": "Warn",
@@ -972,10 +1059,10 @@
         "description": "Please provide a reason for rejecting this payment. The client will be notified.",
         "reasonLabel": "Rejection Reason *",
         "reasonPlaceholder": "e.g., Amount doesn't match the package price, Unable to verify transfer receipt...",
-        "reasonHint": "Minimum 10 characters required",
+        "reasonHint": "Required",
         "button": "Reject Payment",
         "rejecting": "Rejecting...",
-        "errorMinLength": "Please provide a detailed reason (at least 10 characters)"
+        "errorMinLength": "Please provide a reason"
       },
       "buttons": {
         "approve": "Approve",
@@ -1081,6 +1168,26 @@
       "attachments": "Attachments ({count})",
       "attachmentFallback": "Attachment {number}"
     },
+    "stats": {
+      "title": "Timing & rating",
+      "created": "Created",
+      "estimated": "Est. delivery",
+      "delivered": "Delivered",
+      "completed": "Completed",
+      "notSet": "Not set",
+      "notYet": "Not yet",
+      "took": "Took {duration}",
+      "total": "Total {duration}",
+      "rating": "Rating",
+      "notRated": "Not rated yet",
+      "timing": {
+        "pending": "No estimate",
+        "onTrack": "On track",
+        "overdue": "Overdue",
+        "onTime": "On time",
+        "late": "Delivered late"
+      }
+    },
     "sidebar": {
       "client": "Client",
       "provider": "Provider",
@@ -1154,6 +1261,7 @@
       "paidRevision": "Paid",
       "unassigned": "Unassigned",
       "needsManualApproval": "Needs manual approval",
+      "unread": "New / unread",
       "client": "Client",
       "provider": "Provider",
       "messages": "{count, plural, one {# message} other {# messages}}"
@@ -1233,12 +1341,12 @@
       },
       "strengthText": "Strength",
       "helperText": {
-        "requirements": "Must contain at least 8 characters, including uppercase, lowercase, and numbers",
+        "requirements": "Password is required",
         "mismatch": "Passwords do not match"
       },
       "validationErrors": {
         "mismatch": "New passwords do not match",
-        "tooShort": "New password must be at least 8 characters long"
+        "tooShort": "Password is required"
       },
       "buttons": {
         "changing": "Changing...",
@@ -1353,8 +1461,8 @@
         "notesPlaceholder": "Any additional information...",
         "submit": "Submit Payment Proof",
         "submitting": "Submitting...",
-        "charactersHint": "{min}-{max} characters",
-        "maxCharactersHint": "Max {max} characters"
+        "charactersHint": "Required",
+        "maxCharactersHint": ""
       },
       "actions": {
         "backToSubscription": "Back to Subscription",
@@ -1364,16 +1472,16 @@
       },
       "validation": {
         "transferReceiptRequired": "Transfer receipt is required",
-        "senderNameMin": "Sender name must be at least 2 characters",
-        "senderNameMax": "Sender name must not exceed 100 characters",
-        "senderBankMin": "Bank name must be at least 2 characters",
-        "senderBankMax": "Bank name must not exceed 100 characters",
-        "senderCountryMin": "Country must be at least 2 characters",
-        "senderCountryMax": "Country must not exceed 100 characters",
+        "senderNameMin": "Sender name is required",
+        "senderNameMax": "Sender name is required",
+        "senderBankMin": "Bank name is required",
+        "senderBankMax": "Bank name is required",
+        "senderCountryMin": "Country is required",
+        "senderCountryMax": "Country is required",
         "transferDateRequired": "Transfer date is required",
         "transferDateFuture": "Transfer date cannot be in the future",
-        "referenceNumberMax": "Reference number must not exceed 50 characters",
-        "notesMax": "Notes must not exceed 500 characters",
+        "referenceNumberMax": "Invalid reference number",
+        "notesMax": "Invalid notes",
         "fixErrors": "Please fix the validation errors before submitting"
       },
       "badges": {
@@ -1460,7 +1568,7 @@
         "revisions": "revisions",
         "noFreeLeft": "No free revisions left - costs {cost} credit",
         "placeholder": "Describe what changes you need...",
-        "minCharacters": "Minimum {min} characters required",
+        "minCharacters": "Required",
         "button": "Request Revision",
         "requesting": "Requesting...",
         "insufficientCredits": "Insufficient Credits",
@@ -1486,7 +1594,7 @@
         "ratingSubmitted": "Rating Submitted",
         "ratingSubmittedDesc": "Thank you for your feedback!",
         "invalidFeedback": "Invalid Feedback",
-        "invalidFeedbackDesc": "Please provide at least {min} characters describing the changes needed."
+        "invalidFeedbackDesc": "Please describe the changes needed."
       },
       "messagesTitle": "Messages",
       "messagesDescription": "Communicate with your provider",
@@ -1533,10 +1641,10 @@
         "serviceTypePlaceholder": "Select a service type",
         "title": "Title",
         "titlePlaceholder": "The goal of my project is to...",
-        "titleHint": "5-200 characters — be clear and concise",
+        "titleHint": "Be clear and concise",
         "description": "Description",
         "descriptionPlaceholder": "Describe your project in detail. Include any specific requirements, preferences, or references...",
-        "descriptionHint": "20-5000 characters — provide detailed requirements and expectations",
+        "descriptionHint": "Provide detailed requirements and expectations",
         "priority": "Priority",
         "priorityLow": "Low (+{cost} credits)",
         "priorityMedium": "Medium (+{cost} {credit})",
@@ -1564,10 +1672,10 @@
       },
       "validation": {
         "selectService": "Please select a service type",
-        "titleTooShort": "Title must be at least 5 characters",
-        "titleTooLong": "Title must be at most 200 characters",
-        "descriptionTooShort": "Description must be at least 20 characters",
-        "descriptionTooLong": "Description must be at most 5000 characters",
+        "titleTooShort": "Title is required",
+        "titleTooLong": "Title is required",
+        "descriptionTooShort": "Description is required",
+        "descriptionTooLong": "Description is required",
         "requiredAttribute": "Please answer the required question: {field}",
         "requiredField": "This field is required",
         "fixErrors": "Please fix the highlighted fields before submitting"
@@ -1762,7 +1870,28 @@
         "providerAmount": "Your USD",
         "status": "Status",
         "availableAt": "Available on",
-        "settledAt": "Settled"
+        "settledAt": "Settled",
+        "actions": "Actions"
+      },
+      "dispute": {
+        "open": "Open dispute",
+        "title": "Open a dispute",
+        "description": "Describe the problem with this transaction. An admin will review it manually.",
+        "reason": "What went wrong?",
+        "reasonPlaceholder": "Explain the issue with this settlement or withdrawal…",
+        "submit": "Submit dispute",
+        "submitting": "Submitting…",
+        "submitted": "Dispute submitted",
+        "active": "Dispute {status}",
+        "closedNote": "Admin note: {note}",
+        "targetLedger": "Ledger: {title}",
+        "targetWithdrawal": "Withdrawal: {amount}"
+      },
+      "disputeStatus": {
+        "OPEN": "Open",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Resolved",
+        "REJECTED": "Rejected"
       },
       "status": {
         "HOLD": "On hold",
@@ -1789,6 +1918,9 @@
         "description": "Available balance is held while admin reviews your request and sends the money manually.",
         "amount": "Amount (USD)",
         "amountHint": "Available: {amount}",
+        "minHint": "Minimum withdrawal: {amount}",
+        "feeHint": "Withdrawal fee: {fee} (deducted from the requested amount)",
+        "netHint": "You receive: {net}",
         "note": "Note for admin (optional)",
         "notePlaceholder": "e.g. Please send to Vodafone Cash",
         "request": "Request withdrawal",
@@ -1803,11 +1935,16 @@
         "description": "Admin reviews each request, then updates the status with a reason.",
         "empty": "No withdrawal requests yet.",
         "amount": "Amount",
+        "fee": "Fee",
+        "net": "You receive",
         "method": "Method",
         "destination": "Destination",
         "status": "Status",
         "reason": "Admin reason",
-        "requestedAt": "Requested"
+        "proof": "Proof",
+        "viewProof": "View image",
+        "requestedAt": "Requested",
+        "actions": "Actions"
       },
       "withdrawStatus": {
         "PENDING": "Pending",
@@ -1839,13 +1976,13 @@
         "description": "Update your professional details visible to clients",
         "bio": "Professional Bio",
         "bioPlaceholder": "Tell clients about yourself and your experience...",
-        "bioCharacters": "{count}/500 characters",
+        "bioCharacters": "{count} characters",
         "portfolio": "Portfolio URL (optional)",
         "portfolioPlaceholder": "https://yourportfolio.com",
         "portfolioHint": "Link to your portfolio or previous work examples",
         "skills": "Skills (optional)",
         "skillsPlaceholder": "e.g., UI/UX Design, React, Node.js, Python...",
-        "skillsHint": "List your key skills separated by commas ({count}/300 characters)",
+        "skillsHint": "List your key skills separated by commas ({count} characters)",
         "reset": "Reset",
         "saveChanges": "Save Changes",
         "saving": "Saving...",
@@ -1883,7 +2020,7 @@
         "title": "Submit Deliverable",
         "description": "Ready to deliver? Submit your work for client review.",
         "placeholder": "Describe what you've completed and include any relevant links or notes...",
-        "minCharactersWarning": "Please enter at least 5 characters ({remaining} more needed)",
+        "minCharactersWarning": "Required",
         "attachFiles": "Attach Deliverable Files",
         "button": "Submit Deliverable",
         "submitting": "Submitting..."
@@ -2053,6 +2190,18 @@
         "renewButton": "Renew Now"
       }
     },
+    "passwordReset": {
+      "emailSubject": "Reset your Wengz password",
+      "emailBody": {
+        "heading": "Password reset",
+        "greeting": "Hi {userName},",
+        "intro": "We received a request to reset your password. Click the button below to choose a new one.",
+        "button": "Reset password",
+        "expiry": "This link expires in {minutes} minutes.",
+        "ignore": "If you did not request this, you can safely ignore this email.",
+        "linkFallback": "Or copy and paste this link into your browser:"
+      }
+    },
     "welcome": {
       "title": "Welcome to Wengz! 🎉",
       "message": "Hi {userName}! Your account has been created successfully. Start exploring the platform now.",
@@ -2140,6 +2289,14 @@
     "withdrawalRejected": {
       "title": "Withdrawal rejected",
       "message": "Your withdrawal of {amount} USD was rejected. Reason: {reason}"
+    },
+    "financeDisputeOpened": {
+      "title": "New finance dispute",
+      "message": "{providerNameOrEmail} opened a dispute on a wallet transaction."
+    },
+    "financeDisputeReviewed": {
+      "title": "Dispute update",
+      "message": "Your wallet dispute was marked as {status}. {note}"
     },
     "subscriptionCancelled": {
       "title": "Subscription Cancelled",

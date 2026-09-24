@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { CurrencySwitcher } from "@/components/ui/currency-switcher";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import {
   Check,
   Zap,
@@ -27,11 +29,25 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
+  Apple,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
+
+function AndroidIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M17.523 9.427l1.994-3.46a.64.64 0 0 0-.24-.87.64.64 0 0 0-.87.24l-2.02 3.503a10.39 10.39 0 0 0-8.774 0L5.593 5.337a.64.64 0 0 0-.87-.24.64.64 0 0 0-.24.87l1.994 3.46C3.99 11.03 2.4 13.78 2.4 16.89h19.2c0-3.11-1.59-5.86-4.077-7.463ZM7.8 14.49a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm8.4 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z" />
+    </svg>
+  );
+}
 
 // Typography (Lovable-style: large hero, restrained body)
 const FONT_SIZES = {
@@ -162,6 +178,7 @@ function getVideoMuteLabel(locale: string, isMuted: boolean) {
 export default function LandingPage() {
   const locale = useLocale();
   const t = useTranslations();
+  const formatCurrency = useFormatCurrency();
   const isRTL = locale === "ar";
   const textDirectionClass = isRTL ? "text-right" : "text-left";
   const typingCaretSpacingClass = isRTL ? "mr-0.5" : "ml-0.5";
@@ -486,6 +503,7 @@ export default function LandingPage() {
 
             <div className="relative z-10 flex shrink-0 items-center gap-1.5 sm:gap-3">
               <ThemeSwitcher />
+              <CurrencySwitcher />
               <LanguageSwitcher />
               <Link href="/auth/login">
                 <Button
@@ -1205,7 +1223,7 @@ export default function LandingPage() {
 
                         <div className="mb-6">
                           <div className="mb-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
-                            ${pkg.price}
+                            {formatCurrency(pkg.price)}
                           </div>
                           <p
                             className={`${FONT_SIZES.body.small} text-muted-foreground text-center`}
@@ -1284,6 +1302,33 @@ export default function LandingPage() {
                     {t("landing.cta.viewPlans")}
                   </Button>
                 </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="mt-12 flex items-start justify-center gap-12 sm:mt-14 sm:gap-16"
+              >
+                <div className="flex flex-col items-center gap-2.5">
+                  <span className="flex h-12 w-12 items-center justify-center text-foreground">
+                    <Apple className="h-8 w-8" strokeWidth={1.5} aria-hidden />
+                    <span className="sr-only">{t("landing.cta.iosApp")}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground sm:text-sm">
+                    {t("landing.cta.appComingSoon")}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2.5">
+                  <span className="flex h-12 w-12 items-center justify-center text-foreground">
+                    <AndroidIcon className="h-8 w-8" />
+                    <span className="sr-only">{t("landing.cta.androidApp")}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground sm:text-sm">
+                    {t("landing.cta.appComingSoon")}
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
           </div>

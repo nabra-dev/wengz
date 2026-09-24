@@ -105,7 +105,7 @@ export const packageRouter = router({
     })
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().min(1),
         description: z.string().optional(),
         credits: z.number().min(1),
         price: z.number().min(0),
@@ -149,7 +149,7 @@ export const packageRouter = router({
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(2).optional(),
+        name: z.string().min(1).optional(),
         description: z.string().optional(),
         credits: z.number().min(1).optional(),
         price: z.number().min(0).optional(),

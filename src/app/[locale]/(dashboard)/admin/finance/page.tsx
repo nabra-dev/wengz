@@ -30,6 +30,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+import { FileUpload, type UploadedFile } from "@/components/ui/file-upload";
+import { PAYMENT_PROOF_MAX_MB } from "@/lib/upload-limits";
 import { CheckCircle, Clock, CreditCard, Hourglass, Percent, Wallet } from "lucide-react";
 
 type PayoutMethod = "BANK" | "E_WALLET";
@@ -84,6 +87,7 @@ type WithdrawalRow = {
   id: string;
   amountUsd: number;
   amountCredits: number;
+  feeUsd?: number;
   payoutMethod: PayoutMethod;
   accountHolder: string;
   bankName: string | null;
@@ -93,16 +97,35 @@ type WithdrawalRow = {
   status: WithdrawalStatus;
   source: "PROVIDER" | "ADMIN";
   adminReason: string | null;
+  reviewImage: string | null;
   createdAt: string | Date;
   provider: { id: string; name: string | null; email: string };
 };
 
+type DisputeStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+
+type FinanceDisputeRow = {
+  id: string;
+  reason: string;
+  status: DisputeStatus;
+  adminNote: string | null;
+  createdAt: string | Date;
+  provider: { id: string; name: string | null; email: string };
+  ledger: {
+    id: string;
+    providerAmountUsd: number;
+    status: string;
+    request: { id: string; title: string };
+  } | null;
+  withdrawal: {
+    id: string;
+    amountUsd: number;
+    status: string;
+  } | null;
+};
+
 function formatCredits(value: number) {
   return value.toLocaleString();
-}
-
-function formatMoney(value: number) {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDestination(entry: {
@@ -136,11 +159,16 @@ function withdrawalBadgeVariant(status: WithdrawalStatus) {
 export default function AdminFinancePage() {
   const t = useTranslations("admin.finance");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
   const utils = trpc.useUtils();
   const [selectedProviderId, setSelectedProviderId] = useState<string | undefined>();
   const [withdrawalFilter, setWithdrawalFilter] = useState<"PENDING" | "ALL">("PENDING");
+  const [disputeFilter, setDisputeFilter] = useState<"OPEN" | "ALL">("OPEN");
   const [reviewTarget, setReviewTarget] = useState<WithdrawalRow | null>(null);
   const [reviewReason, setReviewReason] = useState("");
+  const [reviewImageUrl, setReviewImageUrl] = useState<string | null>(null);
+  const [disputeTarget, setDisputeTarget] = useState<FinanceDisputeRow | null>(null);
+  const [disputeNote, setDisputeNote] = useState("");
   const [payoutTarget, setPayoutTarget] = useState<ProviderWalletRow | null>(null);
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
@@ -158,6 +186,15 @@ export default function AdminFinancePage() {
       status: withdrawalFilter === "PENDING" ? "PENDING" : undefined,
       limit: 50,
     });
+  const { data: disputesData, isLoading: disputesLoading } = trpc.admin.getFinanceDisputes.useQuery({
+    status: disputeFilter === "OPEN" ? undefined : "ALL",
+    limit: 50,
+  });
+  const disputes = useMemo(() => {
+    const rows = (disputesData?.disputes ?? []) as FinanceDisputeRow[];
+    if (disputeFilter !== "OPEN") return rows;
+    return rows.filter((row) => row.status === "OPEN" || row.status === "UNDER_REVIEW");
+  }, [disputesData?.disputes, disputeFilter]);
 
   const selectedProvider = useMemo(
     () =>
@@ -177,8 +214,19 @@ export default function AdminFinancePage() {
       );
       setReviewTarget(null);
       setReviewReason("");
+      setReviewImageUrl(null);
       utils.admin.getFinanceOverview.invalidate();
       utils.admin.getWithdrawals.invalidate();
+    },
+    onError: (error) => showError(error),
+  });
+
+  const reviewDisputeMutation = trpc.admin.reviewFinanceDispute.useMutation({
+    onSuccess: () => {
+      showSuccess(t("toast.disputeUpdated"));
+      setDisputeTarget(null);
+      setDisputeNote("");
+      utils.admin.getFinanceDisputes.invalidate();
     },
     onError: (error) => showError(error),
   });
@@ -198,7 +246,7 @@ export default function AdminFinancePage() {
   const summaryCards = [
     {
       title: t("summary.grossAmount"),
-      value: formatMoney(finance?.summary.totalRequestAmountUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalRequestAmountUsd ?? 0),
       description: t("summary.grossAmountDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalRequestCredits ?? 0,
@@ -207,7 +255,7 @@ export default function AdminFinancePage() {
     },
     {
       title: t("summary.platformAmount"),
-      value: formatMoney(finance?.summary.totalPlatformAmountUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalPlatformAmountUsd ?? 0),
       description: t("summary.platformAmountDesc", {
         percent: finance?.summary.commissionPercent ?? 0,
       }),
@@ -218,7 +266,7 @@ export default function AdminFinancePage() {
     },
     {
       title: t("summary.providerAmount"),
-      value: formatMoney(finance?.summary.totalProviderAmountUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalProviderAmountUsd ?? 0),
       description: t("summary.providerCreditsDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalProviderCredits ?? 0,
@@ -227,7 +275,7 @@ export default function AdminFinancePage() {
     },
     {
       title: t("summary.walletBalance"),
-      value: formatMoney(finance?.summary.totalWalletBalanceUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalWalletBalanceUsd ?? 0),
       description: t("summary.walletBalanceDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalWalletBalanceCredits ?? 0,
@@ -236,7 +284,7 @@ export default function AdminFinancePage() {
     },
     {
       title: t("summary.held"),
-      value: formatMoney(finance?.summary.totalHeldUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalHeldUsd ?? 0),
       description: t("summary.heldDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalHeldCredits ?? 0,
@@ -247,12 +295,12 @@ export default function AdminFinancePage() {
       title: t("pending.title"),
       value: formatCredits(finance?.summary.pendingWithdrawals ?? 0),
       description: t("pending.description"),
-      detail: formatMoney(finance?.summary.totalPendingUsd ?? 0),
+      detail: formatCurrency(finance?.summary.totalPendingUsd ?? 0),
       icon: Clock,
     },
     {
       title: t("summary.paidOut"),
-      value: formatMoney(finance?.summary.totalPaidUsd ?? 0),
+      value: formatCurrency(finance?.summary.totalPaidUsd ?? 0),
       description: t("summary.paidOutDesc"),
       detail: t("summary.creditDetail", {
         credits: finance?.summary.totalPaidCredits ?? 0,
@@ -283,7 +331,7 @@ export default function AdminFinancePage() {
         {!financeLoading && finance?.summary && (
           <p className="mt-2 text-sm text-muted-foreground">
             {t("summary.settingsHint", {
-              price: formatMoney(finance.summary.creditPriceUsd ?? 1),
+              price: formatCurrency(finance.summary.creditPriceUsd ?? 1),
               percent: finance.summary.commissionPercent ?? 0,
             })}
           </p>
@@ -345,11 +393,14 @@ export default function AdminFinancePage() {
                 <TableRow>
                   <TableHead>{t("withdrawals.provider")}</TableHead>
                   <TableHead>{t("withdrawals.amount")}</TableHead>
+                  <TableHead>{t("withdrawals.fee")}</TableHead>
+                  <TableHead>{t("withdrawals.net")}</TableHead>
                   <TableHead>{t("withdrawals.method")}</TableHead>
                   <TableHead>{t("withdrawals.destination")}</TableHead>
                   <TableHead>{t("withdrawals.status")}</TableHead>
                   <TableHead>{t("withdrawals.source")}</TableHead>
                   <TableHead>{t("withdrawals.adminReason")}</TableHead>
+                  <TableHead>{t("withdrawals.proof")}</TableHead>
                   <TableHead>{t("withdrawals.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -362,7 +413,11 @@ export default function AdminFinancePage() {
                       </div>
                       <div className="text-xs text-muted-foreground">{entry.provider.email}</div>
                     </TableCell>
-                    <TableCell>{formatMoney(entry.amountUsd)}</TableCell>
+                    <TableCell>{formatCurrency(entry.amountUsd)}</TableCell>
+                    <TableCell>{formatCurrency(entry.feeUsd ?? 0)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(entry.amountUsd - (entry.feeUsd ?? 0))}
+                    </TableCell>
                     <TableCell>{t(`methods.${entry.payoutMethod}`)}</TableCell>
                     <TableCell className="max-w-xs text-sm">
                       {formatDestination(entry)}
@@ -381,12 +436,27 @@ export default function AdminFinancePage() {
                       {entry.adminReason || entry.providerNote || "—"}
                     </TableCell>
                     <TableCell>
+                      {entry.reviewImage ? (
+                        <a
+                          href={entry.reviewImage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary underline-offset-2 hover:underline"
+                        >
+                          {t("withdrawals.viewProof")}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {entry.status === "PENDING" && (
                         <Button
                           size="sm"
                           onClick={() => {
                             setReviewTarget(entry);
                             setReviewReason("");
+                            setReviewImageUrl(null);
                           }}
                         >
                           {t("withdrawals.review")}
@@ -395,6 +465,103 @@ export default function AdminFinancePage() {
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>{t("disputes.title")}</CardTitle>
+            <CardDescription>{t("disputes.description")}</CardDescription>
+          </div>
+          <Tabs
+            value={disputeFilter}
+            onValueChange={(value) => setDisputeFilter(value as "OPEN" | "ALL")}
+          >
+            <TabsList>
+              <TabsTrigger value="OPEN">{t("disputes.filterOpen")}</TabsTrigger>
+              <TabsTrigger value="ALL">{t("disputes.filterAll")}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent>
+          {disputesLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((item) => (
+                <Skeleton key={item} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : null}
+          {!disputesLoading && disputes.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+              {t("disputes.empty")}
+            </div>
+          ) : null}
+          {!disputesLoading && disputes.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("disputes.provider")}</TableHead>
+                  <TableHead>{t("disputes.target")}</TableHead>
+                  <TableHead>{t("disputes.reason")}</TableHead>
+                  <TableHead>{t("disputes.status")}</TableHead>
+                  <TableHead>{t("disputes.adminNote")}</TableHead>
+                  <TableHead>{t("disputes.requestedAt")}</TableHead>
+                  <TableHead>{t("disputes.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {disputes.map((entry) => {
+                  const targetLabel = entry.ledger
+                    ? t("disputes.ledgerTarget", {
+                        title: entry.ledger.request.title,
+                        amount: formatCurrency(entry.ledger.providerAmountUsd),
+                      })
+                    : t("disputes.withdrawalTarget", {
+                        amount: formatCurrency(entry.withdrawal?.amountUsd ?? 0),
+                      });
+                  const canReview =
+                    entry.status === "OPEN" || entry.status === "UNDER_REVIEW";
+                  return (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <div className="font-medium">
+                          {entry.provider.name || entry.provider.email}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{entry.provider.email}</div>
+                      </TableCell>
+                      <TableCell className="max-w-xs text-sm">{targetLabel}</TableCell>
+                      <TableCell className="max-w-sm text-sm text-muted-foreground">
+                        {entry.reason}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{t(`disputeStatus.${entry.status}`)}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs text-sm text-muted-foreground">
+                        {entry.adminNote || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(entry.createdAt).toLocaleDateString(locale)}
+                      </TableCell>
+                      <TableCell>
+                        {canReview && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setDisputeTarget(entry);
+                              setDisputeNote("");
+                            }}
+                          >
+                            {t("disputes.review")}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : null}
@@ -439,10 +606,10 @@ export default function AdminFinancePage() {
                     <TableCell className="max-w-xs text-sm">
                       {formatDestination(wallet.payout ?? { payoutMethod: null, accountHolder: null, bankName: null, bankAccount: null, eWalletNumber: null })}
                     </TableCell>
-                    <TableCell>{formatMoney(wallet.balanceUsd)}</TableCell>
-                    <TableCell>{formatMoney(wallet.heldUsd)}</TableCell>
-                    <TableCell>{formatMoney(wallet.pendingUsd)}</TableCell>
-                    <TableCell>{formatMoney(wallet.paidUsd)}</TableCell>
+                    <TableCell>{formatCurrency(wallet.balanceUsd)}</TableCell>
+                    <TableCell>{formatCurrency(wallet.heldUsd)}</TableCell>
+                    <TableCell>{formatCurrency(wallet.pendingUsd)}</TableCell>
+                    <TableCell>{formatCurrency(wallet.paidUsd)}</TableCell>
                     <TableCell>{wallet.requestCount}</TableCell>
                     <TableCell className="flex flex-wrap gap-2">
                       <Button
@@ -561,17 +728,17 @@ export default function AdminFinancePage() {
                       )}
                     </TableCell>
                     <TableCell>{formatCredits(entry.totalCredits)}</TableCell>
-                    <TableCell>{formatMoney(entry.creditPriceUsd)}</TableCell>
+                    <TableCell>{formatCurrency(entry.creditPriceUsd)}</TableCell>
                     <TableCell>{entry.commissionPercent}%</TableCell>
-                    <TableCell>{formatMoney(entry.totalAmountUsd)}</TableCell>
+                    <TableCell>{formatCurrency(entry.totalAmountUsd)}</TableCell>
                     <TableCell>
-                      {formatMoney(entry.platformAmountUsd)}
+                      {formatCurrency(entry.platformAmountUsd)}
                       <span className="block text-xs text-muted-foreground">
                         {t("summary.creditDetail", { credits: entry.platformCredits })}
                       </span>
                     </TableCell>
                     <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
-                    <TableCell>{formatMoney(entry.providerAmountUsd)}</TableCell>
+                    <TableCell>{formatCurrency(entry.providerAmountUsd)}</TableCell>
                     <TableCell>
                       <Badge variant={entry.status === "HOLD" ? "outline" : "secondary"}>
                         {t(`status.${entry.status}`)}
@@ -597,6 +764,7 @@ export default function AdminFinancePage() {
           if (!open) {
             setReviewTarget(null);
             setReviewReason("");
+            setReviewImageUrl(null);
           }
         }}
       >
@@ -610,7 +778,16 @@ export default function AdminFinancePage() {
               <p>
                 <span className="font-medium">{reviewTarget.provider.name || reviewTarget.provider.email}</span>
                 {" · "}
-                {formatMoney(reviewTarget.amountUsd)}
+                {formatCurrency(reviewTarget.amountUsd)}
+                {(reviewTarget.feeUsd ?? 0) > 0 && (
+                  <>
+                    {" · "}
+                    {t("withdrawals.fee")}: {formatCurrency(reviewTarget.feeUsd ?? 0)}
+                    {" · "}
+                    {t("withdrawals.net")}:{" "}
+                    {formatCurrency(reviewTarget.amountUsd - (reviewTarget.feeUsd ?? 0))}
+                  </>
+                )}
               </p>
               <p className="text-muted-foreground">{formatDestination(reviewTarget)}</p>
               {reviewTarget.providerNote && (
@@ -627,35 +804,139 @@ export default function AdminFinancePage() {
                   placeholder={t("review.reasonPlaceholder")}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>{t("review.image")}</Label>
+                <FileUpload
+                  key={reviewTarget.id}
+                  onFilesChange={(files: UploadedFile[]) => {
+                    setReviewImageUrl(files[0]?.url ?? null);
+                  }}
+                  maxFiles={1}
+                  maxSizeMB={PAYMENT_PROOF_MAX_MB}
+                  accept="image/*"
+                  disabled={reviewMutation.isPending}
+                />
+                <p className="text-xs text-muted-foreground">{t("review.imageHint")}</p>
+              </div>
             </div>
           )}
           <DialogFooter className="gap-2">
             <Button
               variant="destructive"
-              disabled={reviewMutation.isPending || reviewReason.trim().length < 5}
+              disabled={
+                reviewMutation.isPending ||
+                !reviewReason.trim() ||
+                !reviewImageUrl
+              }
               onClick={() => {
-                if (!reviewTarget) return;
+                if (!reviewTarget || !reviewImageUrl) return;
                 reviewMutation.mutate({
                   withdrawalId: reviewTarget.id,
                   status: "REJECTED",
                   reason: reviewReason,
+                  reviewImage: reviewImageUrl,
                 });
               }}
             >
               {reviewMutation.isPending ? t("review.submitting") : t("review.reject")}
             </Button>
             <Button
-              disabled={reviewMutation.isPending || reviewReason.trim().length < 5}
+              disabled={
+                reviewMutation.isPending ||
+                !reviewReason.trim() ||
+                !reviewImageUrl
+              }
               onClick={() => {
-                if (!reviewTarget) return;
+                if (!reviewTarget || !reviewImageUrl) return;
                 reviewMutation.mutate({
                   withdrawalId: reviewTarget.id,
                   status: "APPROVED",
                   reason: reviewReason,
+                  reviewImage: reviewImageUrl,
                 });
               }}
             >
               {reviewMutation.isPending ? t("review.submitting") : t("review.approve")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(disputeTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDisputeTarget(null);
+            setDisputeNote("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("disputes.reviewTitle")}</DialogTitle>
+            <DialogDescription>{t("disputes.reviewDescription")}</DialogDescription>
+          </DialogHeader>
+          {disputeTarget && (
+            <div className="space-y-3 text-sm">
+              <p className="font-medium">
+                {disputeTarget.provider.name || disputeTarget.provider.email}
+              </p>
+              <p className="text-muted-foreground">{disputeTarget.reason}</p>
+              <div className="space-y-2">
+                <Label htmlFor="disputeNote">{t("disputes.note")}</Label>
+                <Textarea
+                  id="disputeNote"
+                  value={disputeNote}
+                  onChange={(event) => setDisputeNote(event.target.value)}
+                  placeholder={t("disputes.notePlaceholder")}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="secondary"
+              disabled={!disputeNote.trim() || reviewDisputeMutation.isPending}
+              onClick={() => {
+                if (!disputeTarget) return;
+                reviewDisputeMutation.mutate({
+                  disputeId: disputeTarget.id,
+                  status: "UNDER_REVIEW",
+                  adminNote: disputeNote,
+                });
+              }}
+            >
+              {reviewDisputeMutation.isPending
+                ? t("disputes.submitting")
+                : t("disputes.markUnderReview")}
+            </Button>
+            <Button
+              disabled={!disputeNote.trim() || reviewDisputeMutation.isPending}
+              onClick={() => {
+                if (!disputeTarget) return;
+                reviewDisputeMutation.mutate({
+                  disputeId: disputeTarget.id,
+                  status: "RESOLVED",
+                  adminNote: disputeNote,
+                });
+              }}
+            >
+              {t("disputes.resolve")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!disputeNote.trim() || reviewDisputeMutation.isPending}
+              onClick={() => {
+                if (!disputeTarget) return;
+                reviewDisputeMutation.mutate({
+                  disputeId: disputeTarget.id,
+                  status: "REJECTED",
+                  adminNote: disputeNote,
+                });
+              }}
+            >
+              {t("disputes.reject")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -727,7 +1008,7 @@ export default function AdminFinancePage() {
                 !payoutTarget ||
                 !hasCompletePayout(payoutTarget.payout) ||
                 payoutTarget.balanceUsd < 1 ||
-                payoutReason.trim().length < 5 ||
+                !payoutReason.trim() ||
                 Number(payoutAmount) < 1
               }
               onClick={() => {

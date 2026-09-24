@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
+import { getStaffHomePath, isStaffRole } from "@/lib/roles";
 import { trpc } from "@/lib/trpc/client";
 import { BrandLogo } from "@/components/brand/brand-logo";
 
@@ -38,8 +39,8 @@ export default function LoginPage() {
       router.replace("/client/requests/new");
       return;
     }
-    if (session.user.role === "SUPER_ADMIN") {
-      router.push(`/${locale}/admin`);
+    if (isStaffRole(session.user.role)) {
+      router.push(`/${locale}${getStaffHomePath(session.user.role)}`);
     } else if (session.user.role === "PROVIDER") {
       router.push(`/${locale}/provider`);
     } else {
@@ -107,8 +108,8 @@ export default function LoginPage() {
       }
 
       // Redirect based on user role with full page reload to ensure proper session initialization
-      if (session?.user?.role === "SUPER_ADMIN") {
-        globalThis.location.href = `/${locale}/admin`;
+      if (isStaffRole(session?.user?.role)) {
+        globalThis.location.href = `/${locale}${getStaffHomePath(session?.user?.role)}`;
       } else if (session?.user?.role === "PROVIDER") {
         globalThis.location.href = `/${locale}/provider`;
       } else {
@@ -162,13 +163,20 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">{t("passwordLabel")} *</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="password">{t("passwordLabel")} *</Label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs text-primary hover:underline"
+                >
+                  {t("forgotPassword")}
+                </Link>
+              </div>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 required
-                minLength={6}
                 disabled={isLoading}
               />
             </div>

@@ -28,7 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc/client";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { showError, showSuccess } from "@/lib/error-handler";
 import {
@@ -93,6 +94,7 @@ function StatusIcon({ status }: { readonly status: string }) {
 export default function AdminPaymentsPage() {
   const t = useTranslations("admin.payments");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
   const utils = trpc.useUtils();
   const [selectedPayment, setSelectedPayment] = useState<PaymentProof | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -144,7 +146,7 @@ export default function AdminPaymentsPage() {
 
   const handleReject = () => {
     if (!selectedPayment) return;
-    if (rejectReason.length < 10) {
+    if (!rejectReason.trim()) {
       showError(t("reject.errorMinLength"));
       return;
     }
@@ -174,13 +176,13 @@ export default function AdminPaymentsPage() {
               )}
             </p>
             <p className="text-sm text-muted-foreground">
-              {formatCurrency(payment.subscription.package.price, locale)}
+              {formatCurrency(payment.subscription.package.price)}
             </p>
           </div>
         </TableCell>
         <TableCell>
           <div>
-            <p className="font-medium">{formatCurrency(payment.amount, locale)}</p>
+            <p className="font-medium">{formatCurrency(payment.amount)}</p>
             <p className="text-sm text-muted-foreground">{payment.senderBank}</p>
           </div>
         </TableCell>
@@ -415,14 +417,14 @@ export default function AdminPaymentsPage() {
                     )}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {formatCurrency(selectedPayment.subscription.package.price, locale)} -{" "}
+                    {formatCurrency(selectedPayment.subscription.package.price)} -{" "}
                     {selectedPayment.subscription.package.credits} {t("details.credits")}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">{t("details.amountSent")}</Label>
                   <p className="font-medium text-lg">
-                    {formatCurrency(selectedPayment.amount, locale)} {selectedPayment.currency}
+                    {formatCurrency(selectedPayment.amount)}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -519,7 +521,7 @@ export default function AdminPaymentsPage() {
               <Button
                 variant="destructive"
                 onClick={handleReject}
-                disabled={rejectMutation.isPending || rejectReason.length < 10}
+                disabled={rejectMutation.isPending || !rejectReason.trim()}
               >
                 {rejectMutation.isPending ? t("reject.rejecting") : t("reject.button")}
               </Button>

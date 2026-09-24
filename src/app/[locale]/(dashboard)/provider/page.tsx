@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -10,13 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate, getStatusColor } from "@/lib/utils";
+import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realtime-refresh";
+import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 import { FileText, CheckCircle, Star, TrendingUp } from "lucide-react";
 
 export default function ProviderDashboard() {
   const { data: session } = useSession();
   const t = useTranslations("provider.dashboard");
   const tCommon = useTranslations("common");
+  const tCard = useTranslations("requests.card");
   const locale = useLocale();
+  const { isUnread } = useProviderRequestUnread();
 
   const { data: myRequests, isLoading: myReqLoading } = trpc.provider.getMyRequests.useQuery({
     limit: 5,
@@ -24,6 +29,13 @@ export default function ProviderDashboard() {
   const { data: availableRequests, isLoading: availableLoading } =
     trpc.provider.getAvailableRequests.useQuery({ limit: 5 });
   const { data: stats, isLoading: statsLoading } = trpc.provider.getStats.useQuery();
+
+  const trackedIds = useMemo(() => {
+    const available = availableRequests?.requests.map((r: { id: string }) => r.id) ?? [];
+    const mine = myRequests?.requests.map((r: { id: string }) => r.id) ?? [];
+    return [...available, ...mine];
+  }, [availableRequests?.requests, myRequests?.requests]);
+  useProviderJobsRealtimeRefresh(trackedIds);
 
   const isLoading = myReqLoading || availableLoading || statsLoading;
 
@@ -146,18 +158,29 @@ export default function ProviderDashboard() {
                     locale,
                     request.serviceType?.name
                   );
+                  const unread = isUnread(request.id);
                   return (
                     <Link
                       key={request.id}
                       href={`/provider/requests/${request.id}`}
                       className="block"
                     >
-                      <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div className="space-y-1">
-                          <p className="font-medium">{request.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {serviceName} • {formatDate(request.createdAt, locale)}
-                          </p>
+                      <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3">
+                        <div className="flex items-start gap-2.5 min-w-0 space-y-1">
+                          {unread && (
+                            <span
+                              className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary"
+                              title={tCard("unread")}
+                            >
+                              <span className="sr-only">{tCard("unread")}</span>
+                            </span>
+                          )}
+                          <div className="min-w-0 space-y-1">
+                            <p className="font-medium truncate">{request.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {serviceName} • {formatDate(request.createdAt, locale)}
+                            </p>
+                          </div>
                         </div>
                         <Badge variant={null} className={getStatusColor(request.status)}>
                           {tCommon(`requestStatus.${request.status}` as any)}
@@ -206,20 +229,33 @@ export default function ProviderDashboard() {
                     locale,
                     request.serviceType?.name
                   );
+                  const unread = isUnread(request.id);
                   return (
                     <Link
                       key={request.id}
                       href={`/provider/available/${request.id}`}
                       className="block"
                     >
-                      <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div className="space-y-1">
-                          <p className="font-medium">{request.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {serviceName} • {formatDate(request.createdAt, locale)}
-                          </p>
+                      <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3">
+                        <div className="flex items-start gap-2.5 min-w-0 space-y-1">
+                          {unread && (
+                            <span
+                              className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary"
+                              title={tCard("unread")}
+                            >
+                              <span className="sr-only">{tCard("unread")}</span>
+                            </span>
+                          )}
+                          <div className="min-w-0 space-y-1">
+                            <p className="font-medium truncate">{request.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {serviceName} • {formatDate(request.createdAt, locale)}
+                            </p>
+                          </div>
                         </div>
-                        <Badge variant="secondary">{t("availableJobs.new")}</Badge>
+                        {unread ? (
+                          <Badge variant="secondary">{t("availableJobs.new")}</Badge>
+                        ) : null}
                       </div>
                     </Link>
                   );

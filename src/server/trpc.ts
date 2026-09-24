@@ -5,6 +5,12 @@ import { ZodError } from "zod";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import {
+  canManageFinance,
+  canManageRequests,
+  isStaffRole,
+  isSuperAdmin,
+} from "@/lib/roles";
 import { revalidateSessionUser } from "@/lib/session-user-cache";
 import { measurePerformance } from "@/lib/performance";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
@@ -88,29 +94,91 @@ export const protectedProcedure = t.procedure
   .use(performanceMiddleware)
   .use(enforceUserIsAuthed);
 
-// Middleware to enforce admin role
+function withFreshRole(
+  ctx: { session: NonNullable<Awaited<ReturnType<typeof createTRPCContext>>["session"]> },
+  role: string
+) {
+  return {
+    ctx: {
+      session: {
+        ...ctx.session,
+        user: { ...ctx.session.user, role },
+      },
+    },
+  };
+}
+
+// Super admin only — platform catalog, users, maintenance, activity
 const enforceUserIsAdmin = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   const freshUser = await revalidateSessionUser(ctx.session.user.id);
-  if (freshUser.role !== "SUPER_ADMIN") {
+  if (!isSuperAdmin(freshUser.role)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You must be an admin to access this resource",
+      message: "You must be a super admin to access this resource",
     });
   }
-  return next({
-    ctx: {
-      session: {
-        ...ctx.session,
-        user: { ...ctx.session.user, role: freshUser.role },
-      },
-    },
-  });
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
 });
 
 export const adminProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsAdmin);
+
+/** Any staff role (super admin, project manager, finance manager). */
+const enforceUserIsStaff = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (!isStaffRole(freshUser.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be a staff member to access this resource",
+    });
+  }
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
+});
+
+export const staffProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsStaff);
+
+/** Super admin or project manager — client/provider requests. */
+const enforceUserCanManageRequests = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (!canManageRequests(freshUser.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be a project manager or super admin to access this resource",
+    });
+  }
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
+});
+
+export const requestManagerProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserCanManageRequests);
+
+/** Super admin or finance manager — payments, wallets, finance settings. */
+const enforceUserCanManageFinance = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (!canManageFinance(freshUser.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be a finance manager or super admin to access this resource",
+    });
+  }
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
+});
+
+export const financeManagerProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserCanManageFinance);
 
 // Middleware to enforce provider role
 const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {

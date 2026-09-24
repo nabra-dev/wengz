@@ -2,14 +2,38 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { sendWelcomeEmail } from "@/lib/notifications";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logger } from "@/lib/logger";
+import {
+  buildPasswordResetUrl,
+  consumePasswordResetToken,
+  createPasswordResetToken,
+  PASSWORD_RESET_TTL_MS,
+} from "@/lib/password-reset";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
+
+const GENERIC_RESET_MESSAGE =
+  "If an account exists for that email, a password reset link has been sent.";
+
+function getClientIp(req: unknown): string {
+  const headersGet =
+    req && typeof req === "object" && "headers" in req && typeof (req as any).headers?.get === "function"
+      ? (name: string) => (req as any).headers.get(name)
+      : (name: string) => (req as any)?.headers?.[name];
+
+  const forwardedFor = headersGet("x-forwarded-for");
+  const realIp = headersGet("x-real-ip");
+  return (
+    (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(",")[0]?.trim() ||
+    (Array.isArray(realIp) ? realIp[0] : realIp) ||
+    "unknown"
+  );
+}
 
 export const authRouter = router({
   // Register a new user
@@ -24,9 +48,9 @@ export const authRouter = router({
     })
     .input(
       z.object({
-        name: z.string().min(2, "Name must be at least 2 characters"),
+        name: z.string().min(1, "Name is required"),
         email: z.string().email("Invalid email address").toLowerCase(),
-        password: z.string().min(6, "Password must be at least 6 characters"),
+        password: z.string().min(1, "Password is required"),
         phone: phoneWithCountryCodeSchema,
       })
     )
@@ -222,7 +246,7 @@ export const authRouter = router({
     })
     .input(
       z.object({
-        name: z.string().min(2).optional(),
+        name: z.string().min(1).optional(),
       })
     )
     .output(
@@ -255,7 +279,7 @@ export const authRouter = router({
       };
     }),
 
-  // Change password
+  // Change password (logged-in)
   changePassword: protectedProcedure
     .meta({
       openapi: {
@@ -267,8 +291,8 @@ export const authRouter = router({
     })
     .input(
       z.object({
-        currentPassword: z.string(),
-        newPassword: z.string().min(6, "Password must be at least 6 characters"),
+        currentPassword: z.string().min(1, "Current password is required"),
+        newPassword: z.string().min(1, "New password is required"),
       })
     )
     .output(
@@ -280,6 +304,7 @@ export const authRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
         where: { id: ctx.session.user.id },
+        select: { id: true, password: true, email: true },
       });
 
       if (!user?.password) {
@@ -290,7 +315,6 @@ export const authRouter = router({
       }
 
       const isValid = await bcrypt.compare(input.currentPassword, user.password);
-
       if (!isValid) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
@@ -298,16 +322,185 @@ export const authRouter = router({
         });
       }
 
-      const hashedPassword = await bcrypt.hash(input.newPassword, 12);
+      const isSamePassword = await bcrypt.compare(input.newPassword, user.password);
+      if (isSamePassword) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "New password must be different from current password",
+        });
+      }
 
+      const hashedPassword = await bcrypt.hash(input.newPassword, 12);
       await ctx.db.user.update({
-        where: { id: ctx.session.user.id },
+        where: { id: user.id },
         data: { password: hashedPassword },
+      });
+
+      logActivityAsync({
+        action: "auth.password_change",
+        message: `Password changed for ${user.email}`,
+        actorId: user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: user.id,
       });
 
       return {
         success: true,
         message: "Password changed successfully",
+      };
+    }),
+
+  // Request password reset email (enumeration-safe)
+  requestPasswordReset: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/auth/forgot-password",
+        tags: ["auth"],
+        summary: "Request a password reset email",
+      },
+    })
+    .input(
+      z.object({
+        email: z.string().email("Invalid email address").toLowerCase(),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ip = getClientIp(ctx.req);
+      const rl = rateLimit(`forgot-password:${ip}:${input.email}`, {
+        limit: 5,
+        windowMs: 15 * 60_000,
+      });
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many reset attempts. Please try again later.",
+        });
+      }
+
+      const user = await ctx.db.user.findFirst({
+        where: { email: input.email, deletedAt: null },
+        select: { id: true, email: true, name: true, password: true },
+      });
+
+      // Only credentials accounts can reset; still return a generic message.
+      if (user?.password) {
+        try {
+          const { rawToken } = await createPasswordResetToken(ctx.db, user.id);
+          const resetUrl = buildPasswordResetUrl(ctx.locale, rawToken);
+          await sendPasswordResetEmail({
+            userEmail: user.email,
+            userName: user.name || "User",
+            resetUrl,
+            expiresInMinutes: Math.round(PASSWORD_RESET_TTL_MS / 60_000),
+            locale: ctx.locale,
+          });
+
+          logActivityAsync({
+            action: "auth.password_reset_request",
+            message: `Password reset requested for ${user.email}`,
+            actorId: user.id,
+            actorRole: null,
+            entityType: "User",
+            entityId: user.id,
+            ip,
+          });
+        } catch (error) {
+          logger.error("Failed to process password reset request:", error);
+          // Still return generic success to the client
+        }
+      }
+
+      return {
+        success: true,
+        message: GENERIC_RESET_MESSAGE,
+      };
+    }),
+
+  // Complete password reset with emailed token
+  resetPassword: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/auth/reset-password",
+        tags: ["auth"],
+        summary: "Reset password using a valid reset token",
+      },
+    })
+    .input(
+      z
+        .object({
+          token: z.string().min(1, "Reset token is required"),
+          newPassword: z.string().min(1, "Password is required"),
+          confirmPassword: z.string().min(1, "Confirm password is required"),
+        })
+        .refine((data) => data.newPassword === data.confirmPassword, {
+          message: "Passwords do not match",
+          path: ["confirmPassword"],
+        })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ip = getClientIp(ctx.req);
+      const rl = rateLimit(`reset-password:${ip}`, { limit: 10, windowMs: 15 * 60_000 });
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many reset attempts. Please try again later.",
+        });
+      }
+
+      const consumed = await consumePasswordResetToken(ctx.db, input.token);
+      if (!consumed) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This reset link is invalid or has expired. Please request a new one.",
+        });
+      }
+
+      const user = await ctx.db.user.findFirst({
+        where: { id: consumed.userId, deletedAt: null },
+        select: { id: true, email: true, password: true },
+      });
+
+      if (!user?.password) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This reset link is invalid or has expired. Please request a new one.",
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(input.newPassword, 12);
+      await ctx.db.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      });
+
+      logActivityAsync({
+        action: "auth.password_reset",
+        message: `Password reset completed for ${user.email}`,
+        actorId: user.id,
+        actorRole: null,
+        entityType: "User",
+        entityId: user.id,
+        ip,
+      });
+
+      return {
+        success: true,
+        message: "Password updated. You can sign in with your new password.",
       };
     }),
 });

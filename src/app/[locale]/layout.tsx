@@ -9,6 +9,7 @@ import { routing } from "@/i18n/routing";
 import { Toaster } from "@/components/ui/sonner";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { DisplayCurrencyProvider } from "@/components/providers/display-currency-provider";
 import { SiteJsonLd } from "@/components/seo/json-ld";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
 import { brandName, buildPageMetadata } from "@/lib/seo";
@@ -91,13 +92,15 @@ export default async function LocaleLayout({
       <body className="font-sans" suppressHydrationWarning>
         <SiteJsonLd locale={locale} />
         <ThemeProvider>
-          <NextIntlClientProvider locale={locale} messages={messages}>
-            {GTM_ID ? <GtmPageView /> : null}
-            <DeploymentRecovery />
-            {children}
-            <Toaster position="top-right" richColors closeButton />
-            <PWAInstallPrompt />
-          </NextIntlClientProvider>
+          <DisplayCurrencyProvider>
+            <NextIntlClientProvider locale={locale} messages={messages}>
+              {GTM_ID ? <GtmPageView /> : null}
+              <DeploymentRecovery />
+              {children}
+              <Toaster position="top-right" richColors closeButton />
+              <PWAInstallPrompt />
+            </NextIntlClientProvider>
+          </DisplayCurrencyProvider>
         </ThemeProvider>
       </body>
     </html>

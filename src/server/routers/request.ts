@@ -20,6 +20,8 @@ import {
   notifyStatusChange,
 } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
+import { canManageRequests } from "@/lib/roles";
+import { logRequestActivity } from "@/lib/request-activity";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 /**
@@ -132,6 +134,7 @@ async function notifyMatchingProviders(
   serviceTypeId: string,
   serviceName: string,
   requestTitle: string,
+  requestId: string,
   locale: string
 ) {
   const providersWithService = await db.providerProfile.findMany({
@@ -161,7 +164,8 @@ async function notifyMatchingProviders(
           title,
           message,
           type: "general",
-          link: `/provider/available`,
+          link: `/provider/available/${requestId}`,
+          requestId,
           sendEmail: false,
           locale,
           sseI18n: {
@@ -208,6 +212,10 @@ function validateRequestAccess(userId: string, role: string, request: any) {
     });
   }
 
+  if (canManageRequests(role)) {
+    return;
+  }
+
   if (role === "CLIENT" && request.clientId !== userId) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -216,6 +224,13 @@ function validateRequestAccess(userId: string, role: string, request: any) {
   }
 
   if (role === "PROVIDER" && request.providerId !== userId && request.status !== "PENDING") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You don't have access to this request",
+    });
+  }
+
+  if (role !== "CLIENT" && role !== "PROVIDER") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You don't have access to this request",
@@ -260,8 +275,8 @@ export const requestRouter = router({
     })
     .input(
       z.object({
-        title: z.string().min(5, "Title must be at least 5 characters"),
-        description: z.string().min(20, "Description must be at least 20 characters"),
+        title: z.string().min(1, "Title is required"),
+        description: z.string().min(1, "Description is required"),
         serviceTypeId: z.string(),
         priority: z.number().min(1).max(3).default(1),
         formData: z.record(z.any()).optional(),
@@ -374,12 +389,28 @@ export const requestRouter = router({
 
       await invalidateSubscriptionCache(userId);
 
+      logRequestActivity({
+        action: "request.create",
+        requestId: request.id,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Request created: ${input.title}`,
+        metadata: {
+          title: input.title,
+          serviceTypeId: input.serviceTypeId,
+          priority: input.priority,
+          creditCost: costDetails.totalCreditCost,
+          attachmentCount: input.attachments?.length ?? 0,
+        },
+      });
+
       // Notify matching providers
       await notifyMatchingProviders(
         ctx.db,
         input.serviceTypeId,
         serviceType.name,
         input.title,
+        request.id,
         ctx.locale
       );
 
@@ -464,8 +495,13 @@ export const requestRouter = router({
             },
           ],
         };
+      } else if (!canManageRequests(role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have access to requests",
+        });
       }
-      // SUPER_ADMIN sees all requests
+      // Request managers / super admins see all requests
 
       if (input?.status) {
         where.status = input.status;
@@ -590,7 +626,7 @@ export const requestRouter = router({
 
       // Get revision info if client
       let revisionInfo = null;
-      if (role === "CLIENT" || role === "SUPER_ADMIN") {
+      if (role === "CLIENT" || canManageRequests(role)) {
         revisionInfo = await getRevisionInfo(input.id, request.clientId);
       }
 
@@ -617,7 +653,7 @@ export const requestRouter = router({
       const userId = ctx.session.user.id;
       const role = ctx.session.user.role;
 
-      if (role !== "PROVIDER" && role !== "SUPER_ADMIN") {
+      if (role !== "PROVIDER" && !canManageRequests(role)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Only providers can accept requests",
@@ -729,6 +765,19 @@ export const requestRouter = router({
         },
       });
 
+      logRequestActivity({
+        action: "request.accept",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: role,
+        message: `Request accepted: ${request.title}`,
+        metadata: {
+          estimatedDays: input.estimatedDays ?? null,
+          previousStatus: request.status,
+          newStatus: "IN_PROGRESS",
+        },
+      });
+
       return {
         success: true,
         request: updatedRequest,
@@ -759,7 +808,7 @@ export const requestRouter = router({
         });
       }
 
-      if (request.providerId !== userId && ctx.session.user.role !== "SUPER_ADMIN") {
+      if (request.providerId !== userId && !canManageRequests(ctx.session.user.role)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not assigned to this request",
@@ -769,7 +818,7 @@ export const requestRouter = router({
       if (
         input.status === "IN_PROGRESS" &&
         request.status !== "IN_PROGRESS" &&
-        ctx.session.user.role !== "SUPER_ADMIN" &&
+        !canManageRequests(ctx.session.user.role) &&
         request.providerId === userId
       ) {
         const workload = await getProviderWorkload(userId);
@@ -851,6 +900,20 @@ export const requestRouter = router({
         },
       });
 
+      logRequestActivity({
+        action: input.status === "DELIVERED" ? "request.deliver" : "request.status",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Request status → ${input.status}: ${request.title}`,
+        reason: input.message,
+        metadata: {
+          previousStatus: request.status,
+          newStatus: input.status,
+          fileCount: input.files?.length ?? 0,
+        },
+      });
+
       return {
         success: true,
         request: updatedRequest,
@@ -862,7 +925,7 @@ export const requestRouter = router({
     .input(
       z.object({
         requestId: z.string(),
-        feedback: z.string().min(10, "Please provide detailed feedback"),
+        feedback: z.string().min(1, "Feedback is required"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -885,6 +948,22 @@ export const requestRouter = router({
           userId,
           content: input.feedback,
           type: "MESSAGE",
+        },
+      });
+
+      logRequestActivity({
+        action: "request.revision",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: result.isFree
+          ? `Free revision requested`
+          : `Paid revision requested (${result.creditCost} credits)`,
+        reason: input.feedback,
+        metadata: {
+          isFree: result.isFree,
+          creditCost: result.creditCost,
+          newRevisionCount: result.newRevisionCount,
         },
       });
 
@@ -978,6 +1057,19 @@ export const requestRouter = router({
         });
       }
 
+      logRequestActivity({
+        action: "request.approve",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Request approved and completed: ${request.title}`,
+        metadata: {
+          previousStatus: "DELIVERED",
+          newStatus: "COMPLETED",
+          providerId: request.providerId,
+        },
+      });
+
       return {
         success: true,
         request: updatedRequest,
@@ -1017,7 +1109,7 @@ export const requestRouter = router({
       // Check access
       const isClient = request.clientId === userId;
       const isProvider = request.providerId === userId;
-      const isAdmin = ctx.session.user.role === "SUPER_ADMIN";
+      const isAdmin = canManageRequests(ctx.session.user.role);
 
       if (!isClient && !isProvider && !isAdmin) {
         throw new TRPCError({
@@ -1078,6 +1170,19 @@ export const requestRouter = router({
           locale: ctx.locale,
         });
       }
+
+      logRequestActivity({
+        action: "request.message",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Message posted on request: ${request.title}`,
+        metadata: {
+          commentId: comment.id,
+          fileCount: input.files?.length ?? 0,
+          contentLength: input.content.trim().length,
+        },
+      });
 
       return comment;
     }),
@@ -1164,12 +1269,26 @@ export const requestRouter = router({
         message: ratingMessage,
         type: "general",
         link: `/provider/requests/${request.id}`,
+        requestId: request.id,
         sendEmail: false,
         locale: ctx.locale,
         sseI18n: {
           titleKey: "notifications.ratingSubmitted.title",
           messageKey: "notifications.ratingSubmitted.message",
           messageParams: { rating: input.rating.toString(), requestTitle: request.title },
+        },
+      });
+
+      logRequestActivity({
+        action: "request.rate",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Request rated ${input.rating}/5: ${request.title}`,
+        reason: input.reviewText,
+        metadata: {
+          rating: input.rating,
+          providerId: request.providerId,
         },
       });
 

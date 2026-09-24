@@ -1,20 +1,25 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "@/i18n/routing";
+import { usePathname, useRouter } from "@/i18n/routing";
 import { useEffect } from "react";
+import {
+  canAccessAdminPath,
+  getStaffHomePath,
+  isStaffRole,
+} from "@/lib/roles";
 
-function getAdminRedirect(role?: string | null): string | null {
-  switch (role) {
-    case "PROVIDER":
-      return "/provider";
-    case "CLIENT":
-      return "/client";
-    case "SUPER_ADMIN":
-      return null; // Allow access
-    default:
-      return role ? "/" : null; // Redirect unknown roles to home
+function getAdminRedirect(role?: string | null, pathWithoutLocale?: string): string | null {
+  if (!role) return null;
+  if (!isStaffRole(role)) {
+    if (role === "PROVIDER") return "/provider";
+    if (role === "CLIENT") return "/client";
+    return "/";
   }
+  if (pathWithoutLocale && !canAccessAdminPath(role, pathWithoutLocale)) {
+    return getStaffHomePath(role);
+  }
+  return null;
 }
 
 export default function AdminLayout({
@@ -24,6 +29,8 @@ export default function AdminLayout({
 }>) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const pathWithoutLocale = pathname.replace(/^\//, "") || "admin";
 
   useEffect(() => {
     if (status === "loading") return;
@@ -33,13 +40,18 @@ export default function AdminLayout({
       return;
     }
 
-    const redirect = getAdminRedirect(session.user?.role);
+    const redirect = getAdminRedirect(session.user?.role, pathWithoutLocale);
     if (redirect) {
       router.push(redirect);
     }
-  }, [session, status, router]);
+  }, [session, status, router, pathWithoutLocale]);
 
-  const isAuthorized = !!(status !== "loading" && session && session.user?.role === "SUPER_ADMIN");
+  const isAuthorized = !!(
+    status !== "loading" &&
+    session &&
+    isStaffRole(session.user?.role) &&
+    canAccessAdminPath(session.user?.role, pathWithoutLocale)
+  );
 
   return isAuthorized ? children : null;
 }

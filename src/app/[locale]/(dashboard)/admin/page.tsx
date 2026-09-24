@@ -1,11 +1,15 @@
 "use client";
 
-import { Link } from "@/i18n/routing";
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { Link, useRouter } from "@/i18n/routing";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+import { isSuperAdmin, getStaffHomePath } from "@/lib/roles";
 import {
   Users,
   FileText,
@@ -21,20 +25,38 @@ import {
 import { AdminDashboardCharts } from "./admin-charts-lazy";
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const role = session?.user?.role;
+  const canViewDashboard = isSuperAdmin(role);
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (role && !canViewDashboard) {
+      router.replace(getStaffHomePath(role));
+    }
+  }, [status, role, canViewDashboard, router]);
+
   const { data: stats, isLoading: statsLoading } = trpc.admin.getStats.useQuery(undefined, {
     staleTime: 60_000,
+    enabled: canViewDashboard,
   });
   const { data: analytics, isLoading: analyticsLoading } = trpc.admin.getAnalytics.useQuery(
     undefined,
-    { staleTime: 60_000 }
+    { staleTime: 60_000, enabled: canViewDashboard }
   );
   const { data: subscriptionsData, isLoading: subsLoading } =
     trpc.admin.getAllSubscriptions.useQuery(
       { limit: 5 },
-      { staleTime: 60_000 }
+      { staleTime: 60_000, enabled: canViewDashboard }
     );
   const t = useTranslations("admin.dashboard");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
+
+  if (!canViewDashboard) {
+    return null;
+  }
 
   const renderTopProviders = () => {
     if (analyticsLoading) {
@@ -108,7 +130,7 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="text-end">
-                <p className="font-bold">${sub.package.price}</p>
+                <p className="font-bold">{formatCurrency(sub.package.price)}</p>
                 <p className="text-xs text-muted-foreground">
                   {sub.remainingCredits} {t("stats.creditsLeft")}
                 </p>

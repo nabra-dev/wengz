@@ -272,7 +272,6 @@ export default function AdminServicesPage() {
               id="edit-icon"
               name="icon"
               defaultValue={service.icon || ""}
-              maxLength={4}
               className="flex-1"
             />
             <Button
@@ -573,7 +572,6 @@ export default function AdminServicesPage() {
                       id="create-icon"
                       name="icon"
                       placeholder="🎨"
-                      maxLength={4}
                       className="flex-1"
                     />
                     <Button

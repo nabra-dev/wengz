@@ -8,10 +8,12 @@ import {
   getSubscriptionExpiringEmailTemplate,
   getSubscriptionExpiredEmailTemplate,
   getWelcomeEmailTemplate,
+  getPasswordResetEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
 import { logger } from "@/lib/logger";
+import { formatMoneyAmount } from "@/lib/utils";
 
 // Store for SSE notification sender (will be set by SSE route when a user connects)
 let sseNotificationSender: ((userId: string, notification: any) => void) | null = null;
@@ -32,6 +34,8 @@ interface NotificationData {
   message: string;
   type?: "message" | "status_change" | "assignment" | "general";
   link?: string;
+  /** Optional request id for clients to mark unread / refresh lists. */
+  requestId?: string;
   sendEmail?: boolean;
   locale?: string;
   emailTemplate?: {
@@ -94,7 +98,7 @@ async function sendSseNotification(
     title: string;
     message: string;
     link: string | undefined;
-    data: { notificationId: string };
+    data: { notificationId: string; requestId?: string };
     timestamp: Date;
     i18n?: {
       titleKey?: string;
@@ -119,6 +123,7 @@ export async function createNotification(data: NotificationData) {
     message,
     type = "general",
     link,
+    requestId,
     sendEmail: shouldSendEmail = true,
     emailTemplate,
     sseI18n,
@@ -151,7 +156,10 @@ export async function createNotification(data: NotificationData) {
     title,
     message,
     link: link || undefined,
-    data: { notificationId: notification.id },
+    data: {
+      notificationId: notification.id,
+      ...(requestId ? { requestId } : {}),
+    },
     timestamp: new Date(),
     i18n: sseI18n,
   });
@@ -172,14 +180,15 @@ export async function notifyAdminsNewPendingPayment(params: {
   const { clientNameOrEmail, amount, currency, locale = "en" } = params;
 
   const admins = await db.user.findMany({
-    where: { role: "SUPER_ADMIN" },
+    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
     select: { id: true, email: true },
   });
 
   const title = await getTranslation(locale, "notifications.paymentVerification.title");
+  const formattedAmount = formatMoneyAmount(amount, locale);
   const message = await getTranslation(locale, "notifications.paymentVerification.message", {
     clientNameOrEmail,
-    amount: amount.toFixed(2),
+    amount: formattedAmount,
     currency,
   });
   const link = "/admin/payments";
@@ -200,7 +209,7 @@ export async function notifyAdminsNewPendingPayment(params: {
           messageKey: "notifications.paymentVerification.message",
           messageParams: {
             clientNameOrEmail,
-            amount: amount.toFixed(2),
+            amount: formattedAmount,
             currency,
           },
         },
@@ -219,14 +228,15 @@ export async function notifyAdminsNewWithdrawal(params: {
   const { providerNameOrEmail, amountUsd, locale = "en" } = params;
 
   const admins = await db.user.findMany({
-    where: { role: "SUPER_ADMIN" },
+    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
     select: { id: true },
   });
 
   const title = await getTranslation(locale, "notifications.withdrawalRequested.title");
+  const formattedAmount = formatMoneyAmount(amountUsd, locale);
   const message = await getTranslation(locale, "notifications.withdrawalRequested.message", {
     providerNameOrEmail,
-    amount: amountUsd.toFixed(2),
+    amount: formattedAmount,
   });
 
   await Promise.all(
@@ -244,7 +254,7 @@ export async function notifyAdminsNewWithdrawal(params: {
           messageKey: "notifications.withdrawalRequested.message",
           messageParams: {
             providerNameOrEmail,
-            amount: amountUsd.toFixed(2),
+            amount: formattedAmount,
           },
         },
       })
@@ -261,10 +271,11 @@ export async function notifyProviderWithdrawalReviewed(params: {
 }) {
   const { providerId, status, amountUsd, reason, locale = "en" } = params;
   const key = status === "APPROVED" ? "withdrawalApproved" : "withdrawalRejected";
+  const formattedAmount = formatMoneyAmount(amountUsd, locale);
 
   const title = await getTranslation(locale, `notifications.${key}.title`);
   const message = await getTranslation(locale, `notifications.${key}.message`, {
-    amount: amountUsd.toFixed(2),
+    amount: formattedAmount,
     reason,
   });
 
@@ -280,8 +291,78 @@ export async function notifyProviderWithdrawalReviewed(params: {
       titleKey: `notifications.${key}.title`,
       messageKey: `notifications.${key}.message`,
       messageParams: {
-        amount: amountUsd.toFixed(2),
+        amount: formattedAmount,
         reason,
+      },
+    },
+  });
+}
+
+export async function notifyAdminsFinanceDisputeOpened(params: {
+  providerNameOrEmail: string;
+  locale?: string;
+}) {
+  const { providerNameOrEmail, locale = "en" } = params;
+
+  const admins = await db.user.findMany({
+    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
+    select: { id: true },
+  });
+
+  const title = await getTranslation(locale, "notifications.financeDisputeOpened.title");
+  const message = await getTranslation(locale, "notifications.financeDisputeOpened.message", {
+    providerNameOrEmail,
+  });
+
+  await Promise.all(
+    admins.map(async (admin) =>
+      createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type: "general",
+        link: "/admin/finance",
+        sendEmail: false,
+        locale,
+        sseI18n: {
+          titleKey: "notifications.financeDisputeOpened.title",
+          messageKey: "notifications.financeDisputeOpened.message",
+          messageParams: { providerNameOrEmail },
+        },
+      })
+    )
+  );
+}
+
+export async function notifyProviderFinanceDisputeReviewed(params: {
+  providerId: string;
+  status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+  note: string;
+  locale?: string;
+}) {
+  const { providerId, status, note, locale = "en" } = params;
+  const statusLabel = status.replaceAll("_", " ").toLowerCase();
+
+  const title = await getTranslation(locale, "notifications.financeDisputeReviewed.title");
+  const message = await getTranslation(locale, "notifications.financeDisputeReviewed.message", {
+    status: statusLabel,
+    note,
+  });
+
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "general",
+    link: "/provider/wallet",
+    sendEmail: false,
+    locale,
+    sseI18n: {
+      titleKey: "notifications.financeDisputeReviewed.title",
+      messageKey: "notifications.financeDisputeReviewed.message",
+      messageParams: {
+        status: statusLabel,
+        note,
       },
     },
   });
@@ -295,6 +376,12 @@ function getLinkForNotificationRecipient(
   if (recipientRole === "CLIENT") return `/client/requests/${requestId}`;
   if (recipientRole === "PROVIDER") {
     return isAssigned ? `/provider/requests/${requestId}` : `/provider/available/${requestId}`;
+  }
+  if (recipientRole === "PROJECT_MANAGER" || recipientRole === "SUPER_ADMIN") {
+    return `/admin/requests/${requestId}`;
+  }
+  if (recipientRole === "FINANCE_MANAGER") {
+    return `/admin/finance`;
   }
   return `/provider/requests/${requestId}`;
 }
@@ -369,6 +456,7 @@ export async function notifyNewMessage(params: {
     message: message,
     type: "message",
     link,
+    requestId,
     locale,
     emailTemplate,
     sseI18n: {
@@ -428,6 +516,7 @@ export async function notifyStatusChange(params: {
     message,
     type: "status_change",
     link: `${linkPrefix}/requests/${requestId}`,
+    requestId,
     locale,
     emailTemplate,
     sseI18n: {
@@ -468,7 +557,8 @@ export async function notifyProviderAssignment(params: {
     title,
     message,
     type: "assignment",
-    link: `/provider/my-requests`,
+    link: `/provider/requests/${requestId}`,
+    requestId,
     locale,
     emailTemplate,
   });
@@ -594,6 +684,8 @@ const ROLE_NOTIFICATION_LINKS: Record<string, string> = {
   CLIENT: "/client",
   PROVIDER: "/provider",
   SUPER_ADMIN: "/admin",
+  PROJECT_MANAGER: "/admin/requests",
+  FINANCE_MANAGER: "/admin/finance",
 };
 
 export async function sendWelcomeEmail(params: {
@@ -638,4 +730,26 @@ export async function sendWelcomeEmail(params: {
   } catch (error) {
     logger.error(`Failed to send welcome notification to ${userEmail}:`, error);
   }
+}
+
+export async function sendPasswordResetEmail(params: {
+  userEmail: string;
+  userName: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const template = await getPasswordResetEmailTemplate({
+    userName: params.userName,
+    resetUrl: params.resetUrl,
+    expiresInMinutes: params.expiresInMinutes,
+    locale,
+  });
+
+  await sendEmail({
+    to: params.userEmail,
+    subject: template.subject,
+    html: template.html,
+  });
 }

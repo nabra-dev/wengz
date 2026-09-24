@@ -27,6 +27,8 @@ type ActivityRow = {
   level: string;
   entityType: string | null;
   entityId: string | null;
+  actorRole: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string | Date;
   actor: {
     id: string;
@@ -42,16 +44,25 @@ function levelVariant(level: string) {
   return "outline" as const;
 }
 
+function metadataReason(metadata: ActivityRow["metadata"]): string | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const reason = metadata.reason;
+  return typeof reason === "string" && reason.trim() ? reason.trim() : null;
+}
+
 export default function AdminActivityLogsPage() {
   const t = useTranslations("admin.activityLogs");
   const locale = useLocale();
   const [level, setLevel] = useState<ActivityLevel>("ALL");
   const [actionFilter, setActionFilter] = useState("");
+  const [entityIdFilter, setEntityIdFilter] = useState("");
   const [cursor, setCursor] = useState<string | undefined>();
 
   const { data, isLoading, isFetching } = trpc.admin.getActivityLogs.useQuery({
     level: level === "ALL" ? undefined : level,
     action: actionFilter.trim() || undefined,
+    entityId: entityIdFilter.trim() || undefined,
+    entityType: entityIdFilter.trim() ? "Request" : undefined,
     limit: 50,
     cursor,
   });
@@ -78,6 +89,15 @@ export default function AdminActivityLogsPage() {
               onChange={(e) => {
                 setCursor(undefined);
                 setActionFilter(e.target.value);
+              }}
+              className="sm:w-48"
+            />
+            <Input
+              placeholder={t("entityIdPlaceholder")}
+              value={entityIdFilter}
+              onChange={(e) => {
+                setCursor(undefined);
+                setEntityIdFilter(e.target.value);
               }}
               className="sm:w-56"
             />
@@ -126,33 +146,49 @@ export default function AdminActivityLogsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {new Date(row.createdAt).toLocaleString(locale)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={levelVariant(row.level)}>{row.level}</Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{row.action}</TableCell>
-                      <TableCell className="max-w-md text-sm">{row.message}</TableCell>
-                      <TableCell className="text-sm">
-                        {row.actor ? (
-                          <>
-                            <div className="font-medium">{row.actor.name || row.actor.email}</div>
-                            <div className="text-xs text-muted-foreground">{row.actor.role}</div>
-                          </>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {row.entityType
-                          ? `${row.entityType}${row.entityId ? `:${row.entityId.slice(0, 8)}` : ""}`
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {logs.map((row) => {
+                    const reason = metadataReason(row.metadata);
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {new Date(row.createdAt).toLocaleString(locale)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={levelVariant(row.level)}>{row.level}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{row.action}</TableCell>
+                        <TableCell className="max-w-md text-sm">
+                          <div>{row.message}</div>
+                          {reason ? (
+                            <div className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
+                              {t("reasonLabel")}: {reason}
+                            </div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {row.actor ? (
+                            <>
+                              <div className="font-medium">
+                                {row.actor.name || row.actor.email}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {row.actor.role}
+                              </div>
+                            </>
+                          ) : row.actorRole ? (
+                            <div className="text-xs text-muted-foreground">{row.actorRole}</div>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {row.entityType
+                            ? `${row.entityType}${row.entityId ? `:${row.entityId.slice(0, 8)}` : ""}`
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 

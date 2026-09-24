@@ -29,7 +29,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileUpload } from "@/components/ui/file-upload";
 import { trpc } from "@/lib/trpc/client";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { showError, showSuccess } from "@/lib/error-handler";
 import {
   Upload,
@@ -160,6 +161,7 @@ function PaymentStatus({
   const router = useRouter();
   const t = useTranslations("client.payment");
   const tAdmin = useTranslations("admin.payments");
+  const formatCurrency = useFormatCurrency();
   const proof = subscription.paymentProof!;
   const badgeVariant = getStatusBadgeVariant(proof.status);
 
@@ -182,7 +184,7 @@ function PaymentStatus({
                 )}
               </CardTitle>
               <CardDescription>
-                {formatCurrency(subscription.package.price, locale)}
+                {formatCurrency(subscription.package.price)}
               </CardDescription>
             </div>
             <Badge variant={badgeVariant} className="flex items-center gap-1">
@@ -225,7 +227,7 @@ function PaymentStatus({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">{t("info.amountPaid")}</p>
-              <p className="text-xl font-bold">{formatCurrency(proof.amount, locale)}</p>
+              <p className="text-xl font-bold">{formatCurrency(proof.amount)}</p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">{t("info.transferDate")}</p>
@@ -280,6 +282,7 @@ function CopyButton({
 function TransactionsSection({ locale }: { locale: string }) {
   const t = useTranslations("client.transactions");
   const tAdmin = useTranslations("admin.payments");
+  const formatCurrency = useFormatCurrency();
   const { data: transactions, isLoading } = trpc.subscription.getTransactionHistory.useQuery();
 
   if (isLoading) {
@@ -350,16 +353,12 @@ function TransactionsSection({ locale }: { locale: string }) {
                     <span className="font-medium">
                       {(() => {
                         if (tx.paymentProof) {
-                          return (
-                            formatCurrency(tx.paymentProof.amount, locale) +
-                            " " +
-                            tx.paymentProof.currency
-                          );
+                          return formatCurrency(tx.paymentProof.amount);
                         }
                         if (tx.isFreePackage) {
                           return t("payment.free");
                         }
-                        return formatCurrency(tx.packagePrice, locale);
+                        return formatCurrency(tx.packagePrice);
                       })()}
                     </span>
                   </div>
@@ -406,6 +405,7 @@ function BankDetailsCard({
   locale: string;
 }) {
   const t = useTranslations("client.payment");
+  const formatCurrency = useFormatCurrency();
   const showInstapay = selectedMethod === "instapay" && Boolean(paymentInfo.instapayLink);
 
   return (
@@ -434,7 +434,7 @@ function BankDetailsCard({
               {subscription.package.credits} {t("badges.credits")}
             </Badge>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(subscription.package.price, locale)}</p>
+          <p className="text-2xl font-bold">{formatCurrency(subscription.package.price)}</p>
         </div>
 
         {/* Transfer Details */}
@@ -699,36 +699,22 @@ function PaymentProofForm({
       newErrors.transferImageUrl = t("validation.transferReceiptRequired");
     }
 
-    if (!formData.senderName || formData.senderName.trim().length < 2) {
+    if (!formData.senderName || !formData.senderName.trim()) {
       newErrors.senderName = t("validation.senderNameMin");
-    } else if (formData.senderName.length > 100) {
-      newErrors.senderName = t("validation.senderNameMax");
     }
 
-    if (!formData.senderBank || formData.senderBank.trim().length < 2) {
+    if (!formData.senderBank || !formData.senderBank.trim()) {
       newErrors.senderBank = t("validation.senderBankMin");
-    } else if (formData.senderBank.length > 100) {
-      newErrors.senderBank = t("validation.senderBankMax");
     }
 
-    if (!formData.senderCountry || formData.senderCountry.trim().length < 2) {
+    if (!formData.senderCountry || !formData.senderCountry.trim()) {
       newErrors.senderCountry = t("validation.senderCountryMin");
-    } else if (formData.senderCountry.length > 100) {
-      newErrors.senderCountry = t("validation.senderCountryMax");
     }
 
     if (!formData.transferDate) {
       newErrors.transferDate = t("validation.transferDateRequired");
     } else if (formData.transferDate > new Date()) {
       newErrors.transferDate = t("validation.transferDateFuture");
-    }
-
-    if (formData.referenceNumber && formData.referenceNumber.length > 50) {
-      newErrors.referenceNumber = t("validation.referenceNumberMax");
-    }
-
-    if (formData.notes && formData.notes.length > 500) {
-      newErrors.notes = t("validation.notesMax");
     }
 
     setErrors(newErrors);
@@ -806,16 +792,11 @@ function PaymentProofForm({
                 id="senderName"
                 placeholder={t("uploadProof.senderNamePlaceholder")}
                 required
-                minLength={2}
-                maxLength={100}
                 value={formData.senderName}
                 onChange={(e) => updateField("senderName", e.target.value)}
                 className={errors.senderName ? "border-destructive" : ""}
               />
               {errors.senderName && <p className="text-sm text-destructive">{errors.senderName}</p>}
-              <p className="text-xs text-muted-foreground">
-                {t("uploadProof.charactersHint", { min: 2, max: 100 })}
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="senderBank">{t("uploadProof.senderBank")}</Label>
@@ -823,16 +804,11 @@ function PaymentProofForm({
                 id="senderBank"
                 placeholder={t("uploadProof.senderBankPlaceholder")}
                 required
-                minLength={2}
-                maxLength={100}
                 value={formData.senderBank}
                 onChange={(e) => updateField("senderBank", e.target.value)}
                 className={errors.senderBank ? "border-destructive" : ""}
               />
               {errors.senderBank && <p className="text-sm text-destructive">{errors.senderBank}</p>}
-              <p className="text-xs text-muted-foreground">
-                {t("uploadProof.charactersHint", { min: 2, max: 100 })}
-              </p>
             </div>
           </div>
 
@@ -843,8 +819,6 @@ function PaymentProofForm({
                 id="senderCountry"
                 placeholder={t("uploadProof.senderCountryPlaceholder")}
                 required
-                minLength={2}
-                maxLength={100}
                 value={formData.senderCountry}
                 onChange={(e) => updateField("senderCountry", e.target.value)}
                 className={errors.senderCountry ? "border-destructive" : ""}
@@ -852,9 +826,6 @@ function PaymentProofForm({
               {errors.senderCountry && (
                 <p className="text-sm text-destructive">{errors.senderCountry}</p>
               )}
-              <p className="text-xs text-muted-foreground">
-                {t("uploadProof.charactersHint", { min: 2, max: 100 })}
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="transferDate">{t("uploadProof.transferDate")}</Label>
@@ -885,7 +856,6 @@ function PaymentProofForm({
             <Input
               id="referenceNumber"
               placeholder={t("uploadProof.referenceNumberPlaceholder")}
-              maxLength={50}
               value={formData.referenceNumber}
               onChange={(e) => updateField("referenceNumber", e.target.value)}
               className={errors.referenceNumber ? "border-destructive" : ""}

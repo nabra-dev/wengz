@@ -36,6 +36,8 @@ interface RequestCardProps {
   readonly variant?: "compact" | "detailed";
   readonly showProviderAsBrand?: boolean;
   readonly needsManualApproval?: boolean;
+  /** Show a unread/new indicator circle next to the title. */
+  readonly unread?: boolean;
 }
 
 export function RequestCard({
@@ -59,6 +61,7 @@ export function RequestCard({
   variant = "compact",
   showProviderAsBrand = false,
   needsManualApproval = false,
+  unread = false,
 }: RequestCardProps) {
   const tCommon = useTranslations("common");
   const tCard = useTranslations("requests.card");
@@ -81,6 +84,14 @@ export function RequestCard({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3 sm:gap-4">
       <div className="flex-1 min-w-0 space-y-2">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {unread && (
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary"
+              title={tCard("unread")}
+            >
+              <span className="sr-only">{tCard("unread")}</span>
+            </span>
+          )}
           <h3 className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">{title}</h3>
           <Badge variant={null} className={`${getStatusColor(status)} text-xs`}>
             {tCommon(`requestStatus.${status}` as any)}

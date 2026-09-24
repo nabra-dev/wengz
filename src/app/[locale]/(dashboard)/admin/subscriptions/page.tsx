@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate } from "@/lib/utils";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ type Subscription = {
 export default function AdminSubscriptionsPage() {
   const t = useTranslations("admin.subscriptions");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -228,7 +230,9 @@ export default function AdminSubscriptionsPage() {
                               sub.package.name
                             )}
                           </p>
-                          <p className="text-muted-foreground">${sub.package.price}</p>
+                          <p className="text-muted-foreground">
+                            {formatCurrency(sub.package.price)}
+                          </p>
                         </div>
                       </div>
 

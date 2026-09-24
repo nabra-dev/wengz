@@ -29,6 +29,7 @@ import { trpc } from "@/lib/trpc/client";
 import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
+import { getStaffHomePath, isStaffRole } from "@/lib/roles";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -69,8 +70,8 @@ export default function RegisterPage() {
       router.replace("/client/requests/new");
       return;
     }
-    if (session.user.role === "SUPER_ADMIN") {
-      router.push(`/${locale}/admin`);
+    if (isStaffRole(session.user.role)) {
+      router.push(`/${locale}${getStaffHomePath(session.user.role)}`);
     } else if (session.user.role === "PROVIDER") {
       router.push(`/${locale}/provider`);
     } else {
@@ -176,8 +177,6 @@ export default function RegisterPage() {
                 type="text"
                 placeholder={t("namePlaceholder")}
                 required
-                minLength={2}
-                maxLength={100}
                 disabled={registerMutation.isPending}
               />
               <p className="text-xs text-muted-foreground">{t("nameHint")}</p>
@@ -237,8 +236,6 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 required
-                minLength={6}
-                maxLength={100}
                 disabled={registerMutation.isPending}
               />
               <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
@@ -250,8 +247,6 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 type="password"
                 required
-                minLength={6}
-                maxLength={100}
                 disabled={registerMutation.isPending}
               />
               <p className="text-xs text-muted-foreground">{t("confirmPasswordHint")}</p>

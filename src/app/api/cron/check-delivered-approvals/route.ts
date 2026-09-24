@@ -65,6 +65,7 @@ async function processApprovalReminders(now: Date, results: ApprovalCronResults)
 async function processManualApprovalFlags(results: ApprovalCronResults) {
   const twelveHoursAgo = new Date(Date.now() - TWELVE_HOURS_MS);
 
+  // Single bulk update — per-request audit would amplify writes every cron tick.
   const flagged = await db.request.updateMany({
     where: {
       status: "DELIVERED",

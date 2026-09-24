@@ -37,6 +37,8 @@ interface MessagesCardProps {
   readonly canSendMessages?: boolean;
   readonly maskProviderNames?: boolean;
   readonly maskClientNames?: boolean;
+  /** Taller sticky chat panel for split request layouts. */
+  readonly variant?: "default" | "panel";
 }
 
 export function MessagesCard({
@@ -48,6 +50,7 @@ export function MessagesCard({
   canSendMessages = true,
   maskProviderNames = false,
   maskClientNames = false,
+  variant = "default",
 }: MessagesCardProps) {
   const t = useTranslations("requests.messages");
   const tSidebar = useTranslations("requests.sidebar");
@@ -244,17 +247,34 @@ export function MessagesCard({
     container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [comments]);
 
+  const isPanel = variant === "panel";
+  const messagesMaxHeight = isPanel ? "flex-1 min-h-0 overflow-y-auto" : "max-h-96 overflow-y-auto";
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title || t("title")}</CardTitle>
+    <Card
+      className={
+        isPanel
+          ? "flex h-[min(70vh,44rem)] flex-col overflow-hidden border-border/80 shadow-sm"
+          : undefined
+      }
+    >
+      <CardHeader className={isPanel ? "shrink-0 space-y-1 pb-3" : undefined}>
+        <CardTitle className={isPanel ? "text-base" : undefined}>{title || t("title")}</CardTitle>
         <CardDescription>{description || t("description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent
+        className={
+          isPanel ? "flex min-h-0 flex-1 flex-col gap-3 pt-0" : "space-y-4"
+        }
+      >
         {comments.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">{t("noMessages")}</p>
+          <p
+            className={`text-center text-muted-foreground ${isPanel ? "flex flex-1 items-center justify-center py-6" : "py-8"}`}
+          >
+            {t("noMessages")}
+          </p>
         ) : (
-          <div ref={messagesContainerRef} className="space-y-4 max-h-96 overflow-y-auto">
+          <div ref={messagesContainerRef} className={`space-y-4 ${messagesMaxHeight}`}>
             {comments.map((comment) => {
               const isSystem = comment.type === "SYSTEM";
               let displayName: string;
@@ -379,8 +399,8 @@ export function MessagesCard({
 
         {canSendMessages && (
           <>
-            <Separator />
-            <div className="space-y-3">
+            <Separator className={isPanel ? "shrink-0" : undefined} />
+            <div className={`space-y-3 ${isPanel ? "shrink-0 border-t bg-background pt-3" : ""}`}>
               <InlineFileUpload
                 onFilesChange={setCommentFiles}
                 maxFiles={3}

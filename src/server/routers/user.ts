@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
+import { logActivityAsync } from "@/lib/activity-log";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -84,7 +85,7 @@ export const userRouter = router({
     })
     .input(
       z.object({
-        name: z.string().min(2, "Name must be at least 2 characters").optional(),
+        name: z.string().min(1).optional(),
         email: z.string().email("Invalid email address").toLowerCase().optional(),
         phone: phoneWithCountryCodeSchema,
         image: z.string().min(1, "Invalid image URL").optional(),
@@ -180,7 +181,7 @@ export const userRouter = router({
     })
     .input(
       z.object({
-        bio: z.string().max(1000, "Bio must be less than 1000 characters").optional(),
+        bio: z.string().optional(),
         portfolio: z.string().url("Invalid portfolio URL").nullable().optional(),
         skillsTags: z.array(z.string()).optional(),
         isActive: z.boolean().optional(),
@@ -246,7 +247,7 @@ export const userRouter = router({
     .input(
       z.object({
         currentPassword: z.string().min(1, "Current password is required"),
-        newPassword: z.string().min(6, "New password must be at least 6 characters"),
+        newPassword: z.string().min(1, "New password is required"),
       })
     )
     .output(
@@ -297,6 +298,15 @@ export const userRouter = router({
       await ctx.db.user.update({
         where: { id: userId },
         data: { password: hashedPassword },
+      });
+
+      logActivityAsync({
+        action: "auth.password_change",
+        message: "Password changed from profile",
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: userId,
       });
 
       return {

@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { getFinanceSettings } from "@/lib/finance-settings";
+import { getFinanceSettings, DEFAULT_MIN_WITHDRAWAL_USD } from "@/lib/finance-settings";
+import { roundMoney } from "@/lib/utils";
 
 /** Days after client approval before settled earnings become withdrawable. */
 export const PROVIDER_EARNINGS_HOLD_DAYS = 7;
@@ -26,7 +27,7 @@ export type NormalizedPayoutDetails = {
 type TransactionClient = Prisma.TransactionClient;
 
 function roundUsd(amount: number) {
-  return Math.round(amount * 100) / 100;
+  return roundMoney(amount);
 }
 
 export function calculateProviderFinance(
@@ -302,19 +303,32 @@ export function payoutDetailsFromProfile(profile: {
 export function allocateWithdrawalAmounts(
   amountUsd: number,
   balanceUsd: number,
-  balanceCredits: number
+  balanceCredits: number,
+  options?: {
+    minUsd?: number;
+    feeUsd?: number;
+  }
 ) {
   const requested = roundUsd(amountUsd);
   const available = roundUsd(balanceUsd);
+  const minUsd = roundUsd(Math.max(0, options?.minUsd ?? DEFAULT_MIN_WITHDRAWAL_USD));
+  const feeUsd = roundUsd(Math.max(0, options?.feeUsd ?? 0));
 
-  if (!Number.isFinite(requested) || requested < 1) {
+  if (!Number.isFinite(requested) || requested < minUsd) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Minimum withdrawal amount is 1 USD",
+      message: `Minimum withdrawal amount is ${minUsd} USD`,
     });
   }
 
-  if (available < 1) {
+  if (feeUsd >= requested) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Withdrawal fee must be less than the requested amount",
+    });
+  }
+
+  if (available < minUsd) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Insufficient wallet balance",
@@ -332,6 +346,8 @@ export function allocateWithdrawalAmounts(
     return {
       amountUsd: available,
       amountCredits: Math.max(0, balanceCredits),
+      feeUsd,
+      netAmountUsd: roundUsd(available - feeUsd),
     };
   }
 
@@ -343,6 +359,8 @@ export function allocateWithdrawalAmounts(
   return {
     amountUsd: requested,
     amountCredits,
+    feeUsd,
+    netAmountUsd: roundUsd(requested - feeUsd),
   };
 }
 
@@ -417,10 +435,15 @@ export async function requestProviderWithdrawal(
     });
   }
 
+  const financeSettings = await getFinanceSettings(tx);
   const allocation = allocateWithdrawalAmounts(
     params.amountUsd,
     wallet.balanceUsd,
-    wallet.balanceCredits
+    wallet.balanceCredits,
+    {
+      minUsd: financeSettings.minWithdrawalUsd,
+      feeUsd: financeSettings.withdrawalFeeUsd,
+    }
   );
 
   const withdrawal = await tx.withdrawalRequest.create({
@@ -428,6 +451,7 @@ export async function requestProviderWithdrawal(
       providerId: params.providerId,
       amountUsd: allocation.amountUsd,
       amountCredits: allocation.amountCredits,
+      feeUsd: allocation.feeUsd,
       payoutMethod: payout.payoutMethod,
       accountHolder: payout.accountHolder,
       bankName: payout.bankName,
@@ -459,13 +483,22 @@ export async function reviewProviderWithdrawal(
     adminId: string;
     status: "APPROVED" | "REJECTED";
     reason: string;
+    reviewImage: string;
   }
 ) {
   const reason = params.reason.trim();
-  if (reason.length < 5) {
+  if (!reason) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Please provide a reason of at least 5 characters",
+      message: "Please provide a reason",
+    });
+  }
+
+  const reviewImage = params.reviewImage.trim();
+  if (!reviewImage) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "A review image is required",
     });
   }
 
@@ -523,6 +556,7 @@ export async function reviewProviderWithdrawal(
     data: {
       status: params.status,
       adminReason: reason,
+      reviewImage,
       reviewedById: params.adminId,
       reviewedAt: new Date(),
     },
@@ -539,10 +573,10 @@ export async function sendProviderPayout(
   }
 ) {
   const reason = params.reason.trim();
-  if (reason.length < 5) {
+  if (!reason) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Please provide a reason of at least 5 characters",
+      message: "Please provide a reason",
     });
   }
 
@@ -566,10 +600,15 @@ export async function sendProviderPayout(
 
   const payout = payoutDetailsFromProfile(profile);
   const wallet = await loadWalletForUpdate(tx, params.providerId);
+  const financeSettings = await getFinanceSettings(tx);
   const allocation = allocateWithdrawalAmounts(
     params.amountUsd,
     wallet.balanceUsd,
-    wallet.balanceCredits
+    wallet.balanceCredits,
+    {
+      minUsd: financeSettings.minWithdrawalUsd,
+      feeUsd: 0,
+    }
   );
   const now = new Date();
 
@@ -578,6 +617,7 @@ export async function sendProviderPayout(
       providerId: params.providerId,
       amountUsd: allocation.amountUsd,
       amountCredits: allocation.amountCredits,
+      feeUsd: 0,
       payoutMethod: payout.payoutMethod,
       accountHolder: payout.accountHolder,
       bankName: payout.bankName,

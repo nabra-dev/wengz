@@ -5,11 +5,13 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FileText } from "lucide-react";
+import { Loader2, ArrowLeft, FileText, MessageSquare } from "lucide-react";
 import { AttributeResponsesDisplay } from "@/components/client/attribute-responses-display";
 import { RequestHeader } from "@/components/requests/request-header";
 import { RequestDescription } from "@/components/requests/request-description";
 import { RequestSidebar } from "@/components/requests/request-sidebar";
+import { RequestStats } from "@/components/requests/request-stats";
+import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
 import { trpc } from "@/lib/trpc/client";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -57,17 +59,36 @@ export default function AdminRequestDetailPage() {
         const derived = calculateAttributeCredits(attrs as any, responses as any);
         if (derived > 0) return derived;
       }
-    } catch (e) {
-
+    } catch {
+      // keep existing
     }
     return existing;
   })();
 
   const priorityCreditCost = request.priorityCreditCost ?? 0;
 
+  const chatPanel = request.provider ? (
+    <MessagesCard
+      requestId={requestId}
+      comments={request.comments as any}
+      title={t("detail.messagesTitle")}
+      description={t("detail.messagesDesc")}
+      placeholder={t("detail.messagesPlaceholder")}
+      canSendMessages={request.status !== "COMPLETED"}
+      variant="panel"
+    />
+  ) : (
+    <Card className="border-dashed h-[min(70vh,44rem)] flex flex-col justify-center">
+      <CardHeader className="text-center">
+        <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+        <CardTitle>{t("detail.messagesTitle")}</CardTitle>
+        <CardDescription>{t("detail.messagingAfterClaim")}</CardDescription>
+      </CardHeader>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <RequestHeader
         title={request.title}
         status={request.status}
@@ -91,60 +112,45 @@ export default function AdminRequestDetailPage() {
         needsManualApproval={(request as any).needsManualApproval === true}
       />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Main Content */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Description */}
-          <RequestDescription description={request.description} attachments={request.attachments} />
-
-          {/* Service-Specific Q&A Responses */}
-          {(request as any).attributeResponses &&
-            Array.isArray((request as any).attributeResponses) &&
-            (request as any).attributeResponses.length > 0 && (
-              <AttributeResponsesDisplay
-                responses={(request as any).attributeResponses}
-                serviceAttributes={(request.serviceType as any).attributes}
-              />
-            )}
-
-          {/* Messages (only after a provider is assigned / has claimed) */}
-          {request.provider ? (
-            <MessagesCard
-              requestId={requestId}
-              comments={request.comments as any}
-              title={t("detail.messagesTitle")}
-              description={t("detail.messagesDesc")}
-              placeholder={t("detail.messagesPlaceholder")}
-              canSendMessages={request.status !== "COMPLETED"}
+      <RequestWorkspace
+        info={
+          <>
+            <RequestStats
+              createdAt={request.createdAt}
+              estimatedDelivery={request.estimatedDelivery}
+              deliveredAt={(request as any).deliveredAt}
+              completedAt={request.completedAt}
+              rating={request.rating}
             />
-          ) : (
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle>{t("detail.messagesTitle")}</CardTitle>
-                <CardDescription>{t("detail.messagingAfterClaim")}</CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <RequestSidebar
-          client={request.client}
-          provider={request.provider || null}
-          serviceTypeName={resolveLocalizedText(
-            (request.serviceType as any).nameI18n,
-            locale,
-            request.serviceType.name
-          )}
-          serviceTypeIcon={request.serviceType.icon || undefined}
-          createdAt={request.createdAt}
-          updatedAt={request.updatedAt}
-          estimatedDelivery={request.estimatedDelivery}
-          completedAt={request.completedAt}
-          currentRevisionCount={request.currentRevisionCount}
-          totalRevisions={request.totalRevisions}
-        />
-      </div>
+            <RequestDescription description={request.description} attachments={request.attachments} />
+            {(request as any).attributeResponses &&
+              Array.isArray((request as any).attributeResponses) &&
+              (request as any).attributeResponses.length > 0 && (
+                <AttributeResponsesDisplay
+                  responses={(request as any).attributeResponses}
+                  serviceAttributes={(request.serviceType as any).attributes}
+                />
+              )}
+            <RequestSidebar
+              client={request.client}
+              provider={request.provider || null}
+              serviceTypeName={resolveLocalizedText(
+                (request.serviceType as any).nameI18n,
+                locale,
+                request.serviceType.name
+              )}
+              serviceTypeIcon={request.serviceType.icon || undefined}
+              createdAt={request.createdAt}
+              updatedAt={request.updatedAt}
+              estimatedDelivery={request.estimatedDelivery}
+              completedAt={request.completedAt}
+              currentRevisionCount={request.currentRevisionCount}
+              totalRevisions={request.totalRevisions}
+            />
+          </>
+        }
+        chat={chatPanel}
+      />
     </div>
   );
 }

@@ -1,17 +1,27 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
+import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realtime-refresh";
+import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 
 export default function MyRequestsPage() {
   const t = useTranslations("provider.myRequests");
   const { data: requestsData, isLoading } = trpc.provider.getMyRequests.useQuery({
     limit: 50,
   });
+  const { isUnread } = useProviderRequestUnread();
+
+  const requestIds = useMemo(
+    () => requestsData?.requests.map((request: { id: string }) => request.id) ?? [],
+    [requestsData?.requests]
+  );
+  useProviderJobsRealtimeRefresh(requestIds);
 
   return (
     <div className="space-y-6">
@@ -58,6 +68,7 @@ export default function MyRequestsPage() {
                   commentCount={request._count.comments}
                   href={`/provider/requests/${request.id}`}
                   variant="compact"
+                  unread={isUnread(request.id)}
                 />
               ))}
             </div>

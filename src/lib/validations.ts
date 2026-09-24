@@ -6,14 +6,11 @@ export const emailSchema = z
   .min(1, "Email is required")
   .email("Please enter a valid email address");
 
-export const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+export const passwordSchema = z.string().min(1, "Password is required");
 
-export const simplePasswordSchema = z.string().min(6, "Password must be at least 6 characters");
+export const simplePasswordSchema = z.string().min(1, "Password is required");
 
-export const nameSchema = z
-  .string()
-  .min(2, "Name must be at least 2 characters")
-  .max(50, "Name must be less than 50 characters");
+export const nameSchema = z.string().min(1, "Name is required");
 
 export const urlSchema = z.string().url("Please enter a valid URL").or(z.literal(""));
 
@@ -59,53 +56,38 @@ export const registerFormSchema = z
 
 // Request form validation
 export const createRequestSchema = z.object({
-  title: z
-    .string()
-    .min(5, "Title must be at least 5 characters")
-    .max(100, "Title must be less than 100 characters"),
-  description: z
-    .string()
-    .min(20, "Description must be at least 20 characters")
-    .max(2000, "Description must be less than 2000 characters"),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
   serviceTypeId: z.string().min(1, "Please select a service type"),
   priority: z.number().min(1).max(5),
 });
 
 // Comment validation
 export const commentSchema = z.object({
-  content: z
-    .string()
-    .min(1, "Comment cannot be empty")
-    .max(1000, "Comment must be less than 1000 characters"),
+  content: z.string().min(1, "Comment cannot be empty"),
 });
 
 // Deliverable validation
 export const deliverableSchema = z.object({
-  deliverableMessage: z
-    .string()
-    .min(5, "Deliverable message must be at least 5 characters")
-    .max(2000, "Deliverable message must be less than 2000 characters"),
+  deliverableMessage: z.string().min(1, "Deliverable message is required"),
   files: z.array(z.string()).optional(),
 });
 
 // Revision request validation
 export const revisionRequestSchema = z.object({
-  feedback: z
-    .string()
-    .min(10, "Please provide at least 10 characters of feedback")
-    .max(1000, "Feedback must be less than 1000 characters"),
+  feedback: z.string().min(1, "Feedback is required"),
 });
 
 // Rating validation
 export const ratingSchema = z.object({
   rating: z.number().min(1, "Please select a rating").max(5),
-  reviewText: z.string().max(500, "Review must be less than 500 characters").optional(),
+  reviewText: z.string().optional(),
 });
 
 // Profile update validation
 export const profileUpdateSchema = z.object({
   name: nameSchema,
-  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  bio: z.string().optional(),
   portfolio: urlSchema.optional(),
   skillsTags: z.array(z.string()).optional(),
 });

@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
-import { formatCurrency } from "@/lib/utils";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { Plus, Edit, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +30,7 @@ type StatusFilter = "all" | "active" | "inactive";
 export default function AdminPackagesPage() {
   const t = useTranslations("admin.packages");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
@@ -568,7 +569,7 @@ export default function AdminPackagesPage() {
                           </div>
                           <CardDescription>
                             <span className="text-2xl font-bold text-foreground">
-                              {formatCurrency(pkg.price, locale)}
+                              {formatCurrency(pkg.price)}
                             </span>{" "}
                             / {pkg.durationDays} {t("info.dayDuration")}
                           </CardDescription>

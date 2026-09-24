@@ -1,13 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { db } from "@/lib/db";
 import { setCached, deleteCached, cacheKeys } from "@/lib/cache";
+import type { AppRole } from "@/lib/roles";
 
 const SESSION_USER_TTL_SECONDS = 45;
 const MEMORY_TTL_MS = SESSION_USER_TTL_SECONDS * 1000;
 
 type SessionUserSnapshot = {
   id: string;
-  role: "CLIENT" | "PROVIDER" | "SUPER_ADMIN";
+  role: AppRole;
   deletedAt: Date | null;
 };
 

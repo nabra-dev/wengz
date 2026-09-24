@@ -6,6 +6,12 @@ const withPWA = require("next-pwa")({
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
+      // Authenticated APIs first — never let extension-based rules
+      // (e.g. *.jpg) steal /api/files/... and strip cookies → 403.
+      urlPattern: /\/api\/.*$/i,
+      handler: "NetworkOnly",
+    },
+    {
       // Hashed Next build assets — first match wins; keep ahead of generic JS/CSS rules.
       urlPattern: /\/_next\/static\/.*/i,
       handler: "CacheFirst",
@@ -40,7 +46,10 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+      // Public static images only — exclude /api/files private uploads.
+      urlPattern: ({ url }) =>
+        /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i.test(url.pathname) &&
+        !url.pathname.startsWith("/api/"),
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "static-image-assets",
@@ -51,7 +60,8 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      urlPattern: /\.(?:js)$/i,
+      urlPattern: ({ url }) =>
+        /\.(?:js)$/i.test(url.pathname) && !url.pathname.startsWith("/api/"),
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "static-js-assets",
@@ -62,7 +72,8 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      urlPattern: /\.(?:css|less)$/i,
+      urlPattern: ({ url }) =>
+        /\.(?:css|less)$/i.test(url.pathname) && !url.pathname.startsWith("/api/"),
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "static-style-assets",
@@ -71,12 +82,6 @@ const withPWA = require("next-pwa")({
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
         },
       },
-    },
-    {
-      // Never cache API responses in the service worker — they are
-      // authenticated, user-specific, and must always hit the network.
-      urlPattern: /\/api\/.*$/i,
-      handler: "NetworkOnly",
     },
     {
       // HTML / RSC / everything else — prefer network so deploys pick up new chunk hashes.

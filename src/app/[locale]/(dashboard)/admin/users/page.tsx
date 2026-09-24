@@ -46,8 +46,10 @@ import {
   Edit,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
 
-type UserRole = "CLIENT" | "PROVIDER" | "SUPER_ADMIN";
+type UserRole = AssignableRole | "SUPER_ADMIN";
+type ManagedUserRole = AssignableRole;
 
 type ServiceType = { id: string; name: string; nameI18n?: Record<string, string> };
 
@@ -202,6 +204,9 @@ function UserListItem({
     name: string | null;
     email: string;
     phone?: string | null;
+    role: string;
+    clientRequestCount: number;
+    providerRequestCount: number;
   }) => void;
   onActiveChange: (userId: string, isActive: boolean) => void;
   isToggling?: boolean;
@@ -216,6 +221,8 @@ function UserListItem({
     const roleMap: Record<string, string> = {
       CLIENT: tCommon("roles.CLIENT"),
       PROVIDER: tCommon("roles.PROVIDER"),
+      PROJECT_MANAGER: tCommon("roles.PROJECT_MANAGER"),
+      FINANCE_MANAGER: tCommon("roles.FINANCE_MANAGER"),
       SUPER_ADMIN: tCommon("roles.SUPER_ADMIN"),
     };
     return roleMap[role] || role;
@@ -269,7 +276,17 @@ function UserListItem({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onEdit(user)}
+              onClick={() =>
+                onEdit({
+                  id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  phone: user.phone,
+                  role: user.role,
+                  clientRequestCount: user._count.clientRequests,
+                  providerRequestCount: user._count.providerRequests,
+                })
+              }
               className="flex items-center gap-1"
             >
               <Edit className="h-4 w-4" />
@@ -315,6 +332,9 @@ export default function AdminUsersPage() {
     name: string | null;
     email: string;
     phone?: string | null;
+    role: string;
+    clientRequestCount: number;
+    providerRequestCount: number;
   } | null>(null);
   const [selectedProviderServices, setSelectedProviderServices] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
@@ -326,7 +346,7 @@ export default function AdminUsersPage() {
     password: "",
     countryCode: "+20", // Default to Egypt
     phone: "",
-    role: "CLIENT" as UserRole,
+    role: "CLIENT" as ManagedUserRole,
     supportedServiceIds: [] as string[],
   });
 
@@ -464,6 +484,10 @@ export default function AdminUsersPage() {
     switch (role) {
       case "SUPER_ADMIN":
         return "bg-destructive/15 text-destructive";
+      case "PROJECT_MANAGER":
+        return "bg-sky-500/15 text-sky-700 dark:text-sky-300";
+      case "FINANCE_MANAGER":
+        return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
       case "PROVIDER":
         return "bg-primary/15 text-primary";
       case "CLIENT":
@@ -479,7 +503,11 @@ export default function AdminUsersPage() {
     total: users?.total || 0,
     clients: allUsers.filter((u) => u.role === "CLIENT").length,
     providers: allUsers.filter((u) => u.role === "PROVIDER").length,
-    admins: allUsers.filter((u) => u.role === "SUPER_ADMIN").length,
+    admins: allUsers.filter((u) =>
+      u.role === "SUPER_ADMIN" ||
+      u.role === "PROJECT_MANAGER" ||
+      u.role === "FINANCE_MANAGER"
+    ).length,
   };
 
   return (
@@ -590,7 +618,7 @@ export default function AdminUsersPage() {
                 <Label htmlFor="role">{t("dialog.fields.role")} *</Label>
                 <Select
                   value={newUser.role}
-                  onValueChange={(value: UserRole) =>
+                  onValueChange={(value: ManagedUserRole) =>
                     setNewUser((prev) => ({ ...prev, role: value, supportedServiceIds: [] }))
                   }
                 >
@@ -598,9 +626,17 @@ export default function AdminUsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CLIENT">{t("filters.client")}</SelectItem>
-                    <SelectItem value="PROVIDER">{t("filters.provider")}</SelectItem>
-                    <SelectItem value="SUPER_ADMIN">{t("filters.admin")}</SelectItem>
+                    {ASSIGNABLE_ROLES.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option === "CLIENT"
+                          ? t("filters.client")
+                          : option === "PROVIDER"
+                            ? t("filters.provider")
+                            : option === "PROJECT_MANAGER"
+                              ? t("filters.projectManager")
+                              : t("filters.financeManager")}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -697,6 +733,8 @@ export default function AdminUsersPage() {
                 <SelectItem value="all">{t("filters.allRoles")}</SelectItem>
                 <SelectItem value="CLIENT">{t("filters.client")}</SelectItem>
                 <SelectItem value="PROVIDER">{t("filters.provider")}</SelectItem>
+                <SelectItem value="PROJECT_MANAGER">{t("filters.projectManager")}</SelectItem>
+                <SelectItem value="FINANCE_MANAGER">{t("filters.financeManager")}</SelectItem>
                 <SelectItem value="SUPER_ADMIN">{t("filters.admin")}</SelectItem>
               </SelectContent>
             </Select>

@@ -16,6 +16,12 @@
       "restore": "استعادة"
     },
     "credits": "كريدت",
+    "currency": {
+      "USD": "USD",
+      "EGP": "EGP",
+      "displayOnly": "عرض",
+      "switchTo": "تبديل عملة العرض إلى {currency}"
+    },
     "footer": {
       "privacy": "الخصوصية",
       "terms": "الشروط",
@@ -32,6 +38,8 @@
     },
     "roles": {
       "SUPER_ADMIN": "مدير النظام",
+      "PROJECT_MANAGER": "مدير المشاريع",
+      "FINANCE_MANAGER": "المدير المالي",
       "PROVIDER": "مبدع",
       "CLIENT": "عميل"
     },
@@ -161,7 +169,10 @@
       "heading": "جاهز للبدء؟",
       "subheading": "انضم إلى آلاف منشئي المحتوى الذين يستخدمون وينجز لتحقيق أفكارهم",
       "startTrial": "ابدأ النسخة التجريبية المجانية",
-      "viewPlans": "عرض الخطط"
+      "viewPlans": "عرض الخطط",
+      "appComingSoon": "قريباً",
+      "iosApp": "تطبيق iOS",
+      "androidApp": "تطبيق Android"
     },
     "footer": {
       "privacy": "الخصوصية",
@@ -276,14 +287,43 @@
       "errorMessage": "حدث خطأ. حاول مرة أخرى.",
       "maintenanceNote": "وضع الصيانة مفعل حالياً. تسجيل الدخول غير متاح مؤقتاً.",
       "maintenanceLoginBlocked": "تسجيل الدخول مقيد أثناء الصيانة",
-      "maintenanceLoginBlockedDesc": "تسجيل الدخول غير متاح مؤقتاً."
+      "maintenanceLoginBlockedDesc": "تسجيل الدخول غير متاح مؤقتاً.",
+      "forgotPassword": "نسيت كلمة المرور؟"
+    },
+    "forgotPassword": {
+      "title": "نسيت كلمة المرور",
+      "description": "أدخل بريدك الإلكتروني وسنرسل رابط إعادة التعيين إذا وُجد حساب.",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "name@example.com",
+      "submitButton": "إرسال رابط إعادة التعيين",
+      "submitting": "جاري الإرسال...",
+      "backToLogin": "العودة لتسجيل الدخول",
+      "successTitle": "تحقق من بريدك",
+      "successDescription": "إذا وُجد حساب لهذا البريد، تم إرسال رابط إعادة تعيين كلمة المرور.",
+      "errorFallback": "تعذر إرسال بريد إعادة التعيين. حاول مرة أخرى."
+    },
+    "resetPassword": {
+      "title": "إعادة تعيين كلمة المرور",
+      "description": "اختر كلمة مرور جديدة لحسابك.",
+      "newPasswordLabel": "كلمة المرور الجديدة",
+      "confirmPasswordLabel": "تأكيد كلمة المرور",
+      "submitButton": "تحديث كلمة المرور",
+      "submitting": "جاري التحديث...",
+      "backToLogin": "العودة لتسجيل الدخول",
+      "successTitle": "تم تحديث كلمة المرور",
+      "successDescription": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
+      "mismatch": "كلمتا المرور غير متطابقتين",
+      "required": "كلمة المرور مطلوبة",
+      "missingToken": "رابط إعادة التعيين مفقود أو غير صالح.",
+      "requestNewLink": "اطلب رابطاً جديداً",
+      "errorFallback": "تعذر إعادة تعيين كلمة المرور. حاول مرة أخرى."
     },
     "register": {
       "title": "إنشاء حساب",
       "description": "أدخل بياناتك للبدء",
       "nameLabel": "الاسم الكامل",
       "namePlaceholder": "أحمد محمد",
-      "nameHint": "2-100 حرف",
+      "nameHint": "مطلوب",
       "phoneLabel": "الهاتف",
       "phonePlaceholder": "1234567890",
       "phoneHint": "أدخل رقم الهاتف فقط (مفتاح الدولة محدد أعلاه)",
@@ -291,7 +331,7 @@
       "emailPlaceholder": "name@example.com",
       "emailHint": "عنوان بريد إلكتروني صالح مطلوب",
       "passwordLabel": "كلمة المرور",
-      "passwordHint": "يجب أن تكون 6 أحرف على الأقل",
+      "passwordHint": "مطلوب",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordHint": "يجب أن تطابق كلمة المرور أعلاه",
       "creatingAccount": "جاري إنشاء الحساب...",
@@ -316,11 +356,15 @@
       "subtitle": "تكوين خيارات المنصة على مستوى النظام",
       "finance": {
         "title": "تسوية المبدعين",
-        "description": "سعر الكريدت العالمي بالدولار ونسبة عمولة المنصة المستخدمة في مدفوعات المبدعين (وليست الاشتراكات).",
+        "description": "سعر الكريدت العالمي بالدولار وعمولة المنصة وقواعد السحب لمدفوعات المبدعين (وليست الاشتراكات).",
         "creditPriceUsd": "سعر الكريدت (دولار)",
         "creditPriceUsdHint": "قيمة الكريدت الواحد بالدولار عند تسوية الطلبات المكتملة.",
         "commissionPercent": "عمولة المنصة (%)",
         "commissionPercentHint": "النسبة المقتطعة من إجمالي التسوية قبل إضافة رصيد المبدع.",
+        "minWithdrawalUsd": "الحد الأدنى للسحب (دولار)",
+        "minWithdrawalUsdHint": "لا يمكن للمبدع طلب أقل من هذا المبلغ.",
+        "withdrawalFeeUsd": "رسوم السحب (دولار)",
+        "withdrawalFeeUsdHint": "رسوم ثابتة تُخصم من كل سحب. يدفع الأدمن المبلغ ناقص الرسوم.",
         "save": "حفظ إعدادات المالية",
         "saving": "جاري الحفظ...",
         "saved": "تم حفظ إعدادات المالية"
@@ -428,7 +472,9 @@
         "allRoles": "جميع الأدوار",
         "client": "العملاء",
         "provider": "المبدعون",
-        "admin": "المديرون",
+        "projectManager": "مديرو المشاريع",
+        "financeManager": "المديرون الماليون",
+        "admin": "مديرو النظام",
         "all": "الكل",
         "active": "نشط",
         "inactive": "غير نشط"
@@ -460,7 +506,8 @@
         },
         "edit": {
           "title": "تعديل المستخدم",
-          "description": "تحديث معلومات المستخدم"
+          "description": "تحديث معلومات المستخدم والدور",
+          "roleHint": "لا يمكن تحويل العميل الذي لديه طلبات إلى مبدع. لا يمكن تحويل المبدع الذي لديه طلبات إلى عميل. مدير النظام غير قابل للتعديل."
         },
         "fields": {
           "name": "الاسم الكامل",
@@ -601,7 +648,7 @@
       "fields": {
         "name": "الاسم",
         "nameRequired": "الاسم *",
-        "nameHint": "2-100 حرف",
+        "nameHint": "مطلوب",
         "localizedName": "الاسم المترجم",
         "price": "السعر ($)",
         "priceRequired": "السعر ($) *",
@@ -613,7 +660,7 @@
         "durationRequired": "المدة (أيام) *",
         "durationHint": "فترة صلاحية الباقة",
         "features": "المزايا (واحدة في كل سطر)",
-        "featuresHint": "اسرد المزايا الرئيسية، واحدة في كل سطر (بحد أقصى 2000 حرف)",
+        "featuresHint": "اسرد المزايا الرئيسية، واحدة في كل سطر",
         "featuresPlaceholder": "ميزة 1\nميزة 2\nميزة 3",
         "localizedDescription": "الوصف المترجم",
         "localizedFeatures": "المزايا المترجمة",
@@ -671,11 +718,11 @@
         "iconOptional": "أيقونة (إيموجي) (اختياري)",
         "name": "الاسم",
         "nameRequired": "الاسم *",
-        "nameHint": "2-100 حرف",
+        "nameHint": "مطلوب",
         "localizedName": "الاسم المترجم",
         "description": "الوصف",
         "descriptionRequired": "الوصف *",
-        "descriptionHint": "10-500 حرف",
+        "descriptionHint": "اختياري",
         "localizedDescription": "الوصف المترجم",
         "creditCost": "تكلفة الكريدت الأساسية",
         "creditCostRequired": "تكلفة الكريدت الأساسية *",
@@ -810,12 +857,16 @@
         "empty": "لا توجد طلبات سحب بعد.",
         "provider": "المبدع",
         "amount": "المبلغ",
+        "fee": "الرسوم",
+        "net": "صافي التحويل",
         "method": "الطريقة",
         "destination": "الوجهة",
         "status": "الحالة",
         "source": "المصدر",
         "providerNote": "ملاحظة المبدع",
         "adminReason": "السبب",
+        "proof": "الإثبات",
+        "viewProof": "عرض الصورة",
         "requestedAt": "تاريخ الطلب",
         "actions": "الإجراءات",
         "review": "مراجعة",
@@ -826,9 +877,11 @@
       },
       "review": {
         "title": "مراجعة السحب",
-        "description": "علّم كمدفوع بعد التحويل، أو ارفض وأعد الرصيد.",
+        "description": "ارفع إثباتاً (إيصال التحويل أو دليل الرفض)، أضف سبباً، ثم وافق أو ارفض.",
         "reason": "السبب",
         "reasonPlaceholder": "مثال: تحويل بنكي رقم 123 — أو سبب الرفض",
+        "image": "صورة الإثبات",
+        "imageHint": "مطلوبة. ارفع إيصال الصرف عند الموافقة، أو دليلاً داعماً عند الرفض.",
         "approve": "تعيين كمدفوع",
         "reject": "رفض",
         "submitting": "جاري الحفظ..."
@@ -857,15 +910,49 @@
       "toast": {
         "approved": "تم تعليم السحب كمدفوع",
         "rejected": "تم رفض السحب وإعادة الرصيد",
-        "sent": "تم تسجيل الصرف"
+        "sent": "تم تسجيل الصرف",
+        "disputeUpdated": "تم تحديث النزاع"
+      },
+      "disputes": {
+        "title": "النزاعات المالية",
+        "description": "مشاكل يفتحها المبدعون ضد تسويات السجل أو عمليات السحب.",
+        "empty": "لا توجد نزاعات بعد.",
+        "provider": "المبدع",
+        "target": "المعاملة",
+        "reason": "سبب المبدع",
+        "status": "الحالة",
+        "adminNote": "ملاحظة الأدمن",
+        "requestedAt": "تاريخ الفتح",
+        "actions": "إجراءات",
+        "review": "مراجعة",
+        "filterOpen": "مفتوح",
+        "filterAll": "الكل",
+        "ledgerTarget": "سجل · {title} · {amount}",
+        "withdrawalTarget": "سحب · {amount}",
+        "reviewTitle": "مراجعة النزاع",
+        "reviewDescription": "علّم قيد المراجعة أو حلّ أو ارفض مع ملاحظة للمبدع.",
+        "note": "ملاحظة الأدمن",
+        "notePlaceholder": "اشرح النتيجة أو الخطوات التالية…",
+        "markUnderReview": "قيد المراجعة",
+        "resolve": "حل",
+        "reject": "رفض",
+        "submitting": "جاري الحفظ..."
+      },
+      "disputeStatus": {
+        "OPEN": "مفتوح",
+        "UNDER_REVIEW": "قيد المراجعة",
+        "RESOLVED": "تم الحل",
+        "REJECTED": "مرفوض"
       }
     },
     "activityLogs": {
       "title": "سجل النشاط",
-      "subtitle": "سجل تدقيق ثابت لأحداث النظام (تسجيل، مدفوعات، محفظة، كرون)",
+      "subtitle": "سجل تدقيق ثابت لأحداث النظام (الطلبات، تسجيل، مدفوعات، محفظة، كرون)",
       "tableTitle": "أحدث النشاط",
-      "tableDescription": "الأحدث أولاً. صفِّ حسب المستوى أو مفتاح الإجراء.",
-      "actionPlaceholder": "تصفية الإجراء (مثال payment.approve)",
+      "tableDescription": "الأحدث أولاً. صفِّ حسب المستوى أو مفتاح الإجراء (مثل request.) أو معرّف الطلب.",
+      "actionPlaceholder": "تصفية الإجراء (مثال request.)",
+      "entityIdPlaceholder": "تصفية بمعرّف الطلب",
+      "reasonLabel": "السبب / الملاحظة",
       "filterAll": "الكل",
       "filterInfo": "معلومات",
       "filterWarn": "تحذير",
@@ -972,10 +1059,10 @@
         "description": "يرجى تقديم سبب لرفض هذا الدفع. سيتم إخطار العميل.",
         "reasonLabel": "سبب الرفض *",
         "reasonPlaceholder": "مثال: المبلغ لا يطابق سعر الباقة، غير قادر على التحقق من إيصال التحويل...",
-        "reasonHint": "الحد الأدنى 10 أحرف مطلوب",
+        "reasonHint": "مطلوب",
         "button": "رفض الدفع",
         "rejecting": "جاري الرفض...",
-        "errorMinLength": "يرجى تقديم سبب مفصل (10 أحرف على الأقل)"
+        "errorMinLength": "يرجى تقديم سبب"
       },
       "buttons": {
         "approve": "موافقة",
@@ -1081,6 +1168,26 @@
       "attachments": "المرفقات ({count})",
       "attachmentFallback": "مرفق {number}"
     },
+    "stats": {
+      "title": "التوقيت والتقييم",
+      "created": "تاريخ الإنشاء",
+      "estimated": "التسليم المتوقع",
+      "delivered": "تم التسليم",
+      "completed": "مكتمل",
+      "notSet": "غير محدد",
+      "notYet": "ليس بعد",
+      "took": "استغرق {duration}",
+      "total": "الإجمالي {duration}",
+      "rating": "التقييم",
+      "notRated": "لم يُقيَّم بعد",
+      "timing": {
+        "pending": "بدون تقدير",
+        "onTrack": "في الموعد",
+        "overdue": "متأخر",
+        "onTime": "في الوقت",
+        "late": "سُلّم متأخراً"
+      }
+    },
     "sidebar": {
       "client": "العميل",
       "provider": "المبدع",
@@ -1154,6 +1261,7 @@
       "paidRevision": "مدفوع",
       "unassigned": "غير معيّن",
       "needsManualApproval": "يحتاج موافقة يدوية",
+      "unread": "جديد / غير مقروء",
       "client": "عميل",
       "provider": "مبدع",
       "messages": "{count, plural, zero {لا توجد رسائل} one {رسالة واحدة} two {رسالتان} few {# رسائل} many {# رسالة} other {# رسالة}}"
@@ -1233,12 +1341,12 @@
       },
       "strengthText": "القوة",
       "helperText": {
-        "requirements": "يجب أن تحتوي على 8 أحرف على الأقل، بما في ذلك أحرف كبيرة وصغيرة وأرقام",
+        "requirements": "كلمة المرور مطلوبة",
         "mismatch": "كلمات المرور غير متطابقة"
       },
       "validationErrors": {
         "mismatch": "كلمات المرور الجديدة غير متطابقة",
-        "tooShort": "يجب أن تتكون كلمة المرور الجديدة من 8 أحرف على الأقل"
+        "tooShort": "كلمة المرور مطلوبة"
       },
       "buttons": {
         "changing": "جارٍ التغيير...",
@@ -1353,8 +1461,8 @@
         "notesPlaceholder": "أي معلومات إضافية...",
         "submit": "تقديم إثبات الدفع",
         "submitting": "جاري التقديم...",
-        "charactersHint": "{min}-{max} حرف",
-        "maxCharactersHint": "الحد الأقصى {max} حرف"
+        "charactersHint": "مطلوب",
+        "maxCharactersHint": ""
       },
       "actions": {
         "backToSubscription": "العودة إلى الاشتراك",
@@ -1364,16 +1472,16 @@
       },
       "validation": {
         "transferReceiptRequired": "إيصال التحويل مطلوب",
-        "senderNameMin": "يجب أن يكون اسم المرسل على الأقل حرفين",
-        "senderNameMax": "يجب ألا يتجاوز اسم المرسل 100 حرف",
-        "senderBankMin": "يجب أن يكون اسم البنك على الأقل حرفين",
-        "senderBankMax": "يجب ألا يتجاوز اسم البنك 100 حرف",
-        "senderCountryMin": "يجب أن تكون الدولة على الأقل حرفين",
-        "senderCountryMax": "يجب ألا تتجاوز الدولة 100 حرف",
+        "senderNameMin": "اسم المرسل مطلوب",
+        "senderNameMax": "اسم المرسل مطلوب",
+        "senderBankMin": "اسم البنك مطلوب",
+        "senderBankMax": "اسم البنك مطلوب",
+        "senderCountryMin": "الدولة مطلوبة",
+        "senderCountryMax": "الدولة مطلوبة",
         "transferDateRequired": "تاريخ التحويل مطلوب",
         "transferDateFuture": "لا يمكن أن يكون تاريخ التحويل في المستقبل",
-        "referenceNumberMax": "يجب ألا يتجاوز رقم المرجع 50 حرفاً",
-        "notesMax": "يجب ألا تتجاوز الملاحظات 500 حرف",
+        "referenceNumberMax": "رقم المرجع غير صالح",
+        "notesMax": "الملاحظات غير صالحة",
         "fixErrors": "يرجى إصلاح أخطاء التحقق قبل التقديم"
       },
       "badges": {
@@ -1460,7 +1568,7 @@
         "revisions": "مراجعات",
         "noFreeLeft": "لا توجد مراجعات مجانية متبقية - تكلف {cost} كريدت",
         "placeholder": "صف التغييرات التي تحتاجها...",
-        "minCharacters": "يتطلب الحد الأدنى {min} حرف",
+        "minCharacters": "مطلوب",
         "button": "طلب مراجعة",
         "requesting": "جاري الطلب...",
         "insufficientCredits": "رصيد كريدت غير كافٍ",
@@ -1486,7 +1594,7 @@
         "ratingSubmitted": "تم تقديم التقييم",
         "ratingSubmittedDesc": "شكراً لملاحظاتك!",
         "invalidFeedback": "ملاحظات غير صالحة",
-        "invalidFeedbackDesc": "يرجى تقديم {min} حرفاً على الأقل لوصف التغييرات المطلوبة."
+        "invalidFeedbackDesc": "يرجى وصف التغييرات المطلوبة."
       },
       "messagesTitle": "الرسائل",
       "messagesDescription": "تواصل مع المبدع",
@@ -1528,10 +1636,10 @@
         "serviceTypePlaceholder": "حدد نوع الخدمة",
         "title": "العنوان",
         "titlePlaceholder": "الهدف من التصميم الخاص بي",
-        "titleHint": "5-200 حرف — كن واضحاً وموجزاً",
+        "titleHint": "كن واضحاً وموجزاً",
         "description": "الوصف",
         "descriptionPlaceholder": "صف مشروعك بالتفصيل. قم بتضمين أي متطلبات محددة أو تفضيلات أو مراجع...",
-        "descriptionHint": "20-5000 حرف — قدم متطلبات وتوقعات مفصلة",
+        "descriptionHint": "قدم متطلبات وتوقعات مفصلة",
         "priority": "الأولوية",
         "priorityLow": "منخفضة (+{cost} كريدت)",
         "priorityMedium": "متوسطة (+{cost} {credit})",
@@ -1559,10 +1667,10 @@
       },
       "validation": {
         "selectService": "يرجى تحديد نوع الخدمة",
-        "titleTooShort": "يجب أن يكون العنوان 5 أحرف على الأقل",
-        "titleTooLong": "يجب ألا يتجاوز العنوان 200 حرف",
-        "descriptionTooShort": "يجب أن يكون الوصف 20 حرفاً على الأقل",
-        "descriptionTooLong": "يجب ألا يتجاوز الوصف 5000 حرف",
+        "titleTooShort": "العنوان مطلوب",
+        "titleTooLong": "العنوان مطلوب",
+        "descriptionTooShort": "الوصف مطلوب",
+        "descriptionTooLong": "الوصف مطلوب",
         "requiredAttribute": "يرجى الإجابة على السؤال المطلوب: {field}",
         "requiredField": "هذا الحقل مطلوب",
         "fixErrors": "يرجى تصحيح الحقول المميزة قبل الإرسال"
@@ -1762,7 +1870,28 @@
         "providerAmount": "دولارك",
         "status": "الحالة",
         "availableAt": "متاح في",
-        "settledAt": "تاريخ التسوية"
+        "settledAt": "تاريخ التسوية",
+        "actions": "إجراءات"
+      },
+      "dispute": {
+        "open": "فتح نزاع",
+        "title": "فتح نزاع",
+        "description": "صف المشكلة في هذه المعاملة. سيراجعها الأدمن يدويًا.",
+        "reason": "ما المشكلة؟",
+        "reasonPlaceholder": "اشرح المشكلة في هذه التسوية أو السحب…",
+        "submit": "إرسال النزاع",
+        "submitting": "جاري الإرسال…",
+        "submitted": "تم إرسال النزاع",
+        "active": "نزاع {status}",
+        "closedNote": "ملاحظة الأدمن: {note}",
+        "targetLedger": "السجل: {title}",
+        "targetWithdrawal": "السحب: {amount}"
+      },
+      "disputeStatus": {
+        "OPEN": "مفتوح",
+        "UNDER_REVIEW": "قيد المراجعة",
+        "RESOLVED": "تم الحل",
+        "REJECTED": "مرفوض"
       },
       "status": {
         "HOLD": "قيد الاحتجاز",
@@ -1789,6 +1918,9 @@
         "description": "يتم حجز الرصيد المتاح أثناء مراجعة الأدمن للطلب وتحويل المبلغ يدوياً.",
         "amount": "المبلغ (دولار)",
         "amountHint": "المتاح: {amount}",
+        "minHint": "الحد الأدنى للسحب: {amount}",
+        "feeHint": "رسوم السحب: {fee} (تُخصم من المبلغ المطلوب)",
+        "netHint": "يصلك: {net}",
         "note": "ملاحظة للأدمن (اختياري)",
         "notePlaceholder": "مثال: الرجاء التحويل إلى فودافون كاش",
         "request": "طلب سحب",
@@ -1803,11 +1935,16 @@
         "description": "يراجع الأدمن كل طلب ثم يحدّث الحالة مع السبب.",
         "empty": "لا توجد طلبات سحب بعد.",
         "amount": "المبلغ",
+        "fee": "الرسوم",
+        "net": "يصلك",
         "method": "الطريقة",
         "destination": "الوجهة",
         "status": "الحالة",
         "reason": "سبب الأدمن",
-        "requestedAt": "تاريخ الطلب"
+        "proof": "الإثبات",
+        "viewProof": "عرض الصورة",
+        "requestedAt": "تاريخ الطلب",
+        "actions": "إجراءات"
       },
       "withdrawStatus": {
         "PENDING": "قيد المراجعة",
@@ -1839,13 +1976,13 @@
         "description": "حدّث تفاصيلك المهنية المرئية للعملاء",
         "bio": "السيرة الذاتية المهنية",
         "bioPlaceholder": "أخبر العملاء عن نفسك وخبرتك...",
-        "bioCharacters": "{count}/500 حرف",
+        "bioCharacters": "{count} حرف",
         "portfolio": "رابط المحفظة (اختياري)",
         "portfolioPlaceholder": "https://yourportfolio.com",
         "portfolioHint": "رابط لمحفظتك أو أمثلة عن أعمال سابقة",
         "skills": "المهارات (اختياري)",
         "skillsPlaceholder": "مثل: تصميم UI/UX، React، Node.js، Python...",
-        "skillsHint": "اسرد مهاراتك الرئيسية مفصولة بفواصل ({count}/300 حرف)",
+        "skillsHint": "اسرد مهاراتك الرئيسية مفصولة بفواصل ({count} حرف)",
         "reset": "إعادة تعيين",
         "saveChanges": "حفظ التغييرات",
         "saving": "جاري الحفظ...",
@@ -1883,7 +2020,7 @@
         "title": "تقديم التسليم",
         "description": "جاهز للتسليم؟ قدم عملك لمراجعة العميل.",
         "placeholder": "صف ما أنجزته وقم بتضمين أي روابط أو ملاحظات ذات صلة...",
-        "minCharactersWarning": "يرجى إدخال 5 أحرف على الأقل (تحتاج {remaining} حرف إضافي)",
+        "minCharactersWarning": "مطلوب",
         "attachFiles": "إرفاق ملفات التسليم",
         "button": "تقديم التسليم",
         "submitting": "جاري التقديم..."
@@ -2053,6 +2190,18 @@
         "renewButton": "جدد الآن"
       }
     },
+    "passwordReset": {
+      "emailSubject": "إعادة تعيين كلمة مرور وينجز",
+      "emailBody": {
+        "heading": "إعادة تعيين كلمة المرور",
+        "greeting": "مرحباً {userName}،",
+        "intro": "تلقينا طلباً لإعادة تعيين كلمة مرورك. انقر الزر أدناه لاختيار كلمة مرور جديدة.",
+        "button": "إعادة تعيين كلمة المرور",
+        "expiry": "ينتهي هذا الرابط خلال {minutes} دقيقة.",
+        "ignore": "إذا لم تطلب ذلك، يمكنك تجاهل هذا البريد بأمان.",
+        "linkFallback": "أو انسخ هذا الرابط والصقه في المتصفح:"
+      }
+    },
     "welcome": {
       "title": "مرحباً بك في وينجز! 🎉",
       "message": "مرحباً {userName}! تم إنشاء حسابك بنجاح. ابدأ باستكشاف المنصة الآن.",
@@ -2140,6 +2289,14 @@
     "withdrawalRejected": {
       "title": "تم رفض السحب",
       "message": "تم رفض سحبك بقيمة {amount} دولار. السبب: {reason}"
+    },
+    "financeDisputeOpened": {
+      "title": "نزاع مالي جديد",
+      "message": "فتح {providerNameOrEmail} نزاعًا على معاملة في المحفظة."
+    },
+    "financeDisputeReviewed": {
+      "title": "تحديث النزاع",
+      "message": "تم تحديث نزاع محفظتك إلى {status}. {note}"
     },
     "subscriptionCancelled": {
       "title": "تم إلغاء الاشتراك",

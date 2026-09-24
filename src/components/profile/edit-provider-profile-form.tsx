@@ -123,7 +123,6 @@ export function EditProviderProfileForm() {
               onChange={(e) => setBio(e.target.value)}
               placeholder={t("bioPlaceholder")}
               rows={4}
-              maxLength={500}
             />
             <p className="text-xs text-muted-foreground text-end">
               {t("bioCharacters", { count: bio.length })}
@@ -156,7 +155,6 @@ export function EditProviderProfileForm() {
               onChange={(e) => setSkills(e.target.value)}
               placeholder={t("skillsPlaceholder")}
               rows={3}
-              maxLength={300}
             />
             <p className="text-xs text-muted-foreground">
               {t("skillsHint", { count: skills.length })}

@@ -3,10 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { isStaffRole, type AppRole } from "@/lib/roles";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
-type UserRole = "SUPER_ADMIN" | "PROVIDER" | "CLIENT";
+type UserRole = AppRole;
 
 declare module "next-auth" {
   interface Session {
@@ -99,7 +100,7 @@ export const authOptions: NextAuthOptions = {
           | null
           | undefined;
         const maintenanceEnabled = Boolean(maintenanceValue?.enabled);
-        if (maintenanceEnabled && user.role !== "SUPER_ADMIN") {
+        if (maintenanceEnabled && !isStaffRole(user.role)) {
           throw new Error("MAINTENANCE_MODE_ONLY_ADMIN");
         }
 

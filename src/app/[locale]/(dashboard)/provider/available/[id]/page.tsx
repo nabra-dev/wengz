@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
@@ -11,6 +12,7 @@ import { RequestDescription } from "@/components/requests/request-description";
 import { RequestSidebar } from "@/components/requests/request-sidebar";
 import { trpc } from "@/lib/trpc/client";
 import { resolveLocalizedText } from "@/lib/i18n";
+import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 
 export default function AvailableJobDetailPage() {
   const params = useParams();
@@ -18,6 +20,11 @@ export default function AvailableJobDetailPage() {
   const t = useTranslations("provider.availableDetail");
   const locale = useLocale();
   const requestId = params?.id as string;
+  const { markRead } = useProviderRequestUnread();
+
+  useEffect(() => {
+    if (requestId) markRead(requestId);
+  }, [requestId, markRead]);
 
   const { data: request, isLoading } = trpc.request.getById.useQuery({
     id: requestId,

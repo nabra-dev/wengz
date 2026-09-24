@@ -29,7 +29,7 @@ export function ChangePasswordForm() {
       return;
     }
 
-    if (newPassword.length < 8) {
+    if (!newPassword.trim()) {
       toast.error(t("validationErrors.tooShort"));
       return;
     }
@@ -46,14 +46,15 @@ export function ChangePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (error: any) {
-      toast.error(error.message || t("errorMessage"));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("errorMessage");
+      toast.error(message);
     }
   };
 
   const passwordStrength = (password: string) => {
     let strength = 0;
-    if (password.length >= 8) strength++;
+    if (password.trim().length >= 1) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
@@ -123,7 +124,6 @@ export function ChangePasswordForm() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t("placeholders.newPassword")}
-                minLength={8}
                 required
               />
               <Button
@@ -170,7 +170,6 @@ export function ChangePasswordForm() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t("placeholders.confirmPassword")}
-                minLength={8}
                 required
               />
               <Button

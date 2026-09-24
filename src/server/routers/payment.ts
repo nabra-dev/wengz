@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, clientProcedure, adminProcedure } from "@/server/trpc";
+import { router, protectedProcedure, clientProcedure, financeManagerProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { PaymentStatus } from "@prisma/client";
 import { createNotification, notifyAdminsNewPendingPayment } from "@/lib/notifications";
@@ -81,9 +81,9 @@ export const paymentRouter = router({
       z.object({
         subscriptionId: z.string(),
         transferImage: z.string().min(1, "Transfer image is required"),
-        senderName: z.string().min(2),
-        senderBank: z.string().min(2),
-        senderCountry: z.string().min(2),
+        senderName: z.string().min(1),
+        senderBank: z.string().min(1),
+        senderCountry: z.string().min(1),
         amount: z.number().positive(),
         currency: z.literal("USD").default("USD"),
         transferDate: z.date(),
@@ -173,7 +173,7 @@ export const paymentRouter = router({
     }),
 
   // Get all pending payments (admin)
-  getPendingPayments: adminProcedure
+  getPendingPayments: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -208,7 +208,7 @@ export const paymentRouter = router({
     }),
 
   // Get all payments with filters (admin)
-  getAllPayments: adminProcedure
+  getAllPayments: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -267,7 +267,7 @@ export const paymentRouter = router({
     }),
 
   // Approve payment (admin)
-  approvePayment: adminProcedure
+  approvePayment: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -395,7 +395,7 @@ export const paymentRouter = router({
         action: "payment.approve",
         message: `Payment approved for ${payment.userId}`,
         actorId: adminId,
-        actorRole: "SUPER_ADMIN",
+        actorRole: ctx.session.user.role,
         entityType: "PaymentProof",
         entityId: payment.id,
         metadata: {
@@ -409,7 +409,7 @@ export const paymentRouter = router({
     }),
 
   // Reject payment (admin)
-  rejectPayment: adminProcedure
+  rejectPayment: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -421,7 +421,7 @@ export const paymentRouter = router({
     .input(
       z.object({
         paymentId: z.string(),
-        reason: z.string().min(10, "Please provide a detailed reason for rejection"),
+        reason: z.string().min(1, "Please provide a reason for rejection"),
       })
     )
     .output(z.object({ success: z.boolean() }))
@@ -512,7 +512,7 @@ export const paymentRouter = router({
         action: "payment.reject",
         message: `Payment rejected for ${payment.userId}`,
         actorId: adminId,
-        actorRole: "SUPER_ADMIN",
+        actorRole: ctx.session.user.role,
         entityType: "PaymentProof",
         entityId: payment.id,
         level: "warn",
@@ -526,7 +526,7 @@ export const paymentRouter = router({
     }),
 
   // Get payment stats for admin dashboard
-  getStats: adminProcedure
+  getStats: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",

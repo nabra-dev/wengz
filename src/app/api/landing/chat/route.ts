@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 const CHAT_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const BodySchema = z.object({
-  prompt: z.string().min(2).max(1800),
+  prompt: z.string().min(1),
   locale: z.enum(["en", "ar"]).optional().default("en"),
 });
 

@@ -186,21 +186,18 @@ describe("tRPC Auth Router", () => {
       expect(existingUser).toBeTruthy();
     });
 
-    it("should validate password strength requirements", async () => {
-      // Password validation rules
-      const minLength = 6;
+    it("should require a non-empty password", async () => {
+      const minLength = 1;
 
-      const weakPasswords = ["123", "ab", "short"];
-      const strongPasswords = ["Pass123", "SecurePassword1", "MyP@ssw0rd"];
+      const emptyPasswords = ["", "   "];
+      const validPasswords = ["a", "Pass123", "SecurePassword1"];
 
-      // Test weak passwords
-      weakPasswords.forEach((pwd) => {
-        expect(pwd.length).toBeLessThan(minLength);
+      emptyPasswords.forEach((pwd) => {
+        expect(pwd.trim().length).toBeLessThan(minLength);
       });
 
-      // Test strong passwords
-      strongPasswords.forEach((pwd) => {
-        expect(pwd.length).toBeGreaterThanOrEqual(minLength);
+      validPasswords.forEach((pwd) => {
+        expect(pwd.trim().length).toBeGreaterThanOrEqual(minLength);
       });
     });
   });

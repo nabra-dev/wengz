@@ -5,15 +5,31 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, locale: string = "en"): string {
-  const formatted = new Intl.NumberFormat(locale, {
-    style: "decimal",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+/** Max fraction digits for all system finance/price amounts (display + rounding). */
+export const MONEY_MAX_FRACTION_DIGITS = 4;
 
+/**
+ * Round a money amount to at most 4 decimal places (e.g. 0.00977 → 0.0098).
+ */
+export function roundMoney(amount: number): number {
+  if (!Number.isFinite(amount)) return 0;
+  return Number(amount.toFixed(MONEY_MAX_FRACTION_DIGITS));
+}
+
+/**
+ * Format a money amount as-is with up to 4 decimals (no forced trailing zeros).
+ */
+export function formatMoneyAmount(amount: number, locale: string = "en"): string {
+  return new Intl.NumberFormat(locale, {
+    style: "decimal",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: MONEY_MAX_FRACTION_DIGITS,
+  }).format(roundMoney(amount));
+}
+
+export function formatCurrency(amount: number, locale: string = "en"): string {
   // Always show $ before the number for consistency
-  return `$${formatted}`;
+  return `$${formatMoneyAmount(amount, locale)}`;
 }
 
 export function formatDate(date: Date | string, locale: string = "en"): string {

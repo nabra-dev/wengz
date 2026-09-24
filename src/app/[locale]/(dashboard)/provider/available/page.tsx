@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
+import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realtime-refresh";
+import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 import { ArrowRight } from "lucide-react";
 
 export default function AvailableJobsPage() {
@@ -15,6 +18,13 @@ export default function AvailableJobsPage() {
   const { data: requestsData, isLoading } = trpc.provider.getAvailableRequests.useQuery({
     limit: 50,
   });
+  const { isUnread } = useProviderRequestUnread();
+
+  const requestIds = useMemo(
+    () => requestsData?.requests.map((request: { id: string }) => request.id) ?? [],
+    [requestsData?.requests]
+  );
+  useProviderJobsRealtimeRefresh(requestIds);
 
   return (
     <div className="space-y-6">
@@ -56,6 +66,7 @@ export default function AvailableJobsPage() {
                   serviceType={request.serviceType}
                   href={`/provider/available/${request.id}`}
                   variant="detailed"
+                  unread={isUnread(request.id)}
                   actions={
                     <Link href={`/provider/available/${request.id}`}>
                       <Button size="sm" className="flex items-center gap-2">

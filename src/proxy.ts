@@ -2,6 +2,11 @@ import createMiddleware from "next-intl/middleware";
 import { withAuth } from "next-auth/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
+import {
+  canAccessAdminPath,
+  getStaffHomePath,
+  isStaffRole,
+} from "./lib/roles";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -73,8 +78,14 @@ const authMiddleware = withAuth(
     const token = req.nextauth.token;
     const basePath = getPathWithoutLocale(req.nextUrl.pathname);
 
-    if (basePath.startsWith("admin") && token?.role !== "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
+    if (basePath.startsWith("admin")) {
+      const role = token?.role as string | undefined;
+      if (!isStaffRole(role)) {
+        return NextResponse.redirect(new URL("/", req.url));
+      }
+      if (!canAccessAdminPath(role, basePath)) {
+        return NextResponse.redirect(new URL(getStaffHomePath(role), req.url));
+      }
     }
 
     if (

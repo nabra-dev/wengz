@@ -220,8 +220,6 @@ export function ContactFormPage() {
                       id="fullName"
                       name="fullName"
                       required
-                      minLength={2}
-                      maxLength={100}
                       className={fieldClass}
                       autoComplete="name"
                     />
@@ -238,7 +236,6 @@ export function ContactFormPage() {
                       name="email"
                       type="email"
                       required
-                      maxLength={254}
                       className={fieldClass}
                       autoComplete="email"
                     />
@@ -254,7 +251,6 @@ export function ContactFormPage() {
                       id="phone"
                       name="phone"
                       required
-                      maxLength={50}
                       className={fieldClass}
                       autoComplete="tel"
                       inputMode="tel"
@@ -267,7 +263,6 @@ export function ContactFormPage() {
                     <Input
                       id="company"
                       name="company"
-                      maxLength={120}
                       className={fieldClass}
                       autoComplete="organization"
                     />
@@ -279,7 +274,6 @@ export function ContactFormPage() {
                     <Input
                       id="website"
                       name="website"
-                      maxLength={300}
                       className={fieldClass}
                       placeholder={t("forms.provider.websitePlaceholder")}
                     />
@@ -339,8 +333,6 @@ export function ContactFormPage() {
                   <Textarea
                     id="message"
                     name="message"
-                    minLength={10}
-                    maxLength={4000}
                     className={textareaClass}
                     rows={6}
                     placeholder={t("forms.provider.messagePlaceholder")}

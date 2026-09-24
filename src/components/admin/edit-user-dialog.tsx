@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,16 +22,26 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc/client";
 import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import {
+  ASSIGNABLE_ROLES,
+  getRoleChangeBlockReason,
+  type AssignableRole,
+} from "@/lib/roles";
 import { toast } from "sonner";
 import { Loader2, User, Mail } from "lucide-react";
 
+type EditableUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  phone?: string | null;
+  role: string;
+  clientRequestCount: number;
+  providerRequestCount: number;
+};
+
 interface EditUserDialogProps {
-  readonly user: {
-    id: string;
-    name: string | null;
-    email: string;
-    phone?: string | null;
-  } | null;
+  readonly user: EditableUser | null;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onSuccess?: () => void;
@@ -44,10 +54,12 @@ export function EditUserDialog({
   onSuccess,
 }: Readonly<EditUserDialogProps>) {
   const t = useTranslations("admin.users");
+  const tCommon = useTranslations("common");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("+20");
   const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<AssignableRole>("CLIENT");
 
   const updateUser = trpc.admin.updateUser.useMutation();
 
@@ -56,6 +68,11 @@ export function EditUserDialog({
     queueMicrotask(() => {
       setName(user.name || "");
       setEmail(user.email);
+      setRole(
+        ASSIGNABLE_ROLES.includes(user.role as AssignableRole)
+          ? (user.role as AssignableRole)
+          : "CLIENT"
+      );
 
       const rawPhone = user.phone;
       if (rawPhone) {
@@ -73,25 +90,50 @@ export function EditUserDialog({
     });
   }, [user]);
 
+  const roleHint = useMemo(() => {
+    if (!user) return null;
+    return getRoleChangeBlockReason({
+      currentRole: user.role,
+      newRole: role,
+      clientRequestCount: user.clientRequestCount,
+      providerRequestCount: user.providerRequestCount,
+    });
+  }, [user, role]);
+
+  const isRoleOptionDisabled = (option: AssignableRole) => {
+    if (!user || option === user.role) return false;
+    return Boolean(
+      getRoleChangeBlockReason({
+        currentRole: user.role,
+        newRole: option,
+        clientRequestCount: user.clientRequestCount,
+        providerRequestCount: user.providerRequestCount,
+      })
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) return;
+
+    if (roleHint) {
+      toast.error(roleHint);
+      return;
+    }
 
     try {
       const updates: {
         name?: string;
         email?: string;
         phone?: string;
+        role?: AssignableRole;
       } = {};
 
-      if (name === user.name) {
-        /* no change */
-      } else {
+      if (name !== user.name) {
         updates.name = name;
       }
 
-      // Validate email if changed
       if (email !== user.email) {
         const emailValidation = emailSchema.safeParse(email);
         if (!emailValidation.success) {
@@ -105,7 +147,6 @@ export function EditUserDialog({
         updates.email = email.toLowerCase().trim();
       }
 
-      // Validate phone if provided
       let composedPhone: string | undefined = undefined;
       if (phone) {
         const phoneValidation = phoneNumberOnlySchema.safeParse(phone);
@@ -119,9 +160,17 @@ export function EditUserDialog({
         }
         composedPhone = `${countryCode} ${phone}`;
       }
-      // Only update phone when a valid phone is provided
       if (composedPhone && composedPhone !== user.phone) {
         updates.phone = composedPhone;
+      }
+
+      if (role !== user.role) {
+        updates.role = role;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        onOpenChange(false);
+        return;
       }
 
       await updateUser.mutateAsync({
@@ -132,8 +181,9 @@ export function EditUserDialog({
       toast.success(t("dialog.toast.updated"));
       onOpenChange(false);
       onSuccess?.();
-    } catch (error: any) {
-      toast.error(error.message || t("dialog.toast.error"));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("dialog.toast.error");
+      toast.error(message);
     }
   };
 
@@ -156,7 +206,6 @@ export function EditUserDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("dialog.fields.name")}
-              minLength={2}
               required
             />
           </div>
@@ -174,7 +223,6 @@ export function EditUserDialog({
               placeholder={t("dialog.fields.email")}
               required
             />
-            <p className="text-xs text-muted-foreground">{t("dialog.edit.description")}</p>
           </div>
 
           <div className="space-y-2">
@@ -207,6 +255,34 @@ export function EditUserDialog({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="edit-role">{t("dialog.fields.role")}</Label>
+            <Select
+              value={role}
+              onValueChange={(value: AssignableRole) => setRole(value)}
+            >
+              <SelectTrigger id="edit-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSIGNABLE_ROLES.map((option) => (
+                  <SelectItem
+                    key={option}
+                    value={option}
+                    disabled={isRoleOptionDisabled(option)}
+                  >
+                    {tCommon(`roles.${option}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {roleHint ? (
+              <p className="text-xs text-destructive">{roleHint}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t("dialog.edit.roleHint")}</p>
+            )}
+          </div>
+
           <DialogFooter>
             <div className="flex gap-2">
               <Button
@@ -219,7 +295,7 @@ export function EditUserDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={updateUser.isPending}
+                disabled={updateUser.isPending || Boolean(roleHint)}
                 className="flex items-center gap-2"
               >
                 {updateUser.isPending && <Loader2 className="h-4 w-4 animate-spin" />}

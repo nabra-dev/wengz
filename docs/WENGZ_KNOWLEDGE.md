@@ -61,8 +61,12 @@ When a user asks what services Wengz provides (or a close paraphrase), prefer th
 - Provider:
   - Sees assigned/available work.
   - Delivers outputs and collaborates on requests.
+- Project manager:
+  - Oversees client–provider requests only (assign, review, moderate).
+- Finance manager:
+  - Handles payments, provider finance, withdrawals, and finance settings only.
 - Super admin:
-  - Manages users, services, packages, subscriptions, requests, and payment verification.
+  - Full platform: users, catalog, packages, requests, payments, finance, settings, activity.
 
 ## Commercial Model
 

@@ -11,7 +11,7 @@ This document maps **stack choices**, **runtime boundaries**, and **important co
 | Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                          |
 | UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**   |
 | API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                  |
-| Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt**                  |
+| Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt**; forgot/reset via `PasswordResetToken` + email |
 | Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                              |
 | i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json` |
 | Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                       |
@@ -68,7 +68,7 @@ flowchart TB
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/app/`                                   | App Router: `layout.tsx`, `globals.css`, `api/**` route handlers                                                                                                               |
 | `src/app/[locale]/`                          | Locale segment; dashboard groups `(auth)`, `(dashboard)` with `client/`, `provider/`, `admin/`                                                                                 |
-| `src/server/trpc.ts`                         | tRPC initialization, **context** (`db`, `session`, `locale`, `req`), **procedures** (`public`, `protected`, `admin`, provider/client guards)                                   |
+| `src/server/trpc.ts`                         | tRPC initialization, **context** (`db`, `session`, `locale`, `req`), **procedures** (`public`, `protected`, `admin` / super-admin, `requestManager`, `financeManager`, `staff`, provider/client guards) |
 | `src/server/routers/`                        | Domain routers composed in `_app.ts` → `AppRouter`                                                                                                                             |
 | `src/lib/db.ts`                              | Prisma client singleton                                                                                                                                                        |
 | `src/lib/auth.ts`                            | `authOptions` for NextAuth                                                                                                                                                     |
@@ -107,6 +107,13 @@ flowchart TB
 - **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (GitHub Actions, system cron, etc.); scans subscriptions for expiry notifications and related updates. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
 - **`src/app/api/cron/check-delivered-approvals/route.ts`**: Suggested every **~15 minutes**. For `DELIVERED` requests: sends a client approval reminder after **1 hour** (`approvalReminderSentAt`), and sets `needsManualApproval` after **12 hours**. Auth uses `Authorization: Bearer ${CRON_SECRET}` (same pattern as subscription cron).
 - **`src/app/api/cron/release-provider-holds/route.ts`**: Suggested every **~1 hour**. Releases `ProviderFinanceLedger` rows in `HOLD` whose `availableAt` has passed into wallet **available** balance (`held*` → `balance*`). Auth uses `Authorization: Bearer ${CRON_SECRET}`.
+
+### Activity / audit log
+
+- **`ActivityLog`** (`prisma/schema.prisma`) — immutable rows: actor, role, action, entity, message, metadata, level, timestamp.
+- **Writers**: `src/lib/activity-log.ts` (`logActivity` / `logActivityAsync`) and request-scoped `src/lib/request-activity.ts` (`logRequestActivity`).
+- **Request coverage**: create, claim, assign, unassign, accept, start, status/deliver, revision, approve, message (metadata only — no full chat body), rate, delete, restore. Delivered-approval cron writes one summary row (`cron.deliveredApprovals`), not per-request spam.
+- **Admin UI**: `/admin/activity` via `admin.getActivityLogs` (filter by action prefix e.g. `request.`, level, or request `entityId`).
 
 ---
 

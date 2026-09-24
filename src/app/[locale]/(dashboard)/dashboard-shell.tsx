@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { NotificationPermissionBanner } from "@/components/ui/notification-permission-banner";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { CurrencySwitcher } from "@/components/ui/currency-switcher";
 import { useRealtimeNotifications } from "@/components/providers/notification-provider";
 import {
   LayoutDashboard,
@@ -32,6 +33,13 @@ import { useState } from "react";
 import { getInitials } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { trpc } from "@/lib/trpc/client";
+import {
+  canManageFinance,
+  canManagePlatform,
+  canManageRequests,
+  getStaffHomePath,
+  isStaffRole,
+} from "@/lib/roles";
 
 const clientNavConfig = [
   { href: "/client", labelKey: "client.dashboard", icon: LayoutDashboard },
@@ -52,18 +60,39 @@ const providerNavConfig = [
 ];
 
 const adminNavConfig = [
-  { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", labelKey: "admin.users", icon: Users },
-  { href: "/admin/requests", labelKey: "admin.requests", icon: FileText },
-  { href: "/admin/payments", labelKey: "admin.payments", icon: CheckCircle },
-  { href: "/admin/finance", labelKey: "admin.finance", icon: Wallet },
-  { href: "/admin/activity", labelKey: "admin.activity", icon: ScrollText },
-  { href: "/admin/notifications", labelKey: "admin.notifications", icon: Bell },
-  { href: "/admin/packages", labelKey: "admin.packages", icon: CreditCard },
-  { href: "/admin/services", labelKey: "admin.services", icon: Settings },
-  { href: "/admin/settings", labelKey: "admin.settings", icon: Settings2 },
-  { href: "/admin/profile", labelKey: "admin.profile", icon: User },
+  { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard, access: "platform" as const },
+  { href: "/admin/users", labelKey: "admin.users", icon: Users, access: "platform" as const },
+  { href: "/admin/requests", labelKey: "admin.requests", icon: FileText, access: "requests" as const },
+  {
+    href: "/admin/payments",
+    labelKey: "admin.payments",
+    icon: CheckCircle,
+    access: "finance" as const,
+  },
+  { href: "/admin/finance", labelKey: "admin.finance", icon: Wallet, access: "finance" as const },
+  { href: "/admin/activity", labelKey: "admin.activity", icon: ScrollText, access: "platform" as const },
+  {
+    href: "/admin/notifications",
+    labelKey: "admin.notifications",
+    icon: Bell,
+    access: "staff" as const,
+  },
+  { href: "/admin/packages", labelKey: "admin.packages", icon: CreditCard, access: "platform" as const },
+  { href: "/admin/services", labelKey: "admin.services", icon: Settings, access: "platform" as const },
+  { href: "/admin/settings", labelKey: "admin.settings", icon: Settings2, access: "settings" as const },
+  { href: "/admin/profile", labelKey: "admin.profile", icon: User, access: "staff" as const },
 ];
+
+function canSeeAdminNavItem(
+  role: string | null | undefined,
+  access: (typeof adminNavConfig)[number]["access"]
+) {
+  if (access === "staff") return isStaffRole(role);
+  if (access === "requests") return canManageRequests(role);
+  if (access === "finance") return canManageFinance(role);
+  if (access === "settings") return canManagePlatform(role) || canManageFinance(role);
+  return canManagePlatform(role);
+}
 
 export function DashboardShell({
   children,
@@ -97,8 +126,11 @@ export function DashboardShell({
   const creditsLow = clientCredits !== null && clientCredits <= 0;
 
   const getNavItems = () => {
-    if (role === "SUPER_ADMIN")
-      return adminNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
+    if (isStaffRole(role)) {
+      return adminNavConfig
+        .filter((item) => canSeeAdminNavItem(role, item.access))
+        .map((item) => ({ ...item, label: tNav(item.labelKey) }));
+    }
     if (role === "PROVIDER")
       return providerNavConfig.map((item) => ({ ...item, label: tNav(item.labelKey) }));
     if (role === "CLIENT")
@@ -107,7 +139,7 @@ export function DashboardShell({
   };
 
   const getBasePath = () => {
-    if (role === "SUPER_ADMIN") return "/admin";
+    if (isStaffRole(role)) return getStaffHomePath(role);
     if (role === "PROVIDER") return "/provider";
     if (role === "CLIENT") return "/client";
     return "/";
@@ -148,6 +180,7 @@ export function DashboardShell({
             </Link>
           )}
           <ThemeSwitcher />
+          <CurrencySwitcher />
           <LanguageSwitcher />
           {unreadCount > 0 && (
             <Badge variant="destructive" className="h-5 min-w-5 px-1 text-xs">
@@ -253,6 +286,7 @@ export function DashboardShell({
             </div>
             <div className="space-y-2">
               <ThemeSwitcher />
+              <CurrencySwitcher variant="full" />
               <LanguageSwitcher />
               <Button
                 variant="outline"

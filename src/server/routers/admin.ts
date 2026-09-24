@@ -1,17 +1,28 @@
 import { z } from "zod";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { router, adminProcedure, publicProcedure } from "@/server/trpc";
+import {
+  router,
+  adminProcedure,
+  financeManagerProcedure,
+  publicProcedure,
+  requestManagerProcedure,
+} from "@/server/trpc";
+import { ASSIGNABLE_ROLES, ALL_ROLES, getRoleChangeBlockReason, isSuperAdmin } from "@/lib/roles";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
-import { notifyProviderAssignment, notifyProviderWithdrawalReviewed } from "@/lib/notifications";
+import { notifyProviderAssignment, notifyProviderWithdrawalReviewed, notifyProviderFinanceDisputeReviewed } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import { reviewProviderWithdrawal, sendProviderPayout, settleCompletedRequest } from "@/lib/provider-wallet";
+import { reviewProviderFinanceDispute } from "@/lib/finance-disputes";
 import { logActivityAsync } from "@/lib/activity-log";
+import { logRequestActivity } from "@/lib/request-activity";
 import {
   CREDIT_PRICE_USD_KEY,
   getFinanceSettings as loadFinanceSettings,
+  MIN_WITHDRAWAL_USD_KEY,
   PROVIDER_COMMISSION_PERCENT_KEY,
+  WITHDRAWAL_FEE_USD_KEY,
 } from "@/lib/finance-settings";
 import {
   getPaymentSettings as loadPaymentSettings,
@@ -25,6 +36,8 @@ import {
   invalidateServiceTypeCache,
 } from "@/lib/cache-invalidation";
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
+import { roundMoney } from "@/lib/utils";
+import { assertAllowedUploadUrls } from "@/lib/upload-url";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -133,7 +146,7 @@ export const adminRouter = router({
       };
     }),
 
-  getFinanceSettings: adminProcedure
+  getFinanceSettings: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -146,11 +159,13 @@ export const adminRouter = router({
       z.object({
         creditPriceUsd: z.number(),
         commissionPercent: z.number(),
+        minWithdrawalUsd: z.number(),
+        withdrawalFeeUsd: z.number(),
       })
     )
     .query(async ({ ctx }) => loadFinanceSettings(ctx.db)),
 
-  setFinanceSettings: adminProcedure
+  setFinanceSettings: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -163,6 +178,8 @@ export const adminRouter = router({
       z.object({
         creditPriceUsd: z.number().min(0),
         commissionPercent: z.number().min(0).max(100),
+        minWithdrawalUsd: z.number().min(0),
+        withdrawalFeeUsd: z.number().min(0),
       })
     )
     .output(
@@ -170,19 +187,32 @@ export const adminRouter = router({
         success: z.boolean(),
         creditPriceUsd: z.number(),
         commissionPercent: z.number(),
+        minWithdrawalUsd: z.number(),
+        withdrawalFeeUsd: z.number(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const creditPriceUsd = roundMoney(input.creditPriceUsd);
+      const minWithdrawalUsd = roundMoney(input.minWithdrawalUsd);
+      const withdrawalFeeUsd = roundMoney(input.withdrawalFeeUsd);
+
+      if (withdrawalFeeUsd > 0 && minWithdrawalUsd > 0 && withdrawalFeeUsd >= minWithdrawalUsd) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Withdrawal fee must be less than the minimum withdrawal amount",
+        });
+      }
+
       await ctx.db.$transaction([
         ctx.db.systemSettings.upsert({
           where: { key: CREDIT_PRICE_USD_KEY },
           update: {
-            value: { amount: input.creditPriceUsd },
+            value: { amount: creditPriceUsd },
             description: "Global USD value of one credit for provider settlement.",
           },
           create: {
             key: CREDIT_PRICE_USD_KEY,
-            value: { amount: input.creditPriceUsd },
+            value: { amount: creditPriceUsd },
             description: "Global USD value of one credit for provider settlement.",
           },
         }),
@@ -198,16 +228,42 @@ export const adminRouter = router({
             description: "Platform commission percent taken from provider settlement.",
           },
         }),
+        ctx.db.systemSettings.upsert({
+          where: { key: MIN_WITHDRAWAL_USD_KEY },
+          update: {
+            value: { amount: minWithdrawalUsd },
+            description: "Minimum USD amount a provider may request to withdraw.",
+          },
+          create: {
+            key: MIN_WITHDRAWAL_USD_KEY,
+            value: { amount: minWithdrawalUsd },
+            description: "Minimum USD amount a provider may request to withdraw.",
+          },
+        }),
+        ctx.db.systemSettings.upsert({
+          where: { key: WITHDRAWAL_FEE_USD_KEY },
+          update: {
+            value: { amount: withdrawalFeeUsd },
+            description: "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
+          },
+          create: {
+            key: WITHDRAWAL_FEE_USD_KEY,
+            value: { amount: withdrawalFeeUsd },
+            description: "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
+          },
+        }),
       ]);
 
       return {
         success: true,
-        creditPriceUsd: input.creditPriceUsd,
+        creditPriceUsd,
         commissionPercent: input.commissionPercent,
+        minWithdrawalUsd,
+        withdrawalFeeUsd,
       };
     }),
 
-  getPaymentSettings: adminProcedure
+  getPaymentSettings: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -230,7 +286,7 @@ export const adminRouter = router({
     )
     .query(async ({ ctx }) => loadPaymentSettings(ctx.db)),
 
-  setPaymentSettings: adminProcedure
+  setPaymentSettings: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -241,16 +297,15 @@ export const adminRouter = router({
     })
     .input(
       z.object({
-        bankName: z.string().min(2).max(120),
-        accountName: z.string().min(2).max(120),
-        iban: z.string().min(8).max(64),
-        swiftCode: z.string().min(4).max(20),
-        currency: z.string().min(3).max(8),
-        note: z.string().min(5).max(500),
+        bankName: z.string().min(1),
+        accountName: z.string().min(1),
+        iban: z.string().min(1),
+        swiftCode: z.string().min(1),
+        currency: z.string().min(1),
+        note: z.string().min(1),
         instapayEnabled: z.boolean(),
         instapayLink: z
           .string()
-          .max(500)
           .refine(
             (value) => value.trim() === "" || /^https?:\/\//i.test(value.trim()),
             "InstaPay link must be a valid URL"
@@ -627,7 +682,7 @@ export const adminRouter = router({
     }),
 
   // Get all subscriptions with user info
-  getAllSubscriptions: adminProcedure
+  getAllSubscriptions: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -746,7 +801,7 @@ export const adminRouter = router({
     }),
 
   // Provider wallet and platform finance overview in credits/tokens.
-  getFinanceOverview: adminProcedure
+  getFinanceOverview: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -900,7 +955,7 @@ export const adminRouter = router({
       };
     }),
 
-  getProviderFinanceLedger: adminProcedure
+  getProviderFinanceLedger: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -964,7 +1019,7 @@ export const adminRouter = router({
       return { ledger };
     }),
 
-  getWithdrawals: adminProcedure
+  getWithdrawals: financeManagerProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -1013,7 +1068,7 @@ export const adminRouter = router({
       return { withdrawals };
     }),
 
-  reviewWithdrawal: adminProcedure
+  reviewWithdrawal: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -1026,17 +1081,28 @@ export const adminRouter = router({
       z.object({
         withdrawalId: z.string(),
         status: z.enum(["APPROVED", "REJECTED"]),
-        reason: z.string().min(5).max(500),
+        reason: z.string().min(1),
+        reviewImage: z.string().min(1),
       })
     )
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
+      try {
+        assertAllowedUploadUrls([input.reviewImage], ctx.session.user.id);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid review image. Upload the image through the app first.",
+        });
+      }
+
       const withdrawal = await ctx.db.$transaction((tx) =>
         reviewProviderWithdrawal(tx, {
           withdrawalId: input.withdrawalId,
           adminId: ctx.session.user.id,
           status: input.status,
           reason: input.reason,
+          reviewImage: input.reviewImage,
         })
       );
 
@@ -1052,7 +1118,7 @@ export const adminRouter = router({
         action: "wallet.withdraw_review",
         message: `Withdrawal ${input.status.toLowerCase()}: ${withdrawal.amountUsd} USD`,
         actorId: ctx.session.user.id,
-        actorRole: "SUPER_ADMIN",
+        actorRole: ctx.session.user.role,
         entityType: "WithdrawalRequest",
         entityId: withdrawal.id,
         metadata: {
@@ -1060,13 +1126,120 @@ export const adminRouter = router({
           amountUsd: withdrawal.amountUsd,
           providerId: withdrawal.providerId,
           reason: input.reason.trim(),
+          reviewImage: input.reviewImage,
         },
       });
 
       return { success: true };
     }),
 
-  sendProviderPayout: adminProcedure
+  getFinanceDisputes: financeManagerProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/finance/disputes",
+        tags: ["admin"],
+        summary: "List provider finance disputes",
+      },
+    })
+    .input(
+      z
+        .object({
+          status: z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ALL"]).optional(),
+          limit: z.number().min(1).max(100).optional(),
+        })
+        .optional()
+    )
+    .output(z.object({ disputes: z.array(z.any()) }))
+    .query(async ({ ctx, input }) => {
+      const status = input?.status && input.status !== "ALL" ? input.status : undefined;
+      const disputes = await ctx.db.providerFinanceDispute.findMany({
+        where: status ? { status } : undefined,
+        include: {
+          provider: {
+            select: { id: true, name: true, email: true },
+          },
+          ledger: {
+            select: {
+              id: true,
+              providerAmountUsd: true,
+              providerCredits: true,
+              status: true,
+              request: { select: { id: true, title: true } },
+            },
+          },
+          withdrawal: {
+            select: {
+              id: true,
+              amountUsd: true,
+              amountCredits: true,
+              status: true,
+            },
+          },
+          reviewedBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        take: input?.limit ?? 50,
+      });
+
+      return { disputes };
+    }),
+
+  reviewFinanceDispute: financeManagerProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/finance/disputes/review",
+        tags: ["admin"],
+        summary: "Update a provider finance dispute",
+      },
+    })
+    .input(
+      z.object({
+        disputeId: z.string(),
+        status: z.enum(["UNDER_REVIEW", "RESOLVED", "REJECTED"]),
+        adminNote: z.string().min(1),
+      })
+    )
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const dispute = await ctx.db.$transaction((tx) =>
+        reviewProviderFinanceDispute(tx, {
+          disputeId: input.disputeId,
+          adminId: ctx.session.user.id,
+          status: input.status,
+          adminNote: input.adminNote,
+        })
+      );
+
+      await notifyProviderFinanceDisputeReviewed({
+        providerId: dispute.providerId,
+        status: input.status,
+        note: input.adminNote.trim(),
+        locale: ctx.locale,
+      });
+
+      logActivityAsync({
+        action: "wallet.dispute_review",
+        message: `Finance dispute ${input.status.toLowerCase()}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "ProviderFinanceDispute",
+        entityId: dispute.id,
+        metadata: {
+          status: input.status,
+          providerId: dispute.providerId,
+          ledgerId: dispute.ledgerId,
+          withdrawalId: dispute.withdrawalId,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  sendProviderPayout: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -1079,7 +1252,7 @@ export const adminRouter = router({
       z.object({
         providerId: z.string(),
         amountUsd: z.number().positive(),
-        reason: z.string().min(5).max(500),
+        reason: z.string().min(1),
       })
     )
     .output(z.object({ success: z.boolean(), withdrawalId: z.string() }))
@@ -1105,7 +1278,7 @@ export const adminRouter = router({
         action: "wallet.payout",
         message: `Admin payout ${withdrawal.amountUsd} USD to provider`,
         actorId: ctx.session.user.id,
-        actorRole: "SUPER_ADMIN",
+        actorRole: ctx.session.user.role,
         entityType: "WithdrawalRequest",
         entityId: withdrawal.id,
         metadata: {
@@ -1122,7 +1295,7 @@ export const adminRouter = router({
    * Repair path: settle COMPLETED requests that never got a finance ledger
    * entry (e.g. completed before wallet feature, or failed settlement).
    */
-  settleUnsettledCompletedRequests: adminProcedure
+  settleUnsettledCompletedRequests: financeManagerProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -1180,7 +1353,7 @@ export const adminRouter = router({
         action: "wallet.settle",
         message: `Settled ${settled} unsettled request(s); skipped ${skipped}`,
         actorId: ctx.session.user.id,
-        actorRole: "SUPER_ADMIN",
+        actorRole: ctx.session.user.role,
         metadata: { settled, skipped, errors: errors.slice(0, 10) },
       });
 
@@ -1202,6 +1375,8 @@ export const adminRouter = router({
           action: z.string().optional(),
           level: z.enum(["info", "warn", "error"]).optional(),
           actorId: z.string().optional(),
+          entityType: z.string().optional(),
+          entityId: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
           cursor: z.string().optional(),
         })
@@ -1215,13 +1390,22 @@ export const adminRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const where: {
-        action?: string;
+        action?: string | { startsWith: string };
         level?: string;
         actorId?: string;
+        entityType?: string;
+        entityId?: string;
       } = {};
-      if (input?.action) where.action = input.action;
+      if (input?.action) {
+        // Allow prefix filters like "request." to show full request history
+        where.action = input.action.endsWith(".")
+          ? { startsWith: input.action }
+          : input.action;
+      }
       if (input?.level) where.level = input.level;
       if (input?.actorId) where.actorId = input.actorId;
+      if (input?.entityType) where.entityType = input.entityType;
+      if (input?.entityId) where.entityId = input.entityId;
 
       const logs = await ctx.db.activityLog.findMany({
         where,
@@ -1253,7 +1437,7 @@ export const adminRouter = router({
     .input(
       z
         .object({
-          role: z.enum(["SUPER_ADMIN", "PROVIDER", "CLIENT"]).optional(),
+          role: z.enum(ALL_ROLES).optional(),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
           search: z.string().optional(),
@@ -1341,7 +1525,7 @@ export const adminRouter = router({
     }),
 
   // Get all requests
-  getAllRequests: adminProcedure
+  getAllRequests: requestManagerProcedure
     .input(
       z
         .object({
@@ -1396,7 +1580,7 @@ export const adminRouter = router({
   createServiceType: adminProcedure
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().min(1),
         description: z.string().optional(),
         nameI18n: z.record(z.string()).optional(),
         descriptionI18n: z.record(z.string()).optional(),
@@ -1460,7 +1644,7 @@ export const adminRouter = router({
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(2).optional(),
+        name: z.string().min(1).optional(),
         description: z.string().optional(),
         nameI18n: z.record(z.string()).optional(),
         descriptionI18n: z.record(z.string()).optional(),
@@ -1536,7 +1720,7 @@ export const adminRouter = router({
   createPackage: adminProcedure
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().min(1),
         nameI18n: z.record(z.string()).optional(),
         price: z.number().min(0),
         credits: z.number().min(1),
@@ -1610,7 +1794,7 @@ export const adminRouter = router({
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(2).optional(),
+        name: z.string().min(1).optional(),
         nameI18n: z.record(z.string()).optional(),
         description: z.string().optional(),
         descriptionI18n: z.record(z.string()).optional(),
@@ -1803,15 +1987,55 @@ export const adminRouter = router({
     .input(
       z.object({
         userId: z.string(),
-        role: z.enum(["SUPER_ADMIN", "PROVIDER", "CLIENT"]),
+        role: z.enum(ASSIGNABLE_ROLES),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Prevent admin from changing their own role
       if (input.userId === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot change your own role",
+        });
+      }
+
+      const existing = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        select: {
+          id: true,
+          role: true,
+          _count: {
+            select: {
+              clientRequests: true,
+              providerRequests: true,
+            },
+          },
+        },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      if (isSuperAdmin(existing.role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be modified",
+        });
+      }
+
+      const blockReason = getRoleChangeBlockReason({
+        currentRole: existing.role,
+        newRole: input.role,
+        clientRequestCount: existing._count.clientRequests,
+        providerRequestCount: existing._count.providerRequests,
+      });
+      if (blockReason) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: blockReason,
         });
       }
 
@@ -1822,7 +2046,6 @@ export const adminRouter = router({
 
       await invalidateSessionUserCache(input.userId);
 
-      // Create provider profile if changing to provider
       if (input.role === "PROVIDER") {
         await ctx.db.providerProfile.upsert({
           where: { userId: input.userId },
@@ -1841,7 +2064,7 @@ export const adminRouter = router({
     }),
 
   // Get all providers for assignment
-  getProviders: adminProcedure
+  getProviders: requestManagerProcedure
     .input(
       z
         .object({
@@ -1904,7 +2127,7 @@ export const adminRouter = router({
     }),
 
   // Assign request to provider
-  assignRequest: adminProcedure
+  assignRequest: requestManagerProcedure
     .input(
       z.object({
         requestId: z.string(),
@@ -1958,6 +2181,19 @@ export const adminRouter = router({
         providerName: provider.name || provider.email,
       });
 
+      logRequestActivity({
+        action: "request.assign",
+        requestId: input.requestId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        message: `Request assigned to ${provider.name || provider.email}: ${request.title}`,
+        metadata: {
+          previousProviderId: request.providerId,
+          providerId: input.providerId,
+          requestStatus: request.status,
+        },
+      });
+
       return {
         success: true,
         request: updatedRequest,
@@ -1966,7 +2202,7 @@ export const adminRouter = router({
     }),
 
   // Unassign request from provider
-  unassignRequest: adminProcedure
+  unassignRequest: requestManagerProcedure
     .input(z.object({ requestId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const request = await ctx.db.request.findUnique({
@@ -2000,6 +2236,19 @@ export const adminRouter = router({
         },
       });
 
+      logRequestActivity({
+        action: "request.unassign",
+        requestId: input.requestId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        message: `Request unassigned: ${request.title}`,
+        metadata: {
+          previousProviderId: request.providerId,
+          previousStatus: request.status,
+          newStatus: "PENDING",
+        },
+      });
+
       return {
         success: true,
         request: updatedRequest,
@@ -2011,15 +2260,22 @@ export const adminRouter = router({
   createUser: adminProcedure
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().min(1),
         email: z.string().email("Invalid email address").toLowerCase(),
-        password: z.string().min(6),
-        role: z.enum(["CLIENT", "PROVIDER", "SUPER_ADMIN"]),
+        password: z.string().min(1),
+        role: z.enum(ASSIGNABLE_ROLES),
         phone: phoneWithCountryCodeSchema,
         supportedServiceIds: z.array(z.string()).optional(), // For providers only
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.role && isSuperAdmin(input.role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be created through user management",
+        });
+      }
+
       // Check if user already exists
       const existingUser = await ctx.db.user.findUnique({
         where: { email: input.email },
@@ -2155,10 +2411,10 @@ export const adminRouter = router({
         });
       }
 
-      if (user.role === "SUPER_ADMIN" && !input.isActive) {
+      if (isSuperAdmin(user.role)) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Cannot deactivate a super admin user",
+          message: "Super admin accounts cannot be modified",
         });
       }
 
@@ -2183,7 +2439,7 @@ export const adminRouter = router({
     }),
 
   // Delete request (soft delete)
-  deleteRequest: adminProcedure
+  deleteRequest: requestManagerProcedure
     .input(z.object({ requestId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const request = await ctx.db.request.findUnique({
@@ -2205,6 +2461,19 @@ export const adminRouter = router({
         },
       });
 
+      logRequestActivity({
+        action: "request.delete",
+        requestId: input.requestId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        message: `Request cancelled/deleted: ${request.title}`,
+        metadata: {
+          previousStatus: request.status,
+          newStatus: "CANCELLED",
+        },
+        level: "warn",
+      });
+
       return {
         success: true,
         message: `Request "${request.title}" has been deleted`,
@@ -2212,7 +2481,7 @@ export const adminRouter = router({
     }),
 
   // Restore request
-  restoreRequest: adminProcedure
+  restoreRequest: requestManagerProcedure
     .input(z.object({ requestId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const request = await ctx.db.request.findUnique({
@@ -2233,28 +2502,50 @@ export const adminRouter = router({
         },
       });
 
+      logRequestActivity({
+        action: "request.restore",
+        requestId: input.requestId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        message: `Request restored: ${request.title}`,
+        metadata: {
+          status: request.status,
+        },
+      });
+
       return {
         success: true,
         message: `Request "${request.title}" has been restored`,
       };
     }),
 
-  // Update user profile (admin only - name and email)
+  // Update user profile (admin only - name, email, phone, role)
   updateUser: adminProcedure
     .input(
       z.object({
         userId: z.string(),
-        name: z.string().min(2, "Name must be at least 2 characters").optional(),
+        name: z.string().min(1).optional(),
         email: z.string().email("Invalid email address").toLowerCase().optional(),
         phone: phoneWithCountryCodeSchema,
+        role: z.enum(ASSIGNABLE_ROLES).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { userId, name, email, phone } = input;
+      const { userId, name, email, phone, role } = input;
 
-      // Check if user exists
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          _count: {
+            select: {
+              clientRequests: true,
+              providerRequests: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -2262,6 +2553,35 @@ export const adminRouter = router({
           code: "NOT_FOUND",
           message: "User not found",
         });
+      }
+
+      if (isSuperAdmin(user.role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be modified",
+        });
+      }
+
+      if (role && role !== user.role) {
+        if (userId === ctx.session.user.id) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You cannot change your own role",
+          });
+        }
+
+        const blockReason = getRoleChangeBlockReason({
+          currentRole: user.role,
+          newRole: role,
+          clientRequestCount: user._count.clientRequests,
+          providerRequestCount: user._count.providerRequests,
+        });
+        if (blockReason) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: blockReason,
+          });
+        }
       }
 
       // If email is being changed, check if it's already taken
@@ -2288,6 +2608,7 @@ export const adminRouter = router({
           ...(name && { name }),
           ...(email && { email }),
           ...(phone !== undefined && { phone }),
+          ...(role && role !== user.role && { role }),
         },
         select: {
           id: true,
@@ -2297,6 +2618,20 @@ export const adminRouter = router({
           role: true,
         },
       });
+
+      if (role && role !== user.role) {
+        await invalidateSessionUserCache(userId);
+        if (role === "PROVIDER") {
+          await ctx.db.providerProfile.upsert({
+            where: { userId },
+            update: {},
+            create: {
+              userId,
+              skillsTags: [],
+            },
+          });
+        }
+      }
 
       return {
         success: true,

@@ -213,7 +213,6 @@ export function EditProfileForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("placeholders.name")}
-              minLength={2}
               required
             />
           </div>

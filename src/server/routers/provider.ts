@@ -1,12 +1,16 @@
 import { z } from "zod";
 import { router, providerProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { notifyAdminsNewWithdrawal, notifyStatusChange } from "@/lib/notifications";
+import { notifyAdminsNewWithdrawal, notifyAdminsFinanceDisputeOpened, notifyStatusChange } from "@/lib/notifications";
 import { formatEstimatedDeliveryDuration, getTranslation } from "@/lib/notifications/i18n-helper";
 import {
   normalizePayoutDetails,
   requestProviderWithdrawal,
 } from "@/lib/provider-wallet";
+import { openProviderFinanceDispute } from "@/lib/finance-disputes";
+import { getFinanceSettings } from "@/lib/finance-settings";
+import { logActivityAsync } from "@/lib/activity-log";
+import { logRequestActivity } from "@/lib/request-activity";
 import {
   getProviderWorkload,
   canClaimAdditionalRequest,
@@ -16,10 +20,10 @@ import {
 
 const payoutDetailsInputSchema = z.object({
   payoutMethod: z.enum(["BANK", "E_WALLET"]),
-  accountHolder: z.string().min(2).max(120),
-  bankName: z.string().max(120).optional().nullable(),
-  bankAccount: z.string().max(80).optional().nullable(),
-  eWalletNumber: z.string().max(40).optional().nullable(),
+  accountHolder: z.string().min(1),
+  bankName: z.string().optional().nullable(),
+  bankAccount: z.string().optional().nullable(),
+  eWalletNumber: z.string().optional().nullable(),
 });
 
 export const providerRouter = router({
@@ -318,6 +322,10 @@ export const providerRouter = router({
           .nullable(),
         withdrawals: z.array(z.any()),
         hasPendingWithdrawal: z.boolean(),
+        withdrawalSettings: z.object({
+          minWithdrawalUsd: z.number(),
+          withdrawalFeeUsd: z.number(),
+        }),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -328,7 +336,7 @@ export const providerRouter = router({
       const startDate = input?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = input?.endDate || new Date();
 
-      const [wallet, ledger, periodAgg, profile, withdrawals] = await Promise.all([
+      const [wallet, ledger, periodAgg, profile, withdrawals, financeSettings] = await Promise.all([
         ctx.db.providerWallet.findUnique({
           where: { providerId: userId },
         }),
@@ -350,6 +358,18 @@ export const providerRouter = router({
                 name: true,
                 nameI18n: true,
                 icon: true,
+              },
+            },
+            disputes: {
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                reason: true,
+                status: true,
+                adminNote: true,
+                createdAt: true,
+                reviewedAt: true,
               },
             },
           },
@@ -386,10 +406,23 @@ export const providerRouter = router({
             reviewedBy: {
               select: { id: true, name: true, email: true },
             },
+            disputes: {
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                reason: true,
+                status: true,
+                adminNote: true,
+                createdAt: true,
+                reviewedAt: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
           take: 50,
         }),
+        getFinanceSettings(ctx.db),
       ]);
 
       const completedRequests = ledger.map((entry) => ({
@@ -439,6 +472,10 @@ export const providerRouter = router({
           : null,
         withdrawals,
         hasPendingWithdrawal: withdrawals.some((item) => item.status === "PENDING"),
+        withdrawalSettings: {
+          minWithdrawalUsd: financeSettings.minWithdrawalUsd,
+          withdrawalFeeUsd: financeSettings.withdrawalFeeUsd,
+        },
       };
     }),
 
@@ -592,6 +629,18 @@ export const providerRouter = router({
         locale: ctx.locale,
       });
 
+      logRequestActivity({
+        action: "request.claim",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Request claimed: ${request.title}`,
+        metadata: {
+          previousProviderId: request.providerId,
+          newProviderId: userId,
+        },
+      });
+
       return { success: true, request: updatedRequest };
     }),
 
@@ -707,6 +756,20 @@ export const providerRouter = router({
         locale: ctx.locale,
       });
 
+      logRequestActivity({
+        action: "request.start",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Work started: ${request.title}`,
+        metadata: {
+          estimatedDeliveryMinutes: input.estimatedDeliveryMinutes,
+          estimatedDelivery: estimatedDelivery.toISOString(),
+          previousStatus: request.status,
+          newStatus: "IN_PROGRESS",
+        },
+      });
+
       return { success: true, request: updatedRequest };
     }),
 
@@ -723,7 +786,7 @@ export const providerRouter = router({
     .input(
       z.object({
         requestId: z.string(),
-        deliverableMessage: z.string().min(5, "Deliverable message must be at least 5 characters"),
+        deliverableMessage: z.string().min(1, "Deliverable message is required"),
         files: z.array(z.string()).optional(),
       })
     )
@@ -785,6 +848,20 @@ export const providerRouter = router({
         oldStatus: request.status,
         newStatus: "DELIVERED",
         locale: ctx.locale,
+      });
+
+      logRequestActivity({
+        action: "request.deliver",
+        requestId: input.requestId,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        message: `Work delivered: ${request.title}`,
+        reason: input.deliverableMessage,
+        metadata: {
+          previousStatus: request.status,
+          newStatus: "DELIVERED",
+          fileCount: input.files?.length ?? 0,
+        },
       });
 
       return { success: true, request: updatedRequest };
@@ -854,7 +931,7 @@ export const providerRouter = router({
     .input(
       z.object({
         amountUsd: z.number().positive(),
-        providerNote: z.string().max(500).optional().nullable(),
+        providerNote: z.string().optional().nullable(),
       })
     )
     .output(
@@ -881,5 +958,60 @@ export const providerRouter = router({
       });
 
       return { success: true, withdrawalId: withdrawal.id };
+    }),
+
+  openFinanceDispute: providerProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/provider/finance/disputes",
+        tags: ["provider"],
+        summary: "Open a dispute on a ledger entry or withdrawal",
+      },
+    })
+    .input(
+      z
+        .object({
+          reason: z.string().min(1),
+          ledgerId: z.string().optional().nullable(),
+          withdrawalId: z.string().optional().nullable(),
+        })
+        .refine(
+          (value) => Boolean(value.ledgerId) !== Boolean(value.withdrawalId),
+          { message: "Provide exactly one of ledgerId or withdrawalId" }
+        )
+    )
+    .output(z.object({ success: z.boolean(), disputeId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const dispute = await ctx.db.$transaction((tx) =>
+        openProviderFinanceDispute(tx, {
+          providerId: userId,
+          reason: input.reason,
+          ledgerId: input.ledgerId,
+          withdrawalId: input.withdrawalId,
+        })
+      );
+
+      const providerNameOrEmail = ctx.session.user.name || ctx.session.user.email || "Provider";
+      await notifyAdminsFinanceDisputeOpened({
+        providerNameOrEmail,
+        locale: ctx.locale,
+      });
+
+      logActivityAsync({
+        action: "wallet.dispute_open",
+        message: "Provider opened a finance dispute",
+        actorId: userId,
+        actorRole: "PROVIDER",
+        entityType: "ProviderFinanceDispute",
+        entityId: dispute.id,
+        metadata: {
+          ledgerId: dispute.ledgerId,
+          withdrawalId: dispute.withdrawalId,
+        },
+      });
+
+      return { success: true, disputeId: dispute.id };
     }),
 });

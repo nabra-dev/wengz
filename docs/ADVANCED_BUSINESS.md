@@ -14,13 +14,17 @@ The application is **bilingual (English and Arabic)** end-to-end, including mark
 
 ## Actors and permissions
 
-| Role            | Typical use                                                                 | Access (conceptual)                                                                          |
-| --------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Client**      | Buys packages, creates and tracks requests, messages, rates completed work  | Client dashboard: subscriptions, payment proof, requests, notifications, profile             |
-| **Provider**    | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile |
-| **Super admin** | Manages users, services, packages, requests oversight, payment verification, provider payouts | Admin dashboard: users, services, packages, subscriptions, requests, payments, finance, notifications |
+| Role                 | Typical use                                                                 | Access (conceptual)                                                                          |
+| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Client**           | Buys packages, creates and tracks requests, messages, rates completed work  | Client dashboard: subscriptions, payment proof, requests, notifications, profile             |
+| **Provider**         | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile |
+| **Project manager**  | Oversees client–provider requests only                                      | Admin requests: list, assign/unassign, request detail, messaging oversight, notifications, profile |
+| **Finance manager**  | Handles money flows only                                                    | Admin finance + payments + finance/payment settings, subscriptions list, notifications, profile |
+| **Super admin**      | Full platform control                                                       | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity |
 
-Registration and login are **credential-based** (email/password). Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware).
+Registration and login are **credential-based** (email/password). Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
+
+Logged-in users can **change password** from their profile Security tab. Anyone can use **forgot password** (`/auth/forgot-password`) to receive a one-time email link (1 hour TTL) and set a new password at `/auth/reset-password`.
 
 ---
 
@@ -43,10 +47,17 @@ Example: a request costing `500` credits with `$1`/credit and `10%` commission s
 
 **Settlement is not immediately withdrawable.** On client approval, the provider share is credited as **on hold** for **7 days** (`PROVIDER_EARNINGS_HOLD_DAYS`). It appears in the wallet (held balance + ledger status) but cannot be withdrawn until a release job moves it to **available**. Withdrawal requests only draw from available balance.
 
-Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal** from available funds. That request holds the amount as pending until a super admin reviews it **manually**:
+Providers can **open a dispute** on a ledger settlement or withdrawal from the wallet page if something looks wrong. Disputes are reviewed **manually** by super admins (open → under review → resolved/rejected) and do **not** automatically change wallet balances.
 
-- **Approve / mark as paid** after sending the money off-platform, with a **reason** (for example a transfer reference).
-- **Reject** with a **reason**, which returns the held funds to the available balance.
+Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal** from available funds. That request holds the amount as pending until a super admin reviews it **manually**. Two **global** withdrawal settings apply:
+
+- **Minimum withdrawal (USD)** — providers cannot request less than this amount (default `$1`).
+- **Withdrawal fee (USD)** — fixed fee stored on the withdrawal; the amount deducted from the wallet is the requested total, and admins should pay out **requested − fee**.
+
+Withdrawal review:
+
+- **Approve / mark as paid** after sending the money off-platform, with a **reason** and a **required proof image** (e.g. transfer receipt).
+- **Reject** with a **reason** and a **required proof image**, which returns the held funds to the available balance.
 
 Admins can also **record a payout** against a provider’s available balance when they send money without a prior request. There is no automated payout gateway; operations handle the transfer, then record status and reason in the app.
 
@@ -80,6 +91,8 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 6. **Completion and reputation** — A **rating** can tie to a completed request, feeding provider quality signals.
 
 **Watchers** on a request allow additional stakeholders to follow activity where the product uses that relation.
+
+**Audit / activity log** — every request lifecycle mutation writes an immutable `ActivityLog` row (`entityType: Request`) with actor, role, timestamp, and optional **reason/note** when the user supplied one (revision feedback, deliverable message, review text). Chat messages log metadata only (`commentId`, length) — full text stays in `RequestComment`. Covered actions include create, claim, admin assign/unassign, accept, start work, status/deliver, revision, approve, message, rate, soft-delete, restore. Cron approval work is summarized in a single `cron.deliveredApprovals` row. Super admins review this under **Activity**; filter by `request.` or a request id.
 
 ---
 

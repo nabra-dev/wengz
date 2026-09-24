@@ -31,6 +31,8 @@ model User {
   providerFinance     ProviderFinanceLedger[] @relation("ProviderFinanceLedger")
   withdrawalRequests  WithdrawalRequest[]     @relation("ProviderWithdrawals")
   reviewedWithdrawals WithdrawalRequest[]     @relation("WithdrawalReviewer")
+  financeDisputes     ProviderFinanceDispute[] @relation("ProviderFinanceDisputes")
+  reviewedDisputes    ProviderFinanceDispute[] @relation("DisputeReviewer")
   ratings             Rating[]                @relation("ClientRatings")
   receivedRatings     Rating[]                @relation("ProviderRatings")
   clientRequests      Request[]               @relation("ClientRequests")
@@ -39,6 +41,7 @@ model User {
   sessions            Session[]
   watchedRequests     RequestWatcher[]
   activityLogs        ActivityLog[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([deletedAt])
   @@index([registrationIp])
@@ -88,6 +91,20 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+/// One-time password reset tokens (raw token emailed; only hash stored).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model ProviderProfile {
@@ -300,6 +317,7 @@ model WithdrawalRequest {
   providerId    String
   amountUsd     Float
   amountCredits Int              @default(0)
+  feeUsd        Float            @default(0)
   payoutMethod  PayoutMethod
   accountHolder String
   bankName      String?
@@ -309,12 +327,14 @@ model WithdrawalRequest {
   status        WithdrawalStatus @default(PENDING)
   source        WithdrawalSource @default(PROVIDER)
   adminReason   String?
+  reviewImage   String?
   reviewedById  String?
   reviewedAt    DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   provider      User             @relation("ProviderWithdrawals", fields: [providerId], references: [id], onDelete: Cascade)
   reviewedBy    User?            @relation("WithdrawalReviewer", fields: [reviewedById], references: [id])
+  disputes      ProviderFinanceDispute[]
 
   @@index([providerId, status])
   @@index([status, createdAt])
@@ -341,11 +361,36 @@ model ProviderFinanceLedger {
   provider           User                  @relation("ProviderFinanceLedger", fields: [providerId], references: [id], onDelete: Cascade)
   request            Request               @relation(fields: [requestId], references: [id], onDelete: Cascade)
   serviceType        ServiceType           @relation(fields: [serviceTypeId], references: [id])
+  disputes           ProviderFinanceDispute[]
 
   @@index([providerId, status])
   @@index([status, availableAt])
   @@index([settledAt])
   @@index([serviceTypeId])
+}
+
+/// Provider-raised issue against a ledger settlement or withdrawal (manual admin review).
+model ProviderFinanceDispute {
+  id           String               @id @default(cuid())
+  providerId   String
+  ledgerId     String?
+  withdrawalId String?
+  reason       String
+  status       FinanceDisputeStatus @default(OPEN)
+  adminNote    String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  provider     User                 @relation("ProviderFinanceDisputes", fields: [providerId], references: [id], onDelete: Cascade)
+  ledger       ProviderFinanceLedger? @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+  withdrawal   WithdrawalRequest?     @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  reviewedBy   User?                  @relation("DisputeReviewer", fields: [reviewedById], references: [id])
+
+  @@index([providerId, status])
+  @@index([status, createdAt])
+  @@index([ledgerId])
+  @@index([withdrawalId])
 }
 
 model RequestComment {
@@ -428,6 +473,8 @@ model ActivityLog {
 
 enum Role {
   SUPER_ADMIN
+  PROJECT_MANAGER
+  FINANCE_MANAGER
   PROVIDER
   CLIENT
 }
@@ -474,4 +521,11 @@ enum WithdrawalStatus {
 enum WithdrawalSource {
   PROVIDER
   ADMIN
+}
+
+enum FinanceDisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
 }

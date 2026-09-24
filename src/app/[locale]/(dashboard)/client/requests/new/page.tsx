@@ -30,10 +30,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-const TITLE_MIN = 4;
-const TITLE_MAX = 200;
-const DESCRIPTION_MIN = 10;
-const DESCRIPTION_MAX = 5000;
 
 type FieldKey = "serviceType" | "title" | "description";
 
@@ -72,14 +68,11 @@ export default function NewRequestPage() {
     queueMicrotask(() => {
       setDescription(draft);
       const firstLine = draft.split("\n")[0]?.trim() ?? "";
-      let nextTitle = firstLine.slice(0, TITLE_MAX);
-      if (nextTitle.length < TITLE_MIN) {
-        nextTitle = draft.trim().slice(0, TITLE_MAX);
-      }
-      if (nextTitle.length < TITLE_MIN) {
+      let nextTitle = firstLine || draft.trim();
+      if (!nextTitle) {
         nextTitle = t("draftTitleFallback");
       }
-      setTitle(nextTitle.slice(0, TITLE_MAX));
+      setTitle(nextTitle);
       clearPendingRequestDescription();
       toast.success(t("draftRestored"));
     });
@@ -159,10 +152,7 @@ export default function NewRequestPage() {
 
   const getTitleError = useCallback(
     (value: string): string | null => {
-      const trimmed = value.trim();
-      if (!trimmed) return t("validation.requiredField");
-      if (trimmed.length < TITLE_MIN) return t("validation.titleTooShort");
-      if (value.length > TITLE_MAX) return t("validation.titleTooLong");
+      if (!value.trim()) return t("validation.requiredField");
       return null;
     },
     [t]
@@ -170,10 +160,7 @@ export default function NewRequestPage() {
 
   const getDescriptionError = useCallback(
     (value: string): string | null => {
-      const trimmed = value.trim();
-      if (!trimmed) return t("validation.requiredField");
-      if (trimmed.length < DESCRIPTION_MIN) return t("validation.descriptionTooShort");
-      if (value.length > DESCRIPTION_MAX) return t("validation.descriptionTooLong");
+      if (!value.trim()) return t("validation.requiredField");
       return null;
     },
     [t]
@@ -471,7 +458,7 @@ export default function NewRequestPage() {
                 id="title"
                 value={title}
                 onChange={(e) => {
-                  setTitle(e.target.value.slice(0, TITLE_MAX));
+                  setTitle(e.target.value);
                   markTouched("title");
                 }}
                 onBlur={() => markTouched("title")}
@@ -488,16 +475,6 @@ export default function NewRequestPage() {
                 ) : (
                   <p className="text-xs text-muted-foreground">{t("fields.titleHint")}</p>
                 )}
-                <p
-                  className={cn(
-                    "text-xs shrink-0",
-                    title.trim().length > 0 && title.trim().length < TITLE_MIN
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {t("fields.charCount", { count: title.length, max: TITLE_MAX })}
-                </p>
               </div>
             </div>
 
@@ -512,7 +489,7 @@ export default function NewRequestPage() {
                 id="description"
                 value={description}
                 onChange={(e) => {
-                  setDescription(e.target.value.slice(0, DESCRIPTION_MAX));
+                  setDescription(e.target.value);
                   markTouched("description");
                 }}
                 onBlur={() => markTouched("description")}
@@ -532,19 +509,6 @@ export default function NewRequestPage() {
                 ) : (
                   <p className="text-xs text-muted-foreground">{t("fields.descriptionHint")}</p>
                 )}
-                <p
-                  className={cn(
-                    "text-xs shrink-0",
-                    description.trim().length > 0 && description.trim().length < DESCRIPTION_MIN
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {t("fields.charCount", {
-                    count: description.length,
-                    max: DESCRIPTION_MAX,
-                  })}
-                </p>
               </div>
             </div>
 

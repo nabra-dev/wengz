@@ -66,10 +66,21 @@ describe("provider wallet finance calculation", () => {
     // 10% of 3 credits rounds to 0 platform credits → all USD goes to provider
     expect(result.platformCredits).toBe(0);
     expect(result.providerCredits).toBe(3);
-    expect(result.totalAmountUsd).toBe(4);
+    expect(result.totalAmountUsd).toBe(3.999);
     expect(result.platformAmountUsd).toBe(0);
-    expect(result.providerAmountUsd).toBe(4);
+    expect(result.providerAmountUsd).toBe(3.999);
     expect(result.platformAmountUsd + result.providerAmountUsd).toBe(result.totalAmountUsd);
+  });
+
+  it("keeps up to 4 decimal places for fractional credit prices", () => {
+    const result = calculateProviderFinance(1000, 0.0085, 10);
+    expect(result.totalAmountUsd).toBe(8.5);
+    expect(result.platformAmountUsd).toBe(0.85);
+    expect(result.providerAmountUsd).toBe(7.65);
+
+    const rounded = calculateProviderFinance(1, 0.00977, 0);
+    expect(rounded.totalAmountUsd).toBe(0.0098);
+    expect(rounded.providerAmountUsd).toBe(0.0098);
   });
 });
 
@@ -85,6 +96,8 @@ describe("earnings hold window", () => {
     expect(allocateWithdrawalAmounts(50, 100, 100)).toEqual({
       amountUsd: 50,
       amountCredits: 50,
+      feeUsd: 0,
+      netAmountUsd: 50,
     });
   });
 });
@@ -138,12 +151,32 @@ describe("allocateWithdrawalAmounts", () => {
     expect(allocateWithdrawalAmounts(450, 450, 450)).toEqual({
       amountUsd: 450,
       amountCredits: 450,
+      feeUsd: 0,
+      netAmountUsd: 450,
     });
   });
 
-  it("rejects amounts below 1 USD", () => {
+  it("rejects amounts below the configured minimum", () => {
     expect(() => allocateWithdrawalAmounts(0.5, 100, 100)).toThrow(
       "Minimum withdrawal amount is 1 USD"
     );
+    expect(() =>
+      allocateWithdrawalAmounts(4, 100, 100, { minUsd: 5, feeUsd: 0 })
+    ).toThrow("Minimum withdrawal amount is 5 USD");
+  });
+
+  it("applies a withdrawal fee to the net payout", () => {
+    expect(allocateWithdrawalAmounts(50, 100, 100, { minUsd: 10, feeUsd: 2 })).toEqual({
+      amountUsd: 50,
+      amountCredits: 50,
+      feeUsd: 2,
+      netAmountUsd: 48,
+    });
+  });
+
+  it("rejects when fee is not less than the requested amount", () => {
+    expect(() =>
+      allocateWithdrawalAmounts(5, 100, 100, { minUsd: 1, feeUsd: 5 })
+    ).toThrow("Withdrawal fee must be less than the requested amount");
   });
 });

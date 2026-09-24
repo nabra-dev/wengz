@@ -504,3 +504,49 @@ export async function getWelcomeEmailTemplate(
     `,
   };
 }
+
+export async function getPasswordResetEmailTemplate(params: {
+  userName: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const subject = await getTranslation(locale, "notifications.passwordReset.emailSubject");
+  const heading = await getTranslation(locale, "notifications.passwordReset.emailBody.heading");
+  const greeting = await getTranslation(locale, "notifications.passwordReset.emailBody.greeting", {
+    userName: params.userName,
+  });
+  const intro = await getTranslation(locale, "notifications.passwordReset.emailBody.intro");
+  const button = await getTranslation(locale, "notifications.passwordReset.emailBody.button");
+  const expiry = await getTranslation(locale, "notifications.passwordReset.emailBody.expiry", {
+    minutes: String(params.expiresInMinutes),
+  });
+  const ignore = await getTranslation(locale, "notifications.passwordReset.emailBody.ignore");
+  const linkFallback = await getTranslation(
+    locale,
+    "notifications.passwordReset.emailBody.linkFallback"
+  );
+
+  return {
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827;">${heading}</h1>
+        <p>${greeting}</p>
+        <p>${intro}</p>
+        <p style="margin: 28px 0;">
+          <a href="${params.resetUrl}"
+             style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+            ${button}
+          </a>
+        </p>
+        <p style="color: #64748b; font-size: 14px;">${expiry}</p>
+        <p style="color: #64748b; font-size: 14px;">${ignore}</p>
+        <p style="color: #94a3b8; font-size: 12px; word-break: break-all; margin-top: 24px;">
+          ${linkFallback}<br/>${params.resetUrl}
+        </p>
+      </div>
+    `,
+  };
+}

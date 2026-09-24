@@ -14,13 +14,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { Check, CreditCard, AlertCircle } from "lucide-react";
 import { showError, showSuccess } from "@/lib/error-handler";
 
 export default function SubscriptionPage() {
   const t = useTranslations("client.subscription");
   const locale = useLocale();
+  const formatCurrency = useFormatCurrency();
   const router = useRouter();
   const utils = trpc.useUtils();
 
@@ -186,7 +188,7 @@ export default function SubscriptionPage() {
                     </div>
                     <CardDescription>
                       <span className="text-3xl font-bold text-foreground">
-                        {formatCurrency(pkg.price, locale)}
+                        {formatCurrency(pkg.price)}
                       </span>
                       <span className="text-muted-foreground">
                         / {pkg.durationDays} {t("info.dayDuration")}

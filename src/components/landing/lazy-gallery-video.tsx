@@ -18,6 +18,9 @@ interface LazyGalleryVideoProps {
 /**
  * Mounts the video source only when the element enters (or is near) the viewport.
  * Avoids fetching all marquee MP4s on first paint.
+ *
+ * `shouldLoad` must start false on both server and client so SSR HTML matches.
+ * Loading is deferred to an effect (IntersectionObserver or immediate fallback).
  */
 export function LazyGalleryVideo({
   src,
@@ -32,14 +35,16 @@ export function LazyGalleryVideo({
   children,
 }: LazyGalleryVideoProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [shouldLoad, setShouldLoad] = useState(
-    () => typeof IntersectionObserver === "undefined"
-  );
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   useEffect(() => {
-    if (shouldLoad) return;
     const el = containerRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      const id = window.setTimeout(() => setShouldLoad(true), 0);
+      return () => window.clearTimeout(id);
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -53,7 +58,7 @@ export function LazyGalleryVideo({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [shouldLoad]);
+  }, []);
 
   return (
     <div ref={containerRef} className={className ? undefined : "relative"}>

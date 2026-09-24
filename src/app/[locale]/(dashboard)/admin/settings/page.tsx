@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,18 +12,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc/client";
 import { showError, showSuccess } from "@/lib/error-handler";
+import { canManagePlatform, canManageFinance } from "@/lib/roles";
 
 export default function AdminSettingsPage() {
+  const { data: session } = useSession();
+  const role = session?.user?.role;
+  const showPlatform = canManagePlatform(role);
+  const showFinance = canManageFinance(role);
   const tAdmin = useTranslations("admin");
   const t = useTranslations("admin.dashboard.maintenance");
   const tFinance = useTranslations("admin.settings.finance");
   const tPayment = useTranslations("admin.settings.payment");
   const { data: maintenance, isLoading: maintenanceLoading } =
-    trpc.admin.getMaintenanceMode.useQuery();
+    trpc.admin.getMaintenanceMode.useQuery(undefined, { enabled: showPlatform });
   const { data: financeSettings, isLoading: financeLoading } =
-    trpc.admin.getFinanceSettings.useQuery();
+    trpc.admin.getFinanceSettings.useQuery(undefined, { enabled: showFinance });
   const { data: paymentSettings, isLoading: paymentLoading } =
-    trpc.admin.getPaymentSettings.useQuery();
+    trpc.admin.getPaymentSettings.useQuery(undefined, { enabled: showFinance });
   const utils = trpc.useUtils();
   const setMaintenanceModeMutation = trpc.admin.setMaintenanceMode.useMutation({
     onSuccess: () => {
@@ -49,6 +55,8 @@ export default function AdminSettingsPage() {
 
   const [creditPriceUsd, setCreditPriceUsd] = useState("1");
   const [commissionPercent, setCommissionPercent] = useState("10");
+  const [minWithdrawalUsd, setMinWithdrawalUsd] = useState("1");
+  const [withdrawalFeeUsd, setWithdrawalFeeUsd] = useState("0");
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [iban, setIban] = useState("");
@@ -67,6 +75,8 @@ export default function AdminSettingsPage() {
     queueMicrotask(() => {
       setCreditPriceUsd(String(financeSettings.creditPriceUsd));
       setCommissionPercent(String(financeSettings.commissionPercent));
+      setMinWithdrawalUsd(String(financeSettings.minWithdrawalUsd));
+      setWithdrawalFeeUsd(String(financeSettings.withdrawalFeeUsd));
     });
   }, [financeSettings]);
 
@@ -105,6 +115,8 @@ export default function AdminSettingsPage() {
     setFinanceSettingsMutation.mutate({
       creditPriceUsd: Number(creditPriceUsd),
       commissionPercent: Number(commissionPercent),
+      minWithdrawalUsd: Number(minWithdrawalUsd),
+      withdrawalFeeUsd: Number(withdrawalFeeUsd),
     });
   };
 
@@ -131,6 +143,7 @@ export default function AdminSettingsPage() {
         <p className="text-muted-foreground">{tAdmin("settings.subtitle")}</p>
       </div>
 
+      {showPlatform && (
       <Card>
         <CardHeader>
           <CardTitle>{t("title")}</CardTitle>
@@ -151,7 +164,10 @@ export default function AdminSettingsPage() {
           </Button>
         </CardContent>
       </Card>
+      )}
 
+      {showFinance && (
+      <>
       <Card>
         <CardHeader>
           <CardTitle>{tFinance("title")}</CardTitle>
@@ -187,6 +203,34 @@ export default function AdminSettingsPage() {
                 required
               />
               <p className="text-xs text-muted-foreground">{tFinance("commissionPercentHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minWithdrawalUsd">{tFinance("minWithdrawalUsd")}</Label>
+              <Input
+                id="minWithdrawalUsd"
+                type="number"
+                min="0"
+                step="any"
+                value={minWithdrawalUsd}
+                onChange={(event) => setMinWithdrawalUsd(event.target.value)}
+                disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                required
+              />
+              <p className="text-xs text-muted-foreground">{tFinance("minWithdrawalUsdHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="withdrawalFeeUsd">{tFinance("withdrawalFeeUsd")}</Label>
+              <Input
+                id="withdrawalFeeUsd"
+                type="number"
+                min="0"
+                step="any"
+                value={withdrawalFeeUsd}
+                onChange={(event) => setWithdrawalFeeUsd(event.target.value)}
+                disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                required
+              />
+              <p className="text-xs text-muted-foreground">{tFinance("withdrawalFeeUsdHint")}</p>
             </div>
             <div className="md:col-span-2">
               <Button type="submit" disabled={financeLoading || setFinanceSettingsMutation.isPending}>
@@ -254,7 +298,6 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setCurrency(e.target.value.toUpperCase())}
                 disabled={paymentBusy}
                 required
-                maxLength={8}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -306,6 +349,8 @@ export default function AdminSettingsPage() {
           </form>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }
