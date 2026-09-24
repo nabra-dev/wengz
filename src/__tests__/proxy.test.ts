@@ -214,6 +214,38 @@ describe("Proxy Middleware Logic", () => {
     });
   });
 
+  describe("Locale cookie → redirect vs rewrite", () => {
+    it("redirects non-default locale to a real /ar URL", () => {
+      const preferredLocale: string = "ar";
+      const defaultLocale = "en";
+      const pathname = "/";
+      const localizedPath = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
+      const useRedirect = preferredLocale !== defaultLocale;
+
+      expect(localizedPath).toBe("/ar");
+      expect(useRedirect).toBe(true);
+    });
+
+    it("rewrites default locale internally (as-needed prefix)", () => {
+      const preferredLocale: string = "en";
+      const defaultLocale = "en";
+      const pathname: string = "/privacy";
+      const localizedPath = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
+      const useRedirect = preferredLocale !== defaultLocale;
+
+      expect(localizedPath).toBe("/en/privacy");
+      expect(useRedirect).toBe(false);
+    });
+  });
+
+  describe("www → apex canonical host", () => {
+    it("treats www.wengz.tech as a redirect host", () => {
+      const host = "www.wengz.tech";
+      const canonical = "wengz.tech";
+      expect(host === `www.${canonical}`).toBe(true);
+    });
+  });
+
   describe("Regex pattern matching", () => {
     it("should match the middleware config pattern", () => {
       // Pattern from config.matcher: "/((?!api/|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)"

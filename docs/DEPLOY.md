@@ -17,7 +17,7 @@ App secrets stay in `/var/www/nabra-ai-system/.env` on the VPS. GitHub only need
 
 ## Domain: `wengz.tech`
 
-Canonical app URL: `https://wengz.tech` (also serve `www.wengz.tech`).
+Canonical app URL: **`https://wengz.tech`** (apex). `www` must **301** to apex so Google does not treat two hosts as duplicates.
 
 ### DNS (at your registrar)
 
@@ -33,10 +33,11 @@ Point both to the VPS IP `72.62.181.253`:
 ```bash
 cd /var/www/nabra-ai-system
 nano .env
-# set:
+# set (apex only — do not use www):
 # NEXTAUTH_URL=https://wengz.tech
 # NEXT_PUBLIC_APP_URL=https://wengz.tech
 # NEXT_PUBLIC_GTM_ID=GTM-58DDFXLX
+# GOOGLE_SITE_VERIFICATION=...   # optional meta tag for Search Console
 # CONTACT_FORMS_RECIPIENT=info@wengz.tech   # if you have that mailbox
 # SMTP_* From address if needed
 
@@ -46,18 +47,40 @@ pm2 restart nabra-ai-system --update-env
 
 `NEXT_PUBLIC_*` is baked into the client at **build** time — you must run `npm run build` (or the deploy script) after changing it.
 
+In Google Search Console prefer a **Domain** property on `wengz.tech`, or the URL-prefix `https://wengz.tech`. Submit `https://wengz.tech/sitemap.xml`.
+
 ### Nginx + SSL
 
 ```bash
 # Issue cert (after DNS propagates)
 certbot --nginx -d wengz.tech -d www.wengz.tech
+```
 
+Prefer an explicit www → apex redirect (in addition to the app middleware redirect):
+
+```nginx
+# /etc/nginx/sites-available/wengz-www-redirect (or inside ssl server blocks)
+server {
+  listen 443 ssl http2;
+  server_name www.wengz.tech;
+  # ssl_certificate … (certbot)
+  return 301 https://wengz.tech$request_uri;
+}
+
+server {
+  listen 443 ssl http2;
+  server_name wengz.tech;
+  # … proxy_pass to Next / PM2 …
+}
+```
+
+```bash
 # Optional: redirect old nabarawy hosts to wengz
-# (adjust server_name / return in the nabarawy site config)
 # return 301 https://wengz.tech$request_uri;
 nginx -t && systemctl reload nginx
 ```
 
+The Next.js proxy also 301s `www.wengz.tech` → `wengz.tech` for matched routes; nginx covers static files (`robots.txt`, assets) the matcher skips.
 ### Large uploads (request attachments up to 500MB)
 
 Request/delivery files use **chunked** uploads (~5MB parts) to local disk. Nginx still needs room for a chunk (and for small single-shot uploads ≤20MB):

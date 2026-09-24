@@ -148,11 +148,36 @@ const nextConfig = {
     return config;
   },
   async headers() {
+    // Public marketing pages — allow CDN/shared caches once cookies aren't forcing private.
+    const publicCache = [
+      {
+        key: "Cache-Control",
+        value: "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    ];
+    const publicPaths = [
+      "/",
+      "/privacy",
+      "/terms",
+      "/contact",
+      "/forms/provider",
+      "/ar",
+      "/ar/privacy",
+      "/ar/terms",
+      "/ar/contact",
+      "/ar/forms/provider",
+      "/robots.txt",
+      "/sitemap.xml",
+    ];
     return [
       {
         source: "/:path*",
         headers: securityHeaders,
       },
+      ...publicPaths.map((source) => ({
+        source,
+        headers: publicCache,
+      })),
     ];
   },
   images: {

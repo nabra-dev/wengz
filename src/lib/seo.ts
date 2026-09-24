@@ -2,10 +2,28 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Wengz";
 export const SITE_NAME_AR = "وينجز";
-export const SITE_URL =
+
+/** Production apex host — www must 301 here (see proxy.ts + docs/DEPLOY.md). */
+export const CANONICAL_HOST = "wengz.tech";
+
+function normalizeSiteUrl(raw: string): string {
+  const trimmed = raw.replace(/\/$/, "");
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === `www.${CANONICAL_HOST}`) {
+      url.hostname = CANONICAL_HOST;
+    }
+    return url.origin;
+  } catch {
+    return trimmed;
+  }
+}
+
+export const SITE_URL = normalizeSiteUrl(
   process.env.NEXT_PUBLIC_APP_URL?.startsWith("http")
-    ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-    : "https://wengz.tech";
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : `https://${CANONICAL_HOST}`
+);
 
 export const DEFAULT_OG_IMAGE = "/images/logo-color.png";
 
@@ -27,11 +45,11 @@ export function isSeoLocale(value: string): value is SeoLocale {
   return (SEO_LOCALES as readonly string[]).includes(value);
 }
 
-/** Locale-aware absolute URL (respects `localePrefix: "as-needed"`). */
+/** Locale-aware absolute URL (respects `localePrefix: "as-needed"`). Home has no trailing slash. */
 export function absoluteUrl(path: string, locale: string = SEO_DEFAULT_LOCALE): string {
   const normalized = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
   if (locale === SEO_DEFAULT_LOCALE) {
-    return `${SITE_URL}${normalized || "/"}`;
+    return normalized ? `${SITE_URL}${normalized}` : SITE_URL;
   }
   return `${SITE_URL}/${locale}${normalized}`;
 }
@@ -82,7 +100,9 @@ export function buildPageMetadata({
   const brand = brandName(locale);
   const isArabic = locale === "ar";
   const canonical = canonicalPath(path, locale);
-  const languages: Record<string, string> = {};
+  const languages: Record<string, string> = {
+    "x-default": canonicalPath(path, SEO_DEFAULT_LOCALE),
+  };
   for (const loc of SEO_LOCALES) {
     languages[loc] = canonicalPath(path, loc);
   }

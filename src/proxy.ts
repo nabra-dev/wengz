@@ -7,6 +7,7 @@ import {
   getStaffHomePath,
   isStaffRole,
 } from "./lib/roles";
+import { CANONICAL_HOST } from "./lib/seo";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -24,7 +25,22 @@ function isProtected(pathname: string) {
   return first === "client" || first === "provider" || first === "admin";
 }
 
+/** Apex is canonical — www must 301 so Google does not treat two hosts as duplicates. */
+function redirectWwwToApex(req: NextRequest): NextResponse | null {
+  const host = req.headers.get("host")?.split(":")[0]?.toLowerCase();
+  if (host !== `www.${CANONICAL_HOST}`) return null;
+
+  const url = new URL(req.url);
+  url.protocol = "https:";
+  url.host = CANONICAL_HOST;
+  url.port = "";
+  return NextResponse.redirect(url, 301);
+}
+
 function handlePublicRouting(req: NextRequest) {
+  const wwwRedirect = redirectWwwToApex(req);
+  if (wwwRedirect) return wwwRedirect;
+
   const pathname = req.nextUrl.pathname;
   const firstSegment = pathname.split("/").find(Boolean);
 
@@ -64,8 +80,17 @@ function handlePublicRouting(req: NextRequest) {
       ? (cookieLocale as (typeof routing.locales)[number])
       : routing.defaultLocale;
 
+    const localizedPath = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
+
+    // Non-default locale must be a real URL so canonical and request path match for crawlers.
+    if (preferredLocale !== routing.defaultLocale) {
+      const url = req.nextUrl.clone();
+      url.pathname = localizedPath;
+      return NextResponse.redirect(url, 308);
+    }
+
     const url = req.nextUrl.clone();
-    url.pathname = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
+    url.pathname = localizedPath;
     return NextResponse.rewrite(url);
   }
 
@@ -74,6 +99,9 @@ function handlePublicRouting(req: NextRequest) {
 
 const authMiddleware = withAuth(
   function middleware(req) {
+    const wwwRedirect = redirectWwwToApex(req);
+    if (wwwRedirect) return wwwRedirect;
+
     const intlResponse = handleI18nRouting(req);
     const token = req.nextauth.token;
     const basePath = getPathWithoutLocale(req.nextUrl.pathname);
@@ -125,12 +153,12 @@ export default function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Match app routes, plus robots/sitemap/manifest so www→apex applies to crawl files.
+     * Other dotted static assets stay on nginx (or Next static) without this middleware.
      */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.json",
   ],
 };
