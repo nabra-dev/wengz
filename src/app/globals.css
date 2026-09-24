@@ -276,6 +276,48 @@
     min-height: 100dvh;
   }
 
+  /* Landing services bento — named grid areas (desktop) */
+  @media (min-width: 1024px) {
+    .landing-services-bento {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: 1.35fr 0.9fr 1fr 0.95fr;
+      grid-template-areas:
+        "image video apps mcp"
+        "image video apps plugin"
+        "image flows apps studio"
+        "voice flows music studio";
+      height: min(78vh, 720px);
+    }
+
+    .landing-services-bento > [data-area="image"] {
+      grid-area: image;
+    }
+    .landing-services-bento > [data-area="video"] {
+      grid-area: video;
+    }
+    .landing-services-bento > [data-area="apps"] {
+      grid-area: apps;
+    }
+    .landing-services-bento > [data-area="mcp"] {
+      grid-area: mcp;
+    }
+    .landing-services-bento > [data-area="flows"] {
+      grid-area: flows;
+    }
+    .landing-services-bento > [data-area="plugin"] {
+      grid-area: plugin;
+    }
+    .landing-services-bento > [data-area="voice"] {
+      grid-area: voice;
+    }
+    .landing-services-bento > [data-area="music"] {
+      grid-area: music;
+    }
+    .landing-services-bento > [data-area="studio"] {
+      grid-area: studio;
+    }
+  }
+
   /* Full-page hero loader: staggered pulsing circles */
   @keyframes landing-loader-dot {
     0%,

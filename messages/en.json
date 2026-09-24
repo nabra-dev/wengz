@@ -74,7 +74,10 @@
     },
     "hero": {
       "title": "Build with Wengz",
-      "subtitle": "Describe what you need. We’ll handle the rest.",
+      "titleBefore": "We ",
+      "titleHighlight": "design",
+      "titleAfter": " AI Systems for your Organization",
+      "subtitle": "Smart, scalable AI and automation solutions that boost business efficiency",
       "socialProof": "Trusted by teams who ship and launch",
       "promptPlaceholder": "Ask Wengz what you need",
       "promptHint": "Write a quick brief to get started.",
@@ -90,6 +93,75 @@
       "chatRefreshHint": "Refresh the page to start a new chat.",
       "startFreeTrial": "Start Free Trial",
       "learnMore": "Learn More"
+    },
+    "services": {
+      "ariaLabel": "Services showcase",
+      "tiles": {
+        "aiImage": {
+          "title": "Design",
+          "description": "Brand systems, visuals, and campaign art that sell"
+        },
+        "aiVideo": {
+          "title": "Video",
+          "description": "Motion, edits, and launch-ready clips for every channel"
+        },
+        "apps": {
+          "title": "Content",
+          "description": "Social packs and creative assets built for growth"
+        },
+        "mcp": {
+          "title": "Workflow",
+          "description": "Connect briefs to delivery inside your favorite tools"
+        },
+        "flows": {
+          "title": "Automation",
+          "description": "Repeatable creative systems for teams that ship fast"
+        },
+        "plugin": {
+          "title": "Studio",
+          "description": "One place for briefs, revisions, and approvals"
+        },
+        "voiceover": {
+          "title": "Voice",
+          "description": "Clear narration and audio that matches your brand"
+        },
+        "music": {
+          "title": "Sound",
+          "description": "Tracks and sound design that lift every frame"
+        },
+        "studio": {
+          "title": "Full production",
+          "description": "End-to-end creative delivery from brief to ship"
+        }
+      }
+    },
+    "packagesCarousel": {
+      "learnMore": "Learn more",
+      "next": "Next packages",
+      "page": "Page",
+      "empty": "Packages coming soon."
+    },
+    "info": {
+      "heading": "AI powering creative teams and businesses",
+      "learnMore": "Learn More",
+      "imageAlt": "Featured creative work",
+      "columns": {
+        "media": {
+          "title": "Media & Entertainment",
+          "description": "Scale campaigns, content, and launches without slowing your team down.",
+          "href": "#features"
+        },
+        "agencies": {
+          "title": "Agencies",
+          "description": "Extend capacity with vetted creators and predictable credit-based delivery.",
+          "href": "#pricing"
+        },
+        "teams": {
+          "title": "Creative Teams",
+          "description": "Move from brief to polished assets faster with clear revisions and ownership.",
+          "href": "#gallery"
+        }
+      }
     },
     "meet": {
       "heading": "Meet Wengz",
