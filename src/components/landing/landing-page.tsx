@@ -502,6 +502,15 @@ export default function LandingPage() {
                 <ThemeSwitcher />
                 <LanguageSwitcher />
               </div>
+              <Link href="/auth/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-full border-white/20 bg-transparent px-4 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
+                >
+                  {t("common.buttons.signIn")}
+                </Button>
+              </Link>
               <Link href="/auth/register">
                 <Button
                   size="sm"
