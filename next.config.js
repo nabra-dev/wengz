@@ -100,7 +100,7 @@ const withPWA = require("next-pwa")({
 });
 
 const withNextIntl = require("next-intl/plugin")("./src/i18n/request.ts");
-const { withSentryConfig } = require("@sentry/nextjs");
+const { withSentryConfig } = require("@sentry/nextjs/config");
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -135,6 +135,17 @@ const nextConfig = {
       "@radix-ui/react-tabs",
       "@radix-ui/react-toast",
     ],
+  },
+  // react-datepicker uses a dynamic require — known upstream noise, not actionable.
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      {
+        module: /node_modules\/react-datepicker/,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ];
+    return config;
   },
   async headers() {
     return [
@@ -180,5 +191,9 @@ module.exports = withSentryConfig(withNextIntl(withPWA(nextConfig)), {
   silent: true,
   // Upload source maps only when auth token is present (optional in CI).
   widenClientFileUpload: true,
-  disableLogger: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
 });

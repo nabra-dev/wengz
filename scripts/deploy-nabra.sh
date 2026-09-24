@@ -75,7 +75,7 @@ if [[ ! -d node_modules ]] || [[ "$LOCK_SHA" != "$PREV_LOCK_SHA" ]]; then
   echo "$LOCK_SHA" >"$LOCKFILE_HASH_FILE"
 else
   log "Skipping npm ci (package-lock unchanged)"
-  npx prisma generate
+  node scripts/prisma-generate.mjs --for-build
 fi
 
 SCHEMA_SHA="$(file_sha prisma/schema.prisma)"
@@ -110,7 +110,7 @@ if ! curl -fsS --max-time 15 "$HEALTH_URL" >/dev/null; then
     npm ci --include=dev
     echo "$LOCK_SHA" >"$LOCKFILE_HASH_FILE"
   else
-    npx prisma generate
+    node scripts/prisma-generate.mjs --for-build
   fi
 
   npm run build
