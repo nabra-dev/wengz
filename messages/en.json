@@ -139,7 +139,8 @@
       "learnMore": "Learn more",
       "next": "Next packages",
       "page": "Page",
-      "empty": "Packages coming soon."
+      "empty": "Plans will appear here once packages are published.",
+      "loadError": "Couldn’t load plans right now. Please refresh and try again."
     },
     "info": {
       "heading": "AI powering creative teams and businesses",
@@ -235,7 +236,9 @@
       "heading": "Simple, transparent pricing",
       "subheading": "Choose the perfect plan for your needs",
       "perMonth": "/month",
-      "featuredBadge": "Featured"
+      "featuredBadge": "Featured",
+      "empty": "Plans will appear here once packages are published.",
+      "loadError": "Couldn’t load plans right now. Please refresh and try again."
     },
     "cta": {
       "heading": "Ready to get started?",

@@ -297,6 +297,9 @@ export async function incrementCached(key: string, increment = 1): Promise<numbe
 /**
  * Get or set value (cache-aside pattern). Always returns fetcher data on miss/error.
  * Never blocks the request on a dead Redis — fail open to the fetcher.
+ *
+ * Empty arrays are never treated as a cache hit and are never written — so a
+ * temporarily empty catalog (e.g. packages) cannot stick in Redis for the full TTL.
  */
 export async function getOrSetCached<T>(
   key: string,
@@ -305,7 +308,10 @@ export async function getOrSetCached<T>(
 ): Promise<T> {
   try {
     const cached = await getCached<T>(key);
-    if (cached !== null && cached !== undefined) return cached;
+    if (cached !== null && cached !== undefined) {
+      const emptyArray = Array.isArray(cached) && cached.length === 0;
+      if (!emptyArray) return cached;
+    }
   } catch {
     // ignore — fall through to fetcher
   }
@@ -313,7 +319,10 @@ export async function getOrSetCached<T>(
   const data = await fetcher();
   // Fire-and-forget write so a slow Redis never delays the response
   if (data !== null && data !== undefined) {
-    void setCached(key, data, ttl);
+    const emptyArray = Array.isArray(data) && data.length === 0;
+    if (!emptyArray) {
+      void setCached(key, data, ttl);
+    }
   }
   return data;
 }

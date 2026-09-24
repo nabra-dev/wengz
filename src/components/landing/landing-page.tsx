@@ -212,11 +212,12 @@ export default function LandingPage() {
     [t]
   );
 
-  const { data: packagesData, isLoading: isPackagesLoading } =
+  const { data: packagesData, isLoading: isPackagesLoading, isError: isPackagesError } =
     trpc.admin.getPublicPackages.useQuery(undefined, {
-      staleTime: 1000 * 60 * 30,
-      gcTime: 1000 * 60 * 60 * 24,
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: true,
+      retry: 2,
     });
 
   const packages: Package[] = packagesData ?? [];
@@ -733,7 +734,11 @@ export default function LandingPage() {
         </section>
 
         <ServicesBento />
-        <PackagesCarousel packages={packages} isLoading={showPackagesSkeleton} />
+        <PackagesCarousel
+          packages={packages}
+          isLoading={showPackagesSkeleton}
+          isError={isPackagesError}
+        />
         <InfoSection />
 
         {/* Provider form CTA */}
@@ -1167,6 +1172,16 @@ export default function LandingPage() {
                 <div className="col-span-full flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-white/40" />
                 </div>
+              )}
+              {!showPackagesSkeleton && isPackagesError && (
+                <p className="col-span-full py-8 text-center text-sm text-white/50">
+                  {t("landing.pricing.loadError")}
+                </p>
+              )}
+              {!showPackagesSkeleton && !isPackagesError && packages.length === 0 && (
+                <p className="col-span-full py-8 text-center text-sm text-white/50">
+                  {t("landing.pricing.empty")}
+                </p>
               )}
               {!showPackagesSkeleton &&
                 packages.length > 0 &&

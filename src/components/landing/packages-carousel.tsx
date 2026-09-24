@@ -21,9 +21,10 @@ interface PackageItem {
 type PackagesCarouselProps = {
   packages: PackageItem[];
   isLoading?: boolean;
+  isError?: boolean;
 };
 
-export function PackagesCarousel({ packages, isLoading }: PackagesCarouselProps) {
+export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarouselProps) {
   const t = useTranslations("landing.packagesCarousel");
   const tCommon = useTranslations("common");
   const locale = useLocale();
@@ -83,6 +84,8 @@ export function PackagesCarousel({ packages, isLoading }: PackagesCarouselProps)
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-white/40" />
             </div>
+          ) : isError ? (
+            <p className="py-12 text-center text-sm text-white/50">{t("loadError")}</p>
           ) : packages.length === 0 ? (
             <p className="py-12 text-center text-sm text-white/50">{t("empty")}</p>
           ) : (
