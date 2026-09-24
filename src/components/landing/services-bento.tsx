@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils";
 type TileKind = "image" | "info";
 
 /**
- * Desktop bento (4 cols × 4 row tracks):
+ * Desktop bento @ ~1224×700 (4 cols × gap 14px):
  *
- *  image | video  | apps | mcp
- *  image | video  | apps | plugin
- *  image | flows  | apps | studio
- *  voice | flows  | music| studio
+ *  image 296×528 | video 296×354 | apps 296×528 | mcp    296×200
+ *                 |                |              | plugin 296×140
+ *                 | flows 296×324  |              | studio 296×324
+ *  voice 296×150  |                | music 296×150|
  */
 type ServiceTile = {
   key: string;
@@ -32,8 +32,9 @@ type ServiceTile = {
   image?: string;
   icon: ComponentType<{ className?: string }>;
   area: "image" | "video" | "apps" | "mcp" | "flows" | "plugin" | "voice" | "music" | "studio";
-  /** Next/Image `sizes` — matches each card’s rendered width */
-  sizes: string;
+  /** Intrinsic image target size (desktop card WxH) */
+  imgW: number;
+  imgH: number;
 };
 
 const TILES: ServiceTile[] = [
@@ -43,7 +44,8 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/1.jpg",
     icon: ImageIcon,
     area: "image",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px",
+    imgW: 296,
+    imgH: 528,
   },
   {
     key: "aiVideo",
@@ -51,7 +53,8 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/3.jpg",
     icon: Clapperboard,
     area: "video",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px",
+    imgW: 296,
+    imgH: 354,
   },
   {
     key: "apps",
@@ -59,14 +62,16 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/6.jpg",
     icon: LayoutGrid,
     area: "apps",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px",
+    imgW: 296,
+    imgH: 528,
   },
   {
     key: "mcp",
     kind: "info",
     icon: Plug,
     area: "mcp",
-    sizes: "(max-width: 1024px) 100vw, 280px",
+    imgW: 296,
+    imgH: 200,
   },
   {
     key: "flows",
@@ -74,14 +79,16 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/8.jpg",
     icon: Workflow,
     area: "flows",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px",
+    imgW: 296,
+    imgH: 324,
   },
   {
     key: "plugin",
     kind: "info",
     icon: Sparkles,
     area: "plugin",
-    sizes: "(max-width: 1024px) 100vw, 280px",
+    imgW: 296,
+    imgH: 140,
   },
   {
     key: "voiceover",
@@ -89,7 +96,8 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/10.jpg",
     icon: Mic2,
     area: "voice",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px",
+    imgW: 296,
+    imgH: 150,
   },
   {
     key: "music",
@@ -97,7 +105,8 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/12.jpg",
     icon: Music2,
     area: "music",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px",
+    imgW: 296,
+    imgH: 150,
   },
   {
     key: "studio",
@@ -105,7 +114,8 @@ const TILES: ServiceTile[] = [
     image: "/images/landing/15.jpg",
     icon: Clapperboard,
     area: "studio",
-    sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px",
+    imgW: 296,
+    imgH: 324,
   },
 ];
 
@@ -174,7 +184,7 @@ export function ServicesBento() {
                   src={tile.image ?? "/images/landing/1.jpg"}
                   alt={title}
                   fill
-                  sizes={tile.sizes}
+                  sizes={`(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${tile.imgW}px`}
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

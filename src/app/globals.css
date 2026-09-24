@@ -276,17 +276,23 @@
     min-height: 100dvh;
   }
 
-  /* Landing services bento — named grid areas (desktop) */
+  /* Landing services bento — fixed tracks → predictable card WxH
+   * Col ≈ (container − 3×14) / 4  → ~296px at 1224px wide
+   * Rows: 200 / 140 / 160 / 150 (+ 3×14 gaps) → total H 692px
+   *
+   * image/apps  296×528 | video 296×354 | mcp 296×200 | plugin 296×140
+   * voice/music 296×150 | flows/studio 296×324
+   */
   @media (min-width: 1024px) {
     .landing-services-bento {
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-template-rows: 1.35fr 0.9fr 1fr 0.95fr;
+      grid-template-rows: 200px 140px 160px 150px;
       grid-template-areas:
         "image video apps mcp"
         "image video apps plugin"
         "image flows apps studio"
         "voice flows music studio";
-      height: min(78vh, 720px);
+      height: 692px;
     }
 
     .landing-services-bento > [data-area="image"] {
