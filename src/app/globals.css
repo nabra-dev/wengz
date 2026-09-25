@@ -160,7 +160,7 @@
   }
 
   [dir="rtl"] {
-    font-family: var(--font-cairo), sans-serif;
+    font-family: var(--font-cairo), Tahoma, Arial, sans-serif;
   }
 
   /* Fix for native date/time/color picker icons in dark mode */

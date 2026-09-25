@@ -36,7 +36,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-lato)", "var(--font-cairo)", "sans-serif"],
         lato: ["var(--font-lato)", "sans-serif"],
-        cairo: ["var(--font-cairo)", "sans-serif"],
+        /** Arabic UI — IBM Plex Sans Arabic (`--font-cairo` CSS var) */
+        cairo: ["var(--font-cairo)", "Tahoma", "Arial", "sans-serif"],
       },
       colors: {
         brand: {

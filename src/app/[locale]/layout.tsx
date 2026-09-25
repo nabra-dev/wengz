@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
-import { Lato, Cairo } from "next/font/google";
+import { Lato } from "next/font/google";
+import localFont from "next/font/local";
 import { GoogleTagManager } from "@next/third-parties/google";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
@@ -26,11 +27,48 @@ const lato = Lato({
   display: "swap",
 });
 
-const cairo = Cairo({
-  weight: ["400", "600", "700"],
-  subsets: ["arabic", "latin"],
+/** Arabic system font — IBM Plex Sans Arabic from `/public/fonts`. */
+const ibmPlexSansArabic = localFont({
+  src: [
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-Thin.ttf",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-ExtraLight.ttf",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-Light.ttf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/IBMPlexSansArabic-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-cairo",
   display: "swap",
+  fallback: ["Tahoma", "Arial", "sans-serif"],
 });
 
 export function generateStaticParams() {
@@ -79,7 +117,7 @@ export default async function LocaleLayout({
   const allMessages = (await import(`../../../messages/${locale}.json`)).default;
   const messages = pickPublicMessages(allMessages);
   const dir = locale === "ar" ? "rtl" : "ltr";
-  const fontClass = locale === "ar" ? cairo.variable : lato.variable;
+  const fontClass = locale === "ar" ? ibmPlexSansArabic.variable : lato.variable;
 
   return (
     <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
