@@ -22,7 +22,7 @@ export function InfoSection() {
           transition={{ duration: 0.5 }}
           className={isRTL ? "text-right" : "text-left"}
         >
-          <h2 className="mb-10 max-w-xl text-3xl font-semibold leading-snug tracking-tight text-white sm:mb-14 sm:text-4xl sm:leading-snug md:text-5xl md:leading-[1.2]">
+          <h2 className="mb-10 max-w-xl text-3xl font-semibold leading-[1.3] tracking-tight text-white sm:mb-14 sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]">
             {t("heading")}
           </h2>
 
@@ -35,10 +35,10 @@ export function InfoSection() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.08 * index, duration: 0.4 }}
               >
-                <h3 className="mb-3 text-lg font-semibold leading-snug text-white sm:text-xl sm:leading-snug">
+                <h3 className="mb-3 text-lg font-semibold leading-7 text-white sm:text-xl sm:leading-8">
                   {t(`columns.${key}.title`)}
                 </h3>
-                <p className="mb-5 text-sm leading-7 text-white/50">
+                <p className="mb-5 text-sm leading-8 text-white/50">
                   {t(`columns.${key}.description`)}
                 </p>
                 <Link

@@ -159,11 +159,11 @@ export function ServicesBento() {
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
                   <div className="mb-1.5 flex items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-white/90" />
-                    <h3 className="text-sm font-semibold leading-snug text-white sm:text-base sm:leading-snug">
+                    <h3 className="text-sm font-semibold leading-6 text-white sm:text-base sm:leading-7">
                       {title}
                     </h3>
                   </div>
-                  <p className="line-clamp-2 text-xs leading-6 text-white/60 sm:text-sm sm:leading-6">
+                  <p className="line-clamp-2 text-xs leading-7 text-white/60 sm:text-sm sm:leading-7">
                     {description}
                   </p>
                 </div>

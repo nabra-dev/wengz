@@ -79,23 +79,23 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
 const FONT_SIZES = {
   hero: {
     title:
-      "text-balance text-3xl font-semibold leading-snug tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-snug md:text-5xl lg:text-6xl lg:leading-[1.15]",
+      "text-balance text-3xl font-semibold leading-[1.3] tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-[1.28] md:text-5xl lg:text-6xl lg:leading-[1.25]",
     subtitle:
-      "text-[0.9375rem] leading-7 text-white/60 min-[380px]:text-base min-[380px]:leading-7 sm:text-lg sm:leading-8",
+      "text-[0.9375rem] leading-8 text-white/60 min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
   },
   sectionTitle: {
     primary:
-      "text-3xl font-semibold leading-snug tracking-tight sm:text-4xl sm:leading-snug md:text-5xl md:leading-[1.2]",
-    secondary: "text-2xl leading-snug sm:text-3xl sm:leading-snug md:text-4xl md:leading-snug",
+      "text-3xl font-semibold leading-[1.3] tracking-tight sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]",
+    secondary: "text-2xl leading-[1.3] sm:text-3xl sm:leading-[1.3] md:text-4xl md:leading-[1.28]",
   },
   cardTitle: {
-    main: "text-base leading-snug sm:text-lg sm:leading-snug",
-    small: "text-sm leading-snug md:text-base md:leading-snug",
+    main: "text-base leading-7 sm:text-lg sm:leading-7",
+    small: "text-sm leading-6 md:text-base md:leading-7",
   },
   body: {
-    large: "text-base leading-7 sm:text-lg sm:leading-8",
-    normal: "text-sm leading-7 text-white/55 sm:text-base sm:leading-7",
-    small: "text-xs leading-6 text-white/50 sm:text-sm sm:leading-6",
+    large: "text-base leading-8 sm:text-lg sm:leading-9",
+    normal: "text-sm leading-8 text-white/55 sm:text-base sm:leading-8",
+    small: "text-xs leading-7 text-white/50 sm:text-sm sm:leading-7",
   },
 } as const;
 
@@ -517,7 +517,7 @@ export default function LandingPage() {
                     <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-white/45">
                       {locale === "ar" ? "رد وينجز" : "Wengz reply"}
                     </p>
-                    <p className="whitespace-pre-wrap text-sm leading-7 text-white">
+                    <p className="whitespace-pre-wrap text-sm leading-8 text-white">
                       {renderReplyWithLinks(heroReply)}
                       {heroTypingReply ? (
                         <span
@@ -539,7 +539,7 @@ export default function LandingPage() {
                       readOnly={heroChatPhase !== "idle"}
                       placeholder=" "
                       rows={2}
-                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm leading-7 text-white placeholder:text-transparent focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
+                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm leading-8 text-white placeholder:text-transparent focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
                       onKeyDown={(e) => {
                         if (heroChatPhase !== "idle") return;
                         if (e.key === "Enter" && !e.shiftKey) {
@@ -560,7 +560,7 @@ export default function LandingPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -6 }}
                             transition={{ duration: 0.35 }}
-                            className="line-clamp-2 text-sm leading-7 text-white/45"
+                            className="line-clamp-2 text-sm leading-8 text-white/45"
                           >
                             {promptRotations[promptRotateIndex % promptRotations.length]}
                           </motion.span>
@@ -709,10 +709,10 @@ export default function LandingPage() {
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <h3 className="text-base font-medium leading-snug text-white transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-snug">
+                    <h3 className="text-base font-medium leading-7 text-white transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-7">
                       {t(`landing.forms.benefits.${key}.title`)}
                     </h3>
-                    <p className="mt-1.5 text-sm leading-7 text-white/50">
+                    <p className="mt-1.5 text-sm leading-8 text-white/50">
                       {t(`landing.forms.benefits.${key}.description`)}
                     </p>
                   </div>
