@@ -358,7 +358,7 @@ export default function LandingPage() {
       {/* Brand color ambience */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-48 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-[#690DD4]/25 blur-3xl" />
-        <div className="absolute top-32 right-[-120px] h-[480px] w-[480px] rounded-full bg-[#E0F840]/10 blur-3xl" />
+        <div className="absolute top-32 right-[-120px] h-[480px] w-[480px] rounded-full bg-wengz-yellow-soft blur-3xl" />
       </div>
 
       <motion.header
@@ -650,7 +650,7 @@ export default function LandingPage() {
               transition={{ duration: 0.5 }}
               className={textDirectionClass}
             >
-              <p className="mb-4 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[#E0F840]/80">
+              <p className="mb-4 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-wengz-yellow-muted">
                 {t("landing.forms.eyebrow")}
               </p>
               <h2
@@ -686,11 +686,11 @@ export default function LandingPage() {
                   key={key}
                   className="group grid grid-cols-[auto_1fr] gap-4 border-b border-border py-5 sm:gap-5 sm:py-6"
                 >
-                  <span className="pt-0.5 font-mono text-xs tabular-nums text-[#E0F840]/70 sm:text-sm">
+                  <span className="pt-0.5 font-mono text-xs tabular-nums text-wengz-yellow-muted sm:text-sm">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <h3 className="text-base font-medium leading-7 text-foreground transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-7">
+                    <h3 className="text-base font-medium leading-7 text-foreground transition-colors group-hover:text-wengz-yellow sm:text-lg sm:leading-7">
                       {t(`landing.forms.benefits.${key}.title`)}
                     </h3>
                     <p className="mt-1.5 text-sm leading-8 text-muted-foreground">
@@ -714,7 +714,7 @@ export default function LandingPage() {
                 {t("landing.pricing.heading")}
               </h2>
               <p className={FONT_SIZES.body.normal}>{t("landing.pricing.subheading")}</p>
-              <p className="mx-auto mt-4 max-w-xl text-pretty rounded-2xl border border-[#E0F840]/35 bg-[#E0F840]/10 px-3 py-2.5 text-center text-sm font-medium leading-7 text-foreground sm:mt-5 sm:rounded-full sm:px-4 sm:text-base sm:leading-8">
+              <p className="mx-auto mt-4 max-w-xl text-pretty rounded-2xl border border-wengz-yellow bg-wengz-yellow-soft px-3 py-2.5 text-center text-sm font-medium leading-7 text-foreground sm:mt-5 sm:rounded-full sm:px-4 sm:text-base sm:leading-8">
                 {t("landing.pricing.freeTrialNote")}
               </p>
             </div>
@@ -746,13 +746,13 @@ export default function LandingPage() {
                       <div
                         className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-card p-5 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8 ${
                           pkg.isFeatured
-                            ? "mt-3 border-[#E0F840]/40 shadow-[0_0_0_1px_rgba(224,248,64,0.12)] hover:border-[#E0F840]/55 sm:mt-0"
+                            ? "mt-3 border-wengz-yellow shadow-[0_0_0_1px_var(--wengz-yellow-soft)] hover:opacity-90 sm:mt-0"
                             : "border-border hover:border-[#690DD4]/40"
                         }`}
                       >
                         {pkg.isFeatured ? (
                           <div className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 sm:-top-3.5">
-                            <Badge className="relative border border-border bg-[#690DD4] px-4 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#E0F840] shadow-[0_10px_28px_rgba(105,13,212,0.45),0_2px_8px_rgba(224,248,64,0.35)] ring-2 ring-background">
+                            <Badge className="relative border border-border bg-[#690DD4] px-4 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-wengz-yellow shadow-[0_10px_28px_rgba(105,13,212,0.45),0_2px_8px_var(--wengz-yellow-soft)] ring-2 ring-background">
                               {t("landing.pricing.featuredBadge")}
                             </Badge>
                           </div>
@@ -766,7 +766,7 @@ export default function LandingPage() {
                           {pkg.credits} {t("common.credits")}
                         </p>
 
-                        <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-[#E0F840]/35" />
+                        <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-wengz-yellow-line" />
 
                         <div className="mb-6">
                           <div className="mb-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
@@ -859,18 +859,18 @@ export default function LandingPage() {
               >
                 <div className="flex w-full max-w-sm items-center gap-3">
                   <span
-                    className="h-px flex-1 bg-gradient-to-r from-transparent to-[#E0F840]/50"
+                    className="h-px flex-1 bg-gradient-to-r from-transparent to-wengz-yellow-line"
                     aria-hidden
                   />
-                  <p className="inline-flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.18em] text-[#E0F840] sm:text-[0.9375rem]">
+                  <p className="inline-flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.18em] text-wengz-yellow sm:text-[0.9375rem]">
                     <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-                      <span className="absolute inset-0 animate-ping rounded-full bg-[#E0F840]/55" />
-                      <span className="relative m-auto h-2 w-2 rounded-full bg-[#E0F840] shadow-[0_0_12px_rgba(224,248,64,0.8)]" />
+                      <span className="absolute inset-0 animate-ping rounded-full bg-wengz-yellow opacity-55" />
+                      <span className="relative m-auto h-2 w-2 rounded-full bg-wengz-yellow shadow-[0_0_12px_var(--wengz-yellow-muted)]" />
                     </span>
                     {t("landing.cta.appComingSoon")}
                   </p>
                   <span
-                    className="h-px flex-1 bg-gradient-to-l from-transparent to-[#E0F840]/50"
+                    className="h-px flex-1 bg-gradient-to-l from-transparent to-wengz-yellow-line"
                     aria-hidden
                   />
                 </div>

@@ -48,7 +48,7 @@ export function InfoSection() {
           <div className="mt-8 sm:mt-12">
             <Link
               href={t("ctaHref")}
-              className="inline-flex w-full items-center justify-center rounded-full border border-[#E0F840]/45 bg-transparent px-5 py-2.5 text-sm font-medium text-foreground shadow-[0_0_18px_rgba(224,248,64,0.22)] transition hover:border-[#E0F840]/70 hover:shadow-[0_0_28px_rgba(224,248,64,0.35)] sm:w-auto sm:py-2"
+              className="inline-flex w-full items-center justify-center rounded-full border border-wengz-yellow bg-transparent px-5 py-2.5 text-sm font-medium text-foreground shadow-wengz-yellow-glow transition hover:opacity-90 sm:w-auto sm:py-2"
             >
               {t("learnMore")}
             </Link>

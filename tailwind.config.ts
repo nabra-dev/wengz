@@ -42,7 +42,7 @@ const config: Config = {
       colors: {
         brand: {
           purple: "#690DD4",
-          yellow: "#E0F840",
+          yellow: "var(--wengz-yellow)",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

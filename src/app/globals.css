@@ -44,6 +44,12 @@
     --ring: 268 88% 44%;
 
     --radius: 0.5rem;
+
+    /* Brand lime — neon on dark surfaces */
+    --wengz-yellow: #e0f840;
+    --wengz-yellow-muted: rgba(224, 248, 64, 0.7);
+    --wengz-yellow-soft: rgba(224, 248, 64, 0.12);
+    --wengz-yellow-border: rgba(224, 248, 64, 0.4);
   }
 
   .dark {
@@ -74,6 +80,11 @@
     --border: 268 22% 18%;
     --input: 268 22% 18%;
     --ring: 268 88% 44%;
+
+    --wengz-yellow: #e0f840;
+    --wengz-yellow-muted: rgba(224, 248, 64, 0.7);
+    --wengz-yellow-soft: rgba(224, 248, 64, 0.12);
+    --wengz-yellow-border: rgba(224, 248, 64, 0.4);
   }
 
   .light {
@@ -89,8 +100,9 @@
     --primary: 268 88% 44%;
     --primary-foreground: 68 93% 61%;
 
-    --secondary: 68 90% 48%;
-    --secondary-foreground: 268 70% 12%;
+    /* Deeper lime so yellow reads clearly on white */
+    --secondary: 68 88% 36%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 268 20% 94%;
     --muted-foreground: 268 16% 38%;
@@ -104,6 +116,11 @@
     --border: 268 16% 88%;
     --input: 268 16% 88%;
     --ring: 268 88% 44%;
+
+    --wengz-yellow: #8fa80a;
+    --wengz-yellow-muted: rgba(143, 168, 10, 0.85);
+    --wengz-yellow-soft: rgba(143, 168, 10, 0.14);
+    --wengz-yellow-border: rgba(143, 168, 10, 0.55);
   }
 }
 
@@ -348,5 +365,33 @@
       transform: scale(1);
       opacity: 0.85;
     }
+  }
+
+  /* Theme-aware brand yellow (deeper in light mode for contrast on white) */
+  .text-wengz-yellow {
+    color: var(--wengz-yellow);
+  }
+  .text-wengz-yellow-muted {
+    color: var(--wengz-yellow-muted);
+  }
+  .bg-wengz-yellow {
+    background-color: var(--wengz-yellow);
+  }
+  .bg-wengz-yellow-soft {
+    background-color: var(--wengz-yellow-soft);
+  }
+  .border-wengz-yellow {
+    border-color: var(--wengz-yellow-border);
+  }
+  .from-wengz-yellow-line {
+    --tw-gradient-from: var(--wengz-yellow-border) var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(224 248 64 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  .to-wengz-yellow-line {
+    --tw-gradient-to: var(--wengz-yellow-border) var(--tw-gradient-to-position);
+  }
+  .shadow-wengz-yellow-glow {
+    box-shadow: 0 0 18px var(--wengz-yellow-soft);
   }
 }
