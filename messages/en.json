@@ -77,7 +77,7 @@
       "titleBefore": "Stick with ",
       "titleHighlight": "Wengz",
       "titleAfter": " & get it done",
-      "subtitle": "An AI platform with real human expertise—so you get better results than chatting with a tool alone.",
+      "subtitle": "An AI platform with real human expertise—so you get better results than chatting with a tool alone. New users get a free week to try it.",
       "socialProof": "Real pros working AI on your behalf",
       "promptPlaceholder": "Tell us what you need…",
       "promptHint": "Write a short brief—we’ll route it to the right person.",
@@ -136,7 +136,7 @@
       }
     },
     "packagesCarousel": {
-      "learnMore": "Learn more",
+      "learnMore": "Compare plans",
       "next": "Next packages",
       "page": "Page",
       "empty": "Plans will appear here once packages are published.",
@@ -144,7 +144,7 @@
     },
     "info": {
       "heading": "Not AI alone—human expertise too",
-      "learnMore": "Learn more",
+      "learnMore": "See how it works",
       "ctaHref": "#pricing",
       "imageAlt": "How Wengz works",
       "columns": {
@@ -186,7 +186,7 @@
       "provider": {
         "title": "I’m a provider",
         "description": "Tell us your craft and share your work—we’ll match you with the right requests.",
-        "cta": "Apply as a creator"
+        "cta": "Join as a creator"
       },
       "benefits": {
         "portfolio": {
@@ -248,17 +248,19 @@
     "pricing": {
       "heading": "Plans that help you get it done",
       "subheading": "Pick what fits—then request. We route it to creators who ship with AI and expertise.",
+      "freeTrialNote": "New users get a free plan for one week—try Wengz before you commit.",
       "perMonth": "/month",
       "featuredBadge": "Featured",
-      "cta": "Get started",
+      "cta": "Start my free week",
       "empty": "Plans will appear here once packages are published.",
       "loadError": "Couldn’t load plans right now. Please refresh and try again."
     },
     "cta": {
       "heading": "Stick with Wengz & get it done",
-      "subheading": "Ask for what you need and let a pro work AI for you—stronger results than chatting alone.",
-      "startTrial": "Get started",
-      "viewPlans": "View plans",
+      "subheading": "Ask for what you need and let a pro work AI for you—stronger results than chatting alone. New accounts start with a free week.",
+      "primary": "Start free week",
+      "startTrial": "Start free week",
+      "viewPlans": "Explore plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
       "androidApp": "Android app",

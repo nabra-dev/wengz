@@ -394,7 +394,7 @@ export default function LandingPage() {
                 size="sm"
                 className="h-9 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-4 text-sm font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:px-5"
               >
-                <Link href="/auth/register">{t("common.buttons.getStarted")}</Link>
+                <Link href="/auth/register">{t("landing.cta.primary")}</Link>
               </Button>
             </div>
           </div>
@@ -600,7 +600,7 @@ export default function LandingPage() {
                     onClick={() => void handleHeroSubmit()}
                     disabled={heroChatPhase !== "idle" || heroLoadingReply || !heroPrompt.trim()}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#690DD4] to-[#E0F840] text-black shadow-[0_8px_24px_rgba(105,13,212,0.35)] transition-all hover:scale-[1.03] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55 sm:h-9 sm:w-9"
-                    aria-label={t("common.buttons.getStarted")}
+                    aria-label={t("landing.cta.primary")}
                   >
                     {heroLoadingReply ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -711,6 +711,9 @@ export default function LandingPage() {
                 {t("landing.pricing.heading")}
               </h2>
               <p className={FONT_SIZES.body.normal}>{t("landing.pricing.subheading")}</p>
+              <p className="mx-auto mt-5 inline-flex max-w-xl rounded-full border border-[#E0F840]/35 bg-[#E0F840]/10 px-4 py-2 text-sm font-medium leading-7 text-foreground sm:text-base sm:leading-8">
+                {t("landing.pricing.freeTrialNote")}
+              </p>
             </div>
 
             <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 pt-2 sm:gap-8 sm:pt-3 md:grid-cols-2 lg:grid-cols-4">
@@ -833,7 +836,7 @@ export default function LandingPage() {
                   asChild
                   className="h-11 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:px-10"
                 >
-                  <Link href="/auth/register">{t("common.buttons.getStarted")}</Link>
+                  <Link href="/auth/register">{t("landing.cta.primary")}</Link>
                 </Button>
                 <Button
                   asChild
