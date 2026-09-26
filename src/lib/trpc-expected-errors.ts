@@ -20,6 +20,10 @@ const EXPECTED_TRPC_CLIENT_CODES = new Set([
 
 export function isExpectedTrpcClientError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
+
+  // Raw Zod validation failures (sometimes reported before wrapping as TRPCError)
+  if ("name" in error && error.name === "ZodError") return true;
+
   const code = "code" in error ? error.code : undefined;
   return typeof code === "string" && EXPECTED_TRPC_CLIENT_CODES.has(code);
 }

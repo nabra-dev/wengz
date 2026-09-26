@@ -7,7 +7,7 @@
  * - Expected tRPC client errors (CONFLICT, UNAUTHORIZED, …) are never sent to Sentry.
  */
 
-import { isExpectedTrpcClientError } from "@/lib/trpc-expected-errors";
+import { shouldDropSentryException } from "@/lib/sentry-filters";
 import { isSentryEnabled } from "@/lib/sentry-enabled";
 
 type LogMeta = Record<string, unknown>;
@@ -50,7 +50,7 @@ async function captureSentry(
 ): Promise<void> {
   try {
     if (!isSentryEnabled()) return;
-    if (isExpectedTrpcClientError(meta?.error)) return;
+    if (shouldDropSentryException(meta?.error)) return;
 
     const Sentry = await import("@sentry/nextjs");
     if (level === "error") {

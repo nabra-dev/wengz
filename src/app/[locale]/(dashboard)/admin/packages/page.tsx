@@ -132,12 +132,29 @@ export default function AdminPackagesPage() {
     const featuresI18n: Record<string, string[]> = {};
     if (featuresEn.length) featuresI18n.en = featuresEn;
     if (featuresAr.length) featuresI18n.ar = featuresAr;
+
+    const credits = Number.parseInt(formData.get("credits") as string, 10);
+    const price = Number.parseFloat(formData.get("price") as string);
+    const durationDays = Number.parseInt(formData.get("durationDays") as string, 10);
+    if (!Number.isFinite(credits) || credits < 1) {
+      toast.error(t("toast.invalidCredits"));
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error(t("toast.invalidPrice"));
+      return;
+    }
+    if (!Number.isFinite(durationDays) || durationDays < 1) {
+      toast.error(t("toast.invalidDuration"));
+      return;
+    }
+
     createPackage.mutate({
       name: nameEn || nameAr,
       nameI18n: Object.keys(nameI18n).length ? nameI18n : undefined,
-      price: Number.parseFloat(formData.get("price") as string),
-      credits: Number.parseInt(formData.get("credits") as string),
-      durationDays: Number.parseInt(formData.get("durationDays") as string),
+      price,
+      credits,
+      durationDays,
       description: descEn || descAr || undefined,
       descriptionI18n: Object.keys(descriptionI18n).length ? descriptionI18n : undefined,
       features: featuresEn,
@@ -172,12 +189,24 @@ export default function AdminPackagesPage() {
     const featuresI18n: Record<string, string[]> = {};
     if (featuresEn.length) featuresI18n.en = featuresEn;
     if (featuresAr.length) featuresI18n.ar = featuresAr;
+
+    const credits = Number.parseInt(formData.get("credits") as string, 10);
+    const price = Number.parseFloat(formData.get("price") as string);
+    if (!Number.isFinite(credits) || credits < 1) {
+      toast.error(t("toast.invalidCredits"));
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error(t("toast.invalidPrice"));
+      return;
+    }
+
     updatePackage.mutate({
       id,
       name: nameEn || nameAr || undefined,
       nameI18n: Object.keys(nameI18n).length ? nameI18n : undefined,
-      price: Number.parseFloat(formData.get("price") as string),
-      credits: Number.parseInt(formData.get("credits") as string),
+      price,
+      credits,
       description: descEn || descAr || undefined,
       descriptionI18n: Object.keys(descriptionI18n).length ? descriptionI18n : undefined,
       features: featuresEn,
@@ -321,7 +350,9 @@ export default function AdminPackagesPage() {
                 <Checkbox
                   id="support-all-services"
                   checked={createSupportAllServices}
-                  onCheckedChange={(checked: boolean) => setCreateSupportAllServices(checked as boolean)}
+                  onCheckedChange={(checked: boolean) =>
+                    setCreateSupportAllServices(checked as boolean)
+                  }
                 />
                 <Label htmlFor="support-all-services" className="cursor-pointer font-medium flex-1">
                   {t("fields.supportAllServices") || "Support All Services"}
@@ -442,8 +473,15 @@ export default function AdminPackagesPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>{t("fields.credits")}</Label>
-                              <Input name="credits" type="number" defaultValue={pkg.credits} />
+                              <Label>{t("fields.creditsRequired")}</Label>
+                              <Input
+                                name="credits"
+                                type="number"
+                                min={1}
+                                step={1}
+                                required
+                                defaultValue={pkg.credits}
+                              />
                             </div>
                             <div className="space-y-2">
                               <Label>{t("fields.localizedDescription")}</Label>
@@ -498,7 +536,9 @@ export default function AdminPackagesPage() {
                               <Checkbox
                                 id="edit-is-featured"
                                 checked={editIsFeatured}
-                                onCheckedChange={(checked: boolean) => setEditIsFeatured(checked as boolean)}
+                                onCheckedChange={(checked: boolean) =>
+                                  setEditIsFeatured(checked as boolean)
+                                }
                               />
                               <Label
                                 htmlFor="edit-is-featured"
@@ -665,7 +705,6 @@ export default function AdminPackagesPage() {
           </Tabs>
         </CardContent>
       </Card>
-
     </div>
   );
 }

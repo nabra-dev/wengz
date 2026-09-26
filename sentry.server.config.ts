@@ -1,6 +1,6 @@
 import { hostname } from "node:os";
 import * as Sentry from "@sentry/nextjs";
-import { isExpectedTrpcClientError } from "./src/lib/trpc-expected-errors";
+import { shouldDropSentryException } from "./src/lib/sentry-filters";
 import { isSentryEnabled } from "./src/lib/sentry-enabled";
 
 const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -21,7 +21,7 @@ Sentry.init({
   tracesSampleRate: 0.1,
   integrations: [Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] })],
   beforeSend(event, hint) {
-    if (isExpectedTrpcClientError(hint.originalException)) {
+    if (shouldDropSentryException(hint.originalException)) {
       return null;
     }
     return event;

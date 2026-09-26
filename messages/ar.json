@@ -793,7 +793,10 @@
         "deactivated": "تم إلغاء تفعيل الباقة بنجاح",
         "createFailed": "فشل إنشاء الباقة",
         "updateFailed": "فشل تحديث الباقة",
-        "statusFailed": "فشل تحديث حالة الباقة"
+        "statusFailed": "فشل تحديث حالة الباقة",
+        "invalidCredits": "يجب أن يكون عدد الكريدت 1 على الأقل",
+        "invalidPrice": "أدخل سعراً صالحاً (0 أو أكثر)",
+        "invalidDuration": "يجب أن تكون المدة يوماً واحداً على الأقل"
       }
     },
     "services": {

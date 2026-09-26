@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { isSentryEnabled } from "./src/lib/sentry-enabled";
+import { shouldDropSentryException } from "./src/lib/sentry-filters";
 
 const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -8,4 +9,10 @@ Sentry.init({
   enabled: isSentryEnabled(),
   tracesSampleRate: 0.05,
   integrations: [Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] })],
+  beforeSend(event, hint) {
+    if (shouldDropSentryException(hint.originalException)) {
+      return null;
+    }
+    return event;
+  },
 });

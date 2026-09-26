@@ -793,7 +793,10 @@
         "deactivated": "Package deactivated successfully",
         "createFailed": "Failed to create package",
         "updateFailed": "Failed to update package",
-        "statusFailed": "Failed to update package status"
+        "statusFailed": "Failed to update package status",
+        "invalidCredits": "Credits must be at least 1",
+        "invalidPrice": "Enter a valid price (0 or greater)",
+        "invalidDuration": "Duration must be at least 1 day"
       }
     },
     "services": {

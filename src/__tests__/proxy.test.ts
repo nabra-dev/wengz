@@ -78,6 +78,47 @@ describe("Proxy Middleware Logic", () => {
     });
   });
 
+  describe("Probe noise detection", () => {
+    function isProbeNoise(pathname: string): boolean {
+      const path = pathname.toLowerCase();
+      if (
+        path.includes("/wp-admin") ||
+        path.includes("/wp-login") ||
+        path.includes("/wp-content") ||
+        path.includes("/wp-includes") ||
+        path.includes("/xmlrpc") ||
+        path.includes("/wordpress") ||
+        path.includes("/.env") ||
+        path.includes("/phpmyadmin")
+      ) {
+        return true;
+      }
+      return /\.(php|asp|aspx|jsp|cgi)$/i.test(path);
+    }
+
+    const probes = [
+      "/wp-admin/install.php",
+      "/wp-login.php",
+      "/xmlrpc.php",
+      "/wordpress/wp-admin",
+      "/.env",
+      "/shell.cgi",
+    ];
+    const normal = ["/", "/ar", "/en/contact", "/admin/packages"];
+
+    probes.forEach((path) => {
+      it(`should flag ${path} as probe noise`, () => {
+        expect(isProbeNoise(path)).toBe(true);
+      });
+    });
+
+    normal.forEach((path) => {
+      it(`should not flag ${path} as probe noise`, () => {
+        expect(isProbeNoise(path)).toBe(false);
+      });
+    });
+  });
+
   describe("Static asset bypass", () => {
     const bypassPaths = [
       { path: "/api/health", reason: "API route" },

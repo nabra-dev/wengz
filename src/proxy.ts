@@ -2,14 +2,28 @@ import createMiddleware from "next-intl/middleware";
 import { withAuth } from "next-auth/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
-import {
-  canAccessAdminPath,
-  getStaffHomePath,
-  isStaffRole,
-} from "./lib/roles";
+import { canAccessAdminPath, getStaffHomePath, isStaffRole } from "./lib/roles";
 import { CANONICAL_HOST } from "./lib/seo";
 
 const handleI18nRouting = createMiddleware(routing);
+
+/** WordPress / CMS scanners and similar probes — return 404 without rendering pages. */
+function isProbeNoise(pathname: string): boolean {
+  const path = pathname.toLowerCase();
+  if (
+    path.includes("/wp-admin") ||
+    path.includes("/wp-login") ||
+    path.includes("/wp-content") ||
+    path.includes("/wp-includes") ||
+    path.includes("/xmlrpc") ||
+    path.includes("/wordpress") ||
+    path.includes("/.env") ||
+    path.includes("/phpmyadmin")
+  ) {
+    return true;
+  }
+  return /\.(php|asp|aspx|jsp|cgi)$/i.test(path);
+}
 
 function getPathWithoutLocale(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
@@ -42,6 +56,10 @@ function handlePublicRouting(req: NextRequest) {
   if (wwwRedirect) return wwwRedirect;
 
   const pathname = req.nextUrl.pathname;
+  if (isProbeNoise(pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const firstSegment = pathname.split("/").find(Boolean);
 
   if (pathname === "/favicon.ico") {
@@ -142,6 +160,10 @@ const authMiddleware = withAuth(
 );
 
 export default function middleware(req: NextRequest) {
+  if (isProbeNoise(req.nextUrl.pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   // Skip NextAuth JWT work on public marketing/auth routes
   if (!isProtected(req.nextUrl.pathname)) {
     return handlePublicRouting(req);
@@ -160,5 +182,11 @@ export const config = {
     "/robots.txt",
     "/sitemap.xml",
     "/manifest.json",
+    // Probe paths with extensions (normally excluded by .*\\..*) — short-circuit to 404
+    "/:path*.php",
+    "/:path*.asp",
+    "/:path*.aspx",
+    "/:path*.jsp",
+    "/:path*.cgi",
   ],
 };
