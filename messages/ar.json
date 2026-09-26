@@ -148,19 +148,19 @@
       "imageAlt": "عمل إبداعي مميز",
       "columns": {
         "media": {
-          "title": "الإعلام والترفيه",
-          "description": "وسّع الحملات والمحتوى والإطلاقات دون إبطاء فريقك.",
-          "href": "#features"
+          "title": "ابدأ بموجز",
+          "description": "صف ما تحتاجه أو أضف مراجع ولقطات شاشة ومستندات.",
+          "href": "#pricing"
         },
         "agencies": {
-          "title": "الوكالات",
-          "description": "زد قدرتك مع مبدعين موثوقين وتسليم متوقع بالكريدت.",
+          "title": "الخبراء يعملون",
+          "description": "محترفون موثوقون يتولون طلبك ويُسلّمون في الوقت مع تواصل واضح.",
           "href": "#pricing"
         },
         "teams": {
-          "title": "الفرق الإبداعية",
-          "description": "من الموجز إلى الأصول الجاهزة بسرعة، بمراجعات واضحة وملكية واضحة.",
-          "href": "#gallery"
+          "title": "راجع وانطلق",
+          "description": "اطلب مراجعات، اعتمد العمل، ثم أطلق—ملاحظات بسيطة ونتائج متوقعة.",
+          "href": "#pricing"
         }
       }
     },
@@ -184,10 +184,25 @@
     "forms": {
       "heading": "مبدعون، انضموا للشبكة",
       "subheading": "قدّم بورتفوليوك — سنراجع ونتواصل معك.",
+      "eyebrow": "للمبدعين",
       "provider": {
         "title": "أنا مبدع",
         "description": "شاركنا بياناتك وأعمالك لنتمكن من مراجعتها والتواصل معك",
         "cta": "فتح نموذج المبدعين"
+      },
+      "benefits": {
+        "portfolio": {
+          "title": "اعرض حرفتك",
+          "description": "شارك روابطك ونماذجك لنضعك على المشاريع المناسبة."
+        },
+        "review": {
+          "title": "نراجع طلبك",
+          "description": "نقيّم كل تقديم ونرد بخطوات واضحة."
+        },
+        "deliver": {
+          "title": "سلّم مع وينجز",
+          "description": "استلم موجزات بالكريدت بجداول زمنية وملاحظات متوقعة."
+        }
       }
     },
     "features": {
@@ -247,7 +262,11 @@
       "viewPlans": "عرض الخطط",
       "appComingSoon": "قريباً",
       "iosApp": "تطبيق iOS",
-      "androidApp": "تطبيق Android"
+      "androidApp": "تطبيق Android",
+      "appStoreEyebrow": "حمّله من",
+      "appStoreLabel": "App Store",
+      "googlePlayEyebrow": "احصل عليه من",
+      "googlePlayLabel": "Google Play"
     },
     "footer": {
       "privacy": "الخصوصية",

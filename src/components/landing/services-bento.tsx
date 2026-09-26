@@ -16,20 +16,9 @@ import {
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 
-type TileKind = "image" | "info";
-
-/**
- * Desktop bento @ ~1224×700 (4 cols × gap 14px):
- *
- *  image 296×528 | video 296×354 | apps 296×528 | mcp    296×200
- *                 |                |              | plugin 296×140
- *                 | flows 296×324  |              | studio 296×324
- *  voice 296×150  |                | music 296×150|
- */
 type ServiceTile = {
   key: string;
-  kind: TileKind;
-  image?: string;
+  image: string;
   icon: ComponentType<{ className?: string }>;
   area: "image" | "video" | "apps" | "mcp" | "flows" | "plugin" | "voice" | "music" | "studio";
   /** Intrinsic image target size (desktop card WxH) */
@@ -37,11 +26,18 @@ type ServiceTile = {
   imgH: number;
 };
 
+const BENTO_IMG = {
+  design: "/images/landing/bento-imgs/design.png",
+  video: "/images/landing/bento-imgs/video.png",
+  production: "/images/landing/bento-imgs/production.png",
+  voice: "/images/landing/bento-imgs/voice.png",
+  workflow: "/images/landing/bento-imgs/workflow.png",
+} as const;
+
 const TILES: ServiceTile[] = [
   {
     key: "aiImage",
-    kind: "image",
-    image: "/images/landing/1.jpg",
+    image: BENTO_IMG.design,
     icon: ImageIcon,
     area: "image",
     imgW: 296,
@@ -49,8 +45,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "aiVideo",
-    kind: "image",
-    image: "/images/landing/3.jpg",
+    image: BENTO_IMG.video,
     icon: Clapperboard,
     area: "video",
     imgW: 296,
@@ -58,8 +53,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "apps",
-    kind: "image",
-    image: "/images/landing/6.jpg",
+    image: BENTO_IMG.production,
     icon: LayoutGrid,
     area: "apps",
     imgW: 296,
@@ -67,7 +61,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "mcp",
-    kind: "info",
+    image: BENTO_IMG.workflow,
     icon: Plug,
     area: "mcp",
     imgW: 296,
@@ -75,8 +69,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "flows",
-    kind: "image",
-    image: "/images/landing/8.jpg",
+    image: BENTO_IMG.workflow,
     icon: Workflow,
     area: "flows",
     imgW: 296,
@@ -84,7 +77,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "plugin",
-    kind: "info",
+    image: BENTO_IMG.design,
     icon: Sparkles,
     area: "plugin",
     imgW: 296,
@@ -92,8 +85,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "voiceover",
-    kind: "image",
-    image: "/images/landing/10.jpg",
+    image: BENTO_IMG.voice,
     icon: Mic2,
     area: "voice",
     imgW: 296,
@@ -101,8 +93,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "music",
-    kind: "image",
-    image: "/images/landing/12.jpg",
+    image: BENTO_IMG.voice,
     icon: Music2,
     area: "music",
     imgW: 296,
@@ -110,8 +101,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "studio",
-    kind: "image",
-    image: "/images/landing/15.jpg",
+    image: BENTO_IMG.production,
     icon: Clapperboard,
     area: "studio",
     imgW: 296,
@@ -134,34 +124,12 @@ export function ServicesBento() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="landing-services-bento grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5"
+          className="landing-services-bento grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4"
         >
           {TILES.map((tile, index) => {
             const Icon = tile.icon;
             const title = t(`tiles.${tile.key}.title`);
             const description = t(`tiles.${tile.key}.description`);
-
-            if (tile.kind === "info") {
-              return (
-                <motion.div
-                  key={tile.key}
-                  data-area={tile.area}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.04, duration: 0.4 }}
-                  className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-white/10 bg-[#111]/95 p-5 backdrop-blur-md sm:rounded-3xl sm:p-6 lg:min-h-0"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#690DD4]/40 to-[#E0F840]/25 ring-1 ring-white/10">
-                      <Icon className="h-4 w-4 text-white" />
-                    </span>
-                    <h3 className="text-base font-semibold text-white">{title}</h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-white/55">{description}</p>
-                </motion.div>
-              );
-            }
 
             return (
               <motion.div
@@ -181,7 +149,7 @@ export function ServicesBento() {
                 )}
               >
                 <Image
-                  src={tile.image ?? "/images/landing/1.jpg"}
+                  src={tile.image}
                   alt={title}
                   fill
                   sizes={`(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${tile.imgW}px`}
@@ -191,9 +159,11 @@ export function ServicesBento() {
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
                   <div className="mb-1.5 flex items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-white/90" />
-                    <h3 className="text-sm font-semibold text-white sm:text-base">{title}</h3>
+                    <h3 className="text-sm font-semibold leading-snug text-white sm:text-base sm:leading-snug">
+                      {title}
+                    </h3>
                   </div>
-                  <p className="line-clamp-2 text-xs leading-relaxed text-white/60 sm:text-sm">
+                  <p className="line-clamp-2 text-xs leading-6 text-white/60 sm:text-sm sm:leading-6">
                     {description}
                   </p>
                 </div>

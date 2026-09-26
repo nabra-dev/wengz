@@ -106,10 +106,10 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
                   <div className="mb-4 flex h-8 w-8 items-center justify-center text-white">
                     <Package className="h-5 w-5" strokeWidth={1.5} />
                   </div>
-                  <h3 className="mb-2 text-base font-semibold text-white">
+                  <h3 className="mb-2 text-base font-semibold leading-snug text-white">
                     {getLocalized(pkg.name, pkg.nameI18n)}
                   </h3>
-                  <p className="mb-5 line-clamp-3 min-h-[3.75rem] text-sm leading-relaxed text-white/50">
+                  <p className="mb-5 line-clamp-3 min-h-[4.5rem] text-sm leading-7 text-white/50">
                     {getLocalized(pkg.description, pkg.descriptionI18n) ||
                       `${pkg.credits} ${tCommon("credits")} · ${formatCurrency(pkg.price)}`}
                   </p>

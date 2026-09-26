@@ -285,7 +285,7 @@
    */
   @media (min-width: 1024px) {
     .landing-services-bento {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
       grid-template-rows: 200px 140px 160px 150px;
       grid-template-areas:
         "image video apps mcp"
@@ -293,6 +293,7 @@
         "image flows apps studio"
         "voice flows music studio";
       height: 692px;
+      gap: 0.875rem;
     }
 
     .landing-services-bento > [data-area="image"] {

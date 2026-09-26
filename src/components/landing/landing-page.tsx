@@ -5,49 +5,73 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, useRef, useMemo } from "react";
-import type { ComponentType, CSSProperties } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import {
-  Check,
-  Zap,
-  Shield,
-  Clock,
-  Star,
-  Users,
-  Loader2,
-  Plus,
-  ArrowUp,
-  LayoutGrid,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Sparkles,
-  Apple,
-} from "lucide-react";
+import { Check, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
-import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
 import { ServicesBento } from "@/components/landing/services-bento";
 import { PackagesCarousel } from "@/components/landing/packages-carousel";
 import { InfoSection } from "@/components/landing/info-section";
 
-function AndroidIcon({ className }: { className?: string }) {
+function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M17.523 9.427l1.994-3.46a.64.64 0 0 0-.24-.87.64.64 0 0 0-.87.24l-2.02 3.503a10.39 10.39 0 0 0-8.774 0L5.593 5.337a.64.64 0 0 0-.87-.24.64.64 0 0 0-.24.87l1.994 3.46C3.99 11.03 2.4 13.78 2.4 16.89h19.2c0-3.11-1.59-5.86-4.077-7.463ZM7.8 14.49a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm8.4 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z" />
-    </svg>
+    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-white/20 bg-black px-3.5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-14 sm:w-[180px] sm:px-4">
+      <svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
+      >
+        <path d="M16.365 12.052c0-1.857 1.052-2.76 1.1-2.79-.66-.97-1.69-1.1-2.05-1.12-1.1-.11-2.15.65-2.71.65-.56 0-1.43-.63-2.35-.61-1.21.02-2.33.7-2.95 1.78-1.26 2.19-.32 5.43.91 7.21.6.87 1.31 1.84 2.25 1.81.9-.04 1.24-.58 2.33-.58 1.09 0 1.39.58 2.34.56.97-.02 1.58-.88 2.17-1.76.69-1.01.97-1.99 1-2.04-.02-.01-1.9-.73-1.92-2.89-.02-1.81 1.48-2.67 1.55-2.72-.86-1.26-2.19-1.4-2.66-1.43zm-2.0-6.1c.5-.6.83-1.44.74-2.28-.71.03-1.57.47-2.08 1.07-.46.53-.86 1.38-.75 2.19.8.06 1.61-.41 2.09-.98z" />
+      </svg>
+      <span className="flex min-w-0 flex-col items-start leading-none">
+        <span className="text-[9px] font-medium tracking-wide text-white/70 sm:text-[10px]">
+          {eyebrow}
+        </span>
+        <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
+          {label}
+        </span>
+      </span>
+    </span>
+  );
+}
+
+function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
+  return (
+    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-white/20 bg-black px-3.5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-14 sm:w-[180px] sm:px-4">
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7 shrink-0 sm:h-8 sm:w-8">
+        <path
+          fill="#EA4335"
+          d="M3.609 1.814 13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92Z"
+        />
+        <path
+          fill="#FBBC04"
+          d="m16.795 9.197 2.807 1.626a1 1 0 0 1 0 1.732l-2.808 1.626L13.792 12l3.003-2.803Z"
+        />
+        <path
+          fill="#4285F4"
+          d="M3.609 22.186 13.792 12l3.003 2.803-10.937 6.333a1.006 1.006 0 0 1-1.249-.95Z"
+        />
+        <path
+          fill="#34A853"
+          d="m13.792 12 3.003-2.803L5.864 2.658a1.006 1.006 0 0 0-1.25.95L3.609 1.814 13.792 12Z"
+        />
+      </svg>
+      <span className="flex min-w-0 flex-col items-start leading-none">
+        <span className="text-[9px] font-medium tracking-wide text-white/70 sm:text-[10px]">
+          {eyebrow}
+        </span>
+        <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
+          {label}
+        </span>
+      </span>
+    </span>
   );
 }
 
@@ -55,26 +79,25 @@ function AndroidIcon({ className }: { className?: string }) {
 const FONT_SIZES = {
   hero: {
     title:
-      "text-balance text-3xl font-semibold tracking-tight min-[380px]:text-4xl sm:text-5xl md:text-5xl lg:text-6xl",
+      "text-balance text-3xl font-semibold leading-snug tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-snug md:text-5xl lg:text-6xl lg:leading-[1.15]",
     subtitle:
-      "text-[0.9375rem] leading-relaxed text-white/60 min-[380px]:text-base sm:text-lg",
+      "text-[0.9375rem] leading-7 text-white/60 min-[380px]:text-base min-[380px]:leading-7 sm:text-lg sm:leading-8",
   },
   sectionTitle: {
-    primary: "text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl",
-    secondary: "text-2xl sm:text-3xl md:text-4xl",
+    primary:
+      "text-3xl font-semibold leading-snug tracking-tight sm:text-4xl sm:leading-snug md:text-5xl md:leading-[1.2]",
+    secondary: "text-2xl leading-snug sm:text-3xl sm:leading-snug md:text-4xl md:leading-snug",
   },
   cardTitle: {
-    main: "text-base sm:text-lg",
-    small: "text-sm md:text-base",
+    main: "text-base leading-snug sm:text-lg sm:leading-snug",
+    small: "text-sm leading-snug md:text-base md:leading-snug",
   },
   body: {
-    large: "text-base sm:text-lg",
-    normal: "text-sm sm:text-base text-white/55",
-    small: "text-xs sm:text-sm text-white/50",
+    large: "text-base leading-7 sm:text-lg sm:leading-8",
+    normal: "text-sm leading-7 text-white/55 sm:text-base sm:leading-7",
+    small: "text-xs leading-6 text-white/50 sm:text-sm sm:leading-6",
   },
 } as const;
-
-type FeatureKey = "credit" | "quality" | "speed" | "revisions" | "experts";
 
 interface Package {
   id: string;
@@ -99,51 +122,6 @@ interface Package {
   }>;
 }
 
-interface FeatureItem {
-  icon: ComponentType<{ className?: string }>;
-  key: FeatureKey;
-}
-
-const featureItems: FeatureItem[] = [
-  {
-    icon: Zap,
-    key: "credit",
-  },
-  {
-    icon: Shield,
-    key: "quality",
-  },
-  {
-    icon: Clock,
-    key: "speed",
-  },
-  {
-    icon: Star,
-    key: "revisions",
-  },
-  {
-    icon: Users,
-    key: "experts",
-  },
-];
-
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-};
-
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: {
@@ -153,29 +131,9 @@ const scaleIn = {
   },
 };
 
-const MEET_STEP_KEYS = ["start", "work", "ship"] as const;
-
-/** Single infinite marquee; `/images/landing/{n}.mp4` for n = 1..14 */
-const GALLERY_VIDEO_INDICES = Array.from({ length: 14 }, (_, i) => i + 1);
-/** Featured Works — two rows; `/images/landing/{n}.jpg` for n = 1..21 */
-const GALLERY_IMAGE_ROW_A = Array.from({ length: 11 }, (_, i) => i + 1);
-const GALLERY_IMAGE_ROW_B = Array.from({ length: 10 }, (_, i) => i + 12);
+const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 
 type HeroChatPhase = "idle" | "awaitingReply" | "showingReply" | "error";
-
-function getVideoPlaybackLabel(locale: string, isPlaying: boolean) {
-  if (isPlaying) {
-    return locale === "ar" ? "إيقاف الفيديو" : "Pause video";
-  }
-  return locale === "ar" ? "تشغيل الفيديو" : "Play video";
-}
-
-function getVideoMuteLabel(locale: string, isMuted: boolean) {
-  if (isMuted) {
-    return locale === "ar" ? "إلغاء كتم الصوت" : "Unmute";
-  }
-  return locale === "ar" ? "كتم الصوت" : "Mute";
-}
 
 export default function LandingPage() {
   const locale = useLocale();
@@ -191,52 +149,48 @@ export default function LandingPage() {
   const [heroReply, setHeroReply] = useState("");
   const [heroLoadingReply, setHeroLoadingReply] = useState(false);
   const [heroTypingReply, setHeroTypingReply] = useState(false);
-  const [isHeroVideoReady, setIsHeroVideoReady] = useState(false);
+  const [isHeroReady, setIsHeroReady] = useState(false);
   const [promptRotateIndex, setPromptRotateIndex] = useState(0);
-  const [videoPlayingState, setVideoPlayingState] = useState<Record<number, boolean>>({});
-  const [videoMutedState, setVideoMutedState] = useState<Record<number, boolean>>({});
-  const [videoProgressState, setVideoProgressState] = useState<Record<number, number>>({});
-  /** Each gallery video may appear twice (marquee duplicate); key `${idx}-${strip}`. */
-  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const landingNavItems = useMemo(
     () =>
       [
-        { href: "#features", label: t("landing.nav.features") },
-        { href: "#gallery", label: t("landing.nav.gallery") },
         { href: "#pricing", label: t("landing.nav.pricing") },
         { href: "/forms/provider", label: t("landing.nav.providerForm") },
       ] as const,
     [t]
   );
 
-  const { data: packagesData, isLoading: isPackagesLoading, isError: isPackagesError } =
-    trpc.admin.getPublicPackages.useQuery(undefined, {
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 60,
-      refetchOnWindowFocus: true,
-      retry: 2,
-    });
+  const {
+    data: packagesData,
+    isLoading: isPackagesLoading,
+    isError: isPackagesError,
+  } = trpc.admin.getPublicPackages.useQuery(undefined, {
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: true,
+    retry: 2,
+  });
 
   const packages: Package[] = packagesData ?? [];
   const showPackagesSkeleton = isPackagesLoading && packages.length === 0;
 
   useEffect(() => {
     // Fallback: never block hero content forever on slow networks/dev hiccups.
-    const id = setTimeout(() => setIsHeroVideoReady(true), 3500);
+    const id = setTimeout(() => setIsHeroReady(true), 3500);
     return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
-    if (isHeroVideoReady) return;
+    if (isHeroReady) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [isHeroVideoReady]);
+  }, [isHeroReady]);
 
   const getLocalizedText = (
     text: string | undefined,
@@ -400,61 +354,10 @@ export default function LandingPage() {
           ? "تعذر توليد الرد الآن. حاول مرة أخرى."
           : "Could not generate a reply right now. Please try again."
       );
-
     } finally {
       setHeroLoadingReply(false);
     }
   };
-
-  const setGalleryVideoRef = (idx: number, strip: 0 | 1) => (el: HTMLVideoElement | null) => {
-    const key = `${idx}-${strip}`;
-    if (el) {
-      videoRefs.current[key] = el;
-    } else {
-      delete videoRefs.current[key];
-    }
-  };
-
-  const getGalleryVideos = (idx: number): HTMLVideoElement[] =>
-    ([0, 1] as const)
-      .map((s) => videoRefs.current[`${idx}-${s}`])
-      .filter((x): x is HTMLVideoElement => x != null);
-
-  const toggleVideoPlayback = (idx: number) => {
-    const els = getGalleryVideos(idx);
-    if (els.length === 0) return;
-    const anyPlaying = els.some((v) => !v.paused);
-    els.forEach((el) => {
-      if (anyPlaying) el.pause();
-      else void el.play();
-    });
-  };
-
-  const toggleVideoMute = (idx: number) => {
-    const els = getGalleryVideos(idx);
-    const first = els[0];
-    if (!first) return;
-    const nextMuted = !first.muted;
-    els.forEach((el) => {
-      el.muted = nextMuted;
-    });
-    setVideoMutedState((prev) => ({ ...prev, [idx]: nextMuted }));
-  };
-
-  const seekVideo = (idx: number, progressValue: number) => {
-    const els = getGalleryVideos(idx);
-    if (els.length === 0) return;
-    const duration = els[0].duration;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    const t = (progressValue / 100) * duration;
-    els.forEach((el) => {
-      el.currentTime = t;
-    });
-    setVideoProgressState((prev) => ({ ...prev, [idx]: progressValue }));
-  };
-
-  const marqueeDuration = (seconds: number): CSSProperties =>
-    ({ "--landing-marquee-duration": `${seconds}s` }) as CSSProperties;
 
   return (
     <div
@@ -502,29 +405,27 @@ export default function LandingPage() {
                 <ThemeSwitcher />
                 <LanguageSwitcher />
               </div>
-              <Link href="/auth/login">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 rounded-full border-white/20 bg-transparent px-4 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
-                >
-                  {t("common.buttons.signIn")}
-                </Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button
-                  size="sm"
-                  className="h-9 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-4 text-sm font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:px-5"
-                >
-                  {t("common.buttons.getStarted")}
-                </Button>
-              </Link>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-full border-white/20 bg-transparent px-4 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
+              >
+                <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-9 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-4 text-sm font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:px-5"
+              >
+                <Link href="/auth/register">{t("common.buttons.getStarted")}</Link>
+              </Button>
             </div>
           </div>
         </div>
       </motion.header>
 
-      {isHeroVideoReady ? null : (
+      {isHeroReady ? null : (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
           aria-live="polite"
@@ -550,19 +451,15 @@ export default function LandingPage() {
         {/* Hero — full-bleed visual + left headline + glass prompt */}
         <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-10 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:justify-center md:pb-20">
           <div className="pointer-events-none absolute inset-0 z-0 min-h-0 overflow-hidden">
-            <video
-              className="absolute inset-0 h-full w-full min-h-0 scale-105 object-cover"
-              src="/images/hero.mp4"
-              poster="/images/landing/1.jpg"
-              onLoadedData={() => setIsHeroVideoReady(true)}
-              onCanPlay={() => setIsHeroVideoReady(true)}
-              onError={() => setIsHeroVideoReady(true)}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              tabIndex={-1}
+            <Image
+              src="/images/hero.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center scale-105"
+              onLoad={() => setIsHeroReady(true)}
+              onError={() => setIsHeroReady(true)}
               aria-hidden
             />
             <div
@@ -642,7 +539,7 @@ export default function LandingPage() {
                       readOnly={heroChatPhase !== "idle"}
                       placeholder=" "
                       rows={2}
-                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm text-white placeholder:text-transparent focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
+                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm leading-7 text-white placeholder:text-transparent focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
                       onKeyDown={(e) => {
                         if (heroChatPhase !== "idle") return;
                         if (e.key === "Enter" && !e.shiftKey) {
@@ -663,7 +560,7 @@ export default function LandingPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -6 }}
                             transition={{ duration: 0.35 }}
-                            className="line-clamp-2 text-sm text-white/45"
+                            className="line-clamp-2 text-sm leading-7 text-white/45"
                           >
                             {promptRotations[promptRotateIndex % promptRotations.length]}
                           </motion.span>
@@ -701,7 +598,6 @@ export default function LandingPage() {
                   <button
                     type="button"
                     disabled
-                    aria-disabled
                     className="cursor-not-allowed rounded-full p-1.5 text-white/40 opacity-50 sm:p-2"
                     aria-label={t("landing.hero.uploadTooltip")}
                   >
@@ -751,415 +647,78 @@ export default function LandingPage() {
         <InfoSection />
 
         {/* Provider form CTA */}
-        <section className="relative w-full border-t border-white/10 bg-black py-16 sm:py-24">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
+        <section className="relative w-full overflow-hidden border-t border-white/10 bg-black py-16 sm:py-24 lg:py-28">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-y-0 left-0 w-full bg-[radial-gradient(ellipse_at_0%_50%,rgba(105,13,212,0.22),transparent_55%)]" />
+            <div className="absolute inset-y-0 right-0 w-full bg-[radial-gradient(ellipse_at_100%_40%,rgba(224,248,64,0.08),transparent_50%)]" />
+            <div
+              className="absolute inset-0 opacity-[0.35]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+                backgroundSize: "64px 64px",
+                maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+              }}
+              aria-hidden
+            />
+          </div>
 
-          <div className="container relative z-10 px-4 sm:px-6">
-            <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-[#690DD4]/[0.12] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-10 md:p-12">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#690DD4]/55 to-transparent opacity-80" />
-
-              <div className="flex flex-col items-center text-center">
-                <div
-                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#690DD4]/30 to-[#E0F840]/20 ring-1 ring-white/10 shadow-inner"
-                  aria-hidden
+          <div className="relative z-10 mx-auto grid max-w-[1400px] items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-10">
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5 }}
+              className={textDirectionClass}
+            >
+              <p className="mb-4 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[#E0F840]/80">
+                {t("landing.forms.eyebrow")}
+              </p>
+              <h2 className={`${FONT_SIZES.sectionTitle.primary} max-w-xl text-balance text-white`}>
+                {t("landing.forms.heading")}
+              </h2>
+              <p className={`mt-5 max-w-md ${FONT_SIZES.body.normal}`}>
+                {t("landing.forms.subheading")}
+              </p>
+              <div className="mt-9">
+                <Button
+                  asChild
+                  className="group h-12 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(105,13,212,0.35)] transition-all hover:opacity-95"
                 >
-                  <Sparkles className="h-5 w-5 text-white/90" strokeWidth={1.75} />
-                </div>
-                <h2 className={`${FONT_SIZES.sectionTitle.secondary} mb-3 text-white`}>
-                  {t("landing.forms.heading")}
-                </h2>
-                <p className={`${FONT_SIZES.body.normal} max-w-xl`}>
-                  {t("landing.forms.subheading")}
-                </p>
-                <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/50 sm:text-[0.9375rem]">
-                  {t("landing.forms.provider.description")}
-                </p>
-                <div className="mt-8">
-                  <Link href="/forms/provider">
-                    <Button className="h-11 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_32px_rgba(105,13,212,0.3)] transition-all hover:-translate-y-0.5 hover:opacity-95">
-                      {t("landing.forms.provider.cta")}
-                    </Button>
+                  <Link href="/forms/provider" className="inline-flex items-center gap-2">
+                    {t("landing.forms.provider.cta")}
+                    <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 rtl:rotate-[-90deg] rtl:group-hover:-translate-x-0.5" />
                   </Link>
-                </div>
+                </Button>
               </div>
-            </div>
-          </div>
-        </section>
+            </motion.div>
 
-        {/* Meet — three steps */}
-        <section className="relative border-t border-white/10 bg-black py-16 sm:py-24">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
-            <h2 className="mb-10 text-center text-3xl font-semibold tracking-tight text-white sm:mb-14 sm:text-4xl">
-              {t("landing.meet.heading")}
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
-              {MEET_STEP_KEYS.map((key) => (
-                <motion.div
+            <motion.ol
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className={`flex flex-col gap-0 border-t border-white/10 ${textDirectionClass}`}
+            >
+              {PROVIDER_BENEFIT_KEYS.map((key, index) => (
+                <li
                   key={key}
-                  className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
-                  whileHover={{ y: -6 }}
-                  transition={{ duration: 0.2 }}
+                  className="group grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 py-5 sm:gap-5 sm:py-6"
                 >
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#690DD4]/55 to-transparent opacity-70" />
-                  <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-[#690DD4]/10 via-transparent to-[#E0F840]/10 opacity-0 transition-opacity group-hover:opacity-100" />
-                  <h3 className="mb-2 text-base font-medium text-white">
-                    {t(`landing.meet.steps.${key}.title`)}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-white/50">
-                    {t(`landing.meet.steps.${key}.description`)}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features */}
-        <section
-          id="features"
-          className="relative w-full border-t border-white/10 bg-black py-16 sm:py-24 md:py-32"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
-          <div className="container relative z-10 px-4 sm:px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeInUp}
-              className="mb-12 sm:mb-16 md:mb-20 text-center"
-            >
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-white sm:mb-6`}>
-                {t("landing.features.heading")}
-                <br className="hidden sm:block" />
-                <span
-                  className={`mt-2 block font-normal text-white/55 sm:mt-4 ${FONT_SIZES.body.large}`}
-                >
-                  {t("landing.features.subheading")}
-                </span>
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={staggerContainer}
-              className="mx-auto grid max-w-6xl grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5"
-            >
-              {featureItems.map((feature) => {
-                const Icon = feature.icon;
-                const title = t(`landing.features.${feature.key}.title`);
-                const description = t(`landing.features.${feature.key}.description`);
-
-                return (
-                  <motion.div
-                    key={feature.key}
-                    variants={scaleIn}
-                    whileHover={{ y: -4, transition: { duration: 0.25 } }}
-                    className="group relative flex min-h-0 min-w-0 w-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-[#E0F840]/30 sm:p-4"
-                  >
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E0F840]/50 to-transparent opacity-60" />
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#690DD4]/25 to-[#E0F840]/20 sm:h-12 sm:w-12">
-                      <Icon className="h-5 w-5 text-white/90 transition-transform duration-300 group-hover:scale-110 sm:h-6 sm:w-6" />
-                    </div>
-                    <h3
-                      className={`${FONT_SIZES.cardTitle.small} mb-2 font-medium capitalize text-white`}
-                    >
-                      {title}
+                  <span className="pt-0.5 font-mono text-xs tabular-nums text-[#E0F840]/70 sm:text-sm">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 className="text-base font-medium leading-snug text-white transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-snug">
+                      {t(`landing.forms.benefits.${key}.title`)}
                     </h3>
-                    <p className={`${FONT_SIZES.body.small}`}>{description}</p>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Gallery: infinite video marquee + dual-row image marquees */}
-        <section
-          id="gallery"
-          className="relative w-full overflow-hidden border-t border-white/10 bg-black py-16 sm:py-24 md:py-32"
-        >
-          <div className="container px-4 sm:px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeInUp}
-              className="mb-8 text-center sm:mb-12"
-            >
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-white sm:mb-6`}>
-                {t("landing.gallery.videos.heading")}
-              </h2>
-              <p className={FONT_SIZES.body.normal}>{t("landing.gallery.videos.subheading")}</p>
-            </motion.div>
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="mt-8 w-full"
-          >
-            <div className="relative w-full overflow-hidden py-1" dir="ltr">
-              <div
-                className="flex w-max gap-3 sm:gap-4 md:gap-5 animate-landing-marquee hover:[animation-play-state:paused]"
-                style={marqueeDuration(70)}
-              >
-                {[0, 1].map((strip) => (
-                  <div key={`vstrip-${strip}`} className="flex shrink-0 gap-3 sm:gap-4 md:gap-5">
-                    {GALLERY_VIDEO_INDICES.map((idx) => (
-                      <div
-                        key={`landing-video-${idx}-${strip}`}
-                        className="w-[42vw] max-w-[12rem] shrink-0 sm:w-48 sm:max-w-none md:w-52"
-                      >
-                        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#111] sm:rounded-3xl">
-                          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_30%_20%,rgba(224,248,64,0.16),transparent_55%),radial-gradient(circle_at_70%_80%,rgba(105,13,212,0.14),transparent_55%)]" />
-                          <LazyGalleryVideo
-                            className="aspect-[9/16] w-full object-cover"
-                            src={`/images/landing/${idx}.mp4`}
-                            videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
-                            muted={videoMutedState[idx] ?? true}
-                            onClick={() => {
-                              toggleVideoPlayback(idx);
-                            }}
-                            onLoadedMetadata={
-                              strip === 0
-                                ? (event) => {
-                                    const target = event.currentTarget;
-                                    setVideoMutedState((prev) => ({
-                                      ...prev,
-                                      [idx]: target.muted,
-                                    }));
-                                    setVideoProgressState((prev) => ({
-                                      ...prev,
-                                      [idx]: 0,
-                                    }));
-                                  }
-                                : undefined
-                            }
-                            onPlay={
-                              strip === 0
-                                ? () => {
-                                    setVideoPlayingState((prev) => ({
-                                      ...prev,
-                                      [idx]: true,
-                                    }));
-                                  }
-                                : undefined
-                            }
-                            onPause={
-                              strip === 0
-                                ? () => {
-                                    setVideoPlayingState((prev) => ({
-                                      ...prev,
-                                      [idx]: false,
-                                    }));
-                                  }
-                                : undefined
-                            }
-                            onTimeUpdate={
-                              strip === 0
-                                ? (event) => {
-                                    const target = event.currentTarget;
-                                    if (!Number.isFinite(target.duration) || target.duration <= 0)
-                                      return;
-                                    const nextProgress =
-                                      (target.currentTime / target.duration) * 100;
-                                    setVideoProgressState((prev) => ({
-                                      ...prev,
-                                      [idx]: nextProgress,
-                                    }));
-                                  }
-                                : undefined
-                            }
-                          />
-
-                          <div
-                            className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pb-3 pt-12"
-                            onPointerDown={(event) => {
-                              event.stopPropagation();
-                            }}
-                          >
-                            <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/20">
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={videoProgressState[idx] ?? 0}
-                                onChange={(event) => {
-                                  seekVideo(idx, Number(event.target.value));
-                                }}
-                                className="h-1 w-full cursor-pointer appearance-none bg-transparent accent-[#E0F840]"
-                                aria-label={locale === "ar" ? "تقدم الفيديو" : "Video progress"}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  toggleVideoPlayback(idx);
-                                }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
-                                aria-label={getVideoPlaybackLabel(
-                                  locale,
-                                  videoPlayingState[idx] ?? false
-                                )}
-                              >
-                                {videoPlayingState[idx] ? (
-                                  <Pause className="h-4 w-4" />
-                                ) : (
-                                  <Play className="h-4 w-4" />
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  toggleVideoMute(idx);
-                                }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
-                                aria-label={getVideoMuteLabel(locale, videoMutedState[idx] ?? true)}
-                              >
-                                {(videoMutedState[idx] ?? true) ? (
-                                  <VolumeX className="h-4 w-4" />
-                                ) : (
-                                  <Volume2 className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    <p className="mt-1.5 text-sm leading-7 text-white/50">
+                      {t(`landing.forms.benefits.${key}.description`)}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="container relative z-10 mt-16 px-4 sm:mt-20 sm:px-6 md:mt-24">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeInUp}
-              className="mb-8 text-center sm:mb-12"
-            >
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-white sm:mb-6`}>
-                {t("landing.gallery.images.heading")}
-              </h2>
-              <p className={FONT_SIZES.body.normal}>{t("landing.gallery.images.subheading")}</p>
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeInUp}
-              className="flex flex-col gap-8 sm:gap-10"
-            >
-              {[GALLERY_IMAGE_ROW_A, GALLERY_IMAGE_ROW_B].map((rowIndices) => {
-                const imgRowKey = rowIndices.join("-");
-                const isFirstImgRow = rowIndices === GALLERY_IMAGE_ROW_A;
-                return (
-                  <div
-                    key={`image-marquee-${imgRowKey}`}
-                    className="relative w-full overflow-hidden py-1"
-                    dir="ltr"
-                  >
-                    <div
-                      className={
-                        isFirstImgRow
-                          ? "flex w-max gap-3 sm:gap-4 md:gap-5 animate-landing-marquee"
-                          : "flex w-max gap-3 sm:gap-4 md:gap-5 animate-landing-marquee-reverse"
-                      }
-                      style={marqueeDuration(isFirstImgRow ? 58 : 64)}
-                    >
-                      {[0, 1].map((strip) => (
-                        <div
-                          key={`imgstrip-${imgRowKey}-${strip}`}
-                          className="flex shrink-0 gap-3 sm:gap-4 md:gap-5"
-                        >
-                          {rowIndices.map((n) => (
-                            <div
-                              key={`landing-img-${imgRowKey}-${n}-${strip}`}
-                              className="group relative aspect-[4/5] w-[38vw] max-w-[11rem] shrink-0 overflow-hidden rounded-lg border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_18px_70px_rgba(0,0,0,0.55)] sm:w-44 sm:max-w-none md:w-48 sm:rounded-xl"
-                            >
-                              <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-[linear-gradient(135deg,rgba(105,13,212,0.18),transparent_45%),linear-gradient(315deg,rgba(224,248,64,0.16),transparent_45%)]" />
-                              <Image
-                                src={`/images/landing/${n}.jpg`}
-                                alt={`Portfolio ${n}`}
-                                fill
-                                sizes="(max-width: 640px) 40vw, 12rem"
-                                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="relative w-full border-t border-white/10 bg-black py-16 sm:py-24 md:py-32">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
-          <div className="container relative z-10 px-4 sm:px-6">
-            <div className="grid grid-cols-1 items-center gap-8 sm:gap-12 lg:grid-cols-2">
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="flex justify-center"
-              >
-                <BrandLogo tone="yellow" className="h-24 sm:h-32 md:h-40" />
-              </motion.div>
-
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={staggerContainer}
-              >
-                <p className="mb-3 text-sm text-white/50">{t("landing.stats.subheading")}</p>
-                <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-8 text-white sm:mb-12`}>
-                  {t("landing.stats.heading")}
-                </h2>
-
-                <div className="grid grid-cols-2 gap-3 min-w-0 sm:gap-6">
-                  {[
-                    { num: "4.9", labelKey: "landing.stats.happyClients" },
-                    { num: "+500", labelKey: "landing.stats.expertCreators" },
-                    { num: "100%", labelKey: "landing.stats.qualityScore" },
-                    { num: "+31", labelKey: "landing.stats.portfolioItems" },
-                  ].map((stat) => (
-                    <motion.div
-                      key={`stat-${stat.labelKey}`}
-                      variants={fadeInUp}
-                      className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-[#E0F840]/30 sm:rounded-3xl sm:p-6"
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#690DD4]/55 to-transparent opacity-60" />
-                      <div className="mb-2 text-2xl font-semibold tracking-tight bg-gradient-to-r from-[#E0F840] to-[#690DD4] bg-clip-text text-transparent sm:text-3xl">
-                        {stat.num}
-                      </div>
-                      <p className={`${FONT_SIZES.body.small}`}>{t(stat.labelKey)}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+                </li>
+              ))}
+            </motion.ol>
           </div>
         </section>
 
@@ -1280,19 +839,19 @@ export default function LandingPage() {
                 transition={{ delay: 0.1 }}
                 className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4"
               >
-                <Link href="/auth/register">
-                  <Button className="h-11 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:px-10">
-                    {t("common.buttons.getStarted")}
-                  </Button>
-                </Link>
-                <Link href="#pricing">
-                  <Button
-                    variant="outline"
-                    className="h-11 rounded-full border-white/20 bg-transparent px-8 text-sm font-medium text-white hover:bg-white/5 sm:px-10"
-                  >
-                    {t("landing.cta.viewPlans")}
-                  </Button>
-                </Link>
+                <Button
+                  asChild
+                  className="h-11 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:px-10"
+                >
+                  <Link href="/auth/register">{t("common.buttons.getStarted")}</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-11 rounded-full border-white/20 bg-transparent px-8 text-sm font-medium text-white hover:bg-white/5 sm:px-10"
+                >
+                  <Link href="#pricing">{t("landing.cta.viewPlans")}</Link>
+                </Button>
               </motion.div>
 
               <motion.div
@@ -1300,25 +859,35 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2, duration: 0.4 }}
-                className="mt-12 flex items-start justify-center gap-12 sm:mt-14 sm:gap-16"
+                className="mt-12 flex flex-col items-center gap-5 sm:mt-14 sm:gap-6"
               >
-                <div className="flex flex-col items-center gap-2.5">
-                  <span className="flex h-12 w-12 items-center justify-center text-white">
-                    <Apple className="h-8 w-8" strokeWidth={1.5} aria-hidden />
-                    <span className="sr-only">{t("landing.cta.iosApp")}</span>
-                  </span>
-                  <span className="text-xs text-white/45 sm:text-sm">
+                <div className="flex w-full max-w-sm items-center gap-3">
+                  <span
+                    className="h-px flex-1 bg-gradient-to-r from-transparent to-[#E0F840]/50"
+                    aria-hidden
+                  />
+                  <p className="inline-flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.18em] text-[#E0F840] sm:text-[0.9375rem]">
+                    <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+                      <span className="absolute inset-0 animate-ping rounded-full bg-[#E0F840]/55" />
+                      <span className="relative m-auto h-2 w-2 rounded-full bg-[#E0F840] shadow-[0_0_12px_rgba(224,248,64,0.8)]" />
+                    </span>
                     {t("landing.cta.appComingSoon")}
-                  </span>
+                  </p>
+                  <span
+                    className="h-px flex-1 bg-gradient-to-l from-transparent to-[#E0F840]/50"
+                    aria-hidden
+                  />
                 </div>
-                <div className="flex flex-col items-center gap-2.5">
-                  <span className="flex h-12 w-12 items-center justify-center text-white">
-                    <AndroidIcon className="h-8 w-8" />
-                    <span className="sr-only">{t("landing.cta.androidApp")}</span>
-                  </span>
-                  <span className="text-xs text-white/45 sm:text-sm">
-                    {t("landing.cta.appComingSoon")}
-                  </span>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 opacity-55 sm:gap-4">
+                  <AppStoreBadge
+                    eyebrow={t("landing.cta.appStoreEyebrow")}
+                    label={t("landing.cta.appStoreLabel")}
+                  />
+                  <GooglePlayBadge
+                    eyebrow={t("landing.cta.googlePlayEyebrow")}
+                    label={t("landing.cta.googlePlayLabel")}
+                  />
                 </div>
               </motion.div>
             </motion.div>

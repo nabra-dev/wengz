@@ -148,19 +148,19 @@
       "imageAlt": "Featured creative work",
       "columns": {
         "media": {
-          "title": "Media & Entertainment",
-          "description": "Scale campaigns, content, and launches without slowing your team down.",
-          "href": "#features"
+          "title": "Start with a brief",
+          "description": "Describe what you need or drop in references, screenshots, and docs.",
+          "href": "#pricing"
         },
         "agencies": {
-          "title": "Agencies",
-          "description": "Extend capacity with vetted creators and predictable credit-based delivery.",
+          "title": "Experts get to work",
+          "description": "Vetted professionals take your request and deliver on time with clear communication.",
           "href": "#pricing"
         },
         "teams": {
-          "title": "Creative Teams",
-          "description": "Move from brief to polished assets faster with clear revisions and ownership.",
-          "href": "#gallery"
+          "title": "Refine and ship",
+          "description": "Request revisions, approve the work, and launch—simple feedback, predictable outcomes.",
+          "href": "#pricing"
         }
       }
     },
@@ -184,10 +184,25 @@
     "forms": {
       "heading": "Creators, join the network",
       "subheading": "Apply with your portfolio — we’ll review and get back to you.",
+      "eyebrow": "For creators",
       "provider": {
         "title": "I’m a provider",
         "description": "Send your details and portfolio links — we’ll review and get back to you.",
         "cta": "Open provider form"
+      },
+      "benefits": {
+        "portfolio": {
+          "title": "Show your craft",
+          "description": "Share links and samples so we can place you on the right work."
+        },
+        "review": {
+          "title": "Get reviewed",
+          "description": "We vet every application and reply with clear next steps."
+        },
+        "deliver": {
+          "title": "Deliver with Wengz",
+          "description": "Take credit-based briefs with predictable timelines and feedback."
+        }
       }
     },
     "features": {
@@ -247,7 +262,11 @@
       "viewPlans": "View Plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
-      "androidApp": "Android app"
+      "androidApp": "Android app",
+      "appStoreEyebrow": "Download on the",
+      "appStoreLabel": "App Store",
+      "googlePlayEyebrow": "GET IT ON",
+      "googlePlayLabel": "Google Play"
     },
     "footer": {
       "privacy": "Privacy",
