@@ -13,10 +13,7 @@ const locales = [
  * Builds the target path for a locale switch, stripping any existing locale
  * prefix to avoid double-prefixing (e.g. "/ar/provider" + "en" → "/en/provider").
  */
-export function buildLocaleSwitchPath(
-  pathname: string,
-  targetLocale: string
-): string {
+export function buildLocaleSwitchPath(pathname: string, targetLocale: string): string {
   const segments = pathname.split("/").filter(Boolean);
   const localeList = ["en", "ar"] as const;
   const isFirstSegmentLocale = localeList.includes(segments[0] as (typeof localeList)[number]);
@@ -43,7 +40,12 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={handleToggle} className="gap-2">
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleToggle}
+      className="gap-2 text-foreground hover:text-foreground"
+    >
       <span className="text-sm">{targetLanguage.flag}</span>
       <span className="hidden sm:inline text-sm">{targetLanguage.label}</span>
     </Button>

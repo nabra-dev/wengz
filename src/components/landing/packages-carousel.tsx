@@ -77,17 +77,17 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
   };
 
   return (
-    <section className="relative w-full bg-black px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
+    <section className="relative w-full bg-background px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
       <div className="mx-auto max-w-[1400px]">
         <div className="relative">
           {isLoading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : isError ? (
-            <p className="py-12 text-center text-sm text-white/50">{t("loadError")}</p>
+            <p className="py-12 text-center text-sm text-muted-foreground">{t("loadError")}</p>
           ) : packages.length === 0 ? (
-            <p className="py-12 text-center text-sm text-white/50">{t("empty")}</p>
+            <p className="py-12 text-center text-sm text-muted-foreground">{t("empty")}</p>
           ) : (
             <div
               ref={scrollerRef}
@@ -103,22 +103,16 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
                   transition={{ delay: index * 0.05, duration: 0.4 }}
                   className="flex w-[min(85%,280px)] shrink-0 snap-start flex-col sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]"
                 >
-                  <div className="mb-4 flex h-8 w-8 items-center justify-center text-white">
+                  <div className="mb-4 flex h-8 w-8 items-center justify-center text-foreground">
                     <Package className="h-5 w-5" strokeWidth={1.5} />
                   </div>
-                  <h3 className="mb-2 text-base font-semibold leading-7 text-white">
+                  <h3 className="mb-2 text-base font-semibold leading-7 text-foreground">
                     {getLocalized(pkg.name, pkg.nameI18n)}
                   </h3>
-                  <p className="mb-5 line-clamp-3 min-h-[5.25rem] text-sm leading-8 text-white/50">
+                  <p className="line-clamp-3 min-h-[5.25rem] text-sm leading-8 text-muted-foreground">
                     {getLocalized(pkg.description, pkg.descriptionI18n) ||
                       `${pkg.credits} ${tCommon("credits")} · ${formatCurrency(pkg.price)}`}
                   </p>
-                  <Link
-                    href="#pricing"
-                    className="mt-auto inline-flex w-fit items-center rounded-full border border-white/20 bg-transparent px-4 py-1.5 text-xs font-medium text-white transition hover:border-white/40 hover:bg-white/5"
-                  >
-                    {t("learnMore")}
-                  </Link>
                 </motion.article>
               ))}
             </div>
@@ -128,7 +122,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
             <button
               type="button"
               onClick={() => scrollByPage(1)}
-              className={`absolute top-1/2 hidden -translate-y-1/2 items-center justify-center text-white/70 transition hover:text-white md:flex ${
+              className={`absolute top-1/2 hidden -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground md:flex ${
                 isRTL ? "left-0" : "right-0"
               }`}
               aria-label={t("next")}
@@ -137,6 +131,17 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
             </button>
           ) : null}
         </div>
+
+        {!isLoading && !isError && packages.length > 0 ? (
+          <div className="mt-8 flex justify-center sm:mt-10">
+            <Link
+              href="#pricing"
+              className="inline-flex items-center rounded-full border border-border bg-transparent px-5 py-2 text-sm font-medium text-foreground transition hover:border-foreground/30 hover:bg-muted"
+            >
+              {t("learnMore")}
+            </Link>
+          </div>
+        ) : null}
 
         {pageCount > 1 ? (
           <div className="mt-8 flex items-center justify-center gap-2" role="tablist">
@@ -148,7 +153,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
                 aria-selected={page === i}
                 aria-label={`${t("page")} ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
-                  page === i ? "w-5 bg-white" : "w-1.5 bg-white/25 hover:bg-white/40"
+                  page === i ? "w-5 bg-foreground" : "w-1.5 bg-foreground/25 hover:bg-foreground/40"
                 }`}
                 onClick={() => {
                   const el = scrollerRef.current;

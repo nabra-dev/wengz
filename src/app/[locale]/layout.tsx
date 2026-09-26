@@ -84,8 +84,8 @@ export async function generateMetadata({
   const isArabic = locale === "ar";
   const brand = brandName(locale);
   const description = isArabic
-    ? "منصة خدمات رقمية تربطك بمبدعين محترفين عبر اشتراك قائم على الكريدت للتصميم والتطوير وإنتاج المحتوى."
-    : "A digital services marketplace that connects you with trusted creators through a credit-based subscription model for design, development, and content production.";
+    ? "خليك مع وينجز و انجز. منصة ذكاء اصطناعي بأيادي بشرية—ابعت طلبك، يوصل للمبدع المناسب (ديزاين، فيديو، فويس، وغيره) ويشتغل مع الـ AI عشان أفضل نتيجة."
+    : "Stick with Wengz & get it done. AI with human expertise—send a request, the right pro (design, video, voice, and more) crafts it with AI for stronger results.";
 
   return {
     ...buildPageMetadata({

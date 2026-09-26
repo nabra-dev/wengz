@@ -73,65 +73,65 @@
       "beta": "Beta version: this platform is currently in beta and may change frequently."
     },
     "hero": {
-      "title": "Build with Wengz",
-      "titleBefore": "We ",
-      "titleHighlight": "design",
-      "titleAfter": " AI Systems for your Organization",
-      "subtitle": "Smart, scalable AI and automation solutions that boost business efficiency",
-      "socialProof": "Trusted by teams who ship and launch",
-      "promptPlaceholder": "Ask Wengz what you need",
-      "promptHint": "Write a quick brief to get started.",
+      "title": "Stick with Wengz & get it done",
+      "titleBefore": "Stick with ",
+      "titleHighlight": "Wengz",
+      "titleAfter": " & get it done",
+      "subtitle": "An AI platform with real human expertise—so you get better results than chatting with a tool alone.",
+      "socialProof": "Real pros working AI on your behalf",
+      "promptPlaceholder": "Tell us what you need…",
+      "promptHint": "Write a short brief—we’ll route it to the right person.",
       "uploadTooltip": "File upload is available after you sign in.",
       "submitWrongRole": "Sign in with a client account to create a request from here.",
-      "promptRotate0": "I'm ready to start—what's blocking my marketing most: content, time, or real results?",
-      "promptRotate1": "I need design that sells—not just something that looks pretty.",
-      "promptRotate2": "Should I push awareness or sales first? Help me pick what fits my stage.",
-      "promptRotate3": "I'm on my own—how does Wengz adapt to my situation and build a clear system for me?",
-      "promptRotate4": "I don't know how to start—my work is in [describe your field]. What should I do first?",
-      "promptRotate5": "I want to work with you—here's what I offer and what I need help with.",
-      "promptRotate6": "Sales are weak—is it my product, my marketing, or the way I'm doing both?",
+      "promptRotate0": "I need social design that sells—not just something pretty. Who handles that?",
+      "promptRotate1": "Short product reel, please—video from a pro who actually uses AI well.",
+      "promptRotate2": "Clear voiceover that matches my brand—not a random tool experiment.",
+      "promptRotate3": "Tired of hunting AI tools… I just want to request and get a finished result.",
+      "promptRotate4": "I have a campaign idea and don’t know where to start—connect me with the right creator.",
+      "promptRotate5": "Logo and a simple identity—designer picks the best AI and ships it right.",
+      "promptRotate6": "Content, design, and video in one place—without figuring it out alone.",
       "chatRefreshHint": "Refresh the page to start a new chat.",
-      "startFreeTrial": "Start Free Trial",
-      "learnMore": "Learn More"
+      "startFreeTrial": "Get started",
+      "learnMore": "Learn more"
     },
     "services": {
       "ariaLabel": "Services showcase",
       "tiles": {
         "aiImage": {
           "title": "Design",
-          "description": "Brand systems, visuals, and campaign art that sell"
+          "description": "A designer uses AI with craft—so your visuals actually sell"
         },
         "aiVideo": {
           "title": "Video",
-          "description": "Motion, edits, and launch-ready clips for every channel"
+          "description": "Editors pick the right tools and deliver launch-ready clips"
         },
         "apps": {
           "title": "Content",
-          "description": "Social packs and creative assets built for growth"
+          "description": "Social content from an expert—not a random prompt"
         },
         "mcp": {
           "title": "Workflow",
-          "description": "Connect briefs to delivery inside your favorite tools"
+          "description": "From request to delivery—clear steps, real follow-through"
         },
         "flows": {
           "title": "Automation",
-          "description": "Repeatable creative systems for teams that ship fast"
+          "description": "Repeat what works—fast, without the chaos"
         },
         "plugin": {
           "title": "Studio",
-          "description": "One place for briefs, revisions, and approvals"
+          "description": "Brief, revise, approve—everything in one place"
         },
         "voiceover": {
           "title": "Voice",
-          "description": "Clear narration and audio that matches your brand"
+          "description": "Pros choose the right voice and tools for your brand"
         },
         "music": {
           "title": "Sound",
-          "description": "Tracks and sound design that lift every frame"
+          "description": "Tracks and sound design that lift your work"
         },
         "studio": {
           "title": "Full production",
-          "description": "End-to-end creative delivery from brief to ship"
+          "description": "From idea to ship—human expertise plus AI"
         }
       }
     },
@@ -143,123 +143,122 @@
       "loadError": "Couldn’t load plans right now. Please refresh and try again."
     },
     "info": {
-      "heading": "AI powering creative teams and businesses",
-      "learnMore": "Learn More",
-      "imageAlt": "Featured creative work",
+      "heading": "Not AI alone—human expertise too",
+      "learnMore": "Learn more",
+      "ctaHref": "#pricing",
+      "imageAlt": "How Wengz works",
       "columns": {
         "media": {
-          "title": "Start with a brief",
-          "description": "Describe what you need or drop in references, screenshots, and docs.",
-          "href": "#pricing"
+          "title": "You send the request",
+          "description": "Skip subscribing to an AI, chatting forever, and still missing the best result—just tell us what you need."
         },
         "agencies": {
-          "title": "Experts get to work",
-          "description": "Vetted professionals take your request and deliver on time with clear communication.",
-          "href": "#pricing"
+          "title": "It reaches the right pro",
+          "description": "Designer, video, voice, or more—whoever fits. They work AI with their craft and pick the best tools for the job."
         },
         "teams": {
-          "title": "Refine and ship",
-          "description": "Request revisions, approve the work, and launch—simple feedback, predictable outcomes.",
-          "href": "#pricing"
+          "title": "You get a stronger result",
+          "description": "Real experience plus smart tools = work you can approve and ship with confidence."
         }
       }
     },
     "meet": {
-      "heading": "Meet Wengz",
+      "heading": "How Wengz works",
       "steps": {
         "start": {
-          "title": "Start with a brief",
-          "description": "Describe what you need or drop in references, screenshots, and docs."
+          "title": "You send the request",
+          "description": "Skip subscribing to an AI, chatting forever, and still missing the best result—just tell us what you need."
         },
         "work": {
-          "title": "Experts get to work",
-          "description": "Vetted professionals take your request and deliver on time with clear communication."
+          "title": "It reaches the right pro",
+          "description": "Designer, video, voice, or more—whoever fits. They work AI with their craft and pick the best tools for the job."
         },
         "ship": {
-          "title": "Refine and ship",
-          "description": "Request revisions, approve the work, and launch—simple feedback, predictable outcomes."
+          "title": "You get a stronger result",
+          "description": "Real experience plus smart tools = work you can approve and ship with confidence."
         }
       }
     },
     "forms": {
-      "heading": "Creators, join the network",
-      "subheading": "Apply with your portfolio — we’ll review and get back to you.",
+      "heading": "Creator? Join the people who get it done",
+      "subheading": "You’re the human expertise behind the AI—share your portfolio and we’ll take a look.",
       "eyebrow": "For creators",
       "provider": {
         "title": "I’m a provider",
-        "description": "Send your details and portfolio links — we’ll review and get back to you.",
-        "cta": "Open provider form"
+        "description": "Tell us your craft and share your work—we’ll match you with the right requests.",
+        "cta": "Apply as a creator"
       },
       "benefits": {
         "portfolio": {
           "title": "Show your craft",
-          "description": "Share links and samples so we can place you on the right work."
+          "description": "Share links and samples so we can route you the work that fits."
         },
         "review": {
-          "title": "Get reviewed",
-          "description": "We vet every application and reply with clear next steps."
+          "title": "We review carefully",
+          "description": "Every application gets a clear reply—no endless waiting."
         },
         "deliver": {
-          "title": "Deliver with Wengz",
-          "description": "Take credit-based briefs with predictable timelines and feedback."
+          "title": "Use AI the right way",
+          "description": "Take credit-based briefs, pick the best tools, and deliver results clients come back for."
         }
       }
     },
     "features": {
-      "heading": "Everything you need to get work done",
-      "subheading": "One platform for all your digital service needs",
+      "heading": "Why Wengz isn’t just another AI tool",
+      "subheading": "Your request reaches an expert—not only a chat box",
       "credit": {
-        "title": "Credit-Based System",
-        "description": "Purchase credits and use them for any service. No per-project negotiations."
+        "title": "Simple credits",
+        "description": "Buy credits and use them for any service—no haggling per project."
       },
       "quality": {
-        "title": "Quality Guaranteed",
-        "description": "All providers are vetted professionals. Satisfaction guaranteed on every request."
+        "title": "Human-backed quality",
+        "description": "Experienced providers pick the best AI and review the result before it reaches you."
       },
       "speed": {
-        "title": "Fast Turnaround",
-        "description": "Most requests completed within 48-72 hours. Rush options available."
+        "title": "Practical turnaround",
+        "description": "Most requests in 48–72 hours—with clear follow-up."
       },
       "revisions": {
-        "title": "Smart Revisions",
-        "description": "Free revisions included with every package. Additional revisions at a fair rate."
+        "title": "Easy revisions",
+        "description": "Revisions included in your plan—tweak until it feels right."
       },
       "experts": {
-        "title": "Expert Team",
-        "description": "Access designers, developers, and content creators all in one platform."
+        "title": "The right pro for each request",
+        "description": "Design, video, voice, and content—same platform, the right people."
       }
     },
     "gallery": {
       "videos": {
-        "heading": "Stunning Creations",
-        "subheading": "Discover extraordinary projects crafted by our elite network of creative professionals"
+        "heading": "Work from craft + AI",
+        "subheading": "Real outcomes—not prompt experiments"
       },
       "images": {
-        "heading": "Featured Works",
-        "subheading": "Explore our stunning portfolio of creative excellence"
+        "heading": "Featured work",
+        "subheading": "When the right pro picks the right tools"
       }
     },
     "stats": {
       "heading": "Wengz in numbers",
-      "subheading": "Creators and clients turning ideas into shipped work",
+      "subheading": "Clients and creators getting it done together",
       "happyClients": "Happy Clients",
       "expertCreators": "Expert Creators",
       "qualityScore": "Quality Score",
       "portfolioItems": "Portfolio Items"
     },
     "pricing": {
-      "heading": "Simple, transparent pricing",
-      "subheading": "Choose the perfect plan for your needs",
+      "heading": "Plans that help you get it done",
+      "subheading": "Pick what fits—then request. We route it to creators who ship with AI and expertise.",
       "perMonth": "/month",
       "featuredBadge": "Featured",
+      "cta": "Get started",
       "empty": "Plans will appear here once packages are published.",
       "loadError": "Couldn’t load plans right now. Please refresh and try again."
     },
     "cta": {
-      "heading": "Ready to get started?",
-      "subheading": "Join thousands of creators using Wengz to bring their ideas to life",
-      "startTrial": "Start Free Trial",
-      "viewPlans": "View Plans",
+      "heading": "Stick with Wengz & get it done",
+      "subheading": "Ask for what you need and let a pro work AI for you—stronger results than chatting alone.",
+      "startTrial": "Get started",
+      "viewPlans": "View plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
       "androidApp": "Android app",
@@ -295,17 +294,17 @@
     },
     "provider": {
       "title": "Creators form",
-      "subtitle": "Share your details and work so we can review them and get in touch.",
+      "subtitle": "You’re the human expertise behind the AI—share your craft and portfolio.",
       "badge": "Creator application",
-      "pitchTitle": "Join the creators community",
-      "pitchBullet0": "Tell us your field and professional experience",
-      "pitchBullet1": "Share your portfolio / LinkedIn",
-      "pitchBullet2": "Our team will review your application and contact you when a suitable opportunity comes up",
+      "pitchTitle": "Join the creators who get it done with Wengz",
+      "pitchBullet0": "Tell us your field: design, video, voice, or more",
+      "pitchBullet1": "Share your portfolio / LinkedIn—show your craft",
+      "pitchBullet2": "We’ll match you with the right requests—you pick the best AI and ship strong results",
       "servicesLabel": "Services you provide",
       "servicesOptional": "optional",
       "servicesHint": "Select all areas you work in — we’ll include them in your application.",
       "websitePlaceholder": "Portfolio / LinkedIn / social links",
-      "messagePlaceholder": "Tell us about your experience, strengths, and what you’re looking for…",
+      "messagePlaceholder": "Tell us about your experience, how you use AI, and what makes your work stand out…",
       "serviceOptions": {
         "design": "Design & branding (graphics, UI, identity)",
         "social": "Social media content",

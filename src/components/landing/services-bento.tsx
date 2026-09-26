@@ -115,7 +115,7 @@ export function ServicesBento() {
   return (
     <section
       id="services"
-      className="relative w-full bg-black px-4 py-16 sm:px-6 sm:py-20 lg:px-10"
+      className="relative w-full bg-background px-4 py-16 sm:px-6 sm:py-20 lg:px-10"
       aria-label={t("ariaLabel")}
     >
       <div className="mx-auto max-w-[1400px]">
@@ -140,7 +140,7 @@ export function ServicesBento() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.04, duration: 0.4 }}
                 className={cn(
-                  "group relative min-h-[200px] overflow-hidden rounded-2xl border border-white/10 sm:rounded-3xl lg:min-h-0",
+                  "group relative min-h-[200px] overflow-hidden rounded-2xl border border-border sm:rounded-3xl lg:min-h-0",
                   tile.area === "image" || tile.area === "apps"
                     ? "sm:min-h-[320px]"
                     : tile.area === "video"

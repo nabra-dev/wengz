@@ -21,7 +21,7 @@ import { InfoSection } from "@/components/landing/info-section";
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-white/20 bg-black px-3.5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-14 sm:w-[180px] sm:px-4">
+    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:px-4">
       <svg
         viewBox="0 0 24 24"
         fill="currentColor"
@@ -31,7 +31,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
         <path d="M16.365 12.052c0-1.857 1.052-2.76 1.1-2.79-.66-.97-1.69-1.1-2.05-1.12-1.1-.11-2.15.65-2.71.65-.56 0-1.43-.63-2.35-.61-1.21.02-2.33.7-2.95 1.78-1.26 2.19-.32 5.43.91 7.21.6.87 1.31 1.84 2.25 1.81.9-.04 1.24-.58 2.33-.58 1.09 0 1.39.58 2.34.56.97-.02 1.58-.88 2.17-1.76.69-1.01.97-1.99 1-2.04-.02-.01-1.9-.73-1.92-2.89-.02-1.81 1.48-2.67 1.55-2.72-.86-1.26-2.19-1.4-2.66-1.43zm-2.0-6.1c.5-.6.83-1.44.74-2.28-.71.03-1.57.47-2.08 1.07-.46.53-.86 1.38-.75 2.19.8.06 1.61-.41 2.09-.98z" />
       </svg>
       <span className="flex min-w-0 flex-col items-start leading-none">
-        <span className="text-[9px] font-medium tracking-wide text-white/70 sm:text-[10px]">
+        <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
         <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
@@ -44,7 +44,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
 
 function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-white/20 bg-black px-3.5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-14 sm:w-[180px] sm:px-4">
+    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:px-4">
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7 shrink-0 sm:h-8 sm:w-8">
         <path
           fill="#EA4335"
@@ -64,7 +64,7 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
         />
       </svg>
       <span className="flex min-w-0 flex-col items-start leading-none">
-        <span className="text-[9px] font-medium tracking-wide text-white/70 sm:text-[10px]">
+        <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
         <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
@@ -81,7 +81,7 @@ const FONT_SIZES = {
     title:
       "text-balance text-3xl font-semibold leading-[1.3] tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-[1.28] md:text-5xl lg:text-6xl lg:leading-[1.25]",
     subtitle:
-      "text-[0.9375rem] leading-8 text-white/60 min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
+      "text-[0.9375rem] leading-8 text-muted-foreground min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
   },
   sectionTitle: {
     primary:
@@ -94,8 +94,8 @@ const FONT_SIZES = {
   },
   body: {
     large: "text-base leading-8 sm:text-lg sm:leading-9",
-    normal: "text-sm leading-8 text-white/55 sm:text-base sm:leading-8",
-    small: "text-xs leading-7 text-white/50 sm:text-sm sm:leading-7",
+    normal: "text-sm leading-8 text-muted-foreground sm:text-base sm:leading-8",
+    small: "text-xs leading-7 text-muted-foreground sm:text-sm sm:leading-7",
   },
 } as const;
 
@@ -153,15 +153,6 @@ export default function LandingPage() {
   const [promptRotateIndex, setPromptRotateIndex] = useState(0);
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const landingNavItems = useMemo(
-    () =>
-      [
-        { href: "#pricing", label: t("landing.nav.pricing") },
-        { href: "/forms/provider", label: t("landing.nav.providerForm") },
-      ] as const,
-    [t]
-  );
 
   const {
     data: packagesData,
@@ -361,7 +352,7 @@ export default function LandingPage() {
 
   return (
     <div
-      className={`relative flex min-h-screen flex-col bg-black text-white ${isRTL ? "rtl" : "ltr"}`}
+      className={`relative flex min-h-screen flex-col bg-background text-foreground ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Brand color ambience */}
@@ -376,29 +367,14 @@ export default function LandingPage() {
         transition={{ duration: 0.35 }}
         className="fixed top-0 left-0 right-0 z-50 pt-[max(0.75rem,env(safe-area-inset-top))]"
       >
-        <div className="mx-auto mb-2 max-w-xl px-4 text-center text-[11px] text-white/45 sm:text-xs">
+        <div className="mx-auto mb-2 max-w-xl px-4 text-center text-[11px] text-muted-foreground sm:text-xs">
           {t("landing.notices.beta")}
         </div>
         <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 px-4 sm:px-6 lg:px-10">
-          <div className="flex w-full max-w-4xl items-center justify-between gap-3 rounded-full border border-white/10 bg-black/55 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-5 sm:py-2.5">
+          <div className="flex w-full max-w-4xl items-center justify-between gap-3 rounded-full border border-border bg-background/70 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:px-5 sm:py-2.5">
             <Link href="/" className="relative z-10 flex shrink-0 items-center gap-2">
-              <BrandLogo tone="yellow" className="h-6 sm:h-7 md:h-8" priority />
+              <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
             </Link>
-
-            <nav
-              className="hidden min-w-0 flex-1 items-center justify-center gap-5 md:flex lg:gap-8"
-              aria-label={locale === "ar" ? "التنقل الرئيسي" : "Primary"}
-            >
-              {landingNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="shrink-0 text-sm font-medium text-white/75 transition-colors hover:text-white"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
 
             <div className="relative z-10 flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div className="flex items-center gap-0.5 sm:gap-1">
@@ -409,7 +385,7 @@ export default function LandingPage() {
                 asChild
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-full border-white/20 bg-transparent px-4 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
+                className="h-9 rounded-full border-border bg-transparent px-4 text-sm font-medium text-foreground hover:bg-muted hover:text-foreground"
               >
                 <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
               </Button>
@@ -427,13 +403,13 @@ export default function LandingPage() {
 
       {isHeroReady ? null : (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
           aria-live="polite"
           aria-busy="true"
         >
           <div className="flex flex-col items-center gap-8 sm:gap-10">
             <span className="sr-only">{locale === "ar" ? "جاري التحميل" : "Loading"}</span>
-            <BrandLogo tone="yellow" className="h-16 sm:h-24 md:h-28" />
+            <BrandLogo tone="auto" className="h-16 sm:h-24 md:h-28" />
             <div className="flex items-center gap-3 sm:gap-4" aria-hidden>
               {[0, 1, 2].map((i) => (
                 <span
@@ -496,7 +472,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.12 }}
-                className={`mt-4 max-w-md ${FONT_SIZES.hero.subtitle}`}
+                className={`mt-4 max-w-md ${FONT_SIZES.hero.subtitle} text-white/70`}
               >
                 {t("landing.hero.subtitle")}
               </motion.p>
@@ -647,7 +623,7 @@ export default function LandingPage() {
         <InfoSection />
 
         {/* Provider form CTA */}
-        <section className="relative w-full overflow-hidden border-t border-white/10 bg-black py-16 sm:py-24 lg:py-28">
+        <section className="relative w-full overflow-hidden border-t border-border bg-background py-16 sm:py-24 lg:py-28">
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute inset-y-0 left-0 w-full bg-[radial-gradient(ellipse_at_0%_50%,rgba(105,13,212,0.22),transparent_55%)]" />
             <div className="absolute inset-y-0 right-0 w-full bg-[radial-gradient(ellipse_at_100%_40%,rgba(224,248,64,0.08),transparent_50%)]" />
@@ -674,7 +650,9 @@ export default function LandingPage() {
               <p className="mb-4 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[#E0F840]/80">
                 {t("landing.forms.eyebrow")}
               </p>
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} max-w-xl text-balance text-white`}>
+              <h2
+                className={`${FONT_SIZES.sectionTitle.primary} max-w-xl text-balance text-foreground`}
+              >
                 {t("landing.forms.heading")}
               </h2>
               <p className={`mt-5 max-w-md ${FONT_SIZES.body.normal}`}>
@@ -698,21 +676,21 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className={`flex flex-col gap-0 border-t border-white/10 ${textDirectionClass}`}
+              className={`flex flex-col gap-0 border-t border-border ${textDirectionClass}`}
             >
               {PROVIDER_BENEFIT_KEYS.map((key, index) => (
                 <li
                   key={key}
-                  className="group grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 py-5 sm:gap-5 sm:py-6"
+                  className="group grid grid-cols-[auto_1fr] gap-4 border-b border-border py-5 sm:gap-5 sm:py-6"
                 >
                   <span className="pt-0.5 font-mono text-xs tabular-nums text-[#E0F840]/70 sm:text-sm">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <h3 className="text-base font-medium leading-7 text-white transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-7">
+                    <h3 className="text-base font-medium leading-7 text-foreground transition-colors group-hover:text-[#E0F840] sm:text-lg sm:leading-7">
                       {t(`landing.forms.benefits.${key}.title`)}
                     </h3>
-                    <p className="mt-1.5 text-sm leading-8 text-white/50">
+                    <p className="mt-1.5 text-sm leading-8 text-muted-foreground">
                       {t(`landing.forms.benefits.${key}.description`)}
                     </p>
                   </div>
@@ -725,11 +703,11 @@ export default function LandingPage() {
         {/* Pricing */}
         <section
           id="pricing"
-          className="relative w-full border-t border-white/10 bg-black py-16 sm:py-24 md:py-32"
+          className="relative w-full border-t border-border bg-background py-16 sm:py-24 md:py-32"
         >
           <div className="container relative z-10 px-4 sm:px-6">
             <div className="mb-12 sm:mb-16 text-center">
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-white sm:mb-6`}>
+              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-6`}>
                 {t("landing.pricing.heading")}
               </h2>
               <p className={FONT_SIZES.body.normal}>{t("landing.pricing.subheading")}</p>
@@ -738,16 +716,16 @@ export default function LandingPage() {
             <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 pt-2 sm:gap-8 sm:pt-3 md:grid-cols-2 lg:grid-cols-4">
               {showPackagesSkeleton && (
                 <div className="col-span-full flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               )}
               {!showPackagesSkeleton && isPackagesError && (
-                <p className="col-span-full py-8 text-center text-sm text-white/50">
+                <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
                   {t("landing.pricing.loadError")}
                 </p>
               )}
               {!showPackagesSkeleton && !isPackagesError && packages.length === 0 && (
-                <p className="col-span-full py-8 text-center text-sm text-white/50">
+                <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
                   {t("landing.pricing.empty")}
                 </p>
               )}
@@ -760,21 +738,21 @@ export default function LandingPage() {
                       className="group relative transition-transform duration-200 hover:-translate-y-1"
                     >
                       <div
-                        className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-black p-6 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-8 ${
+                        className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8 ${
                           pkg.isFeatured
                             ? "border-[#E0F840]/40 shadow-[0_0_0_1px_rgba(224,248,64,0.12)] hover:border-[#E0F840]/55"
-                            : "border-white/10 hover:border-[#690DD4]/40"
+                            : "border-border hover:border-[#690DD4]/40"
                         }`}
                       >
                         {pkg.isFeatured ? (
                           <div className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 sm:-top-3.5">
-                            <Badge className="relative border border-white/25 bg-[#690DD4] px-4 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#E0F840] shadow-[0_10px_28px_rgba(105,13,212,0.45),0_2px_8px_rgba(224,248,64,0.35)] ring-2 ring-black">
+                            <Badge className="relative border border-border bg-[#690DD4] px-4 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[#E0F840] shadow-[0_10px_28px_rgba(105,13,212,0.45),0_2px_8px_rgba(224,248,64,0.35)] ring-2 ring-background">
                               {t("landing.pricing.featuredBadge")}
                             </Badge>
                           </div>
                         ) : null}
                         <h3
-                          className={`${FONT_SIZES.cardTitle.main} mb-2 font-semibold text-white text-center`}
+                          className={`${FONT_SIZES.cardTitle.main} mb-2 font-semibold text-foreground text-center`}
                         >
                           {getLocalizedText(pkg.name, pkg.nameI18n)}
                         </h3>
@@ -782,10 +760,10 @@ export default function LandingPage() {
                           {pkg.credits} {t("common.credits")}
                         </p>
 
-                        <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-white/10 to-[#E0F840]/35" />
+                        <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-[#E0F840]/35" />
 
                         <div className="mb-6">
-                          <div className="mb-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl text-center">
+                          <div className="mb-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
                             {formatCurrency(pkg.price)}
                           </div>
                           <p className={`${FONT_SIZES.body.small} text-center`}>
@@ -793,7 +771,7 @@ export default function LandingPage() {
                           </p>
                         </div>
 
-                        <ul className="space-y-2 sm:space-y-3 mb-8 flex-grow">
+                        <ul className="mb-8 flex-grow space-y-2 sm:space-y-3">
                           {getPackageFeatures(pkg)
                             .slice(0, 4)
                             .map((feature, featureIdx) => (
@@ -801,11 +779,23 @@ export default function LandingPage() {
                                 key={`${pkg.id}-${featureIdx}`}
                                 className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
                               >
-                                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-white/40" />
+                                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                                 <span>{feature}</span>
                               </li>
                             ))}
                         </ul>
+
+                        <Button
+                          asChild
+                          className={
+                            pkg.isFeatured
+                              ? "mt-auto h-11 w-full rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95"
+                              : "mt-auto h-11 w-full rounded-full border-border bg-transparent text-sm font-medium text-foreground hover:bg-muted"
+                          }
+                          variant={pkg.isFeatured ? "default" : "outline"}
+                        >
+                          <Link href="/auth/register">{t("landing.pricing.cta")}</Link>
+                        </Button>
                       </div>
                     </div>
                   );
@@ -815,7 +805,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA */}
-        <section className="relative w-full border-t border-white/10 bg-black py-16 sm:py-24 md:py-32">
+        <section className="relative w-full border-t border-border bg-background py-16 sm:py-24 md:py-32">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
           <div className="container relative z-10 mx-auto max-w-2xl px-4 sm:px-6">
             <motion.div
@@ -825,7 +815,7 @@ export default function LandingPage() {
               variants={scaleIn}
               className="text-center"
             >
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-white sm:mb-6`}>
+              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-6`}>
                 {t("landing.cta.heading")}
               </h2>
               <p className={`${FONT_SIZES.body.normal} mb-8 sm:mb-10`}>
@@ -848,7 +838,7 @@ export default function LandingPage() {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-11 rounded-full border-white/20 bg-transparent px-8 text-sm font-medium text-white hover:bg-white/5 sm:px-10"
+                  className="h-11 rounded-full border-border bg-transparent px-8 text-sm font-medium text-foreground hover:bg-muted sm:px-10"
                 >
                   <Link href="#pricing">{t("landing.cta.viewPlans")}</Link>
                 </Button>
@@ -900,26 +890,26 @@ export default function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.45 }}
-        className="relative z-10 border-t border-white/10 bg-black py-10 sm:py-12"
+        className="relative z-10 border-t border-border bg-background py-10 sm:py-12"
       >
         <div className="container flex w-full flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row md:items-center md:gap-8">
           <div className="flex shrink-0 items-center gap-2">
-            <BrandLogo tone="yellow" className="h-6 sm:h-7 md:h-8" />
+            <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" />
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/45 md:justify-end">
-            <Link href="/privacy" className="transition-colors hover:text-white">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground md:justify-end">
+            <Link href="/privacy" className="transition-colors hover:text-foreground">
               {t("common.footer.privacy")}
             </Link>
-            <Link href="/terms" className="transition-colors hover:text-white">
+            <Link href="/terms" className="transition-colors hover:text-foreground">
               {t("common.footer.terms")}
             </Link>
-            <Link href="/contact" className="transition-colors hover:text-white">
+            <Link href="/contact" className="transition-colors hover:text-foreground">
               {t("common.footer.contact")}
             </Link>
           </div>
 
-          <p className="text-xs text-white/40 sm:text-sm">{t("common.footer.copyright")}</p>
+          <p className="text-xs text-muted-foreground sm:text-sm">{t("common.footer.copyright")}</p>
         </div>
       </motion.footer>
     </div>

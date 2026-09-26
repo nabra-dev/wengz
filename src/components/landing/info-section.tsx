@@ -13,7 +13,7 @@ export function InfoSection() {
   const isRTL = locale === "ar";
 
   return (
-    <section className="relative w-full bg-black px-4 py-16 sm:px-6 sm:py-24 lg:px-10">
+    <section className="relative w-full bg-background px-4 py-16 sm:px-6 sm:py-24 lg:px-10">
       <div className="mx-auto grid max-w-[1400px] items-center gap-10 lg:grid-cols-[1.35fr_0.85fr] lg:gap-14">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -22,7 +22,7 @@ export function InfoSection() {
           transition={{ duration: 0.5 }}
           className={isRTL ? "text-right" : "text-left"}
         >
-          <h2 className="mb-10 max-w-xl text-3xl font-semibold leading-[1.3] tracking-tight text-white sm:mb-14 sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]">
+          <h2 className="mb-10 max-w-xl text-3xl font-semibold leading-[1.3] tracking-tight text-foreground sm:mb-14 sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]">
             {t("heading")}
           </h2>
 
@@ -35,20 +35,23 @@ export function InfoSection() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.08 * index, duration: 0.4 }}
               >
-                <h3 className="mb-3 text-lg font-semibold leading-7 text-white sm:text-xl sm:leading-8">
+                <h3 className="mb-3 text-lg font-semibold leading-7 text-foreground sm:text-xl sm:leading-8">
                   {t(`columns.${key}.title`)}
                 </h3>
-                <p className="mb-5 text-sm leading-8 text-white/50">
+                <p className="text-sm leading-8 text-muted-foreground">
                   {t(`columns.${key}.description`)}
                 </p>
-                <Link
-                  href={t(`columns.${key}.href`)}
-                  className="inline-flex items-center rounded-full border border-[#E0F840]/45 bg-transparent px-5 py-2 text-sm font-medium text-white shadow-[0_0_18px_rgba(224,248,64,0.22)] transition hover:border-[#E0F840]/70 hover:shadow-[0_0_28px_rgba(224,248,64,0.35)]"
-                >
-                  {t("learnMore")}
-                </Link>
               </motion.div>
             ))}
+          </div>
+
+          <div className="mt-10 sm:mt-12">
+            <Link
+              href={t("ctaHref")}
+              className="inline-flex items-center rounded-full border border-[#E0F840]/45 bg-transparent px-5 py-2 text-sm font-medium text-foreground shadow-[0_0_18px_rgba(224,248,64,0.22)] transition hover:border-[#E0F840]/70 hover:shadow-[0_0_28px_rgba(224,248,64,0.35)]"
+            >
+              {t("learnMore")}
+            </Link>
           </div>
         </motion.div>
 
