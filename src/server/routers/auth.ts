@@ -22,7 +22,10 @@ const GENERIC_RESET_MESSAGE =
 
 function getClientIp(req: unknown): string {
   const headersGet =
-    req && typeof req === "object" && "headers" in req && typeof (req as any).headers?.get === "function"
+    req &&
+    typeof req === "object" &&
+    "headers" in req &&
+    typeof (req as any).headers?.get === "function"
       ? (name: string) => (req as any).headers.get(name)
       : (name: string) => (req as any)?.headers?.[name];
 
@@ -167,6 +170,7 @@ export const authRouter = router({
         summary: "Get current session",
       },
     })
+    .input(z.void())
     .output(
       z
         .object({
@@ -197,6 +201,7 @@ export const authRouter = router({
         summary: "Get current user profile",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         id: z.string(),

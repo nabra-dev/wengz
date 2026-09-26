@@ -10,10 +10,18 @@ import {
 import { ASSIGNABLE_ROLES, ALL_ROLES, getRoleChangeBlockReason, isSuperAdmin } from "@/lib/roles";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
-import { notifyProviderAssignment, notifyProviderWithdrawalReviewed, notifyProviderFinanceDisputeReviewed } from "@/lib/notifications";
+import {
+  notifyProviderAssignment,
+  notifyProviderWithdrawalReviewed,
+  notifyProviderFinanceDisputeReviewed,
+} from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
-import { reviewProviderWithdrawal, sendProviderPayout, settleCompletedRequest } from "@/lib/provider-wallet";
+import {
+  reviewProviderWithdrawal,
+  sendProviderPayout,
+  settleCompletedRequest,
+} from "@/lib/provider-wallet";
 import { reviewProviderFinanceDispute } from "@/lib/finance-disputes";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logRequestActivity } from "@/lib/request-activity";
@@ -58,6 +66,7 @@ export const adminRouter = router({
         summary: "Get public app state",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         maintenanceMode: z.boolean(),
@@ -85,6 +94,7 @@ export const adminRouter = router({
         summary: "Get maintenance mode status",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         enabled: z.boolean(),
@@ -155,6 +165,7 @@ export const adminRouter = router({
         summary: "Get global credit price and commission settings",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         creditPriceUsd: z.number(),
@@ -244,12 +255,14 @@ export const adminRouter = router({
           where: { key: WITHDRAWAL_FEE_USD_KEY },
           update: {
             value: { amount: withdrawalFeeUsd },
-            description: "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
+            description:
+              "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
           },
           create: {
             key: WITHDRAWAL_FEE_USD_KEY,
             value: { amount: withdrawalFeeUsd },
-            description: "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
+            description:
+              "Fixed USD fee deducted from provider withdrawals (net payout = amount − fee).",
           },
         }),
       ]);
@@ -272,6 +285,7 @@ export const adminRouter = router({
         summary: "Get manual payment instructions (bank + InstaPay)",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         bankName: z.string(),
@@ -372,6 +386,7 @@ export const adminRouter = router({
         summary: "List all active service types",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       return ctx.db.serviceType.findMany({
@@ -399,6 +414,7 @@ export const adminRouter = router({
         summary: "List all active packages",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       return getOrSetCached(
@@ -447,6 +463,7 @@ export const adminRouter = router({
     .meta({
       openapi: { method: "GET", path: "/admin/stats", tags: ["admin"], summary: "Get admin stats" },
     })
+    .input(z.void())
     .output(
       z.object({
         totalUsers: z.number(),
@@ -465,25 +482,30 @@ export const adminRouter = router({
     .query(async ({ ctx }) => {
       const ACTIVE_STATUSES = ["PENDING", "IN_PROGRESS", "REVISION_REQUESTED"] as const;
 
-      const [userRoles, requestStatuses, activeSubscriptions, serviceTypes, avgRating, revenueData] =
-        await Promise.all([
-          ctx.db.user.groupBy({ by: ["role"], _count: { id: true } }),
-          ctx.db.request.groupBy({ by: ["status"], _count: { id: true } }),
-          ctx.db.clientSubscription.count({
-            where: { isActive: true, endDate: { gte: new Date() } },
-          }),
-          ctx.db.serviceType.count({ where: { isActive: true } }),
-          ctx.db.rating.aggregate({ _avg: { rating: true } }),
-          ctx.db.$queryRaw<[{ total: number }]>`
+      const [
+        userRoles,
+        requestStatuses,
+        activeSubscriptions,
+        serviceTypes,
+        avgRating,
+        revenueData,
+      ] = await Promise.all([
+        ctx.db.user.groupBy({ by: ["role"], _count: { id: true } }),
+        ctx.db.request.groupBy({ by: ["status"], _count: { id: true } }),
+        ctx.db.clientSubscription.count({
+          where: { isActive: true, endDate: { gte: new Date() } },
+        }),
+        ctx.db.serviceType.count({ where: { isActive: true } }),
+        ctx.db.rating.aggregate({ _avg: { rating: true } }),
+        ctx.db.$queryRaw<[{ total: number }]>`
             SELECT COALESCE(SUM(p.price), 0) as total
             FROM "ClientSubscription" cs
             JOIN "Package" p ON cs."packageId" = p.id
             WHERE cs."isActive" = true
           `,
-        ]);
+      ]);
 
-      const roleCount = (role: string) =>
-        userRoles.find((r) => r.role === role)?._count.id ?? 0;
+      const roleCount = (role: string) => userRoles.find((r) => r.role === role)?._count.id ?? 0;
       const statusCount = (status: string) =>
         requestStatuses.find((r) => r.status === status)?._count.id ?? 0;
       const totalUsers = userRoles.reduce((sum, r) => sum + r._count.id, 0);
@@ -515,6 +537,7 @@ export const adminRouter = router({
         summary: "Get analytics data",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       const thirtyDaysAgo = new Date();
@@ -744,6 +767,7 @@ export const adminRouter = router({
         summary: "Get dashboard stats",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       // Run all queries in parallel for maximum efficiency
@@ -821,77 +845,84 @@ export const adminRouter = router({
     .output(z.any())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 50;
-      const [ledgerTotals, walletTotals, providers, unsettledCompletedRequests, pendingWithdrawals, financeSettings, providerCount] =
-        await Promise.all([
-          ctx.db.providerFinanceLedger.aggregate({
-            _sum: {
-              totalCredits: true,
-              providerCredits: true,
-              platformCredits: true,
-              totalAmountUsd: true,
-              providerAmountUsd: true,
-              platformAmountUsd: true,
-            },
-            _count: true,
-          }),
-          ctx.db.providerWallet.aggregate({
-            _sum: {
-              balanceCredits: true,
-              heldCredits: true,
-              pendingCredits: true,
-              paidCredits: true,
-              balanceUsd: true,
-              heldUsd: true,
-              pendingUsd: true,
-              paidUsd: true,
-            },
-          }),
-          ctx.db.user.findMany({
-            where: {
-              role: "PROVIDER",
-              deletedAt: null,
-            },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              providerWallet: true,
-              providerProfile: {
-                select: {
-                  payoutMethod: true,
-                  accountHolder: true,
-                  bankName: true,
-                  bankAccount: true,
-                  eWalletNumber: true,
-                },
+      const [
+        ledgerTotals,
+        walletTotals,
+        providers,
+        unsettledCompletedRequests,
+        pendingWithdrawals,
+        financeSettings,
+        providerCount,
+      ] = await Promise.all([
+        ctx.db.providerFinanceLedger.aggregate({
+          _sum: {
+            totalCredits: true,
+            providerCredits: true,
+            platformCredits: true,
+            totalAmountUsd: true,
+            providerAmountUsd: true,
+            platformAmountUsd: true,
+          },
+          _count: true,
+        }),
+        ctx.db.providerWallet.aggregate({
+          _sum: {
+            balanceCredits: true,
+            heldCredits: true,
+            pendingCredits: true,
+            paidCredits: true,
+            balanceUsd: true,
+            heldUsd: true,
+            pendingUsd: true,
+            paidUsd: true,
+          },
+        }),
+        ctx.db.user.findMany({
+          where: {
+            role: "PROVIDER",
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            providerWallet: true,
+            providerProfile: {
+              select: {
+                payoutMethod: true,
+                accountHolder: true,
+                bankName: true,
+                bankAccount: true,
+                eWalletNumber: true,
               },
-              _count: {
-                select: {
-                  providerRequests: true,
-                  providerFinance: true,
-                },
+            },
+            _count: {
+              select: {
+                providerRequests: true,
+                providerFinance: true,
               },
             },
-            orderBy: { createdAt: "desc" },
-            take: limit + 1,
-            ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-          }),
-          ctx.db.request.count({
-            where: {
-              status: "COMPLETED",
-              providerId: { not: null },
-              providerFinance: null,
-            },
-          }),
-          ctx.db.withdrawalRequest.count({
-            where: { status: "PENDING" },
-          }),
-          loadFinanceSettings(ctx.db),
-          ctx.db.user.count({
-            where: { role: "PROVIDER", deletedAt: null },
-          }),
-        ]);
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit + 1,
+          ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        }),
+        ctx.db.request.count({
+          where: {
+            status: "COMPLETED",
+            providerId: { not: null },
+            providerFinance: null,
+          },
+        }),
+        ctx.db.withdrawalRequest.count({
+          where: { status: "PENDING" },
+        }),
+        loadFinanceSettings(ctx.db),
+        ctx.db.user.count({
+          where: { role: "PROVIDER", deletedAt: null },
+        }),
+      ]);
 
       let nextCursor: string | null = null;
       const page = providers.length > limit ? providers.slice(0, limit) : providers;
@@ -1343,9 +1374,7 @@ export const adminRouter = router({
           settled += 1;
         } catch (err) {
           skipped += 1;
-          errors.push(
-            `${request.id}: ${err instanceof Error ? err.message : String(err)}`
-          );
+          errors.push(`${request.id}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
@@ -1398,9 +1427,7 @@ export const adminRouter = router({
       } = {};
       if (input?.action) {
         // Allow prefix filters like "request." to show full request history
-        where.action = input.action.endsWith(".")
-          ? { startsWith: input.action }
-          : input.action;
+        where.action = input.action.endsWith(".") ? { startsWith: input.action } : input.action;
       }
       if (input?.level) where.level = input.level;
       if (input?.actorId) where.actorId = input.actorId;
@@ -1508,9 +1535,7 @@ export const adminRouter = router({
         }),
       ]);
 
-      const avgByProvider = new Map(
-        ratingAvgs.map((row) => [row.providerId, row._avg.rating])
-      );
+      const avgByProvider = new Map(ratingAvgs.map((row) => [row.providerId, row._avg.rating]));
 
       const usersWithRating = users.map((user) => ({
         ...user,
@@ -1913,11 +1938,7 @@ export const adminRouter = router({
     .query(async ({ ctx, input }) => {
       const status = input?.status ?? "active";
       const where =
-        status === "active"
-          ? { isActive: true }
-          : status === "inactive"
-            ? { isActive: false }
-            : {};
+        status === "active" ? { isActive: true } : status === "inactive" ? { isActive: false } : {};
 
       return ctx.db.serviceType.findMany({
         where,

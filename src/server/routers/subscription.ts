@@ -18,6 +18,7 @@ export const subscriptionRouter = router({
         summary: "Get active subscription",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -81,6 +82,7 @@ export const subscriptionRouter = router({
         summary: "Get pending subscription",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -122,6 +124,7 @@ export const subscriptionRouter = router({
         summary: "Get credit balance",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -340,6 +343,7 @@ export const subscriptionRouter = router({
         summary: "Get usage statistics",
       },
     })
+    .input(z.void())
     .output(
       z
         .object({
@@ -413,6 +417,7 @@ export const subscriptionRouter = router({
         summary: "Get subscription history",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -438,6 +443,7 @@ export const subscriptionRouter = router({
         summary: "Get transaction history",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;

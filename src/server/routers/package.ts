@@ -42,6 +42,7 @@ export const packageRouter = router({
         summary: "List all active packages",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       return getOrSetCached(

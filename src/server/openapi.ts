@@ -1,11 +1,6 @@
-import { generateOpenApiDocument } from "trpc-openapi";
+import { generateOpenApiDocument } from "trpc-to-openapi";
 import { appRouter } from "./routers/_app";
-import { z } from "zod";
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { logger } from "@/lib/logger";
-
-// Enhance Zod for OpenAPI generation (formats, metadata)
-extendZodWithOpenApi(z);
 
 export function buildOpenApiDocument(baseUrl: string) {
   try {
@@ -33,7 +28,7 @@ export function buildOpenApiDocument(baseUrl: string) {
       openapi: "3.0.3",
       info: {
         title: "Wengz API",
-        description: "Fallback OpenAPI spec. Generated without trpc-openapi due to compatibility.",
+        description: "Fallback OpenAPI spec. Generated without trpc-to-openapi due to an error.",
         version: "1.0.0",
       },
       servers: [{ url: baseUrl }],
@@ -63,7 +58,7 @@ export function buildOpenApiDocument(baseUrl: string) {
                     email: "jane@example.com",
                     password: "StrongP@ssw0rd",
                     phone: "+1-555-1234",
-                                      },
+                  },
                 },
               },
             },

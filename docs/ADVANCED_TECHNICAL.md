@@ -6,20 +6,20 @@ This document maps **stack choices**, **runtime boundaries**, and **important co
 
 ## Stack overview
 
-| Layer               | Technology                                                                                          |
-| ------------------- | --------------------------------------------------------------------------------------------------- |
-| Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                          |
-| UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**   |
-| API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                  |
+| Layer               | Technology                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                                                        |
+| UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**                                 |
+| API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                                                |
 | Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt**; forgot/reset via `PasswordResetToken` + email |
-| Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                              |
-| i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json` |
-| Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                       |
-| Realtime / cache    | **Redis** (standard or **Upstash** — see `src/lib/cache.ts`)                                        |
-| File storage        | **AWS S3** / **Backblaze B2** (image domains allowed in `next.config.js`)                           |
-| PWA                 | **next-pwa** (disabled in development; see `next.config.js`)                                        |
-| Testing             | **Jest** + Testing Library; **Playwright** for E2E                                                  |
-| Docs / API explorer | **OpenAPI** surface (`trpc-openapi`, Swagger UI routes under `src/app/api/docs/`)                   |
+| Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                                                            |
+| i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json`                               |
+| Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                                                     |
+| Realtime / cache    | **Redis** (standard or **Upstash** — see `src/lib/cache.ts`)                                                                      |
+| File storage        | **AWS S3** / **Backblaze B2** (image domains allowed in `next.config.js`)                                                         |
+| PWA                 | **next-pwa** (disabled in development; see `next.config.js`)                                                                      |
+| Testing             | **Jest** + Testing Library; **Playwright** for E2E                                                                                |
+| Docs / API explorer | **OpenAPI** surface (`trpc-to-openapi`, Swagger UI routes under `src/app/api/docs/`)                                              |
 
 ---
 
@@ -64,21 +64,21 @@ flowchart TB
 
 ## Repository layout (practical map)
 
-| Path                                         | Role                                                                                                                                                                           |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/app/`                                   | App Router: `layout.tsx`, `globals.css`, `api/**` route handlers                                                                                                               |
-| `src/app/[locale]/`                          | Locale segment; dashboard groups `(auth)`, `(dashboard)` with `client/`, `provider/`, `admin/`                                                                                 |
+| Path                                         | Role                                                                                                                                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`                                   | App Router: `layout.tsx`, `globals.css`, `api/**` route handlers                                                                                                                                        |
+| `src/app/[locale]/`                          | Locale segment; dashboard groups `(auth)`, `(dashboard)` with `client/`, `provider/`, `admin/`                                                                                                          |
 | `src/server/trpc.ts`                         | tRPC initialization, **context** (`db`, `session`, `locale`, `req`), **procedures** (`public`, `protected`, `admin` / super-admin, `requestManager`, `financeManager`, `staff`, provider/client guards) |
-| `src/server/routers/`                        | Domain routers composed in `_app.ts` → `AppRouter`                                                                                                                             |
-| `src/lib/db.ts`                              | Prisma client singleton                                                                                                                                                        |
-| `src/lib/auth.ts`                            | `authOptions` for NextAuth                                                                                                                                                     |
-| `src/lib/trpc/client.ts`                     | `createTRPCReact<AppRouter>()`                                                                                                                                                 |
-| `src/components/providers/trpc-provider.tsx` | React Query + tRPC provider wiring                                                                                                                                             |
-| `src/lib/error-handler.ts`                   | Sonner toasts + tRPC/Zod message mapping; optional `next-intl` `t`                                                                                                             |
-| `src/lib/notifications/`                     | Email, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                                      |
-| `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), 7-day earnings hold (`held*` / ledger `HOLD` + `availableAt`), withdrawal holds, and manual payout recording |
-| `src/lib/finance-settings.ts`                | Loads global `credit_price_usd` and `provider_commission_percent` from `SystemSettings`                                                                 |
-| `src/proxy.ts`                               | **Middleware implementation**: `next-intl` + `withAuth`, locale rewrite, **role-based redirects** for `client` / `provider` / `admin` segments (`export const config.matcher`) |
+| `src/server/routers/`                        | Domain routers composed in `_app.ts` → `AppRouter`                                                                                                                                                      |
+| `src/lib/db.ts`                              | Prisma client singleton                                                                                                                                                                                 |
+| `src/lib/auth.ts`                            | `authOptions` for NextAuth                                                                                                                                                                              |
+| `src/lib/trpc/client.ts`                     | `createTRPCReact<AppRouter>()`                                                                                                                                                                          |
+| `src/components/providers/trpc-provider.tsx` | React Query + tRPC provider wiring                                                                                                                                                                      |
+| `src/lib/error-handler.ts`                   | Sonner toasts + tRPC/Zod message mapping; optional `next-intl` `t`                                                                                                                                      |
+| `src/lib/notifications/`                     | Email, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                                                                |
+| `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), 7-day earnings hold (`held*` / ledger `HOLD` + `availableAt`), withdrawal holds, and manual payout recording                       |
+| `src/lib/finance-settings.ts`                | Loads global `credit_price_usd` and `provider_commission_percent` from `SystemSettings`                                                                                                                 |
+| `src/proxy.ts`                               | **Middleware implementation**: `next-intl` + `withAuth`, locale rewrite, **role-based redirects** for `client` / `provider` / `admin` segments (`export const config.matcher`)                          |
 
 > **Note:** Next.js convention expects middleware at `middleware.ts` (project root or `src/`). This repository implements the same behavior in `src/proxy.ts`; ensure your deployment pipeline renames or re-exports it if your toolchain requires `middleware.ts`.
 

@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { router, providerProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { notifyAdminsNewWithdrawal, notifyAdminsFinanceDisputeOpened, notifyStatusChange } from "@/lib/notifications";
-import { formatEstimatedDeliveryDuration, getTranslation } from "@/lib/notifications/i18n-helper";
 import {
-  normalizePayoutDetails,
-  requestProviderWithdrawal,
-} from "@/lib/provider-wallet";
+  notifyAdminsNewWithdrawal,
+  notifyAdminsFinanceDisputeOpened,
+  notifyStatusChange,
+} from "@/lib/notifications";
+import { formatEstimatedDeliveryDuration, getTranslation } from "@/lib/notifications/i18n-helper";
+import { normalizePayoutDetails, requestProviderWithdrawal } from "@/lib/provider-wallet";
 import { openProviderFinanceDispute } from "@/lib/finance-disputes";
 import { getFinanceSettings } from "@/lib/finance-settings";
 import { logActivityAsync } from "@/lib/activity-log";
@@ -37,6 +38,7 @@ export const providerRouter = router({
         summary: "Get provider profile",
       },
     })
+    .input(z.void())
     .output(z.any())
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -107,6 +109,7 @@ export const providerRouter = router({
         summary: "Get provider stats",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         totalRequests: z.number(),
@@ -577,10 +580,7 @@ export const providerRouter = router({
       const supportedServiceIds =
         providerProfile?.supportedServices.map((s: { id: string }) => s.id) || [];
 
-      if (
-        request.providerId !== userId &&
-        !supportedServiceIds.includes(request.serviceTypeId)
-      ) {
+      if (request.providerId !== userId && !supportedServiceIds.includes(request.serviceTypeId)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "This request is not in your supported services",
@@ -976,10 +976,9 @@ export const providerRouter = router({
           ledgerId: z.string().optional().nullable(),
           withdrawalId: z.string().optional().nullable(),
         })
-        .refine(
-          (value) => Boolean(value.ledgerId) !== Boolean(value.withdrawalId),
-          { message: "Provide exactly one of ledgerId or withdrawalId" }
-        )
+        .refine((value) => Boolean(value.ledgerId) !== Boolean(value.withdrawalId), {
+          message: "Provide exactly one of ledgerId or withdrawalId",
+        })
     )
     .output(z.object({ success: z.boolean(), disputeId: z.string() }))
     .mutation(async ({ ctx, input }) => {

@@ -2,15 +2,11 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { getServerSession } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import type { OpenApiMeta } from "trpc-to-openapi";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
-import {
-  canManageFinance,
-  canManageRequests,
-  isStaffRole,
-  isSuperAdmin,
-} from "@/lib/roles";
+import { canManageFinance, canManageRequests, isStaffRole, isSuperAdmin } from "@/lib/roles";
 import { revalidateSessionUser } from "@/lib/session-user-cache";
 import { measurePerformance } from "@/lib/performance";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
@@ -54,18 +50,21 @@ export const createTRPCContext = async (
   };
 };
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
-      },
-    };
-  },
-});
+const t = initTRPC
+  .context<typeof createTRPCContext>()
+  .meta<OpenApiMeta>()
+  .create({
+    transformer: superjson,
+    errorFormatter({ shape, error }) {
+      return {
+        ...shape,
+        data: {
+          ...shape.data,
+          zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        },
+      };
+    },
+  });
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
@@ -90,9 +89,7 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = t.procedure
-  .use(performanceMiddleware)
-  .use(enforceUserIsAuthed);
+export const protectedProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsAuthed);
 
 function withFreshRole(
   ctx: { session: NonNullable<Awaited<ReturnType<typeof createTRPCContext>>["session"]> },
@@ -202,9 +199,7 @@ const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const providerProcedure = t.procedure
-  .use(performanceMiddleware)
-  .use(enforceUserIsProvider);
+export const providerProcedure = t.procedure.use(performanceMiddleware).use(enforceUserIsProvider);
 
 // Middleware to enforce client role
 const enforceUserIsClient = t.middleware(async ({ ctx, next }) => {

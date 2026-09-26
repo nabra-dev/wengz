@@ -18,6 +18,7 @@ export const userRouter = router({
         summary: "Get current user profile",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         id: z.string(),

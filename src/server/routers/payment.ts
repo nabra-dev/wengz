@@ -1,15 +1,17 @@
 import { z } from "zod";
-import { router, protectedProcedure, clientProcedure, financeManagerProcedure } from "@/server/trpc";
+import {
+  router,
+  protectedProcedure,
+  clientProcedure,
+  financeManagerProcedure,
+} from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { PaymentStatus } from "@prisma/client";
 import { createNotification, notifyAdminsNewPendingPayment } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { logActivityAsync } from "@/lib/activity-log";
-import {
-  buildClientPaymentMethods,
-  getPaymentSettings,
-} from "@/lib/payment-settings";
+import { buildClientPaymentMethods, getPaymentSettings } from "@/lib/payment-settings";
 import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 
 export const paymentRouter = router({
@@ -23,6 +25,7 @@ export const paymentRouter = router({
         summary: "Get payment info",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         bankName: z.string(),
@@ -35,14 +38,7 @@ export const paymentRouter = router({
         instapayLink: z.string().optional(),
         methods: z.array(
           z.object({
-            id: z.enum([
-              "bank_transfer",
-              "instapay",
-              "fawry",
-              "meeza",
-              "visa",
-              "mastercard",
-            ]),
+            id: z.enum(["bank_transfer", "instapay", "fawry", "meeza", "visa", "mastercard"]),
             category: z.enum(["manual", "local", "international"]),
             available: z.boolean(),
             comingSoon: z.boolean(),
@@ -182,6 +178,7 @@ export const paymentRouter = router({
         summary: "List pending payments (admin)",
       },
     })
+    .input(z.void())
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
       return ctx.db.paymentProof.findMany({
@@ -535,6 +532,7 @@ export const paymentRouter = router({
         summary: "Get payment stats (admin)",
       },
     })
+    .input(z.void())
     .output(
       z.object({
         pending: z.number(),

@@ -57,6 +57,7 @@ export const notificationRouter = router({
         summary: "Get unread notification count",
       },
     })
+    .input(z.void())
     .output(z.object({ count: z.number() }))
     .query(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -114,6 +115,7 @@ export const notificationRouter = router({
         summary: "Mark all as read",
       },
     })
+    .input(z.void())
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx }) => {
       const userId = ctx.session.user.id;
@@ -168,6 +170,7 @@ export const notificationRouter = router({
         summary: "Delete all read notifications",
       },
     })
+    .input(z.void())
     .output(z.object({ success: z.boolean(), deleted: z.number() }))
     .mutation(async ({ ctx }) => {
       const userId = ctx.session.user.id;
