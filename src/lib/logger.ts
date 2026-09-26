@@ -4,7 +4,10 @@
  * - Production: warn/error only (stdout + Sentry). debug/info are no-ops for performance.
  * - Development: all levels to console.
  * - Accepts console-style second args (Error | unknown | meta object).
+ * - Expected tRPC client errors (CONFLICT, UNAUTHORIZED, …) are never sent to Sentry.
  */
+
+import { isExpectedTrpcClientError } from "@/lib/trpc-expected-errors";
 
 type LogMeta = Record<string, unknown>;
 
@@ -45,6 +48,8 @@ async function captureSentry(
   meta?: LogMeta
 ): Promise<void> {
   try {
+    if (isExpectedTrpcClientError(meta?.error)) return;
+
     const Sentry = await import("@sentry/nextjs");
     if (level === "error") {
       if (meta?.error instanceof Error) {
@@ -61,12 +66,8 @@ async function captureSentry(
 }
 
 export const logger = {
-  debug: (message: string, metaOrErr?: unknown) =>
-    emit("debug", message, normalizeMeta(metaOrErr)),
-  info: (message: string, metaOrErr?: unknown) =>
-    emit("info", message, normalizeMeta(metaOrErr)),
-  warn: (message: string, metaOrErr?: unknown) =>
-    emit("warn", message, normalizeMeta(metaOrErr)),
-  error: (message: string, metaOrErr?: unknown) =>
-    emit("error", message, normalizeMeta(metaOrErr)),
+  debug: (message: string, metaOrErr?: unknown) => emit("debug", message, normalizeMeta(metaOrErr)),
+  info: (message: string, metaOrErr?: unknown) => emit("info", message, normalizeMeta(metaOrErr)),
+  warn: (message: string, metaOrErr?: unknown) => emit("warn", message, normalizeMeta(metaOrErr)),
+  error: (message: string, metaOrErr?: unknown) => emit("error", message, normalizeMeta(metaOrErr)),
 };
