@@ -44,7 +44,7 @@ export function LanguageSwitcher() {
       variant="ghost"
       size="sm"
       onClick={handleToggle}
-      className="gap-2 text-foreground hover:text-foreground"
+      className="h-8 w-8 shrink-0 gap-0 px-0 text-foreground hover:text-foreground sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
     >
       <span className="text-sm">{targetLanguage.flag}</span>
       <span className="hidden sm:inline text-sm">{targetLanguage.label}</span>

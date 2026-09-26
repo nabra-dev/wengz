@@ -77,7 +77,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
   };
 
   return (
-    <section className="relative w-full bg-background px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
+    <section className="relative w-full bg-background px-4 py-12 sm:px-6 sm:py-20 lg:px-10">
       <div className="mx-auto max-w-[1400px]">
         <div className="relative">
           {isLoading ? (
@@ -91,7 +91,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
           ) : (
             <div
               ref={scrollerRef}
-              className="flex gap-6 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
+              className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory touch-pan-x [&::-webkit-scrollbar]:hidden sm:gap-6"
               dir={isRTL ? "rtl" : "ltr"}
             >
               {packages.map((pkg, index) => (
@@ -101,7 +101,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05, duration: 0.4 }}
-                  className="flex w-[min(85%,280px)] shrink-0 snap-start flex-col sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]"
+                  className="flex w-[min(82%,260px)] shrink-0 snap-start flex-col sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]"
                 >
                   <div className="mb-4 flex h-8 w-8 items-center justify-center text-foreground">
                     <Package className="h-5 w-5" strokeWidth={1.5} />
@@ -133,10 +133,10 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
         </div>
 
         {!isLoading && !isError && packages.length > 0 ? (
-          <div className="mt-8 flex justify-center sm:mt-10">
+          <div className="mt-6 flex justify-center sm:mt-10">
             <Link
               href="#pricing"
-              className="inline-flex items-center rounded-full border border-border bg-transparent px-5 py-2 text-sm font-medium text-foreground transition hover:border-foreground/30 hover:bg-muted"
+              className="inline-flex w-full max-w-xs items-center justify-center rounded-full border border-border bg-transparent px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-foreground/30 hover:bg-muted sm:w-auto sm:py-2"
             >
               {t("learnMore")}
             </Link>

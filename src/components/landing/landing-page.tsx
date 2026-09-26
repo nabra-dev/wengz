@@ -21,12 +21,12 @@ import { InfoSection } from "@/components/landing/info-section";
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:px-4">
+    <span className="inline-flex h-11 w-[148px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:gap-2.5 sm:px-4">
       <svg
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"
-        className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
+        className="h-6 w-6 shrink-0 sm:h-8 sm:w-8"
       >
         <path d="M16.365 12.052c0-1.857 1.052-2.76 1.1-2.79-.66-.97-1.69-1.1-2.05-1.12-1.1-.11-2.15.65-2.71.65-.56 0-1.43-.63-2.35-.61-1.21.02-2.33.7-2.95 1.78-1.26 2.19-.32 5.43.91 7.21.6.87 1.31 1.84 2.25 1.81.9-.04 1.24-.58 2.33-.58 1.09 0 1.39.58 2.34.56.97-.02 1.58-.88 2.17-1.76.69-1.01.97-1.99 1-2.04-.02-.01-1.9-.73-1.92-2.89-.02-1.81 1.48-2.67 1.55-2.72-.86-1.26-2.19-1.4-2.66-1.43zm-2.0-6.1c.5-.6.83-1.44.74-2.28-.71.03-1.57.47-2.08 1.07-.46.53-.86 1.38-.75 2.19.8.06 1.61-.41 2.09-.98z" />
       </svg>
@@ -34,7 +34,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
         <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
-        <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
+        <span className="mt-0.5 truncate text-[13px] font-semibold tracking-tight sm:text-base">
           {label}
         </span>
       </span>
@@ -44,8 +44,8 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
 
 function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-12 w-[168px] items-center gap-2.5 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:px-4">
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7 shrink-0 sm:h-8 sm:w-8">
+    <span className="inline-flex h-11 w-[148px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:gap-2.5 sm:px-4">
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 shrink-0 sm:h-8 sm:w-8">
         <path
           fill="#EA4335"
           d="M3.609 1.814 13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92Z"
@@ -67,7 +67,7 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
         <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
-        <span className="mt-0.5 truncate text-[15px] font-semibold tracking-tight sm:text-base">
+        <span className="mt-0.5 truncate text-[13px] font-semibold tracking-tight sm:text-base">
           {label}
         </span>
       </span>
@@ -79,13 +79,13 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
 const FONT_SIZES = {
   hero: {
     title:
-      "text-balance text-3xl font-semibold leading-[1.3] tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-[1.28] md:text-5xl lg:text-6xl lg:leading-[1.25]",
+      "text-balance text-[1.75rem] font-semibold leading-[1.3] tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-[1.28] md:text-5xl lg:text-6xl lg:leading-[1.25]",
     subtitle:
-      "text-[0.9375rem] leading-8 text-muted-foreground min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
+      "text-[0.875rem] leading-7 text-muted-foreground min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
   },
   sectionTitle: {
     primary:
-      "text-3xl font-semibold leading-[1.3] tracking-tight sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]",
+      "text-[1.75rem] font-semibold leading-[1.3] tracking-tight sm:text-4xl sm:leading-[1.28] md:text-5xl md:leading-[1.25]",
     secondary: "text-2xl leading-[1.3] sm:text-3xl sm:leading-[1.3] md:text-4xl md:leading-[1.28]",
   },
   cardTitle: {
@@ -94,8 +94,8 @@ const FONT_SIZES = {
   },
   body: {
     large: "text-base leading-8 sm:text-lg sm:leading-9",
-    normal: "text-sm leading-8 text-muted-foreground sm:text-base sm:leading-8",
-    small: "text-xs leading-7 text-muted-foreground sm:text-sm sm:leading-7",
+    normal: "text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8",
+    small: "text-xs leading-6 text-muted-foreground sm:text-sm sm:leading-7",
   },
 } as const;
 
@@ -365,19 +365,19 @@ export default function LandingPage() {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="fixed top-0 left-0 right-0 z-50 pt-[max(0.75rem,env(safe-area-inset-top))]"
+        className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <div className="mx-auto mb-2 max-w-xl px-4 text-center text-[11px] text-muted-foreground sm:text-xs">
+        <div className="mx-auto mb-1.5 max-w-xl truncate px-3 text-center text-[10px] text-muted-foreground sm:mb-2 sm:px-4 sm:text-[11px] sm:text-xs">
           {t("landing.notices.beta")}
         </div>
-        <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 px-4 sm:px-6 lg:px-10">
-          <div className="flex w-full max-w-4xl items-center justify-between gap-3 rounded-full border border-border bg-background/70 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:px-5 sm:py-2.5">
-            <Link href="/" className="relative z-10 flex shrink-0 items-center gap-2">
-              <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
+        <div className="mx-auto flex max-w-[1400px] items-center justify-center px-3 sm:px-6 lg:px-10">
+          <div className="flex w-full max-w-4xl min-w-0 items-center justify-between gap-2 rounded-full border border-border bg-background/70 px-2.5 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5">
+            <Link href="/" className="relative z-10 flex min-w-0 shrink-0 items-center gap-2">
+              <BrandLogo tone="auto" className="h-5 sm:h-7 md:h-8" priority />
             </Link>
 
-            <div className="relative z-10 flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="relative z-10 flex min-w-0 shrink items-center justify-end gap-0.5 sm:gap-2">
+              <div className="flex items-center">
                 <ThemeSwitcher />
                 <LanguageSwitcher />
               </div>
@@ -385,16 +385,19 @@ export default function LandingPage() {
                 asChild
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-full border-border bg-transparent px-4 text-sm font-medium text-foreground hover:bg-muted hover:text-foreground"
+                className="hidden h-9 rounded-full border-border bg-transparent px-4 text-sm font-medium text-foreground hover:bg-muted hover:text-foreground sm:inline-flex"
               >
                 <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
               </Button>
               <Button
                 asChild
                 size="sm"
-                className="h-9 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-4 text-sm font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:px-5"
+                className="h-8 shrink-0 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-5 sm:text-sm"
               >
-                <Link href="/auth/register">{t("landing.cta.primary")}</Link>
+                <Link href="/auth/register">
+                  <span className="sm:hidden">{t("landing.cta.primaryShort")}</span>
+                  <span className="hidden sm:inline">{t("landing.cta.primary")}</span>
+                </Link>
               </Button>
             </div>
           </div>
@@ -425,7 +428,7 @@ export default function LandingPage() {
 
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
-        <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-10 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:justify-center md:pb-20">
+        <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:justify-center md:pb-20">
           <div className="pointer-events-none absolute inset-0 z-0 min-h-0 overflow-hidden">
             <Image
               src="/images/hero.png"
@@ -433,17 +436,17 @@ export default function LandingPage() {
               fill
               priority
               sizes="100vw"
-              className="object-cover object-center scale-105"
+              className="object-cover object-[center_30%] scale-105 sm:object-center"
               onLoad={() => setIsHeroReady(true)}
               onError={() => setIsHeroReady(true)}
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/25"
+              className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/35 sm:via-black/70 sm:to-black/25"
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50"
+              className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/55 sm:via-transparent sm:to-black/50"
               aria-hidden
             />
             <div
@@ -472,7 +475,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.12 }}
-                className={`mt-4 max-w-md ${FONT_SIZES.hero.subtitle} text-white/70`}
+                className={`mt-3 max-w-md sm:mt-4 ${FONT_SIZES.hero.subtitle} text-white/70`}
               >
                 {t("landing.hero.subtitle")}
               </motion.p>
@@ -482,7 +485,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mx-auto mt-10 w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-14 sm:rounded-3xl sm:p-4"
+              className="mx-auto mt-8 w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-14 sm:rounded-3xl sm:p-4"
             >
               <div className="relative min-h-[4.5rem]">
                 {heroChatPhase === "showingReply" ? (
@@ -623,7 +626,7 @@ export default function LandingPage() {
         <InfoSection />
 
         {/* Provider form CTA */}
-        <section className="relative w-full overflow-hidden border-t border-border bg-background py-16 sm:py-24 lg:py-28">
+        <section className="relative w-full overflow-hidden border-t border-border bg-background py-12 sm:py-24 lg:py-28">
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute inset-y-0 left-0 w-full bg-[radial-gradient(ellipse_at_0%_50%,rgba(105,13,212,0.22),transparent_55%)]" />
             <div className="absolute inset-y-0 right-0 w-full bg-[radial-gradient(ellipse_at_100%_40%,rgba(224,248,64,0.08),transparent_50%)]" />
@@ -661,7 +664,7 @@ export default function LandingPage() {
               <div className="mt-9">
                 <Button
                   asChild
-                  className="group h-12 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(105,13,212,0.35)] transition-all hover:opacity-95"
+                  className="group h-11 w-full rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-12 sm:w-auto"
                 >
                   <Link href="/forms/provider" className="inline-flex items-center gap-2">
                     {t("landing.forms.provider.cta")}
@@ -703,7 +706,7 @@ export default function LandingPage() {
         {/* Pricing */}
         <section
           id="pricing"
-          className="relative w-full border-t border-border bg-background py-16 sm:py-24 md:py-32"
+          className="relative w-full border-t border-border bg-background py-12 sm:py-24 md:py-32"
         >
           <div className="container relative z-10 px-4 sm:px-6">
             <div className="mb-12 sm:mb-16 text-center">
@@ -711,7 +714,7 @@ export default function LandingPage() {
                 {t("landing.pricing.heading")}
               </h2>
               <p className={FONT_SIZES.body.normal}>{t("landing.pricing.subheading")}</p>
-              <p className="mx-auto mt-5 inline-flex max-w-xl rounded-full border border-[#E0F840]/35 bg-[#E0F840]/10 px-4 py-2 text-sm font-medium leading-7 text-foreground sm:text-base sm:leading-8">
+              <p className="mx-auto mt-4 max-w-xl text-pretty rounded-2xl border border-[#E0F840]/35 bg-[#E0F840]/10 px-3 py-2.5 text-center text-sm font-medium leading-7 text-foreground sm:mt-5 sm:rounded-full sm:px-4 sm:text-base sm:leading-8">
                 {t("landing.pricing.freeTrialNote")}
               </p>
             </div>
@@ -741,9 +744,9 @@ export default function LandingPage() {
                       className="group relative transition-transform duration-200 hover:-translate-y-1"
                     >
                       <div
-                        className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8 ${
+                        className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-card p-5 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8 ${
                           pkg.isFeatured
-                            ? "border-[#E0F840]/40 shadow-[0_0_0_1px_rgba(224,248,64,0.12)] hover:border-[#E0F840]/55"
+                            ? "mt-3 border-[#E0F840]/40 shadow-[0_0_0_1px_rgba(224,248,64,0.12)] hover:border-[#E0F840]/55 sm:mt-0"
                             : "border-border hover:border-[#690DD4]/40"
                         }`}
                       >
@@ -808,7 +811,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA */}
-        <section className="relative w-full border-t border-border bg-background py-16 sm:py-24 md:py-32">
+        <section className="relative w-full border-t border-border bg-background py-12 sm:py-24 md:py-32">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
           <div className="container relative z-10 mx-auto max-w-2xl px-4 sm:px-6">
             <motion.div
@@ -830,18 +833,18 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4"
+                className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
               >
                 <Button
                   asChild
-                  className="h-11 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:px-10"
+                  className="h-11 w-full rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:w-auto sm:px-10"
                 >
                   <Link href="/auth/register">{t("landing.cta.primary")}</Link>
                 </Button>
                 <Button
                   asChild
                   variant="outline"
-                  className="h-11 rounded-full border-border bg-transparent px-8 text-sm font-medium text-foreground hover:bg-muted sm:px-10"
+                  className="h-11 w-full rounded-full border-border bg-transparent px-8 text-sm font-medium text-foreground hover:bg-muted sm:w-auto sm:px-10"
                 >
                   <Link href="#pricing">{t("landing.cta.viewPlans")}</Link>
                 </Button>

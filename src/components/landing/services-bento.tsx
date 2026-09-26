@@ -115,7 +115,7 @@ export function ServicesBento() {
   return (
     <section
       id="services"
-      className="relative w-full bg-background px-4 py-16 sm:px-6 sm:py-20 lg:px-10"
+      className="relative w-full bg-background px-4 py-12 sm:px-6 sm:py-20 lg:px-10"
       aria-label={t("ariaLabel")}
     >
       <div className="mx-auto max-w-[1400px]">
@@ -124,7 +124,7 @@ export function ServicesBento() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="landing-services-bento grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4"
+          className="landing-services-bento grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4"
         >
           {TILES.map((tile, index) => {
             const Icon = tile.icon;
@@ -140,7 +140,7 @@ export function ServicesBento() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.04, duration: 0.4 }}
                 className={cn(
-                  "group relative min-h-[200px] overflow-hidden rounded-2xl border border-border sm:rounded-3xl lg:min-h-0",
+                  "group relative min-h-[160px] overflow-hidden rounded-2xl border border-border sm:rounded-3xl lg:min-h-0",
                   tile.area === "image" || tile.area === "apps"
                     ? "sm:min-h-[320px]"
                     : tile.area === "video"
