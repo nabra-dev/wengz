@@ -8,6 +8,7 @@
  */
 
 import { isExpectedTrpcClientError } from "@/lib/trpc-expected-errors";
+import { isSentryEnabled } from "@/lib/sentry-enabled";
 
 type LogMeta = Record<string, unknown>;
 
@@ -48,6 +49,7 @@ async function captureSentry(
   meta?: LogMeta
 ): Promise<void> {
   try {
+    if (!isSentryEnabled()) return;
     if (isExpectedTrpcClientError(meta?.error)) return;
 
     const Sentry = await import("@sentry/nextjs");

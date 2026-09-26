@@ -1,12 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
+import { isSentryEnabled } from "./src/lib/sentry-enabled";
 
 const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 Sentry.init({
   dsn,
-  enabled: Boolean(dsn) && process.env.NODE_ENV === "production",
+  enabled: isSentryEnabled(),
   tracesSampleRate: 0.05,
-  integrations: [
-    Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
-  ],
+  integrations: [Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] })],
 });
