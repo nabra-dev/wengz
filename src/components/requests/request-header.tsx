@@ -27,7 +27,6 @@ interface RequestHeaderProps {
 
 interface CreditBreakdownData {
   hasCreditBreakdown: boolean;
-  creditBreakdown?: string;
   base: number;
   attrs: number;
   prio: number;
@@ -56,8 +55,6 @@ function calculateCreditBreakdown(
   let paidRevisionTotal = hasCreditBreakdown ? Math.max(0, creditCost - base - attrs - prio) : 0;
 
   // If this is NOT a revision request, prefer attributing any remainder to attributes.
-  // This fixes legacy requests where attributeCredits/priorities were not stored explicitly
-  // and avoids showing misleading "revision" costs on initial requests.
   if (!isRevision && attrs === 0 && paidRevisionTotal > 0) {
     attrs = paidRevisionTotal;
     paidRevisionTotal = 0;
@@ -67,25 +64,8 @@ function calculateCreditBreakdown(
   const paidRevisionMultiplier = canDeriveMultiplier ? Math.floor(paidRevisionTotal / paidUnit) : 0;
   const showFreeRevision = !hasPaidRevisions && isRevision === true && revisionType === "free";
 
-  let creditBreakdown: string | undefined;
-  if (hasCreditBreakdown) {
-    const parts = [`Base: ${baseCreditCost}`];
-    if (attrs > 0) parts.push(`Attributes: ${attrs}`);
-    parts.push(`Priority: ${priorityCreditCost}`);
-    const revisionInfo = getRevisionInfo(
-      hasPaidRevisions,
-      canDeriveMultiplier,
-      paidRevisionMultiplier,
-      paidRevisionTotal,
-      paidUnit,
-      showFreeRevision
-    );
-    creditBreakdown = parts.join(" + ") + revisionInfo;
-  }
-
   return {
     hasCreditBreakdown,
-    creditBreakdown,
     base,
     attrs,
     prio,
@@ -96,24 +76,6 @@ function calculateCreditBreakdown(
     paidUnit,
     showFreeRevision,
   };
-}
-
-function getRevisionInfo(
-  hasPaidRevisions: boolean,
-  canDeriveMultiplier: boolean,
-  paidRevisionMultiplier: number,
-  paidRevisionTotal: number,
-  paidUnit: number,
-  showFreeRevision: boolean
-): string {
-  if (hasPaidRevisions) {
-    const canShowMultiplier =
-      canDeriveMultiplier && paidRevisionMultiplier >= 1 && paidRevisionTotal % paidUnit === 0;
-    return canShowMultiplier
-      ? ` + Revisions: +${paidUnit} x ${paidRevisionMultiplier}`
-      : ` + Revisions: +${paidRevisionTotal}`;
-  }
-  return showFreeRevision ? " + Free Revision" : "";
 }
 
 function RevisionCostDisplay({
@@ -186,17 +148,43 @@ export function RequestHeader({
     revisionType
   );
 
+  const creditTooltip = (() => {
+    if (!breakdown.hasCreditBreakdown) return undefined;
+    const parts = [
+      t("tooltipBase", { count: breakdown.base }),
+      ...(breakdown.attrs > 0 ? [t("tooltipAttributes", { count: breakdown.attrs })] : []),
+      t("tooltipPriority", { count: breakdown.prio }),
+    ];
+    if (breakdown.hasPaidRevisions) {
+      const canShowMultiplier =
+        breakdown.canDeriveMultiplier &&
+        breakdown.paidRevisionMultiplier >= 1 &&
+        breakdown.paidRevisionTotal % breakdown.paidUnit === 0;
+      parts.push(
+        canShowMultiplier
+          ? t("tooltipRevisionsMultiplied", {
+              unit: breakdown.paidUnit,
+              multiplier: breakdown.paidRevisionMultiplier,
+            })
+          : t("tooltipRevisions", { count: breakdown.paidRevisionTotal })
+      );
+    } else if (breakdown.showFreeRevision) {
+      parts.push(t("tooltipFreeRevision"));
+    }
+    return parts.join(" + ");
+  })();
+
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-4">
-        <Link href={backUrl}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{title}</h1>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Button asChild variant="ghost" size="icon" className="min-h-11 min-w-11 shrink-0">
+          <Link href={backUrl} aria-label={backLabel}>
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          </Link>
+        </Button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold break-words">{title}</h1>
             <Badge variant={null} className={getStatusColor(status)}>
               {tCommon(`requestStatus.${status}` as any)}
             </Badge>
@@ -213,16 +201,16 @@ export function RequestHeader({
                 {tCommon(`priority.${getPriorityKey(priority)}` as any)} {t("priority")}
               </Badge>
             )}
-            <Badge variant="outline" className="font-semibold" title={breakdown.creditBreakdown}>
-              💳 {creditCost} {creditCost === 1 ? t("credit") : t("credits")}
+            <Badge variant="outline" className="font-semibold" title={creditTooltip}>
+              {creditCost} {creditCost === 1 ? t("credit") : t("credits")}
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             {serviceTypeIcon && `${serviceTypeIcon} `}
             {serviceTypeName} • {t("created")} {formatDate(createdAt, locale)}
           </p>
         </div>
-        {actions && <div className="flex gap-2">{actions}</div>}
+        {actions && <div className="flex gap-2 shrink-0">{actions}</div>}
       </div>
 
       {/* Credit Cost Breakdown */}

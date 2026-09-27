@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate, getStatusColor } from "@/lib/utils";
 import { Plus, CreditCard, FileText, Clock, CheckCircle } from "lucide-react";
@@ -24,28 +25,34 @@ export default function ClientDashboard() {
   });
 
   const isLoading = subLoading || statsLoading || requestsLoading;
+  const hasSubscription = !!subscription;
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {t("welcome", { name: session?.user?.name?.split(" ")[0] || "" })}
-          </h1>
-          <p className="text-muted-foreground">{t("overview")}</p>
-        </div>
-        <Link href="/client/requests/new">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            {t("newRequest")}
+      <DashboardPageHeader
+        title={t("welcome", { name: session?.user?.name?.split(" ")[0] || "" })}
+        description={t("overview")}
+        actions={
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/client/requests/new" className="flex items-center justify-center gap-2">
+              <Plus className="h-4 w-4" />
+              {t("newRequest")}
+            </Link>
           </Button>
-        </Link>
-      </div>
+        }
+      />
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div
+        className={
+          hasSubscription || isLoading
+            ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        }
+      >
+        <Card
+          className={!hasSubscription && !isLoading ? "border-primary/20 bg-primary/5" : undefined}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t("stats.creditsAvailable")}</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -55,7 +62,9 @@ export default function ClientDashboard() {
               <Skeleton className="h-8 w-20" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{subscription?.remainingCredits || 0}</div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {subscription?.remainingCredits || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {subscription
                     ? t("stats.plan", {
@@ -82,7 +91,9 @@ export default function ClientDashboard() {
               <Skeleton className="h-8 w-20" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{usageStats?.activeRequests || 0}</div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {usageStats?.activeRequests || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">{t("stats.inProgressOrPending")}</p>
               </>
             )}
@@ -99,34 +110,34 @@ export default function ClientDashboard() {
               <Skeleton className="h-8 w-20" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{usageStats?.completedRequests || 0}</div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {usageStats?.completedRequests || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">{t("stats.allTime")}</p>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t("stats.subscription")}</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading && <Skeleton className="h-8 w-20" />}
-            {!isLoading && subscription && (
-              <>
-                <div className="text-2xl font-bold">{subscription.daysRemaining}</div>
-                <p className="text-xs text-muted-foreground">{t("stats.daysRemaining")}</p>
-              </>
-            )}
-            {!isLoading && !subscription && (
-              <>
-                <div className="text-2xl font-bold">-</div>
-                <p className="text-xs text-muted-foreground">{t("stats.noActivePlan")}</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {(hasSubscription || isLoading) && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{t("stats.subscription")}</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading && <Skeleton className="h-8 w-20" />}
+              {!isLoading && subscription && (
+                <>
+                  <div className="text-2xl font-bold tabular-nums">
+                    {subscription.daysRemaining}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("stats.daysRemaining")}</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* No subscription warning */}
@@ -139,25 +150,23 @@ export default function ClientDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/client/subscription">
-              <Button>{t("noSubscription.viewPlans")}</Button>
-            </Link>
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/client/subscription">{t("noSubscription.viewPlans")}</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
 
       {/* Recent Requests */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>{t("recentRequests.title")}</CardTitle>
             <CardDescription>{t("recentRequests.description")}</CardDescription>
           </div>
-          <Link href="/client/requests">
-            <Button variant="outline" size="sm">
-              {t("recentRequests.viewAll")}
-            </Button>
-          </Link>
+          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto shrink-0">
+            <Link href="/client/requests">{t("recentRequests.viewAll")}</Link>
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading && (
@@ -171,11 +180,17 @@ export default function ClientDashboard() {
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>{t("recentRequests.noRequests")}</p>
-              <p className="text-sm">{t("recentRequests.noRequestsDescription")}</p>
+              <p className="text-sm mb-4">{t("recentRequests.noRequestsDescription")}</p>
+              <Button asChild>
+                <Link href="/client/requests/new" className="inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t("newRequest")}
+                </Link>
+              </Button>
             </div>
           )}
           {!isLoading && (requestsData?.requests.length ?? 0) > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {requestsData?.requests.map((request: any) => {
                 const serviceName = resolveLocalizedText(
                   request.serviceType?.nameI18n,
@@ -185,16 +200,21 @@ export default function ClientDashboard() {
 
                 return (
                   <Link key={request.id} href={`/client/requests/${request.id}`} className="block">
-                    <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                      <div className="space-y-1">
-                        <p className="font-medium">{request.title}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{serviceName}</span>
-                          <span>•</span>
-                          <span>{formatDate(request.createdAt, locale)}</span>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors min-w-0">
+                      <div className="space-y-1 min-w-0">
+                        <p className="font-medium truncate">{request.title}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                          <span className="truncate">{serviceName}</span>
+                          <span className="hidden sm:inline" aria-hidden>
+                            •
+                          </span>
+                          <span className="shrink-0">{formatDate(request.createdAt, locale)}</span>
                         </div>
                       </div>
-                      <Badge variant={null} className={getStatusColor(request.status)}>
+                      <Badge
+                        variant={null}
+                        className={`shrink-0 self-start sm:self-center ${getStatusColor(request.status)}`}
+                      >
                         {tCommon(`requestStatus.${request.status}` as any)}
                       </Badge>
                     </div>

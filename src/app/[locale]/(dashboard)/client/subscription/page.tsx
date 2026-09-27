@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,22 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate } from "@/lib/utils";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { Check, CreditCard, AlertCircle } from "lucide-react";
 import { showError, showSuccess } from "@/lib/error-handler";
+
+type ConfirmDialogState = { type: "upgrade"; packageId: string } | { type: "cancel" } | null;
 
 export default function SubscriptionPage() {
   const t = useTranslations("client.subscription");
@@ -26,6 +38,7 @@ export default function SubscriptionPage() {
   const formatCurrency = useFormatCurrency();
   const router = useRouter();
   const utils = trpc.useUtils();
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(null);
 
   const { data: subscription, isLoading: subLoading } = trpc.subscription.getActive.useQuery();
   const { data: packages, isLoading: pkgLoading } = trpc.package.getAll.useQuery();
@@ -37,6 +50,7 @@ export default function SubscriptionPage() {
       utils.subscription.getUsageStats.invalidate();
       utils.subscription.getPending.invalidate();
       showSuccess(t("toast.subscribed"));
+      setConfirmDialog(null);
       router.push("/client/payment");
     },
     onError: (error) => {
@@ -49,6 +63,7 @@ export default function SubscriptionPage() {
       utils.subscription.getActive.invalidate();
       utils.subscription.getPending.invalidate();
       showSuccess(t("toast.cancelled"));
+      setConfirmDialog(null);
     },
     onError: (error) => {
       showError(error);
@@ -58,7 +73,8 @@ export default function SubscriptionPage() {
   const isLoading = subLoading || pkgLoading;
 
   const handleSubscribe = (packageId: string, isUpgrade: boolean) => {
-    if (isUpgrade && !confirm(t("confirmations.upgrade"))) {
+    if (isUpgrade) {
+      setConfirmDialog({ type: "upgrade", packageId });
       return;
     }
     subscribeMutation.mutate({ packageId });
@@ -66,26 +82,34 @@ export default function SubscriptionPage() {
 
   const handleCancel = () => {
     if (!subscription) return;
-    if (confirm(t("confirmations.cancel"))) {
+    setConfirmDialog({ type: "cancel" });
+  };
+
+  const confirmAction = () => {
+    if (!confirmDialog) return;
+    if (confirmDialog.type === "upgrade") {
+      subscribeMutation.mutate({ packageId: confirmDialog.packageId });
+      return;
+    }
+    if (subscription) {
       cancelMutation.mutate({ subscriptionId: subscription.id });
     }
   };
 
+  const dialogBusy = subscribeMutation.isPending || cancelMutation.isPending;
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      <DashboardPageHeader title={t("title")} description={t("subtitle")} />
 
       {/* Current Subscription */}
       {isLoading && <Skeleton className="h-48 w-full" />}
       {!isLoading && subscription && (
         <Card className="border-primary">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <CardTitle className="text-xl sm:text-2xl">
                   {t("currentSubscription.title", {
                     name: (subscription.package as any).nameI18n
                       ? (subscription.package as any).nameI18n[locale] || subscription.package.name
@@ -94,16 +118,20 @@ export default function SubscriptionPage() {
                 </CardTitle>
                 <CardDescription>{t("currentSubscription.description")}</CardDescription>
               </div>
-              <Badge variant="default">{t("currentSubscription.active")}</Badge>
+              <Badge variant="default" className="self-start shrink-0">
+                {t("currentSubscription.active")}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <p className="text-sm text-muted-foreground">
                   {t("currentSubscription.creditsRemaining")}
                 </p>
-                <p className="text-3xl font-bold">{subscription.remainingCredits}</p>
+                <p className="text-2xl sm:text-3xl font-bold tabular-nums">
+                  {subscription.remainingCredits}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   {t("currentSubscription.ofTotal", { total: subscription.package.credits })}
                 </p>
@@ -112,7 +140,9 @@ export default function SubscriptionPage() {
                 <p className="text-sm text-muted-foreground">
                   {t("currentSubscription.daysRemaining")}
                 </p>
-                <p className="text-3xl font-bold">{subscription.daysRemaining}</p>
+                <p className="text-2xl sm:text-3xl font-bold tabular-nums">
+                  {subscription.daysRemaining}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   {t("currentSubscription.expires", {
                     date: formatDate(subscription.endDate, locale),
@@ -122,8 +152,8 @@ export default function SubscriptionPage() {
             </div>
 
             {subscription.isExpiring && (
-              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                <AlertCircle className="h-4 w-4" />
+              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-2 text-yellow-600 dark:text-yellow-400">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
                   {t("currentSubscription.expiringWarning", { days: subscription.daysRemaining })}
                 </span>
@@ -131,7 +161,7 @@ export default function SubscriptionPage() {
             )}
           </CardContent>
           <CardFooter>
-            <Button variant="destructive" onClick={handleCancel}>
+            <Button variant="destructive" onClick={handleCancel} className="w-full sm:w-auto">
               {t("currentSubscription.cancelSubscription")}
             </Button>
           </CardFooter>
@@ -150,10 +180,10 @@ export default function SubscriptionPage() {
 
       {/* Available Plans */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4">
           {subscription ? t("plans.upgrade") : t("plans.choose")}
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {isLoading && [1, 2, 3].map((i) => <Skeleton key={i} className="h-96" />)}
           {!isLoading && (!packages || packages.length === 0) && (
             <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -167,7 +197,7 @@ export default function SubscriptionPage() {
             packages.length > 0 &&
             packages.map((pkg) => {
               const isCurrentPlan = subscription?.package.id === pkg.id;
-              const pkgData = pkg as any; // Cast to access i18n fields and relations
+              const pkgData = pkg as any;
               return (
                 <Card
                   key={pkg.id}
@@ -176,7 +206,7 @@ export default function SubscriptionPage() {
                   <CardHeader>
                     <div className="space-y-2">
                       {pkgData.isFeatured && (
-                        <Badge className="border-0 bg-[#690DD4] text-[#E0F840] hover:opacity-95">
+                        <Badge className="border-0 bg-primary text-primary-foreground">
                           {t("plans.featuredBadge")}
                         </Badge>
                       )}
@@ -188,7 +218,7 @@ export default function SubscriptionPage() {
                       </div>
                     </div>
                     <CardDescription>
-                      <span className="text-3xl font-bold text-foreground">
+                      <span className="text-3xl font-bold text-foreground tabular-nums">
                         {formatCurrency(pkg.price)}
                       </span>
                       <span className="text-muted-foreground">
@@ -297,27 +327,67 @@ export default function SubscriptionPage() {
             <CardDescription>{t("usageStats.description")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">{t("usageStats.totalRequests")}</p>
-                <p className="text-2xl font-bold">{usageStats.totalRequests}</p>
+                <p className="text-2xl font-bold tabular-nums">{usageStats.totalRequests}</p>
               </div>
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">{t("usageStats.completed")}</p>
-                <p className="text-2xl font-bold">{usageStats.completedRequests}</p>
+                <p className="text-2xl font-bold tabular-nums">{usageStats.completedRequests}</p>
               </div>
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">{t("usageStats.active")}</p>
-                <p className="text-2xl font-bold">{usageStats.activeRequests}</p>
+                <p className="text-2xl font-bold tabular-nums">{usageStats.activeRequests}</p>
               </div>
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">{t("usageStats.creditsUsed")}</p>
-                <p className="text-2xl font-bold">{usageStats.creditsUsed}</p>
+                <p className="text-2xl font-bold tabular-nums">{usageStats.creditsUsed}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={!!confirmDialog}
+        onOpenChange={(open) => {
+          if (!open && !dialogBusy) setConfirmDialog(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmDialog?.type === "cancel"
+                ? t("confirmations.cancelTitle")
+                : t("confirmations.upgradeTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmDialog?.type === "cancel"
+                ? t("confirmations.cancel")
+                : t("confirmations.upgrade")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialog(null)}
+              disabled={dialogBusy}
+              className="w-full sm:w-auto"
+            >
+              {t("confirmations.dismiss")}
+            </Button>
+            <Button
+              variant={confirmDialog?.type === "cancel" ? "destructive" : "default"}
+              onClick={confirmAction}
+              disabled={dialogBusy}
+              className="w-full sm:w-auto"
+            >
+              {dialogBusy ? t("plans.processing") : t("confirmations.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

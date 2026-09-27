@@ -406,7 +406,11 @@
       "signOut": "تسجيل الخروج",
       "credits": "الكريدت",
       "creditsCount": "{count, plural, one {# كريدت} other {# كريدت}}",
-      "newRequest": "طلب جديد"
+      "newRequest": "طلب جديد",
+      "openMenu": "فتح قائمة التنقل",
+      "closeMenu": "إغلاق قائمة التنقل",
+      "closeSidebar": "إغلاق الشريط الجانبي",
+      "unreadNotifications": "{count, plural, one {# إشعار غير مقروء} other {# إشعارات غير مقروءة}}"
     }
   },
   "auth": {
@@ -1380,7 +1384,17 @@
       "revisionCost": "تكلفة المراجعة:",
       "freeRevision": "مراجعة مجانية:",
       "noAdditionalCost": "لا توجد تكلفة إضافية",
-      "total": "الإجمالي:"
+      "total": "الإجمالي:",
+      "tooltipBase": "الأساسي: {count}",
+      "tooltipAttributes": "الإضافات: {count}",
+      "tooltipPriority": "الأولوية: {count}",
+      "tooltipRevisions": "المراجعات: +{count}",
+      "tooltipRevisionsMultiplied": "المراجعات: +{unit} × {multiplier}",
+      "tooltipFreeRevision": "مراجعة مجانية"
+    },
+    "workspace": {
+      "details": "التفاصيل",
+      "messages": "الرسائل"
     },
     "description": {
       "title": "الوصف",
@@ -1658,7 +1672,13 @@
         "instapay": "رابط InstaPay",
         "instapayTitle": "الدفع عبر InstaPay",
         "instapayDescription": "افتح رابط InstaPay وأكمل التحويل ثم ارفع الإيصال.",
-        "instapayNote": "بعد الدفع عبر InstaPay، ارفع الإيصال من الجانب الأيمن للتحقق من اشتراكك."
+        "instapayNote": "بعد الدفع عبر InstaPay، ارفع الإيصال من الجانب الأيمن للتحقق من اشتراكك.",
+        "copyField": "نسخ {field}"
+      },
+      "steps": {
+        "method": "١. اختر الطريقة",
+        "pay": "٢. ادفع",
+        "proof": "٣. ارفع الإثبات"
       },
       "uploadProof": {
         "title": "رفع إثبات الدفع",
@@ -1687,7 +1707,10 @@
         "backToSubscription": "العودة إلى الاشتراك",
         "cancelSubscription": "إلغاء الاشتراك",
         "cancelling": "جاري الإلغاء...",
-        "cancelConfirm": "هل أنت متأكد من إلغاء هذا الاشتراك؟ ستحتاج إلى الاشتراك مرة أخرى."
+        "cancelConfirm": "هل أنت متأكد من إلغاء هذا الاشتراك؟ ستحتاج إلى الاشتراك مرة أخرى.",
+        "cancelTitle": "إلغاء الاشتراك المعلق",
+        "confirmCancel": "نعم، إلغاء",
+        "dismiss": "الإبقاء عليه"
       },
       "validation": {
         "transferReceiptRequired": "إيصال التحويل مطلوب",
@@ -1800,7 +1823,8 @@
         "reviewPlaceholder": "اكتب مراجعة (اختياري)...",
         "charactersCount": "{count} حرف",
         "submit": "تقديم التقييم",
-        "submitting": "جاري التقديم..."
+        "submitting": "جاري التقديم...",
+        "rateStars": "تقييم {count} نجوم"
       },
       "yourRating": {
         "title": "تقييمك"
@@ -1849,6 +1873,13 @@
         "title": "لا توجد خدمات متاحة",
         "description": "باقتك الحالية ({name}) لا تتضمن أي خدمات. يرجى الترقية للوصول إلى الخدمات.",
         "upgradePackage": "ترقية الباقة"
+      },
+      "supportedInPackage": "مدعوم في باقة {name}",
+      "supportedFromPackage": "(مدعوم بداية من باقة {name})",
+      "costSummary": {
+        "total": "التكلفة الإجمالية",
+        "available": "المتاح",
+        "remaining": "بعد الإرسال"
       },
       "fields": {
         "serviceType": "نوع الخدمة",
@@ -1955,7 +1986,11 @@
       },
       "confirmations": {
         "cancel": "هل أنت متأكد من إلغاء اشتراكك؟",
-        "upgrade": "بدء الترقية؟ تبقى باقتك الحالية نشطة حتى تتم الموافقة على الدفع الجديد."
+        "upgrade": "بدء الترقية؟ تبقى باقتك الحالية نشطة حتى تتم الموافقة على الدفع الجديد.",
+        "cancelTitle": "إلغاء الاشتراك",
+        "upgradeTitle": "ترقية الباقة",
+        "confirm": "تأكيد",
+        "dismiss": "رجوع"
       },
       "toast": {
         "subscribed": "تم إنشاء الاشتراك! يرجى إكمال الدفع.",

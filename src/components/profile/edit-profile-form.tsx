@@ -324,10 +324,11 @@ export function EditProfileForm() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-4">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setName(profile?.name || "");
                 setEmail(profile?.email || "");
@@ -351,7 +352,7 @@ export function EditProfileForm() {
             <Button
               type="submit"
               disabled={updateProfile.isPending}
-              className="flex items-center gap-2"
+              className="flex w-full sm:w-auto items-center justify-center gap-2"
             >
               {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("buttons.saveChanges")}

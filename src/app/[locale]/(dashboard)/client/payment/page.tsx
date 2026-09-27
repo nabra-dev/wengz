@@ -2,14 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
 import "react-datepicker/dist/react-datepicker.css";
 import "./datepicker.css";
 
 const DatePicker = dynamic(
-  () => import("react-datepicker").then((mod) => mod.default as unknown as React.ComponentType<any>),
+  () =>
+    import("react-datepicker").then((mod) => mod.default as unknown as React.ComponentType<any>),
   { ssr: false }
 );
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileUpload } from "@/components/ui/file-upload";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate } from "@/lib/utils";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { showError, showSuccess } from "@/lib/error-handler";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import {
   Upload,
   Copy,
@@ -183,9 +193,7 @@ function PaymentStatus({
                   subscription.package.name
                 )}
               </CardTitle>
-              <CardDescription>
-                {formatCurrency(subscription.package.price)}
-              </CardDescription>
+              <CardDescription>{formatCurrency(subscription.package.price)}</CardDescription>
             </div>
             <Badge variant={badgeVariant} className="flex items-center gap-1">
               {proof.status === "PENDING" && <Clock className="h-3 w-3" />}
@@ -265,14 +273,22 @@ function CopyButton({
   value,
   copied,
   onCopy,
+  label,
 }: {
   field: string;
   value: string;
   copied: string | null;
   onCopy: (text: string, field: string) => void;
+  label: string;
 }) {
   return (
-    <Button size="sm" variant="ghost" onClick={() => onCopy(value, field)}>
+    <Button
+      size="sm"
+      variant="ghost"
+      className="shrink-0 min-h-9 min-w-9"
+      onClick={() => onCopy(value, field)}
+      aria-label={label}
+    >
       {copied === field ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
     </Button>
   );
@@ -306,11 +322,13 @@ function TransactionsSection({ locale }: { locale: string }) {
           {transactions.map((tx: any) => (
             <Card key={tx.id} className="overflow-hidden">
               <CardHeader className="bg-muted/50">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
                     <CardTitle className="flex items-center gap-2">
-                      <Receipt className="h-5 w-5" />
-                      {resolveLocalizedText(tx.packageNameI18n, locale, tx.packageName)}
+                      <Receipt className="h-5 w-5 shrink-0" />
+                      <span className="truncate">
+                        {resolveLocalizedText(tx.packageNameI18n, locale, tx.packageName)}
+                      </span>
                     </CardTitle>
                     <CardDescription>{formatDate(tx.createdAt, locale)}</CardDescription>
                   </div>
@@ -440,7 +458,7 @@ function BankDetailsCard({
         {/* Transfer Details */}
         <div className="space-y-3">
           {showInstapay && paymentInfo.instapayLink && (
-            <div className="flex items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+            <div className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">{t("bankDetails.instapay")}</p>
                 <a
@@ -457,56 +475,66 @@ function BankDetailsCard({
                 value={paymentInfo.instapayLink}
                 copied={copied}
                 onCopy={onCopy}
+                label={t("bankDetails.copyField", { field: t("bankDetails.instapay") })}
               />
             </div>
           )}
 
           {!showInstapay && (
             <>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
+              <div className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t("bankDetails.bankName")}</p>
-                  <p className="font-medium">{paymentInfo.bankName}</p>
+                  <p className="font-medium break-words">{paymentInfo.bankName}</p>
                 </div>
                 <CopyButton
                   field="bankName"
                   value={paymentInfo.bankName}
                   copied={copied}
                   onCopy={onCopy}
+                  label={t("bankDetails.copyField", { field: t("bankDetails.bankName") })}
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
+              <div className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t("bankDetails.accountName")}</p>
-                  <p className="font-medium">{paymentInfo.accountName}</p>
+                  <p className="font-medium break-words">{paymentInfo.accountName}</p>
                 </div>
                 <CopyButton
                   field="accountName"
                   value={paymentInfo.accountName}
                   copied={copied}
                   onCopy={onCopy}
+                  label={t("bankDetails.copyField", { field: t("bankDetails.accountName") })}
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
+              <div className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t("bankDetails.iban")}</p>
-                  <p className="font-mono font-medium">{paymentInfo.iban}</p>
+                  <p className="font-mono text-sm font-medium break-all">{paymentInfo.iban}</p>
                 </div>
-                <CopyButton field="iban" value={paymentInfo.iban} copied={copied} onCopy={onCopy} />
+                <CopyButton
+                  field="iban"
+                  value={paymentInfo.iban}
+                  copied={copied}
+                  onCopy={onCopy}
+                  label={t("bankDetails.copyField", { field: t("bankDetails.iban") })}
+                />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
+              <div className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t("bankDetails.swiftCode")}</p>
-                  <p className="font-mono font-medium">{paymentInfo.swiftCode}</p>
+                  <p className="font-mono text-sm font-medium break-all">{paymentInfo.swiftCode}</p>
                 </div>
                 <CopyButton
                   field="swiftCode"
                   value={paymentInfo.swiftCode}
                   copied={copied}
                   onCopy={onCopy}
+                  label={t("bankDetails.copyField", { field: t("bankDetails.swiftCode") })}
                 />
               </div>
             </>
@@ -516,7 +544,9 @@ function BankDetailsCard({
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {showInstapay ? t("bankDetails.instapayNote") : paymentInfo.note || t("bankDetails.note")}
+            {showInstapay
+              ? t("bankDetails.instapayNote")
+              : paymentInfo.note || t("bankDetails.note")}
           </AlertDescription>
         </Alert>
       </CardContent>
@@ -649,7 +679,6 @@ function ComingSoonPanel({ methodId }: { methodId: PaymentMethodId }) {
     </Card>
   );
 }
-
 
 // Component for payment proof form
 function PaymentProofForm({
@@ -838,6 +867,8 @@ function PaymentProofForm({
                   maxDate={new Date()}
                   placeholderText={t("uploadProof.transferDatePlaceholder")}
                   required
+                  withPortal
+                  popperPlacement="bottom-start"
                   className={`flex h-10 w-full rounded-md border ${errors.transferDate ? "border-destructive" : "border-input"} bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
                   calendarClassName="!bg-background !border-border"
                   wrapperClassName="w-full"
@@ -896,6 +927,7 @@ export default function PaymentPage() {
   const locale = useLocale();
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>("bank_transfer");
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const { data: pendingSubscriptionData, isLoading: subLoading } =
     trpc.subscription.getPending.useQuery(undefined, {
@@ -909,6 +941,7 @@ export default function PaymentPage() {
       utils.subscription.getPending.invalidate();
       utils.subscription.getActive.invalidate();
       showSuccess(t("toast.cancelled"));
+      setCancelOpen(false);
       router.push("/client/subscription");
     },
     onError: (error) => {
@@ -929,10 +962,9 @@ export default function PaymentPage() {
   };
 
   const availableMethods = paymentInfo?.methods?.filter((m) => m.available && !m.comingSoon) ?? [];
-  const activeSelected =
-    paymentInfo?.methods?.some((m) => m.id === selectedMethod)
-      ? selectedMethod
-      : availableMethods[0]?.id ?? "bank_transfer";
+  const activeSelected = paymentInfo?.methods?.some((m) => m.id === selectedMethod)
+    ? selectedMethod
+    : (availableMethods[0]?.id ?? "bank_transfer");
   const selectedMeta = paymentInfo?.methods?.find((m) => m.id === activeSelected);
   const isManualMethod = activeSelected === "bank_transfer" || activeSelected === "instapay";
   const showManualFlow = Boolean(
@@ -965,35 +997,53 @@ export default function PaymentPage() {
     return <PaymentStatus subscription={pendingSubscription} locale={locale} />;
   }
 
-  const handleCancelSubscription = () => {
-    if (confirm(t("actions.cancelConfirm"))) {
-      cancelMutation.mutate({ subscriptionId: pendingSubscription.id });
-    }
-  };
-
   // Show payment form
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold">{t("completePayment.title")}</h1>
-          <p className="text-muted-foreground">{t("completePayment.subtitle")}</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={handleCancelSubscription}
-          disabled={cancelMutation.isPending}
+      <DashboardPageHeader
+        title={t("completePayment.title")}
+        description={t("completePayment.subtitle")}
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => setCancelOpen(true)}
+            disabled={cancelMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {cancelMutation.isPending ? t("actions.cancelling") : t("actions.cancelSubscription")}
+          </Button>
+        }
+      />
+
+      <ol className="flex flex-wrap gap-2 text-xs sm:text-sm text-muted-foreground">
+        <li className="rounded-full bg-primary/10 px-3 py-1 text-primary font-medium">
+          {t("steps.method")}
+        </li>
+        <li
+          className={`rounded-full px-3 py-1 font-medium ${
+            showManualFlow ? "bg-primary/10 text-primary" : "bg-muted"
+          }`}
         >
-          {cancelMutation.isPending ? t("actions.cancelling") : t("actions.cancelSubscription")}
-        </Button>
-      </div>
+          {t("steps.pay")}
+        </li>
+        <li
+          className={`rounded-full px-3 py-1 font-medium ${
+            showManualFlow ? "bg-primary/10 text-primary" : "bg-muted"
+          }`}
+        >
+          {t("steps.proof")}
+        </li>
+      </ol>
 
       {paymentInfo?.methods && (
-        <PaymentMethodPicker
-          methods={paymentInfo.methods}
-          selected={activeSelected}
-          onSelect={setSelectedMethod}
-        />
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">{t("steps.method")}</h2>
+          <PaymentMethodPicker
+            methods={paymentInfo.methods}
+            selected={activeSelected}
+            onSelect={setSelectedMethod}
+          />
+        </section>
       )}
 
       {(() => {
@@ -1003,19 +1053,25 @@ export default function PaymentPage() {
         if (showManualFlow && paymentInfo) {
           return (
             <div className="grid gap-6 lg:grid-cols-2">
-              <BankDetailsCard
-                subscription={pendingSubscription}
-                paymentInfo={paymentInfo}
-                selectedMethod={activeSelected as "bank_transfer" | "instapay"}
-                copied={copied}
-                onCopy={copyToClipboard}
-                locale={locale}
-              />
-              <PaymentProofForm
-                subscriptionId={pendingSubscription.id}
-                packagePrice={pendingSubscription.package.price}
-                onSuccess={() => utils.subscription.getPending.invalidate()}
-              />
+              <section className="space-y-3 min-w-0">
+                <h2 className="text-sm font-medium text-muted-foreground">{t("steps.pay")}</h2>
+                <BankDetailsCard
+                  subscription={pendingSubscription}
+                  paymentInfo={paymentInfo}
+                  selectedMethod={activeSelected as "bank_transfer" | "instapay"}
+                  copied={copied}
+                  onCopy={copyToClipboard}
+                  locale={locale}
+                />
+              </section>
+              <section className="space-y-3 min-w-0">
+                <h2 className="text-sm font-medium text-muted-foreground">{t("steps.proof")}</h2>
+                <PaymentProofForm
+                  subscriptionId={pendingSubscription.id}
+                  packagePrice={pendingSubscription.package.price}
+                  onSuccess={() => utils.subscription.getPending.invalidate()}
+                />
+              </section>
             </div>
           );
         }
@@ -1024,6 +1080,38 @@ export default function PaymentPage() {
 
       {/* Transaction history */}
       <TransactionsSection locale={locale} />
+
+      <Dialog
+        open={cancelOpen}
+        onOpenChange={(open) => {
+          if (!cancelMutation.isPending) setCancelOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("actions.cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("actions.cancelConfirm")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCancelOpen(false)}
+              disabled={cancelMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {t("actions.dismiss")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => cancelMutation.mutate({ subscriptionId: pendingSubscription.id })}
+              disabled={cancelMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {cancelMutation.isPending ? t("actions.cancelling") : t("actions.confirmCancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

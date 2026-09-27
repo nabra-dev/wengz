@@ -163,7 +163,10 @@ export default function RequestDetailPage() {
       <RequestWorkspace
         info={
           <>
-            <RequestDescription description={request.description} attachments={request.attachments} />
+            <RequestDescription
+              description={request.description}
+              attachments={request.attachments}
+            />
 
             <ProviderDeliverables
               comments={request.comments as any}
@@ -191,11 +194,11 @@ export default function RequestDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-4">
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-4">
                     <Button
                       onClick={handleApprove}
                       disabled={approveRequest.isPending}
-                      className="flex items-center gap-2"
+                      className="flex w-full sm:w-auto items-center justify-center gap-2"
                     >
                       <CheckCircle className="h-4 w-4" />
                       {approveRequest.isPending
@@ -207,9 +210,13 @@ export default function RequestDetailPage() {
                   <Separator />
 
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <RotateCcw className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-blue-600">{t("requestRevision.title")}</span>
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <div className="flex items-center gap-2">
+                        <RotateCcw className="h-4 w-4 text-blue-600 shrink-0" />
+                        <span className="font-medium text-blue-600">
+                          {t("requestRevision.title")}
+                        </span>
+                      </div>
                       {revisionInfo && (
                         <span className="text-sm text-muted-foreground">
                           {revisionInfo.freeRevisionsRemaining > 0 ? (
@@ -302,13 +309,23 @@ export default function RequestDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-2">
+                  <div
+                    className="flex gap-1 sm:gap-2"
+                    role="group"
+                    aria-label={t("rateService.title")}
+                  >
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
                         onClick={() => setRating(star)}
-                        className={`p-1 ${star <= rating ? "text-yellow-500" : "text-gray-300"}`}
+                        aria-label={t("rateService.rateStars", { count: star })}
+                        aria-pressed={star <= rating}
+                        className={`rounded-md p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                          star <= rating
+                            ? "text-yellow-500"
+                            : "text-muted-foreground/40 hover:text-muted-foreground"
+                        }`}
                       >
                         <Star className="h-8 w-8 fill-current" />
                       </button>
@@ -322,7 +339,9 @@ export default function RequestDetailPage() {
                     />
                     {reviewText.length > 0 && (
                       <div className="flex justify-end text-xs text-muted-foreground">
-                        <span>{t("rateService.charactersCount", { count: reviewText.length })}</span>
+                        <span>
+                          {t("rateService.charactersCount", { count: reviewText.length })}
+                        </span>
                       </div>
                     )}
                   </div>

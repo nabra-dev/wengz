@@ -30,7 +30,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-
 type FieldKey = "serviceType" | "title" | "description";
 
 function isAttrAnswerEmpty(answer: string | string[] | undefined): boolean {
@@ -235,16 +234,16 @@ export default function NewRequestPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/client/requests">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
+    <div className="max-w-2xl mx-auto space-y-6 pb-24">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button asChild variant="ghost" size="icon" className="min-h-11 min-w-11 shrink-0">
+          <Link href="/client/requests" aria-label={t("actions.cancel")}>
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          </Link>
+        </Button>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
 
@@ -298,10 +297,10 @@ export default function NewRequestPage() {
       )}
 
       {subscription && serviceTypes?.length === 0 && (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-border bg-muted/40">
           <CardHeader>
-            <CardTitle className="text-blue-800">{t("noServices.title")}</CardTitle>
-            <CardDescription className="text-blue-700">
+            <CardTitle>{t("noServices.title")}</CardTitle>
+            <CardDescription>
               {t("noServices.description", {
                 name:
                   (subscription.package as any)?.nameI18n?.[locale] || subscription.package?.name,
@@ -309,9 +308,9 @@ export default function NewRequestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/client/subscription">
-              <Button>{t("noServices.upgradePackage")}</Button>
-            </Link>
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/client/subscription">{t("noServices.upgradePackage")}</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -319,47 +318,6 @@ export default function NewRequestPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("requestDetails")}</CardTitle>
-          <CardDescription>
-            {selectedServiceType
-              ? (() => {
-                  const hasAttributes = attributeCredits > 0;
-                  const hasPriority = priorityCost > 0;
-
-                  if (hasAttributes && hasPriority) {
-                    return t("costInfoWithAttributes", {
-                      baseCost: baseCreditCost,
-                      credit: baseCreditCost === 1 ? t("credit") : t("credits"),
-                      attributeCost: attributeCredits,
-                      priorityCost,
-                      totalCost: totalCreditCost,
-                      available: subscription?.remainingCredits || 0,
-                    });
-                  } else if (hasAttributes) {
-                    return t("costInfoNoPriorityWithAttributes", {
-                      baseCost: baseCreditCost,
-                      credit: baseCreditCost === 1 ? t("credit") : t("credits"),
-                      attributeCost: attributeCredits,
-                      totalCost: totalCreditCost,
-                      available: subscription?.remainingCredits || 0,
-                    });
-                  } else if (hasPriority) {
-                    return t("costInfo", {
-                      baseCost: baseCreditCost,
-                      credit: baseCreditCost === 1 ? t("credit") : t("credits"),
-                      priorityCost,
-                      totalCost: totalCreditCost,
-                      available: subscription?.remainingCredits || 0,
-                    });
-                  } else {
-                    return t("costInfoNoPriority", {
-                      baseCost: baseCreditCost,
-                      credit: baseCreditCost === 1 ? t("credit") : t("credits"),
-                      available: subscription?.remainingCredits || 0,
-                    });
-                  }
-                })()
-              : t("costInfoNoService", { available: subscription?.remainingCredits || 0 })}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-6" noValidate>
@@ -386,7 +344,7 @@ export default function NewRequestPage() {
                 >
                   <SelectValue placeholder={t("fields.serviceTypePlaceholder")} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[min(100vw-2rem,var(--radix-select-trigger-width))]">
                   {serviceTypes?.map((type: any) => {
                     const creditLabel = type.creditCost === 1 ? t("credit") : t("credits");
                     const supportingPackages = type.supportingPackages || [];
@@ -398,23 +356,37 @@ export default function NewRequestPage() {
                             supportingPackages[0].name
                           )
                         : "";
-                    const unsupportedMessage =
-                      locale === "ar"
-                        ? ` (مدعوم بداية من باقة ${packageName})`
-                        : ` (supported in ${packageName} package)`;
-                    const supportText = type.isSupported ? "" : unsupportedMessage;
+                    const serviceName = resolveLocalizedText(type.nameI18n, locale, type.name);
+                    const creditCost = type.creditCost || 1;
 
                     return (
-                      <SelectItem key={type.id} value={type.id} disabled={!type.isSupported}>
-                        <span className="flex items-center gap-2">
-                          <span>{type.icon}</span>
-                          <span>{resolveLocalizedText(type.nameI18n, locale, type.name)}</span>
-                          <span className="text-xs opacity-70">
-                            • 💳 {type.creditCost || 1} {creditLabel}
+                      <SelectItem
+                        key={type.id}
+                        value={type.id}
+                        disabled={!type.isSupported}
+                        textValue={serviceName}
+                        className="h-auto items-start py-2.5"
+                      >
+                        <span className="flex min-w-0 flex-col gap-1 text-start">
+                          <span className="flex min-w-0 items-center gap-2">
+                            {type.icon ? (
+                              <span className="shrink-0 text-base leading-none" aria-hidden>
+                                {type.icon}
+                              </span>
+                            ) : null}
+                            <span className="min-w-0 flex-1 truncate font-medium leading-snug">
+                              {serviceName}
+                            </span>
+                            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                              {creditCost}
+                              <span className="sr-only"> {creditLabel}</span>
+                            </span>
                           </span>
-                          {!type.isSupported && (
-                            <span className="text-xs opacity-50">{supportText}</span>
-                          )}
+                          {!type.isSupported && packageName ? (
+                            <span className="truncate text-[11px] leading-tight text-muted-foreground">
+                              {t("supportedFromPackage", { name: packageName })}
+                            </span>
+                          ) : null}
                         </span>
                       </SelectItem>
                     );
@@ -427,20 +399,32 @@ export default function NewRequestPage() {
                 </p>
               )}
               {selectedService && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-                  <p className="text-sm text-blue-800">
-                    {resolveLocalizedText(
-                      (selectedService as any).descriptionI18n,
-                      locale,
-                      selectedService.description ?? undefined
-                    )}
-                  </p>
+                <div className="mt-3 space-y-2 rounded-md border border-border bg-muted/40 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 text-sm leading-relaxed text-foreground break-words">
+                      {resolveLocalizedText(
+                        (selectedService as any).descriptionI18n,
+                        locale,
+                        selectedService.description ?? undefined
+                      )}
+                    </p>
+                    <span className="shrink-0 rounded-md bg-background px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground border">
+                      {(selectedService as { creditCost?: number }).creditCost || 1}{" "}
+                      {((selectedService as { creditCost?: number }).creditCost || 1) === 1
+                        ? t("credit")
+                        : t("credits")}
+                    </span>
+                  </div>
                   {!selectedService.isSupported &&
                     (selectedService as any).supportingPackages?.length > 0 && (
-                      <p className="text-xs text-amber-700 font-medium">
-                        {locale === "ar"
-                          ? `⚠️ مدعوم في باقة ${resolveLocalizedText((selectedService as any).supportingPackages[0].nameI18n, locale, (selectedService as any).supportingPackages[0].name)}`
-                          : `⚠️ Supported in ${resolveLocalizedText((selectedService as any).supportingPackages[0].nameI18n, locale, (selectedService as any).supportingPackages[0].name)} package`}
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 break-words">
+                        {t("supportedInPackage", {
+                          name: resolveLocalizedText(
+                            (selectedService as any).supportingPackages[0].nameI18n,
+                            locale,
+                            (selectedService as any).supportingPackages[0].name
+                          ),
+                        })}
                       </p>
                     )}
                 </div>
@@ -563,19 +547,54 @@ export default function NewRequestPage() {
               />
             )}
 
-            <div className="flex gap-4">
-              <Link href="/client/requests">
-                <Button type="button" variant="outline">
-                  {t("actions.cancel")}
-                </Button>
-              </Link>
-              <Button type="submit" disabled={!canAffordService || createRequest.isPending}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-4">
+              <Button asChild type="button" variant="outline" className="w-full sm:w-auto">
+                <Link href="/client/requests">{t("actions.cancel")}</Link>
+              </Button>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={!canAffordService || createRequest.isPending}
+              >
                 {buttonText}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* Sticky cost summary */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:static lg:z-auto lg:rounded-lg lg:border lg:bg-card lg:backdrop-blur-none lg:supports-[backdrop-filter]:bg-card">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-4 lg:py-3 lg:pb-3">
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs text-muted-foreground">{t("costSummary.total")}</p>
+            <p className="text-base font-semibold tabular-nums">
+              {selectedServiceType ? totalCreditCost : "—"}{" "}
+              <span className="text-sm font-normal text-muted-foreground">
+                {totalCreditCost === 1 ? t("credit") : t("credits")}
+              </span>
+            </p>
+          </div>
+          <div className="text-end space-y-0.5 shrink-0">
+            <p className="text-xs text-muted-foreground">{t("costSummary.available")}</p>
+            <p className="text-sm font-medium tabular-nums">
+              {subscription?.remainingCredits ?? 0}
+            </p>
+          </div>
+          {selectedServiceType && subscription && (
+            <div className="hidden sm:block text-end space-y-0.5 shrink-0">
+              <p className="text-xs text-muted-foreground">{t("costSummary.remaining")}</p>
+              <p
+                className={`text-sm font-medium tabular-nums ${
+                  canAffordService ? "" : "text-destructive"
+                }`}
+              >
+                {Math.max(0, (subscription.remainingCredits || 0) - totalCreditCost)}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

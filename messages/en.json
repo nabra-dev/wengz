@@ -410,7 +410,11 @@
       "signOut": "Sign Out",
       "credits": "Credits",
       "creditsCount": "{count, plural, one {# credit} other {# credits}}",
-      "newRequest": "New Request"
+      "newRequest": "New Request",
+      "openMenu": "Open navigation menu",
+      "closeMenu": "Close navigation menu",
+      "closeSidebar": "Close sidebar",
+      "unreadNotifications": "{count, plural, one {# unread notification} other {# unread notifications}}"
     }
   },
   "auth": {
@@ -1384,7 +1388,17 @@
       "revisionCost": "Revision Cost:",
       "freeRevision": "Free Revision:",
       "noAdditionalCost": "No additional cost",
-      "total": "Total:"
+      "total": "Total:",
+      "tooltipBase": "Base: {count}",
+      "tooltipAttributes": "Attributes: {count}",
+      "tooltipPriority": "Priority: {count}",
+      "tooltipRevisions": "Revisions: +{count}",
+      "tooltipRevisionsMultiplied": "Revisions: +{unit} x {multiplier}",
+      "tooltipFreeRevision": "Free Revision"
+    },
+    "workspace": {
+      "details": "Details",
+      "messages": "Messages"
     },
     "description": {
       "title": "Description",
@@ -1662,7 +1676,13 @@
         "instapay": "InstaPay link",
         "instapayTitle": "InstaPay payment",
         "instapayDescription": "Open the InstaPay link, complete the transfer, then upload your receipt.",
-        "instapayNote": "After paying via InstaPay, upload the receipt on the right so we can verify your subscription."
+        "instapayNote": "After paying via InstaPay, upload the receipt on the right so we can verify your subscription.",
+        "copyField": "Copy {field}"
+      },
+      "steps": {
+        "method": "1. Choose method",
+        "pay": "2. Pay",
+        "proof": "3. Upload proof"
       },
       "uploadProof": {
         "title": "Upload Payment Proof",
@@ -1691,7 +1711,10 @@
         "backToSubscription": "Back to Subscription",
         "cancelSubscription": "Cancel Subscription",
         "cancelling": "Cancelling...",
-        "cancelConfirm": "Are you sure you want to cancel this subscription? You will need to subscribe again."
+        "cancelConfirm": "Are you sure you want to cancel this subscription? You will need to subscribe again.",
+        "cancelTitle": "Cancel pending subscription",
+        "confirmCancel": "Yes, cancel",
+        "dismiss": "Keep it"
       },
       "validation": {
         "transferReceiptRequired": "Transfer receipt is required",
@@ -1804,7 +1827,8 @@
         "reviewPlaceholder": "Write a review (optional)...",
         "charactersCount": "{count} characters",
         "submit": "Submit Rating",
-        "submitting": "Submitting..."
+        "submitting": "Submitting...",
+        "rateStars": "Rate {count} stars"
       },
       "yourRating": {
         "title": "Your Rating"
@@ -1856,6 +1880,13 @@
         "title": "No Services Available",
         "description": "Your current package ({name}) does not include any services. Please upgrade to access services.",
         "upgradePackage": "Upgrade Package"
+      },
+      "supportedInPackage": "Supported in {name} package",
+      "supportedFromPackage": "(supported in {name} package)",
+      "costSummary": {
+        "total": "Total cost",
+        "available": "Available",
+        "remaining": "After submit"
       },
       "draftRestored": "We added your message from the home page to this request.",
       "draftTitleFallback": "New request",
@@ -1968,7 +1999,11 @@
       },
       "confirmations": {
         "cancel": "Are you sure you want to cancel your subscription?",
-        "upgrade": "Start an upgrade? Your current plan stays active until the new payment is approved."
+        "upgrade": "Start an upgrade? Your current plan stays active until the new payment is approved.",
+        "cancelTitle": "Cancel subscription",
+        "upgradeTitle": "Upgrade plan",
+        "confirm": "Confirm",
+        "dismiss": "Go back"
       },
       "toast": {
         "subscribed": "Subscription created! Please complete the payment.",

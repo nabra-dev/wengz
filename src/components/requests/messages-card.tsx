@@ -254,7 +254,7 @@ export function MessagesCard({
     <Card
       className={
         isPanel
-          ? "flex h-[min(70vh,44rem)] flex-col overflow-hidden border-border/80 shadow-sm"
+          ? "flex h-[min(50vh,24rem)] md:h-[min(70vh,44rem)] flex-col overflow-hidden border-border/80 shadow-sm"
           : undefined
       }
     >
@@ -262,11 +262,7 @@ export function MessagesCard({
         <CardTitle className={isPanel ? "text-base" : undefined}>{title || t("title")}</CardTitle>
         <CardDescription>{description || t("description")}</CardDescription>
       </CardHeader>
-      <CardContent
-        className={
-          isPanel ? "flex min-h-0 flex-1 flex-col gap-3 pt-0" : "space-y-4"
-        }
-      >
+      <CardContent className={isPanel ? "flex min-h-0 flex-1 flex-col gap-3 pt-0" : "space-y-4"}>
         {comments.length === 0 ? (
           <p
             className={`text-center text-muted-foreground ${isPanel ? "flex flex-1 items-center justify-center py-6" : "py-8"}`}

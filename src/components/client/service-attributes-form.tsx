@@ -148,8 +148,8 @@ export function ServiceAttributesForm({
 
             return (
               <div key={`${attr.question}-${index}`} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor={`attr-${index}`} className="flex items-center gap-1">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <Label htmlFor={`attr-${index}`} className="flex items-center gap-1 min-w-0">
                     {resolveLocalizedText((attr as any).questionI18n, locale, attr.question)}
                     {attr.required && (
                       <span className="text-destructive" aria-hidden>
@@ -158,7 +158,7 @@ export function ServiceAttributesForm({
                     )}
                   </Label>
                   {creditCostLabel && (
-                    <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                    <span className="shrink-0 self-start text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
                       {creditCostLabel}
                     </span>
                   )}
