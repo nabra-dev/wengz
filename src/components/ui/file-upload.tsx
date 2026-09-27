@@ -1,17 +1,31 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- user-uploaded /api/files URLs */
+
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Upload, FileIcon, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
+import {
+  X,
+  Upload,
+  FileIcon,
+  FileText,
+  FileArchive,
+  FileAudio,
+  FileVideo,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import {
-  ALLOWED_UPLOAD_MIME_TYPES,
+  isAllowedUploadMime,
+  resolveUploadMime,
   REQUEST_ATTACHMENT_MAX_MB,
   UPLOAD_ACCEPT_ATTR,
 } from "@/lib/upload-limits";
 import { uploadFileToServer } from "@/lib/upload-client";
+import { prettyFilename, resolveFileKind, type FileKind } from "@/lib/file-display";
+import { AudioPlayer } from "@/components/ui/audio-player";
 
 export interface UploadedFile {
   url: string;
@@ -27,6 +41,51 @@ interface FileUploadProps {
   readonly accept?: string;
   readonly className?: string;
   readonly disabled?: boolean;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function friendlyUploadName(file: UploadedFile, kind: FileKind, voiceLabel: string): string {
+  const pretty = prettyFilename(file.filename);
+  if (kind === "audio") return voiceLabel;
+  if (pretty && !pretty.startsWith(".")) return pretty;
+  const ext = file.filename.includes(".") ? file.filename.split(".").pop() : "";
+  if (kind === "image") return ext ? `Image.${ext}` : "Image";
+  if (kind === "pdf") return ext ? `PDF.${ext}` : "PDF";
+  if (kind === "video") return ext ? `Video.${ext}` : "Video";
+  return ext ? `File.${ext}` : "File";
+}
+
+function KindIcon({ kind }: { readonly kind: FileKind }) {
+  const cls = "h-5 w-5";
+  switch (kind) {
+    case "audio":
+      return <FileAudio className={cls} />;
+    case "video":
+      return <FileVideo className={cls} />;
+    case "pdf":
+      return <FileText className={cls} />;
+    case "archive":
+      return <FileArchive className={cls} />;
+    default:
+      return <FileIcon className={cls} />;
+  }
+}
+
+function createRemoveFileHandler(
+  uploadedFiles: UploadedFile[],
+  setUploadedFiles: (files: UploadedFile[]) => void,
+  onFilesChange: (files: UploadedFile[]) => void
+) {
+  return (index: number) => {
+    const newFiles = uploadedFiles.filter((_, i) => i !== index);
+    setUploadedFiles(newFiles);
+    onFilesChange(newFiles);
+  };
 }
 
 export function FileUpload({
@@ -46,7 +105,7 @@ export function FileUpload({
 
   const uploadFile = useCallback(
     async (file: File): Promise<UploadedFile | null> => {
-      if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
+      if (!isAllowedUploadMime(file.type, file.name)) {
         toast.error(t("invalidFileType"), {
           description: t("invalidFileTypeDesc", { filename: file.name }),
         });
@@ -61,8 +120,12 @@ export function FileUpload({
         return null;
       }
 
+      const mime = resolveUploadMime(file.type, file.name) || file.type;
+      const normalized =
+        mime && mime !== file.type ? new File([file], file.name, { type: mime }) : file;
+
       try {
-        const data = await uploadFileToServer(file, {
+        const data = await uploadFileToServer(normalized, {
           maxSizeBytes,
           onProgress: (p) => setUploadPercent(p.percent),
         });
@@ -99,7 +162,6 @@ export function FileUpload({
       setUploadPercent(0);
 
       const successfulUploads: UploadedFile[] = [];
-      // Serial uploads keep disk/CPU load predictable for large files.
       for (const file of filesToUpload) {
         const result = await uploadFile(file);
         if (result) successfulUploads.push(result);
@@ -116,65 +178,46 @@ export function FileUpload({
 
       setIsUploading(false);
       setUploadPercent(null);
+      if (inputRef.current) inputRef.current.value = "";
     },
-    [uploadedFiles, maxFiles, onFilesChange, t, uploadFile]
-  );
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragActive(false);
-      if (!disabled) {
-        handleFiles(e.dataTransfer.files);
-      }
-    },
-    [disabled, handleFiles]
+    [maxFiles, uploadedFiles, onFilesChange, uploadFile, t]
   );
 
   const removeFile = createRemoveFileHandler(uploadedFiles, setUploadedFiles, onFilesChange);
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith("image/")) {
-      return <ImageIcon className="h-4 w-4 text-blue-500" aria-hidden />;
-    }
-    if (type === "application/pdf") {
-      return <FileText className="h-4 w-4 text-red-500" />;
-    }
-    return <FileIcon className="h-4 w-4 text-gray-500" />;
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (disabled || isUploading) return;
+    void handleFiles(e.dataTransfer.files);
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-4", className)}>
       <section
-        aria-label="File upload drop zone"
+        role="button"
+        tabIndex={0}
+        aria-label={t("clickToUpload")}
         className={cn(
-          "border-2 border-dashed rounded-lg p-4 text-center transition-colors",
-          dragActive
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-muted-foreground/50",
-          disabled && "opacity-50 cursor-not-allowed"
+          "relative rounded-lg border-2 border-dashed p-6 transition-colors",
+          dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25",
+          (disabled || isUploading) && "opacity-60 pointer-events-none"
         )}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+        }}
       >
         <input
           ref={inputRef}
@@ -229,20 +272,15 @@ export function FileUpload({
             {uploadedFiles.map((file, index) => (
               <div
                 key={`${file.url}-${index}`}
-                className="flex items-center gap-2 p-2 bg-muted rounded-md"
+                className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
               >
-                {getFileIcon(file.type)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.filename}</p>
-                  <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                </div>
+                <span className="truncate">{file.filename}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className="h-7 w-7 shrink-0"
                   onClick={() => removeFile(index)}
-                  disabled={disabled}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -255,18 +293,7 @@ export function FileUpload({
   );
 }
 
-function createRemoveFileHandler(
-  uploadedFiles: UploadedFile[],
-  setUploadedFiles: (files: UploadedFile[]) => void,
-  onFilesChange: (files: UploadedFile[]) => void
-) {
-  return (index: number) => {
-    const newFiles = uploadedFiles.filter((_, i) => i !== index);
-    setUploadedFiles(newFiles);
-    onFilesChange(newFiles);
-  };
-}
-
+/** Compact attach control for chat — rich previews, no duplicate filename chips. */
 export function InlineFileUpload({
   onFilesChange,
   maxFiles = 3,
@@ -292,7 +319,7 @@ export function InlineFileUpload({
   }, [JSON.stringify(files)]);
 
   const uploadFile = async (file: File): Promise<UploadedFile | null> => {
-    if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
+    if (!isAllowedUploadMime(file.type, file.name)) {
       toast.error(t("invalidFileType"));
       return null;
     }
@@ -303,8 +330,12 @@ export function InlineFileUpload({
       return null;
     }
 
+    const mime = resolveUploadMime(file.type, file.name) || file.type;
+    const normalized =
+      mime && mime !== file.type ? new File([file], file.name, { type: mime }) : file;
+
     try {
-      const data = await uploadFileToServer(file, {
+      const data = await uploadFileToServer(normalized, {
         maxSizeBytes,
         onProgress: (p) => setUploadPercent(p.percent),
       });
@@ -347,6 +378,7 @@ export function InlineFileUpload({
 
     setIsUploading(false);
     setUploadPercent(null);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const removeFile = createRemoveFileHandler(uploadedFiles, setUploadedFiles, onFilesChange);
@@ -368,7 +400,7 @@ export function InlineFileUpload({
         disabled={disabled || isUploading}
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
@@ -392,35 +424,92 @@ export function InlineFileUpload({
         </Button>
 
         {uploadedFiles.length > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {t("filesAttached", { count: uploadedFiles.length })}
-          </span>
+          <>
+            <span className="text-sm text-muted-foreground">
+              {t("filesAttached", { count: uploadedFiles.length })}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFiles}
+              className="text-xs h-8"
+              disabled={disabled}
+            >
+              {t("clearAll")}
+            </Button>
+          </>
         )}
       </div>
 
       {uploadedFiles.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {uploadedFiles.map((file, index) => (
-            <div
-              key={`${file.url}-${index}`}
-              className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-sm"
-            >
-              <span className="truncate max-w-[150px]">{file.filename}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0"
-                onClick={() => removeFile(index)}
+        <ul className="space-y-2">
+          {uploadedFiles.map((file, index) => {
+            const kind = resolveFileKind(
+              file.url,
+              file.type.startsWith("audio/") ? "voice" : "file"
+            );
+            const name = friendlyUploadName(file, kind, t("voiceNote"));
+            return (
+              <li
+                key={`${file.url}-${index}`}
+                className="relative rounded-lg border bg-muted/40 p-2.5"
               >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
-          <Button type="button" variant="ghost" size="sm" onClick={clearFiles} className="text-xs">
-            {t("clearAll")}
-          </Button>
-        </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute end-1 top-1 h-7 w-7"
+                  onClick={() => removeFile(index)}
+                  disabled={disabled}
+                  aria-label={t("removeFile")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+
+                {kind === "image" ? (
+                  <div className="flex gap-3 pe-8">
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-16 w-16 shrink-0 overflow-hidden rounded-md border bg-muted"
+                    >
+                      <img src={file.url} alt={name} className="h-full w-full object-cover" />
+                    </a>
+                    <div className="min-w-0 self-center">
+                      <p className="truncate text-sm font-medium">{name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
+                  </div>
+                ) : kind === "audio" ? (
+                  <div className="space-y-2 pe-8">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <FileAudio className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      </div>
+                    </div>
+                    <AudioPlayer src={file.url} filename={name} className="w-full" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 pe-8">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                      <KindIcon kind={kind} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

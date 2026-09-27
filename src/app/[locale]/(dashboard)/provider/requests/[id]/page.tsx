@@ -212,9 +212,7 @@ export default function ProviderRequestDetailPage() {
       });
     }
     if (minutes < 60) {
-      return `${minutes} ${
-        minutes === 1 ? t("startWork.minute") : t("startWork.minutesPlural")
-      }`;
+      return `${minutes} ${minutes === 1 ? t("startWork.minute") : t("startWork.minutesPlural")}`;
     }
     if (minutes < 1440) {
       const hours = Number((minutes / 60).toFixed(1));
@@ -224,7 +222,7 @@ export default function ProviderRequestDetailPage() {
     return `~${days} ${days === 1 ? t("startWork.day") : t("startWork.daysPlural")}`;
   })();
 
-  const chatPanel = request.provider ? (
+  const chatPanel = request.providerId ? (
     <MessagesCard
       requestId={requestId}
       comments={request.comments as any}
@@ -236,11 +234,11 @@ export default function ProviderRequestDetailPage() {
       variant="panel"
     />
   ) : (
-    <Card className="border-dashed h-[min(70vh,44rem)] flex flex-col justify-center">
-      <CardHeader className="text-center">
-        <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-        <CardTitle>{t("messages.title")}</CardTitle>
-        <CardDescription>{t("messagingAfterClaim")}</CardDescription>
+    <Card className="border-dashed flex h-[calc(100dvh-14rem)] min-h-[20rem] flex-col justify-center lg:h-[min(75dvh,48rem)]">
+      <CardHeader className="text-center px-4">
+        <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+        <CardTitle className="text-lg">{t("messages.title")}</CardTitle>
+        <CardDescription className="text-sm">{t("messagingAfterClaim")}</CardDescription>
       </CardHeader>
     </Card>
   );

@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { readFile } from "node:fs/promises";
+import { open, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
+import { existsRequestFile, shouldAllowUnclaimedPendingFiles } from "@/lib/file-access";
 import { logger } from "@/lib/logger";
 import { canManageFinance, canManageRequests, isSuperAdmin } from "@/lib/roles";
+import { contentTypeFromFilename } from "@/lib/upload-limits";
 
 export const runtime = "nodejs";
 
@@ -56,6 +58,37 @@ function resolveUploadPath(key: string) {
   return filePath;
 }
 
+/** Parse a single `bytes=start-end` Range header. Returns null if absent/unsatisfiable. */
+function parseBytesRange(
+  rangeHeader: string | null,
+  size: number
+): { start: number; end: number } | null {
+  if (!rangeHeader || size <= 0) return null;
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+  if (!match) return null;
+
+  const startToken = match[1] ?? "";
+  const endToken = match[2] ?? "";
+  let start = startToken === "" ? Number.NaN : Number.parseInt(startToken, 10);
+  let end = endToken === "" ? Number.NaN : Number.parseInt(endToken, 10);
+
+  if (Number.isNaN(start) && Number.isNaN(end)) return null;
+
+  if (Number.isNaN(start)) {
+    // suffix bytes: bytes=-N
+    const suffix = end;
+    if (!Number.isFinite(suffix) || suffix <= 0) return null;
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else if (Number.isNaN(end)) {
+    end = size - 1;
+  }
+
+  if (start < 0 || end < start || start >= size) return null;
+  end = Math.min(end, size - 1);
+  return { start, end };
+}
+
 async function existsPaymentProof(key: string, url: string, userId?: string): Promise<boolean> {
   const proof = await db.paymentProof.findFirst({
     where: {
@@ -80,39 +113,6 @@ async function existsWithdrawalReview(
     select: { id: true },
   });
   return !!withdrawal;
-}
-
-async function existsRequestFile(
-  key: string,
-  url: string,
-  participantUserId?: string
-): Promise<boolean> {
-  const request = await db.request.findFirst({
-    where: {
-      deletedAt: null,
-      ...(participantUserId
-        ? {
-            OR: [
-              { clientId: participantUserId },
-              { providerId: participantUserId },
-              { watchers: { some: { userId: participantUserId } } },
-            ],
-          }
-        : {}),
-      AND: [
-        {
-          OR: [
-            { attachments: { has: url } },
-            { attachments: { has: key } },
-            { comments: { some: { files: { has: url } } } },
-            { comments: { some: { files: { has: key } } } },
-          ],
-        },
-      ],
-    },
-    select: { id: true },
-  });
-  return !!request;
 }
 
 async function existsProfileImage(url: string): Promise<boolean> {
@@ -149,6 +149,8 @@ async function anyGranted(checks: Promise<boolean>[]): Promise<boolean> {
  * - Finance managers for payment proofs / withdrawal review images
  * - the uploader (key is namespaced as uploads/<userId>/...)
  * - any signed-in user when the file is another user's profile photo
+ * - request participants (client, assigned provider, watchers)
+ * - providers browsing unclaimed PENDING jobs (attachments + attribute media)
  * - users who can see a record that references the file
  */
 async function canAccessFile(userId: string, role: string, key: string): Promise<boolean> {
@@ -177,7 +179,12 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
   // Owner / participant paths (clients, providers, watchers)
   checks.push(existsPaymentProof(key, url, userId));
   checks.push(existsWithdrawalReview(key, url, userId));
-  checks.push(existsRequestFile(key, url, userId));
+  checks.push(
+    existsRequestFile(key, url, {
+      participantUserId: userId,
+      allowUnclaimedPending: shouldAllowUnclaimedPendingFiles(role),
+    })
+  );
 
   const allowed = await anyGranted(checks);
   setCachedAcl(userId, key, allowed);
@@ -216,29 +223,59 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const [buffer, metadata] = await Promise.all([
-      readFile(filePath),
+    const [fileStat, metadata] = await Promise.all([
+      stat(filePath),
       readFile(`${filePath}.meta.json`, "utf8")
         .then((value) => JSON.parse(value) as { contentType?: string })
         .catch(() => null),
     ]);
 
-    const contentType = metadata?.contentType || "application/octet-stream";
+    const contentType = contentTypeFromFilename(key, metadata?.contentType);
     const isInlineSafe =
       contentType.startsWith("image/") ||
       contentType.startsWith("audio/") ||
       contentType.startsWith("video/") ||
       contentType === "application/pdf";
 
+    const size = fileStat.size;
+    const range = parseBytesRange(req.headers.get("range"), size);
+
+    const commonHeaders: Record<string, string> = {
+      "Content-Type": contentType,
+      "Accept-Ranges": "bytes",
+      // Private content; short browser reuse cuts repeat ACL hits on a page view.
+      "Cache-Control": "private, max-age=60",
+      ...(isInlineSafe ? {} : { "Content-Disposition": 'attachment; filename="download"' }),
+      "X-Content-Type-Options": "nosniff",
+    };
+
+    // <audio>/<video> need byte ranges for duration + seeking (else 0:00/0:00 on many browsers).
+    if (range) {
+      const length = range.end - range.start + 1;
+      const buffer = Buffer.alloc(length);
+      const handle = await open(filePath, "r");
+      try {
+        await handle.read(buffer, 0, length, range.start);
+      } finally {
+        await handle.close();
+      }
+
+      return new NextResponse(buffer, {
+        status: 206,
+        headers: {
+          ...commonHeaders,
+          "Content-Length": String(length),
+          "Content-Range": `bytes ${range.start}-${range.end}/${size}`,
+        },
+      });
+    }
+
+    const buffer = await readFile(filePath);
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        "Content-Type": contentType,
-        "Content-Length": buffer.length.toString(),
-        // Private content; short browser reuse cuts repeat ACL hits on a page view.
-        "Cache-Control": "private, max-age=60",
-        ...(isInlineSafe ? {} : { "Content-Disposition": 'attachment; filename="download"' }),
-        "X-Content-Type-Options": "nosniff",
+        ...commonHeaders,
+        "Content-Length": String(size),
       },
     });
   } catch (error) {

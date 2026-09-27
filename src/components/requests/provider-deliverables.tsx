@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslations, useLocale } from "next-intl";
 import { formatDateTime, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AudioPlayer } from "@/components/ui/audio-player";
 
 interface Comment {
   id: string;
@@ -40,8 +41,11 @@ export function ProviderDeliverables({
   }
 
   const isImage = (file: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
-  const isVideo = (file: string) => /\.(mp4|webm|mov|avi|mkv|mpeg|flv|3gp)$/i.test(file);
-  const isAudio = (file: string) => /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(file);
+  const isAudio = (file: string) =>
+    /\.(mp3|wav|ogg|m4a|aac)$/i.test(file) || /voice[^/]*\.(webm|mp4|m4a)$/i.test(file);
+  const isVideo = (file: string) =>
+    /\.(mp4|mov|avi|mkv|mpeg|flv|3gp)$/i.test(file) ||
+    (/\.webm$/i.test(file) && !/voice/i.test(file));
 
   const getFileNameFromUrl = (url: string) => {
     const clean = url.split("?")[0];
@@ -126,6 +130,18 @@ export function ProviderDeliverables({
                           );
                         }
 
+                        if (isAudio(file)) {
+                          return (
+                            <div
+                              key={`${comment.id}-file-${fileIdx}`}
+                              className="group p-2 rounded border border-green-200 bg-white col-span-2 sm:col-span-3"
+                            >
+                              <AudioPlayer src={file} className="w-full" filename={displayName} />
+                              <p className="text-xs text-green-700 mt-1 truncate">{displayName}</p>
+                            </div>
+                          );
+                        }
+
                         if (isVideo(file)) {
                           return (
                             <div
@@ -143,20 +159,6 @@ export function ProviderDeliverables({
                                 </video>
                               </div>
                               <p className="text-xs text-green-700 truncate">{displayName}</p>
-                            </div>
-                          );
-                        }
-
-                        if (isAudio(file)) {
-                          return (
-                            <div
-                              key={`${comment.id}-file-${fileIdx}`}
-                              className="group p-2 rounded border border-green-200 bg-white col-span-2 sm:col-span-3"
-                            >
-                              <audio controls src={file} className="w-full" title={displayName}>
-                                <track kind="captions" />
-                              </audio>
-                              <p className="text-xs text-green-700 mt-1 truncate">{displayName}</p>
                             </div>
                           );
                         }

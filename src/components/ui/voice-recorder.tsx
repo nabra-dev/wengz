@@ -8,6 +8,9 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { uploadFileToServer } from "@/lib/upload-client";
 import { DEFAULT_VOICE_MAX_SIZE_MB } from "@/types/service-attributes";
+import { isAudioLikeFile, pickSupportedAudioMime } from "@/lib/audio-recording";
+import { normalizeUploadMime } from "@/lib/upload-limits";
+import { AudioPlayer } from "@/components/ui/audio-player";
 
 interface VoiceRecorderProps {
   readonly value: string[];
@@ -61,7 +64,14 @@ export function VoiceRecorder({
         });
         return null;
       }
-      const file = new File([blob], filename, { type: blob.type || "audio/webm" });
+      if (blob.size === 0) {
+        toast.error(t("uploadFailed"), {
+          description: t("emptyRecording"),
+        });
+        return null;
+      }
+      const type = normalizeUploadMime(blob.type) || "audio/webm";
+      const file = new File([blob], filename, { type });
       try {
         const data = await uploadFileToServer(file, { maxSizeBytes });
         return data.url;
@@ -92,8 +102,10 @@ export function VoiceRecorder({
     if (disabled || isUploading || value.length >= maxFiles) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const picked = pickSupportedAudioMime();
+      const mediaRecorder = picked.mimeType
+        ? new MediaRecorder(stream, { mimeType: picked.mimeType })
+        : new MediaRecorder(stream);
       const chunks: BlobPart[] = [];
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
@@ -101,11 +113,10 @@ export function VoiceRecorder({
       mediaRecorder.onstop = async () => {
         setIsUploading(true);
         try {
-          const blob = new Blob(chunks, { type: mimeType });
-          const url = await uploadBlob(
-            blob,
-            `voice-${Date.now()}.${mimeType.includes("mp4") ? "m4a" : "webm"}`
-          );
+          const blobType =
+            normalizeUploadMime(mediaRecorder.mimeType) || picked.fileType || "audio/webm";
+          const blob = new Blob(chunks, { type: blobType });
+          const url = await uploadBlob(blob, `voice-${Date.now()}.${picked.extension}`);
           if (url) {
             appendUrl(url);
             toast.success(t("recordingSaved"));
@@ -118,7 +129,8 @@ export function VoiceRecorder({
       };
       mediaRecorderRef.current = mediaRecorder;
       streamRef.current = stream;
-      mediaRecorder.start();
+      // Timeslice helps mobile browsers flush chunks before stop.
+      mediaRecorder.start(250);
       setIsRecording(true);
     } catch {
       toast.error(t("micDenied"));
@@ -129,6 +141,11 @@ export function VoiceRecorder({
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      try {
+        mediaRecorderRef.current.requestData();
+      } catch {
+        // older browsers may not support requestData
+      }
       mediaRecorderRef.current.stop();
     }
   };
@@ -147,13 +164,15 @@ export function VoiceRecorder({
       const toUpload = Array.from(files).slice(0, remaining);
       const urls: string[] = [];
       for (const file of toUpload) {
-        if (!file.type.startsWith("audio/")) {
+        if (!isAudioLikeFile(file)) {
           toast.error(t("invalidFileType"), {
             description: t("invalidFileTypeDesc", { filename: file.name }),
           });
           continue;
         }
-        const url = await uploadBlob(file, file.name);
+        const type = normalizeUploadMime(file.type) || "audio/webm";
+        const normalized = new File([file], file.name, { type });
+        const url = await uploadBlob(normalized, file.name);
         if (url) urls.push(url);
       }
       if (urls.length > 0) {
@@ -203,7 +222,7 @@ export function VoiceRecorder({
             <input
               ref={inputRef}
               type="file"
-              accept="audio/*"
+              accept="audio/*,.webm,.m4a,.mp3,.ogg,.wav,.aac"
               multiple={maxFiles > 1}
               className="hidden"
               disabled={busy || atLimit}
@@ -242,7 +261,7 @@ export function VoiceRecorder({
               <FileAudio className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate text-xs font-medium">{filenameFromUrl(url)}</p>
-                <audio controls src={url} className="h-8 w-full max-w-md" preload="metadata" />
+                <AudioPlayer src={url} filename={filenameFromUrl(url)} />
               </div>
               <Button
                 type="button"

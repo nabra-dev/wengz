@@ -1357,6 +1357,8 @@
       "attachFiles": "إرفاق ملفات",
       "filesAttached": "{count, plural, zero {لا توجد ملفات} one {ملف واحد مرفق} two {ملفان مرفقان} few {# ملفات مرفقة} many {# ملفاً مرفقاً} other {# ملف مرفق}}",
       "clearAll": "مسح الكل",
+      "removeFile": "إزالة الملف",
+      "voiceNote": "ملاحظة صوتية",
       "maxFilesShort": "بحد أقصى {maxFiles} ملف",
       "fileTooLargeShort": "الملف كبير جداً (بحد أقصى {maxSize}ميجابايت)"
     },
@@ -1376,8 +1378,13 @@
       "fileTooLargeDesc": "الصوت يتجاوز حد {maxSize}ميجابايت.",
       "uploadFailed": "فشل الرفع",
       "uploadFailedDesc": "فشل رفع الصوت",
+      "emptyRecording": "التسجيل فارغ. سجّل لمدة أطول قليلاً ثم أوقف.",
       "uploadComplete": "اكتمل الرفع",
       "uploadCompleteDesc": "{count, plural, zero {لا توجد ملفات} one {تم رفع ملف صوتي واحد} two {تم رفع ملفين صوتيين} few {تم رفع # ملفات صوتية} many {تم رفع # ملفًا صوتيًا} other {تم رفع # ملف صوتي}}"
+    },
+    "audioPlayer": {
+      "unsupported": "هذا المتصفح لا يستطيع تشغيل صيغة الصوت هذه.",
+      "download": "تحميل الصوت"
     }
   },
   "requests": {
@@ -1409,7 +1416,13 @@
     "description": {
       "title": "الوصف",
       "attachments": "المرفقات ({count})",
-      "attachmentFallback": "مرفق {number}"
+      "attachmentFallback": "مرفق {number}",
+      "kinds": {
+        "image": "صورة",
+        "audio": "صوت",
+        "video": "فيديو",
+        "pdf": "PDF"
+      }
     },
     "stats": {
       "title": "التوقيت والتقييم",
@@ -1457,13 +1470,22 @@
       "description": "تواصل مع الأطراف الأخرى",
       "placeholder": "اكتب رسالتك...",
       "noMessages": "لا توجد رسائل بعد",
+      "noMessagesHint": "ابدأ المحادثة أو أرسل ملاحظة صوتية — ستظهر رسائلك هنا.",
+      "attach": "إرفاق ملفات",
       "system": "النظام",
       "deliverable": "التسليم",
       "attachment": "📎 مرفق {number}",
       "attachmentFallback": "(مرفق)",
       "attachmentsPending": "{count, plural, zero {لا توجد مرفقات قيد الإرسال} one {مرفق واحد قيد الإرسال} two {مرفقان قيد الإرسال} few {# مرفقات قيد الإرسال} many {# مرفقاً قيد الإرسال} other {# مرفق قيد الإرسال}}",
-      "attachmentsSendHint": "اضغط إرسال لإرفاق المرفقات",
+      "attachmentsSendHint": "اضغط إرسال لإرسال رسالتك والمرفقات",
       "voiceNote": "ملاحظة صوتية",
+      "voiceAttached": "تم إرفاق الملاحظة الصوتية",
+      "voiceAttachedHint": "اضغط إرسال لإرسالها مع رسالتك.",
+      "voiceAttachFailed": "فشل إرفاق الملاحظة الصوتية",
+      "micDenied": "تم رفض الوصول إلى الميكروفون أو أنه غير متاح",
+      "maxAttachments": "يمكنك إرفاق حتى 3 ملفات",
+      "stopRecording": "إيقاف التسجيل",
+      "recordingInProgress": "جاري التسجيل… اضغط إيقاف عند الانتهاء",
       "video": "فيديو",
       "image": "صورة",
       "file": "ملف",
@@ -1518,7 +1540,15 @@
       "costBreakdown": "تفاصيل تكلفة الإضافات",
       "noCosts": "لا توجد تكاليف إضافية",
       "credit": "كريدت",
-      "credits": "كريدت"
+      "credits": "كريدت",
+      "fileKinds": {
+        "image": "صورة",
+        "voiceNote": "ملاحظة صوتية",
+        "video": "فيديو",
+        "pdf": "PDF",
+        "archive": "أرشيف",
+        "file": "ملف"
+      }
     }
   },
   "profile": {
@@ -2097,8 +2127,14 @@
         "title": "تم استلام هذه الوظيفة بالفعل",
         "browseJobs": "تصفح الوظائف المتاحة"
       },
+      "alreadyYours": {
+        "title": "لقد استلمت هذه الوظيفة بالفعل",
+        "description": "افتحها من طلباتك لبدء العمل أو متابعة التسليم.",
+        "openRequest": "فتح الطلب"
+      },
       "claimJob": "استلم هذه الوظيفة",
       "claiming": "جاري الاستلام...",
+      "claimFailed": "تعذر استلام هذه الوظيفة",
       "confirmClaim": "هل أنت متأكد أنك تريد استلام هذا الطلب؟"
     },
     "myRequests": {
@@ -2424,6 +2460,10 @@
         "intro": "تم تعيينك للعمل على: <strong>{requestTitle}</strong>",
         "viewButton": "عرض الطلب"
       }
+    },
+    "providerClaimed": {
+      "title": "استلم مزود طلبك",
+      "message": "استلم {providerName} طلب \"{requestTitle}\". سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك."
     },
     "approvalReminder": {
       "title": "يرجى مراجعة التسليم",

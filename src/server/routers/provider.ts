@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import {
   notifyAdminsNewWithdrawal,
   notifyAdminsFinanceDisputeOpened,
+  notifyClientProviderClaimed,
   notifyStatusChange,
 } from "@/lib/notifications";
 import { formatEstimatedDeliveryDuration, getTranslation } from "@/lib/notifications/i18n-helper";
@@ -620,12 +621,16 @@ export const providerRouter = router({
         where: { id: input.requestId },
       });
 
-      // Send notification about provider assignment
-      await notifyStatusChange({
+      // Claim assigns the provider but keeps status PENDING until startWork.
+      // Notify the client only — do not pretend the job is IN_PROGRESS yet.
+      const providerUser = await ctx.db.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      await notifyClientProviderClaimed({
         requestId: input.requestId,
-        userId: request.clientId,
-        oldStatus: "PENDING",
-        newStatus: "IN_PROGRESS",
+        clientId: request.clientId,
+        providerName: providerUser?.name || providerUser?.email || "Provider",
         locale: ctx.locale,
       });
 

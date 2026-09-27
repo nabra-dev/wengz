@@ -7,6 +7,8 @@ import path from "node:path";
 import { logger } from "@/lib/logger";
 import {
   isAllowedUploadMime,
+  normalizeUploadMime,
+  resolveUploadMime,
   REQUEST_ATTACHMENT_MAX_BYTES,
   REQUEST_ATTACHMENT_MAX_MB,
   SINGLE_SHOT_UPLOAD_MAX_BYTES,
@@ -29,10 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rl = rateLimit(
-      `upload:${session.user.id}:${getClientIp(req)}`,
-      UPLOAD_RATE_LIMIT
-    );
+    const rl = rateLimit(`upload:${session.user.id}:${getClientIp(req)}`, UPLOAD_RATE_LIMIT);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many uploads. Please try again shortly." },
@@ -47,7 +46,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!isAllowedUploadMime(file.type)) {
+    if (!isAllowedUploadMime(file.type, file.name)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
 
@@ -62,6 +61,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const contentType =
+      resolveUploadMime(file.type, file.name) || normalizeUploadMime(file.type) || file.type;
     const key = buildFinalObjectKey(session.user.id, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = path.join(STORAGE_ROOT, key);
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
       metadataPath,
       JSON.stringify({
         originalName: file.name,
-        contentType: file.type,
+        contentType,
         size: file.size,
         uploadedAt: new Date().toISOString(),
       })
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
       url: `/api/files/${key}`,
       filename: file.name,
       size: file.size,
-      type: file.type,
+      type: contentType,
     });
   } catch (error) {
     logger.error("Upload error:", error);

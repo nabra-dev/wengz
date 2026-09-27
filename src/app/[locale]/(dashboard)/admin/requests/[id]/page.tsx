@@ -78,11 +78,11 @@ export default function AdminRequestDetailPage() {
       variant="panel"
     />
   ) : (
-    <Card className="border-dashed h-[min(70vh,44rem)] flex flex-col justify-center">
-      <CardHeader className="text-center">
-        <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-        <CardTitle>{t("detail.messagesTitle")}</CardTitle>
-        <CardDescription>{t("detail.messagingAfterClaim")}</CardDescription>
+    <Card className="border-dashed flex h-[calc(100dvh-14rem)] min-h-[20rem] flex-col justify-center lg:h-[min(75dvh,48rem)]">
+      <CardHeader className="text-center px-4">
+        <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+        <CardTitle className="text-lg">{t("detail.messagesTitle")}</CardTitle>
+        <CardDescription className="text-sm">{t("detail.messagingAfterClaim")}</CardDescription>
       </CardHeader>
     </Card>
   );
@@ -122,7 +122,10 @@ export default function AdminRequestDetailPage() {
               completedAt={request.completedAt}
               rating={request.rating}
             />
-            <RequestDescription description={request.description} attachments={request.attachments} />
+            <RequestDescription
+              description={request.description}
+              attachments={request.attachments}
+            />
             {(request as any).attributeResponses &&
               Array.isArray((request as any).attributeResponses) &&
               (request as any).attributeResponses.length > 0 && (

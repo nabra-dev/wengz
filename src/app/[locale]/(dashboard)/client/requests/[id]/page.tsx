@@ -411,11 +411,11 @@ export default function RequestDetailPage() {
               variant="panel"
             />
           ) : (
-            <Card className="border-dashed h-[min(70vh,44rem)] flex flex-col justify-center">
-              <CardHeader className="text-center">
-                <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                <CardTitle>{t("messagesTitle")}</CardTitle>
-                <CardDescription>{t("messagingAfterClaim")}</CardDescription>
+            <Card className="border-dashed flex h-[calc(100dvh-14rem)] min-h-[20rem] flex-col justify-center lg:h-[min(75dvh,48rem)]">
+              <CardHeader className="text-center px-4">
+                <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+                <CardTitle className="text-lg">{t("messagesTitle")}</CardTitle>
+                <CardDescription className="text-sm">{t("messagingAfterClaim")}</CardDescription>
               </CardHeader>
             </Card>
           )

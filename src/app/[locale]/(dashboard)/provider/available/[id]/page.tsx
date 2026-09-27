@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -11,16 +12,20 @@ import { RequestHeader } from "@/components/requests/request-header";
 import { RequestDescription } from "@/components/requests/request-description";
 import { RequestSidebar } from "@/components/requests/request-sidebar";
 import { trpc } from "@/lib/trpc/client";
+import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 
 export default function AvailableJobDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const t = useTranslations("provider.availableDetail");
+  const tErrors = useTranslations();
   const locale = useLocale();
   const requestId = params?.id as string;
   const { markRead } = useProviderRequestUnread();
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     if (requestId) markRead(requestId);
@@ -31,8 +36,17 @@ export default function AvailableJobDetailPage() {
   });
 
   const claimRequest = trpc.provider.claimRequest.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      await Promise.all([
+        utils.request.getById.invalidate({ id: requestId }),
+        utils.provider.getAvailableRequests.invalidate(),
+        utils.provider.getMyRequests.invalidate(),
+        utils.provider.getStats.invalidate(),
+      ]);
       router.push(`/provider/requests/${requestId}`);
+    },
+    onError: (error) => {
+      showError(error, t("claimFailed"), tErrors);
     },
   });
 
@@ -62,8 +76,24 @@ export default function AvailableJobDetailPage() {
     );
   }
 
-  // If already assigned, redirect
-  if (request.provider) {
+  const assignedProviderId = request.providerId ?? request.provider?.id ?? null;
+  const isMine = Boolean(session?.user?.id && assignedProviderId === session.user.id);
+
+  // Already assigned to this provider — continue on the request workspace
+  if (isMine) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold">{t("alreadyYours.title")}</h2>
+        <p className="mt-2 text-muted-foreground">{t("alreadyYours.description")}</p>
+        <Link href={`/provider/requests/${requestId}`}>
+          <Button className="mt-4">{t("alreadyYours.openRequest")}</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  // Assigned to someone else
+  if (assignedProviderId) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold">{t("alreadyClaimed.title")}</h2>

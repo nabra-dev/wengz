@@ -1,68 +1,168 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- user-uploaded /api/files URLs */
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { AttributeResponse, ServiceAttribute } from "@/types/service-attributes";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { useTranslations, useLocale } from "next-intl";
 import { calculateAttributeCreditBreakdown } from "@/lib/attribute-validation";
+import { AudioPlayer } from "@/components/ui/audio-player";
+import {
+  filenameFromUrl,
+  getExtension,
+  prettyFilename,
+  resolveFileKind,
+  type FileKind,
+} from "@/lib/file-display";
+import { cn } from "@/lib/utils";
+import { FileArchive, FileAudio, FileIcon, FileText, FileVideo, ExternalLink } from "lucide-react";
 
 interface AttributeResponsesDisplayProps {
   readonly responses: AttributeResponse[];
   readonly serviceAttributes?: ServiceAttribute[] | null;
 }
 
-const AUDIO_EXTENSIONS = new Set(["webm", "mp3", "mpeg", "ogg", "wav", "m4a", "aac", "mp4"]);
-
-function getExtension(url: string): string {
-  try {
-    const clean = url.split("?")[0] ?? url;
-    const parts = clean.split(".");
-    return parts.length > 1 ? (parts.pop() || "").toLowerCase() : "";
-  } catch {
-    return "";
-  }
-}
-
 function isUploadUrl(value: string): boolean {
   return value.includes("/api/files/");
 }
 
-function isAudioUrl(url: string): boolean {
-  const ext = getExtension(url);
-  if (AUDIO_EXTENSIONS.has(ext)) return true;
-  // Common voice recording name pattern
-  return /voice[-_]?(note|)\d*\.webm/i.test(url) || url.toLowerCase().includes("audio");
-}
-
-function filenameFromUrl(url: string): string {
-  try {
-    const path = url.split("?")[0] ?? url;
-    const part = path.split("/").pop();
-    return part ? decodeURIComponent(part) : url;
-  } catch {
-    return url;
+function kindLabel(kind: FileKind, t: (key: string) => string): string {
+  switch (kind) {
+    case "image":
+      return t("fileKinds.image");
+    case "audio":
+      return t("fileKinds.voiceNote");
+    case "video":
+      return t("fileKinds.video");
+    case "pdf":
+      return t("fileKinds.pdf");
+    case "archive":
+      return t("fileKinds.archive");
+    default:
+      return t("fileKinds.file");
   }
 }
 
-function MediaAnswerItem({ url }: { readonly url: string }) {
-  if (isAudioUrl(url)) {
+function displayNameFor(url: string, kind: FileKind, t: (key: string) => string): string {
+  const raw = filenameFromUrl(url);
+  const pretty = prettyFilename(raw);
+  const ext = getExtension(raw);
+  const label = kindLabel(kind, t);
+
+  // prettyFilename may return only ".jpeg" when the stem was all ids
+  if (!pretty || pretty.startsWith(".")) {
+    return ext ? `${label}.${ext}` : label;
+  }
+  return pretty;
+}
+
+function FileKindIcon({
+  kind,
+  className,
+}: {
+  readonly kind: FileKind;
+  readonly className?: string;
+}) {
+  const cls = cn("h-8 w-8", className);
+  switch (kind) {
+    case "audio":
+      return <FileAudio className={cls} />;
+    case "video":
+      return <FileVideo className={cls} />;
+    case "pdf":
+      return <FileText className={cls} />;
+    case "archive":
+      return <FileArchive className={cls} />;
+    default:
+      return <FileIcon className={cls} />;
+  }
+}
+
+function MediaAnswerItem({
+  url,
+  attributeType,
+}: {
+  readonly url: string;
+  readonly attributeType?: ServiceAttribute["type"];
+}) {
+  const t = useTranslations("requests.attributes");
+  const kind = resolveFileKind(url, attributeType);
+  const name = displayNameFor(url, kind, t);
+
+  if (kind === "audio") {
     return (
-      <div className="space-y-1 rounded-md border bg-muted/30 p-2">
-        <p className="truncate text-xs text-muted-foreground">{filenameFromUrl(url)}</p>
-        <audio controls src={url} className="h-8 w-full max-w-md" preload="metadata" />
+      <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <FileAudio className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{name}</p>
+            <p className="text-xs text-muted-foreground">{t("fileKinds.voiceNote")}</p>
+          </div>
+        </div>
+        <AudioPlayer src={url} filename={name} className="w-full" />
       </div>
     );
   }
 
+  if (kind === "image") {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block overflow-hidden rounded-lg border bg-muted/30 transition-colors hover:bg-muted/50"
+      >
+        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+          <img src={url} alt={name} className="h-full w-full object-cover" />
+        </div>
+        <div className="flex items-center gap-1.5 px-2 py-1.5">
+          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{name}</p>
+          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+      </a>
+    );
+  }
+
+  if (kind === "video") {
+    return (
+      <div className="overflow-hidden rounded-lg border bg-muted/30">
+        <div className="aspect-video bg-muted">
+          <video src={url} controls className="h-full w-full object-cover" title={name}>
+            <track kind="captions" />
+          </video>
+        </div>
+        <p className="truncate px-2 py-1.5 text-xs text-muted-foreground">{name}</p>
+      </div>
+    );
+  }
+
+  // PDF / archive / other — icon card
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex max-w-full items-center truncate text-sm text-primary underline-offset-2 hover:underline"
+      className="group flex items-center gap-3 rounded-lg border bg-muted/40 p-3 transition-colors hover:bg-muted/60"
     >
-      {filenameFromUrl(url)}
+      <span
+        className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-md",
+          kind === "pdf" && "bg-red-500/15 text-red-600 dark:text-red-400",
+          kind === "archive" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+          kind === "other" && "bg-primary/10 text-primary"
+        )}
+      >
+        <FileKindIcon kind={kind} className="h-6 w-6" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{name}</p>
+        <p className="text-xs text-muted-foreground">{kindLabel(kind, t)}</p>
+      </div>
+      <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
     </a>
   );
 }
@@ -81,16 +181,32 @@ function AnswerContent({
     values.some((v) => typeof v === "string" && isUploadUrl(v));
 
   if (looksLikeMedia) {
+    const mediaUrls = values.filter((v): v is string => typeof v === "string" && isUploadUrl(v));
+    const nonMedia = values.filter((v) => typeof v !== "string" || !isUploadUrl(v));
+    const allImages =
+      mediaUrls.length > 0 && mediaUrls.every((u) => resolveFileKind(u, attributeType) === "image");
+
     return (
-      <div className="flex flex-col gap-2">
-        {values.map((item) =>
-          typeof item === "string" && isUploadUrl(item) ? (
-            <MediaAnswerItem key={item} url={item} />
-          ) : (
-            <Badge key={String(item)} variant="secondary">
-              {String(item)}
-            </Badge>
-          )
+      <div className="space-y-2">
+        {mediaUrls.length > 0 && (
+          <div
+            className={cn(
+              allImages ? "grid grid-cols-2 sm:grid-cols-3 gap-2" : "flex flex-col gap-2"
+            )}
+          >
+            {mediaUrls.map((item) => (
+              <MediaAnswerItem key={item} url={item} attributeType={attributeType} />
+            ))}
+          </div>
+        )}
+        {nonMedia.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {nonMedia.map((item) => (
+              <Badge key={String(item)} variant="secondary">
+                {String(item)}
+              </Badge>
+            ))}
+          </div>
         )}
       </div>
     );
@@ -108,7 +224,7 @@ function AnswerContent({
     );
   }
 
-  return <p className="text-foreground">{answer}</p>;
+  return <p className="text-foreground whitespace-pre-wrap">{answer}</p>;
 }
 
 export function AttributeResponsesDisplay({
@@ -122,7 +238,6 @@ export function AttributeResponsesDisplay({
     return null;
   }
 
-  // Build a quick map of per-question costs
   const costItems = serviceAttributes
     ? calculateAttributeCreditBreakdown(serviceAttributes, responses)
     : [];
@@ -146,36 +261,29 @@ export function AttributeResponsesDisplay({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-base">{t("title")}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="pt-0">
+        <ul className="divide-y divide-border/80">
           {responses.map((response, index) => {
             const attr = getAttribute(response, index);
+            const cost = costMap.get(response.question);
             return (
-              <div key={`${response.question}-${index}`} className="space-y-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {getQuestion(response, index)}
-                  </p>
-                  {typeof costMap.get(response.question) === "number" &&
-                    (costMap.get(response.question) as number) > 0 && (
-                      <span className="text-xs font-medium">
-                        +{costMap.get(response.question)}{" "}
-                        {(costMap.get(response.question) as number) === 1
-                          ? t("credit")
-                          : t("credits")}
-                      </span>
-                    )}
+              <li key={`${response.question}-${index}`} className="py-4 first:pt-0 last:pb-0">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium leading-snug">{getQuestion(response, index)}</p>
+                  {typeof cost === "number" && cost > 0 && (
+                    <Badge variant="secondary" className="shrink-0 font-normal">
+                      +{cost} {cost === 1 ? t("credit") : t("credits")}
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-sm">
-                  <AnswerContent answer={response.answer} attributeType={attr?.type} />
-                </div>
-              </div>
+                <AnswerContent answer={response.answer} attributeType={attr?.type} />
+              </li>
             );
           })}
-        </div>
+        </ul>
       </CardContent>
     </Card>
   );

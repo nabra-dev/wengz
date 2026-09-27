@@ -564,6 +564,48 @@ export async function notifyProviderAssignment(params: {
   });
 }
 
+/** Client: a provider claimed their PENDING request (work has not started yet). */
+export async function notifyClientProviderClaimed(params: {
+  requestId: string;
+  clientId: string;
+  providerName: string;
+  locale?: string;
+}) {
+  const { requestId, clientId, providerName, locale = "en" } = params;
+
+  const request = await db.request.findUnique({
+    where: { id: requestId },
+    select: { title: true },
+  });
+
+  if (!request) return;
+
+  const title = await getTranslation(locale, "notifications.providerClaimed.title");
+  const message = await getTranslation(locale, "notifications.providerClaimed.message", {
+    requestTitle: request.title,
+    providerName,
+  });
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "assignment",
+    link: `/client/requests/${requestId}`,
+    requestId,
+    locale,
+    sendEmail: false,
+    sseI18n: {
+      titleKey: "notifications.providerClaimed.title",
+      messageKey: "notifications.providerClaimed.message",
+      messageParams: {
+        requestTitle: request.title,
+        providerName,
+      },
+    },
+  });
+}
+
 export async function notifyApprovalReminder(params: {
   requestId: string;
   clientId: string;

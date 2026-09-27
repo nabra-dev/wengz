@@ -7,6 +7,8 @@ import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import {
   isAllowedUploadMime,
+  normalizeUploadMime,
+  resolveUploadMime,
   REQUEST_ATTACHMENT_MAX_BYTES,
   REQUEST_ATTACHMENT_MAX_MB,
   UPLOAD_CHUNK_SIZE,
@@ -30,10 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rl = rateLimit(
-      `upload-init:${session.user.id}:${getClientIp(req)}`,
-      INIT_RATE_LIMIT
-    );
+    const rl = rateLimit(`upload-init:${session.user.id}:${getClientIp(req)}`, INIT_RATE_LIMIT);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many uploads. Please try again shortly." },
@@ -43,14 +42,18 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as InitBody;
     const filename = typeof body.filename === "string" ? body.filename.trim() : "";
-    const contentType = typeof body.contentType === "string" ? body.contentType : "";
+    const rawContentType = typeof body.contentType === "string" ? body.contentType : "";
+    const contentType =
+      resolveUploadMime(rawContentType, filename) ||
+      normalizeUploadMime(rawContentType) ||
+      rawContentType;
     const size = typeof body.size === "number" ? body.size : Number.NaN;
 
     if (!filename || !contentType || !Number.isFinite(size) || size <= 0) {
       return NextResponse.json({ error: "Invalid upload metadata" }, { status: 400 });
     }
 
-    if (!isAllowedUploadMime(contentType)) {
+    if (!isAllowedUploadMime(contentType, filename)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
 

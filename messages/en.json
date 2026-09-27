@@ -1361,6 +1361,8 @@
       "attachFiles": "Attach Files",
       "filesAttached": "{count, plural, one {# file attached} other {# files attached}}",
       "clearAll": "Clear all",
+      "removeFile": "Remove file",
+      "voiceNote": "Voice note",
       "maxFilesShort": "Max {maxFiles} files",
       "fileTooLargeShort": "File too large (max {maxSize}MB)"
     },
@@ -1380,8 +1382,13 @@
       "fileTooLargeDesc": "Audio exceeds the {maxSize}MB limit.",
       "uploadFailed": "Upload failed",
       "uploadFailedDesc": "Failed to upload audio",
+      "emptyRecording": "Recording was empty. Hold a bit longer, then stop.",
       "uploadComplete": "Upload complete",
       "uploadCompleteDesc": "{count, plural, one {# audio file uploaded.} other {# audio files uploaded.}}"
+    },
+    "audioPlayer": {
+      "unsupported": "This browser can’t play this audio format.",
+      "download": "Download audio"
     }
   },
   "requests": {
@@ -1413,7 +1420,13 @@
     "description": {
       "title": "Description",
       "attachments": "Attachments ({count})",
-      "attachmentFallback": "Attachment {number}"
+      "attachmentFallback": "Attachment {number}",
+      "kinds": {
+        "image": "Image",
+        "audio": "Audio",
+        "video": "Video",
+        "pdf": "PDF"
+      }
     },
     "stats": {
       "title": "Timing & rating",
@@ -1461,13 +1474,22 @@
       "description": "Communicate with other parties",
       "placeholder": "Type your message...",
       "noMessages": "No messages yet",
+      "noMessagesHint": "Say hello or send a voice note — your message will show up here.",
+      "attach": "Attach files",
       "system": "System",
       "deliverable": "Deliverable",
       "attachment": "📎 Attachment {number}",
       "attachmentFallback": "(Attachment)",
       "attachmentsPending": "{count, plural, one {# attachment pending} other {# attachments pending}}",
-      "attachmentsSendHint": "Press Send to include attachments",
+      "attachmentsSendHint": "Press Send to deliver your message and attachments",
       "voiceNote": "Voice note",
+      "voiceAttached": "Voice note attached",
+      "voiceAttachedHint": "Press Send to deliver it with your message.",
+      "voiceAttachFailed": "Failed to attach voice note",
+      "micDenied": "Microphone access was denied or unavailable",
+      "maxAttachments": "You can attach up to 3 files",
+      "stopRecording": "Stop recording",
+      "recordingInProgress": "Recording… tap stop when finished",
       "video": "Video",
       "image": "Image",
       "file": "File",
@@ -1522,7 +1544,15 @@
       "costBreakdown": "Add-ons Cost Breakdown",
       "noCosts": "No add-on costs",
       "credit": "credit",
-      "credits": "credits"
+      "credits": "credits",
+      "fileKinds": {
+        "image": "Image",
+        "voiceNote": "Voice note",
+        "video": "Video",
+        "pdf": "PDF",
+        "archive": "Archive",
+        "file": "File"
+      }
     }
   },
   "profile": {
@@ -2105,8 +2135,14 @@
         "title": "This job has already been claimed",
         "browseJobs": "Browse Available Jobs"
       },
+      "alreadyYours": {
+        "title": "You already claimed this job",
+        "description": "Open it from your requests to start work or continue delivery.",
+        "openRequest": "Open Request"
+      },
       "claimJob": "Claim This Job",
       "claiming": "Claiming...",
+      "claimFailed": "Could not claim this job",
       "confirmClaim": "Are you sure you want to claim this request?"
     },
     "myRequests": {
@@ -2432,6 +2468,10 @@
         "intro": "You have been assigned to work on: <strong>{requestTitle}</strong>",
         "viewButton": "View Request"
       }
+    },
+    "providerClaimed": {
+      "title": "Provider claimed your request",
+      "message": "{providerName} claimed \"{requestTitle}\". They will start work and share an estimated delivery time next."
     },
     "approvalReminder": {
       "title": "Please review your deliverable",
