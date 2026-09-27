@@ -37,6 +37,8 @@ export type ActivityAction =
   | "wallet.payout"
   | "wallet.settle"
   | "admin.user_update"
+  | "contact.submit"
+  | "contact.status"
   | "cron.subscriptions"
   | "cron.deliveredApprovals"
   | "cron.releaseProviderHolds"

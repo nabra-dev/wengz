@@ -865,3 +865,51 @@ export async function sendPasswordResetEmail(params: {
     html: template.html,
   });
 }
+
+export async function notifyAdminsContactMessage(params: {
+  fullName: string;
+  email: string;
+  topic?: string | null;
+  messageId: string;
+  locale?: string;
+}) {
+  const { fullName, email, topic, messageId, locale = "en" } = params;
+
+  const admins = await db.user.findMany({
+    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
+    select: { id: true },
+  });
+
+  const title = await getTranslation(locale, "notifications.contactMessage.title");
+  const message = await getTranslation(locale, "notifications.contactMessage.message", {
+    fullName,
+    email,
+    topic: topic || "—",
+  });
+  const link = `/admin/contacts?id=${messageId}`;
+
+  await Promise.all(
+    admins.map(async (admin) =>
+      createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type: "general",
+        link,
+        sendEmail: false,
+        locale,
+        sseI18n: {
+          titleKey: "notifications.contactMessage.title",
+          messageKey: "notifications.contactMessage.message",
+          messageParams: {
+            fullName,
+            email,
+            topic: topic || "—",
+          },
+        },
+      })
+    )
+  );
+
+  return { notifiedAdmins: admins.length };
+}

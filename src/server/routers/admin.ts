@@ -2787,4 +2787,87 @@ export const adminRouter = router({
         user: updatedUser,
       };
     }),
+
+  getContactMessages: adminProcedure
+    .input(
+      z
+        .object({
+          status: z.enum(["NEW", "READ", "ARCHIVED"]).optional(),
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const where = {
+        ...(input?.status ? { status: input.status } : {}),
+      };
+
+      const rows = await ctx.db.contactMessage.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit + 1,
+        ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      });
+
+      let nextCursor: string | null = null;
+      if (rows.length > limit) {
+        const next = rows.pop();
+        nextCursor = next?.id ?? null;
+      }
+
+      return { messages: rows, nextCursor };
+    }),
+
+  getContactMessage: adminProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const message = await ctx.db.contactMessage.findUnique({ where: { id: input.id } });
+      if (!message) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Contact message not found" });
+      }
+      return message;
+    }),
+
+  updateContactMessageStatus: adminProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+        status: z.enum(["NEW", "READ", "ARCHIVED"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.contactMessage.findUnique({ where: { id: input.id } });
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Contact message not found" });
+      }
+
+      const updated = await ctx.db.contactMessage.update({
+        where: { id: input.id },
+        data: {
+          status: input.status,
+          readAt:
+            input.status === "READ" || input.status === "ARCHIVED"
+              ? (existing.readAt ?? new Date())
+              : null,
+          readById:
+            input.status === "READ" || input.status === "ARCHIVED"
+              ? (existing.readById ?? ctx.session.user.id)
+              : null,
+        },
+      });
+
+      logActivityAsync({
+        action: "contact.status",
+        message: `Contact message marked ${input.status}: ${updated.email}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "ContactMessage",
+        entityId: updated.id,
+        metadata: { status: input.status, email: updated.email },
+      });
+
+      return updated;
+    }),
 });

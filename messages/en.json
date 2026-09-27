@@ -291,7 +291,7 @@
   "forms": {
     "toast": {
       "sentTitle": "Sent",
-      "sentDesc": "Thanks — we’ll get back to you soon.",
+      "sentDesc": "Thanks — your message is in our system inbox.",
       "pendingTitle": "Application received",
       "pendingDesc": "Thanks — an admin will review your creator application before you can sign in.",
       "reapplyTitle": "Application re-submitted",
@@ -341,6 +341,30 @@
         "digital": "Digital strategy & growth",
         "other": "Other"
       }
+    },
+    "contact": {
+      "badge": "We're here to help",
+      "title": "Contact Wengz",
+      "subtitle": "Send a message and we’ll get back within 1–2 business days. Prefer email? Reach us anytime at info@wengz.tech.",
+      "emailLabel": "Email us",
+      "responseTime": "Typical reply time: 1–2 business days",
+      "quickLinks": "Quick links",
+      "ctaRegister": "Create a client account",
+      "ctaProvider": "Apply as a creator",
+      "topicLabel": "Topic",
+      "topics": {
+        "general": "General inquiry",
+        "support": "Account & support",
+        "partnership": "Partnership",
+        "billing": "Billing & packages"
+      },
+      "namePlaceholder": "Your name",
+      "emailPlaceholder": "you@company.com",
+      "messagePlaceholder": "How can we help?",
+      "messageTooShort": "Please write a bit more detail (at least 10 characters).",
+      "successTitle": "Message sent",
+      "successDesc": "Thanks — our team can see your message in the admin inbox and will follow up soon.",
+      "sendAnother": "Send another message"
     }
   },
   "notFound": {
@@ -376,6 +400,7 @@
         "payments": "Payments",
         "finance": "Finance",
         "activity": "Activity",
+        "contacts": "Contacts",
         "notifications": "Notifications",
         "packages": "Packages",
         "services": "Services",
@@ -477,6 +502,33 @@
     }
   },
   "admin": {
+    "contacts": {
+      "title": "Contact messages",
+      "subtitle": "Messages submitted from the public contact form",
+      "listTitle": "Inbox",
+      "listDesc": "Open a message to view details and reply by email",
+      "empty": "No messages in this view",
+      "tabs": {
+        "new": "New",
+        "read": "Read",
+        "archived": "Archived",
+        "all": "All"
+      },
+      "status": {
+        "new": "New",
+        "read": "Read",
+        "archived": "Archived"
+      },
+      "actions": {
+        "archive": "Archive",
+        "restore": "Restore",
+        "close": "Close"
+      },
+      "toast": {
+        "updated": "Message updated",
+        "error": "Could not update message"
+      }
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "Configure platform-wide options",
@@ -2461,6 +2513,10 @@
       "title": "New Payment Verification Required",
       "message": "{clientNameOrEmail} submitted a payment proof: {amount} {currency}."
     },
+    "contactMessage": {
+      "title": "New contact message",
+      "message": "{fullName} ({email}) — {topic}"
+    },
     "newRequestAvailable": {
       "title": "New Request Available",
       "message": "New {serviceName} request: \"{requestTitle}\""
@@ -2598,10 +2654,10 @@
     },
     "contact": {
       "metaTitle": "Contact Wengz",
-      "metaDescription": "Contact Wengz for account help, creator applications, or general support.",
+      "metaDescription": "Contact Wengz for support, partnerships, billing, or general questions.",
       "title": "Contact",
       "updated": "We typically reply within 1–2 business days",
-      "intro": "Register for a client account, apply as a creator, or email us — we’ll help you take the next step.",
+      "intro": "Send us a message — we’ll help you take the next step.",
       "sections": {
         "email": {
           "title": "Email",

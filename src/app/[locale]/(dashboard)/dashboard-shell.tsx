@@ -30,6 +30,7 @@ import {
   Settings2,
   ScrollText,
   Plus,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { getInitials } from "@/lib/utils";
@@ -86,6 +87,12 @@ const adminNavConfig = [
     href: "/admin/activity",
     labelKey: "admin.activity",
     icon: ScrollText,
+    access: "platform" as const,
+  },
+  {
+    href: "/admin/contacts",
+    labelKey: "admin.contacts",
+    icon: MessageSquare,
     access: "platform" as const,
   },
   {

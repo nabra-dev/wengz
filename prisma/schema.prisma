@@ -540,3 +540,33 @@ enum FinanceDisputeStatus {
   RESOLVED
   REJECTED
 }
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+/// Public contact-form submissions (admin inbox — not email).
+model ContactMessage {
+  id            String               @id @default(cuid())
+  type          String               // general | client | provider
+  topic         String?
+  fullName      String
+  email         String
+  phone         String
+  company       String               @default("")
+  website       String               @default("")
+  message       String
+  serviceLabels String               @default("")
+  status        ContactMessageStatus @default(NEW)
+  ip            String?
+  readAt        DateTime?
+  readById      String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([email])
+}
