@@ -1,7 +1,11 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { setSseNotificationSender } from "@/lib/notifications";
-import { getSseClients, sendNotificationToUser } from "@/lib/notifications/sse-utils";
+import {
+  addSseClient,
+  removeSseClient,
+  sendNotificationToUser,
+} from "@/lib/notifications/sse-utils";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
 import { logger } from "@/lib/logger";
 
@@ -22,7 +26,6 @@ export async function GET(request: Request) {
   }
 
   const userId = session.user.id;
-  const clients = getSseClients();
 
   // Extract locale from cookies on this connection
   const cookieHeader = request.headers.get("cookie") || "";
@@ -30,8 +33,8 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream({
     start(controller) {
-      // Store the connection with locale
-      clients.set(userId, { controller, locale });
+      const conn = { controller, locale };
+      addSseClient(userId, conn);
 
       // Send initial connection message
       controller.enqueue(
@@ -45,14 +48,14 @@ export async function GET(request: Request) {
         } catch {
           // Failed to enqueue, connection likely closed
           clearInterval(heartbeat);
-          clients.delete(userId);
+          removeSseClient(userId, controller);
         }
       }, 30000); // Every 30 seconds
 
       // Cleanup on close
       request.signal.addEventListener("abort", () => {
         clearInterval(heartbeat);
-        clients.delete(userId);
+        removeSseClient(userId, controller);
         try {
           controller.close();
         } catch {

@@ -415,6 +415,16 @@
       "closeMenu": "Close navigation menu",
       "closeSidebar": "Close sidebar",
       "unreadNotifications": "{count, plural, one {# unread notification} other {# unread notifications}}"
+    },
+    "alerts": {
+      "connectionLost": "Live updates disconnected. Refresh the page if notifications stop arriving.",
+      "enableTitle": "Stay updated",
+      "enableDescription": "Enable alerts so you hear and see new messages even when you're in another tab.",
+      "enableMobileDescription": "Tap enable so notification sounds work on this device. Keep the app open to receive live updates.",
+      "enableIosPwaDescription": "Add Wengz to your Home Screen, then enable notifications for alerts when the app is in the background.",
+      "enableButton": "Enable alerts",
+      "enableSoundButton": "Enable sounds",
+      "enabledToast": "Alerts enabled"
     }
   },
   "auth": {

@@ -218,78 +218,76 @@ export function DashboardShell({
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Mobile header */}
-      <div className="lg:hidden sticky top-0 z-50 flex h-14 sm:h-16 items-center gap-2 sm:gap-3 border-b bg-background px-3 sm:px-4 pt-[env(safe-area-inset-top)]">
+      <div className="lg:hidden sticky top-0 z-50 flex h-14 sm:h-16 items-center gap-1.5 border-b bg-background px-2 sm:px-3 pt-[env(safe-area-inset-top)]">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? tNav("closeMenu") : tNav("openMenu")}
           aria-expanded={sidebarOpen}
-          className="min-h-11 min-w-11 h-11 w-11 shrink-0"
+          className="h-10 w-10 shrink-0"
         >
-          {sidebarOpen ? (
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
-          ) : (
-            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-          )}
+          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <Link href={basePath} className="flex min-w-0 flex-1 items-center gap-2">
-          <BrandLogo className="h-8 sm:h-9" />
+
+        <Link href={basePath} className="flex shrink-0 items-center me-auto pe-1">
+          <BrandLogo className="h-7 sm:h-8" />
         </Link>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           {isClient && (
             <Button
               asChild
-              size="sm"
-              className="h-9 gap-1.5 px-2.5 font-semibold shadow-sm sm:h-10 sm:px-3"
+              size="icon"
+              className="h-10 w-10 shrink-0 shadow-sm"
+              title={tNav("newRequest")}
             >
               <Link href="/client/requests/new" aria-label={tNav("newRequest")}>
-                <Plus className="h-4 w-4 shrink-0" />
-                <span className="text-xs sm:text-sm">{tNav("newRequest")}</span>
+                <Plus className="h-5 w-5" />
               </Link>
             </Button>
           )}
+
           {clientCredits !== null && (
             <Link
               href="/client/subscription"
               className={
                 creditsLow
-                  ? "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-2 text-destructive shadow-sm transition-colors hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-10 sm:gap-2 sm:px-2.5"
-                  : "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-2 text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-10 sm:gap-2 sm:px-2.5"
+                  ? "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 text-destructive transition-colors hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  : "inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-border bg-muted/50 px-2.5 text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               }
               aria-label={tNav("creditsCount", { count: clientCredits })}
             >
-              <span
+              <CreditCard
                 className={
                   creditsLow
-                    ? "flex h-6 w-6 items-center justify-center rounded-full bg-destructive/15"
-                    : "flex h-6 w-6 items-center justify-center rounded-full bg-primary/10"
+                    ? "h-3.5 w-3.5 shrink-0 text-destructive"
+                    : "h-3.5 w-3.5 shrink-0 text-primary"
                 }
-              >
-                <CreditCard
-                  className={
-                    creditsLow ? "h-3.5 w-3.5 text-destructive" : "h-3.5 w-3.5 text-primary"
-                  }
-                />
-              </span>
-              <span className="text-sm font-semibold tabular-nums sm:text-base">
+              />
+              <span className="text-sm font-semibold tabular-nums leading-none">
                 {clientCredits}
-              </span>
-              <span className="pe-0.5 text-[11px] font-medium text-muted-foreground max-[360px]:hidden">
-                {tNav("credits")}
               </span>
             </Link>
           )}
-          {notificationsHref && unreadCount > 0 && (
+
+          {notificationsHref && (
             <Link
               href={notificationsHref}
-              className="shrink-0"
-              aria-label={tNav("unreadNotifications", { count: unreadCount })}
+              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={
+                unreadCount > 0
+                  ? tNav("unreadNotifications", { count: unreadCount })
+                  : tNav("client.notifications")
+              }
               onClick={() => setSidebarOpen(false)}
             >
-              <Badge variant="destructive" className="h-7 min-w-7 justify-center px-1.5 text-xs">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Badge>
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Link>
           )}
         </div>

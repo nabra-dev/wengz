@@ -1,10 +1,19 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { supportsWebNotifications } from "@/lib/device-detection";
 
 interface RealtimeNotification {
   type: "message" | "status_change" | "assignment" | "general" | "connected";
@@ -26,6 +35,9 @@ interface NotificationContextType {
   hasPermission: boolean;
   unreadCount: number;
   refreshUnreadCount: () => void;
+  soundUnlocked: boolean;
+  unlockSound: () => Promise<boolean>;
+  supportsSystemNotifications: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -34,43 +46,95 @@ const NotificationContext = createContext<NotificationContextType>({
   hasPermission: false,
   unreadCount: 0,
   refreshUnreadCount: () => {},
+  soundUnlocked: false,
+  unlockSound: async () => false,
+  supportsSystemNotifications: false,
 });
 
-// Helper function to calculate reconnection delay
-function calculateReconnectDelay(attempts: number): number {
-  const baseDelay = 1000; // 1 second
-  const maxDelay = 30000; // 30 seconds
-  const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempts - 1), maxDelay);
-  const jitter = Math.random() * 1000;
-  return exponentialDelay + jitter;
+const SOUND_SRC = "/sounds/notification.wav";
+const SOUND_UNLOCKED_KEY = "wengz:notificationSoundUnlocked";
+
+let sharedAudio: HTMLAudioElement | null = null;
+let soundUnlockedFlag = false;
+
+function getSharedAudio(): HTMLAudioElement | null {
+  if (typeof window === "undefined") return null;
+  if (!sharedAudio) {
+    sharedAudio = new Audio(SOUND_SRC);
+    sharedAudio.preload = "auto";
+    sharedAudio.volume = 1;
+  }
+  return sharedAudio;
 }
 
-// Helper function to play notification sound
-// Plays the custom notification.wav audio file
+async function unlockNotificationSound(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const audio = getSharedAudio();
+    if (!audio) return false;
+
+    audio.muted = true;
+    audio.currentTime = 0;
+    await audio.play();
+    audio.pause();
+    audio.currentTime = 0;
+    audio.muted = false;
+
+    soundUnlockedFlag = true;
+    try {
+      localStorage.setItem(SOUND_UNLOCKED_KEY, "true");
+    } catch {
+      // ignore quota / private mode
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function playNotificationSound() {
-  // Check if we're in browser environment
   if (typeof window === "undefined" || typeof document === "undefined") {
     return;
   }
 
   try {
-    const audio = new Audio("/sounds/notification.wav");
-    audio.volume = 1; // Set volume to 100%
-    audio.play().catch((error) => {
-      // Silently fail if audio is not allowed (e.g., no user interaction yet)
-      // This is expected for the first notification before any user interaction
-      if (!error.message.includes("user didn't interact")) {
+    const audio = getSharedAudio();
+    if (!audio) return;
 
-      }
+    // Prefer the unlocked shared element; fall back to a fresh instance
+    if (soundUnlockedFlag) {
+      audio.currentTime = 0;
+      void audio.play().catch(() => {
+        // Still blocked — ignore
+      });
+      return;
+    }
+
+    const fallback = new Audio(SOUND_SRC);
+    fallback.volume = 1;
+    void fallback.play().catch(() => {
+      // Autoplay blocked until user gesture
     });
-  } catch (error) {
-
+  } catch {
+    // ignore
   }
 }
 
-// Helper function to handle notification navigation
-function navigateToNotification(targetPath: string, currentPath: string, router: any) {
-  if (currentPath === targetPath) {
+function calculateReconnectDelay(attempts: number): number {
+  const baseDelay = 1000;
+  const maxDelay = 30000;
+  const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempts - 1), maxDelay);
+  const jitter = Math.random() * 1000;
+  return exponentialDelay + jitter;
+}
+
+function navigateToNotification(
+  targetPath: string,
+  currentPath: string,
+  router: { push: (href: string) => void }
+) {
+  if (normalizePath(currentPath) === normalizePath(targetPath)) {
     globalThis.location.reload();
   } else {
     router.push(targetPath);
@@ -85,20 +149,56 @@ function normalizePath(path: string): string {
 export function NotificationProvider({ children }: { readonly children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const locale = useLocale();
   const t = useTranslations();
   const [isConnected, setIsConnected] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [soundUnlocked, setSoundUnlocked] = useState(false);
+  const [supportsSystemNotifications] = useState(() =>
+    typeof window === "undefined" ? false : supportsWebNotifications()
+  );
 
-  // Check initial permission
+  const reconnectAttemptsRef = useRef(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Restore prior sound unlock preference and unlock on first gesture
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (localStorage.getItem(SOUND_UNLOCKED_KEY) === "true") {
+        soundUnlockedFlag = true;
+        setSoundUnlocked(true);
+        getSharedAudio();
+      }
+    } catch {
+      // ignore
+    }
+
+    const unlockOnGesture = () => {
+      void unlockNotificationSound().then((ok) => {
+        if (ok) setSoundUnlocked(true);
+      });
+    };
+
+    const opts: AddEventListenerOptions = { once: true, passive: true };
+    window.addEventListener("pointerdown", unlockOnGesture, opts);
+    window.addEventListener("keydown", unlockOnGesture, opts);
+    window.addEventListener("touchstart", unlockOnGesture, opts);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockOnGesture);
+      window.removeEventListener("keydown", unlockOnGesture);
+      window.removeEventListener("touchstart", unlockOnGesture);
+    };
+  }, []);
+
   useEffect(() => {
     if (globalThis.window !== undefined && "Notification" in globalThis) {
       queueMicrotask(() => setHasPermission(Notification.permission === "granted"));
     }
   }, []);
 
-  // Fetch unread notification count
   const fetchUnreadCount = useCallback(async () => {
     if (status !== "authenticated" || !session?.user) return;
 
@@ -108,12 +208,11 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         const data = await response.json();
         setUnreadCount(data.count || 0);
       }
-    } catch (error) {
-
+    } catch {
+      // ignore
     }
   }, [session, status]);
 
-  // Fetch initial count
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -124,7 +223,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         const data = await response.json();
         if (!cancelled) setUnreadCount(data.count || 0);
       } catch {
-        // ignore network errors for badge count
+        // ignore
       }
     })();
     return () => {
@@ -132,8 +231,23 @@ export function NotificationProvider({ children }: { readonly children: React.Re
     };
   }, [session, status]);
 
+  const unlockSound = useCallback(async () => {
+    const ok = await unlockNotificationSound();
+    if (ok) setSoundUnlocked(true);
+    return ok;
+  }, []);
+
   const requestPermission = useCallback(async () => {
+    // Unlock sound in the same user gesture
+    await unlockNotificationSound().then((ok) => {
+      if (ok) setSoundUnlocked(true);
+    });
+
     if (globalThis.window === undefined || !("Notification" in globalThis)) {
+      return false;
+    }
+
+    if (!supportsWebNotifications()) {
       return false;
     }
 
@@ -148,8 +262,7 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         const granted = permission === "granted";
         setHasPermission(granted);
         return granted;
-      } catch (error) {
-
+      } catch {
         return false;
       }
     }
@@ -159,12 +272,17 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
   const showDesktopNotification = useCallback(
     (notification: RealtimeNotification) => {
-      if (hasPermission && notification.title) {
-        new Notification(notification.title, {
-          body: notification.message,
-          icon: "/images/logo.svg",
-          badge: "/images/logo.svg",
-        });
+      if (!supportsWebNotifications()) return;
+      if (hasPermission && notification.title && "Notification" in globalThis) {
+        try {
+          new Notification(notification.title, {
+            body: notification.message,
+            icon: "/images/logo.svg",
+            badge: "/images/logo.svg",
+          });
+        } catch {
+          // Some mobile browsers throw even when permission is granted
+        }
       }
     },
     [hasPermission]
@@ -176,26 +294,26 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
       const currentPath = globalThis.location.pathname;
 
-      const linkWithLocale = (() => {
+      const linkForNav = (() => {
         if (!notification.link) return undefined;
         const path = notification.link;
-        const first = path
-          .split("/")
-          .filter(Boolean)
-          .find(() => true);
+        const segments = path.split("/").filter(Boolean);
+        const first = segments[0];
         const locales = ["en", "ar"];
-        const startsWithLocale = locales.includes(first as any);
-        if (startsWithLocale) return path;
-        const normalized = path.startsWith("/") ? path : `/${path}`;
-        return `/${locale}${normalized}`;
+        // i18n router expects paths without locale prefix
+        if (locales.includes(first as "en" | "ar")) {
+          const rest = segments.slice(1).join("/");
+          return rest ? `/${rest}` : "/";
+        }
+        return path.startsWith("/") ? path : `/${path}`;
       })();
 
       toast.info(notification.title, {
         description: notification.message,
-        action: linkWithLocale
+        action: linkForNav
           ? {
               label: t("admin.requests.actions.view"),
-              onClick: () => navigateToNotification(linkWithLocale, currentPath, router),
+              onClick: () => navigateToNotification(linkForNav, currentPath, router),
             }
           : undefined,
       });
@@ -205,14 +323,14 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
       const eventDetail: NotificationEventDetail = {
         notification,
-        link: linkWithLocale,
+        link: linkForNav,
       };
       globalThis.dispatchEvent(
         new CustomEvent<NotificationEventDetail>("wengz:notification", { detail: eventDetail })
       );
 
       const normalizedCurrentPath = normalizePath(currentPath);
-      const normalizedTargetPath = linkWithLocale ? normalizePath(linkWithLocale) : "";
+      const normalizedTargetPath = linkForNav ? normalizePath(linkForNav) : "";
       const isCurrentRequestPath =
         normalizedTargetPath.length > 0 &&
         normalizedCurrentPath === normalizedTargetPath &&
@@ -225,10 +343,9 @@ export function NotificationProvider({ children }: { readonly children: React.Re
         );
       }
 
-      // Play notification sound
       playNotificationSound();
     },
-    [router, showDesktopNotification, locale, t, fetchUnreadCount]
+    [router, showDesktopNotification, t, fetchUnreadCount]
   );
 
   useEffect(() => {
@@ -236,42 +353,46 @@ export function NotificationProvider({ children }: { readonly children: React.Re
       return;
     }
 
-    let es: EventSource | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let isMounted = true;
-    let reconnectAttempts = 0;
+
+    const clearReconnect = () => {
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
+    };
 
     const scheduleReconnect = (connect: () => void) => {
       const maxAttempts = 10;
-      reconnectAttempts += 1;
+      reconnectAttemptsRef.current += 1;
 
-      if (reconnectAttempts > maxAttempts) {
+      if (reconnectAttemptsRef.current > maxAttempts) {
         toast.error(t("client.notifications.title"), {
-          description: t("client.notifications.noNotificationsDesc"),
+          description: t("dashboard.alerts.connectionLost"),
           duration: 10000,
         });
         return;
       }
 
-      const delay = calculateReconnectDelay(reconnectAttempts);
-
+      const delay = calculateReconnectDelay(reconnectAttemptsRef.current);
+      clearReconnect();
       reconnectTimeout = setTimeout(() => {
-        if (isMounted) {
-          connect();
-        }
+        if (isMounted) connect();
       }, delay);
     };
 
     const handleOpen = () => {
       if (!isMounted) return;
       setIsConnected(true);
-      reconnectAttempts = 0;
+      reconnectAttemptsRef.current = 0;
     };
 
     const handleError = (connect: () => void) => {
       if (!isMounted) return;
       setIsConnected(false);
-      es?.close();
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
       scheduleReconnect(connect);
     };
 
@@ -280,12 +401,10 @@ export function NotificationProvider({ children }: { readonly children: React.Re
 
       try {
         const notification: RealtimeNotification = JSON.parse(event.data);
-
         if (notification.type === "connected") return;
-
         handleNotificationMessage(notification);
-      } catch (error) {
-
+      } catch {
+        // ignore malformed payloads
       }
     };
 
@@ -293,34 +412,58 @@ export function NotificationProvider({ children }: { readonly children: React.Re
       if (!isMounted) return;
 
       try {
-        es = new EventSource("/api/notifications/sse");
+        eventSourceRef.current?.close();
+        const es = new EventSource("/api/notifications/sse");
+        eventSourceRef.current = es;
         es.onopen = () => handleOpen();
         es.onerror = () => handleError(connect);
         es.onmessage = handleMessage;
-      } catch (error) {
+      } catch {
+        if (isMounted) setIsConnected(false);
+      }
+    };
 
-        if (isMounted) {
-          setIsConnected(false);
+    const forceReconnect = () => {
+      if (!isMounted) return;
+      reconnectAttemptsRef.current = 0;
+      clearReconnect();
+      connect();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Phone sleep / tab switch often kills EventSource — reconnect when returning
+        if (!eventSourceRef.current || eventSourceRef.current.readyState === EventSource.CLOSED) {
+          forceReconnect();
+        } else if (eventSourceRef.current.readyState === EventSource.CONNECTING) {
+          // already reconnecting
+        } else {
+          void fetchUnreadCount();
         }
       }
     };
 
+    const onOnline = () => {
+      forceReconnect();
+      void fetchUnreadCount();
+    };
+
     connect();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("pageshow", onOnline);
 
     return () => {
       isMounted = false;
-
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-
-      if (es) {
-        es.close();
-      }
-
+      clearReconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("pageshow", onOnline);
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
       setIsConnected(false);
     };
-  }, [session, status, handleNotificationMessage, t]);
+  }, [session, status, handleNotificationMessage, t, fetchUnreadCount]);
 
   const contextValue = useMemo(
     () => ({
@@ -329,8 +472,20 @@ export function NotificationProvider({ children }: { readonly children: React.Re
       hasPermission,
       unreadCount,
       refreshUnreadCount: fetchUnreadCount,
+      soundUnlocked,
+      unlockSound,
+      supportsSystemNotifications,
     }),
-    [isConnected, requestPermission, hasPermission, unreadCount, fetchUnreadCount]
+    [
+      isConnected,
+      requestPermission,
+      hasPermission,
+      unreadCount,
+      fetchUnreadCount,
+      soundUnlocked,
+      unlockSound,
+      supportsSystemNotifications,
+    ]
   );
 
   return (
