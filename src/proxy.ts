@@ -177,8 +177,9 @@ export const config = {
     /*
      * Match app routes, plus robots/sitemap/manifest so www→apex applies to crawl files.
      * Other dotted static assets stay on nginx (or Next static) without this middleware.
+     * Exclude sentry-tunnel so the Sentry same-origin proxy is not rewritten/blocked.
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
+    "/((?!api|sentry-tunnel|_next/static|_next/image|favicon.ico|.*\\..*).*)",
     "/robots.txt",
     "/sitemap.xml",
     "/manifest.json",

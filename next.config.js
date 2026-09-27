@@ -60,8 +60,7 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      urlPattern: ({ url }) =>
-        /\.(?:js)$/i.test(url.pathname) && !url.pathname.startsWith("/api/"),
+      urlPattern: ({ url }) => /\.(?:js)$/i.test(url.pathname) && !url.pathname.startsWith("/api/"),
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "static-js-assets",
@@ -216,6 +215,9 @@ module.exports = withSentryConfig(withNextIntl(withPWA(nextConfig)), {
   silent: true,
   // Upload source maps only when auth token is present (optional in CI).
   widenClientFileUpload: true,
+  // Same-origin tunnel avoids CORS / ad-block failures to ingest.*.sentry.io
+  // (e.g. Search Console crawlers, privacy browsers).
+  tunnelRoute: "/sentry-tunnel",
   webpack: {
     treeshake: {
       removeDebugLogging: true,

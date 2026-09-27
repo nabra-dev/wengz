@@ -18,6 +18,7 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 import { ServicesBento } from "@/components/landing/services-bento";
 import { PackagesCarousel } from "@/components/landing/packages-carousel";
 import { InfoSection } from "@/components/landing/info-section";
+import type { PublicPackage } from "@/lib/public-packages";
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
@@ -117,7 +118,7 @@ interface Package {
       id: string;
       name: string;
       nameI18n?: Record<string, string>;
-      icon: string;
+      icon: string | null;
     };
   }>;
 }
@@ -135,7 +136,11 @@ const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 
 type HeroChatPhase = "idle" | "awaitingReply" | "showingReply" | "error";
 
-export default function LandingPage() {
+export default function LandingPage({
+  initialPackages = [],
+}: {
+  initialPackages?: PublicPackage[];
+}) {
   const locale = useLocale();
   const t = useTranslations();
   const formatCurrency = useFormatCurrency();
@@ -159,13 +164,15 @@ export default function LandingPage() {
     isLoading: isPackagesLoading,
     isError: isPackagesError,
   } = trpc.admin.getPublicPackages.useQuery(undefined, {
+    initialData: initialPackages,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: true,
+    refetchOnMount: initialPackages.length === 0,
     retry: 2,
   });
 
-  const packages: Package[] = packagesData ?? [];
+  const packages: Package[] = (packagesData as Package[] | undefined) ?? [];
   const showPackagesSkeleton = isPackagesLoading && packages.length === 0;
 
   useEffect(() => {

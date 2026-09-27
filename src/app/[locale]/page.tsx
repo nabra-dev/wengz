@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LandingServiceJsonLd } from "@/components/seo/json-ld";
 import { LandingClient } from "@/components/landing/landing-client";
 import { buildPageMetadata } from "@/lib/seo";
+import { getPublicPackages } from "@/lib/public-packages";
 
 export async function generateMetadata({
   params,
@@ -21,17 +22,16 @@ export async function generateMetadata({
   });
 }
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  // Prefetch packages on the server so Googlebot (and users) get pricing HTML
+  // without needing a client XHR to /api/trpc (disallowed for most bots).
+  const initialPackages = await getPublicPackages().catch(() => []);
 
   return (
     <>
       <LandingServiceJsonLd locale={locale} />
-      <LandingClient />
+      <LandingClient initialPackages={initialPackages} />
     </>
   );
 }

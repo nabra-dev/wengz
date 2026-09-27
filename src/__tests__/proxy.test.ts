@@ -289,19 +289,17 @@ describe("Proxy Middleware Logic", () => {
 
   describe("Regex pattern matching", () => {
     it("should match the middleware config pattern", () => {
-      // Pattern from config.matcher: "/((?!api/|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)"
-      const pattern =
-        /^\/((?!api\/|_next\/static|_next\/image|favicon\.ico|robots\.txt|sitemap\.xml|manifest\.json|.*\..*).*)/;
+      // Pattern from config.matcher (excludes api, sentry-tunnel, _next, favicon, dotted files)
+      const pattern = /^\/((?!api|sentry-tunnel|_next\/static|_next\/image|favicon\.ico|.*\..*).*)/;
 
       const shouldMatch = ["/", "/en", "/ar", "/admin", "/en/admin/users", "/ar/client/requests"];
 
       const shouldNotMatch = [
         "/api/health",
+        "/sentry-tunnel",
         "/_next/static/chunk.js",
         "/_next/image",
         "/favicon.ico",
-        "/robots.txt",
-        "/manifest.json",
         "/images/logo.png",
         "/sw.js",
       ];

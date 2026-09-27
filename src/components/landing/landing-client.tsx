@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { TRPCProvider } from "@/components/providers/trpc-provider";
+import type { PublicPackage } from "@/lib/public-packages";
 
 const LandingPage = dynamic(() => import("@/components/landing/landing-page"), {
   ssr: true,
@@ -12,10 +13,10 @@ const LandingPage = dynamic(() => import("@/components/landing/landing-page"), {
   ),
 });
 
-export function LandingClient() {
+export function LandingClient({ initialPackages = [] }: { initialPackages?: PublicPackage[] }) {
   return (
     <TRPCProvider>
-      <LandingPage />
+      <LandingPage initialPackages={initialPackages} />
     </TRPCProvider>
   );
 }

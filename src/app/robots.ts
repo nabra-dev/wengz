@@ -17,7 +17,12 @@ export default function robots(): MetadataRoute.Robots {
     "/ar/client/",
     "/ar/provider/",
     "/ar/admin/",
+    "/sentry-tunnel",
   ];
+
+  // Public tRPC used by the landing page during JS rendering (packages, etc.).
+  // Longer Allow path wins over Disallow /api/ for Googlebot.
+  const googlebotAllows = ["/api/trpc/", "/images/"];
 
   return {
     rules: [
@@ -28,7 +33,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: "Googlebot",
-        allow: "/",
+        allow: ["/", ...googlebotAllows],
         disallow: privatePrefixes,
       },
       {

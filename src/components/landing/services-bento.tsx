@@ -31,7 +31,7 @@ const BENTO_IMG = {
   video: "/images/landing/bento-imgs/video.png",
   production: "/images/landing/bento-imgs/production.png",
   voice: "/images/landing/bento-imgs/voice.png",
-  workflow: "/images/landing/bento-imgs/workflow.png",
+  workflow: "/images/landing/workflow.png",
 } as const;
 
 const TILES: ServiceTile[] = [

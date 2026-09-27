@@ -416,46 +416,9 @@ export const adminRouter = router({
     })
     .input(z.void())
     .output(z.array(z.any()))
-    .query(async ({ ctx }) => {
-      return getOrSetCached(
-        cacheKeys.PACKAGES,
-        () =>
-          ctx.db.package.findMany({
-            where: {
-              isActive: true,
-              deletedAt: null,
-              isFreePackage: false,
-            },
-            select: {
-              id: true,
-              name: true,
-              nameI18n: true,
-              description: true,
-              descriptionI18n: true,
-              price: true,
-              credits: true,
-              durationDays: true,
-              features: true,
-              featuresI18n: true,
-              sortOrder: true,
-              isFeatured: true,
-              services: {
-                select: {
-                  serviceType: {
-                    select: {
-                      id: true,
-                      name: true,
-                      nameI18n: true,
-                      icon: true,
-                    },
-                  },
-                },
-              },
-            },
-            orderBy: { sortOrder: "asc" },
-          }),
-        cacheTTL.PACKAGES
-      );
+    .query(async () => {
+      const { getPublicPackages } = await import("@/lib/public-packages");
+      return getPublicPackages();
     }),
 
   // Get dashboard stats
