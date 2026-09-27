@@ -769,9 +769,18 @@ export default function LandingPage({
                         >
                           {getLocalizedText(pkg.name, pkg.nameI18n)}
                         </h3>
-                        <p className={`${FONT_SIZES.body.small} mb-6 flex-grow text-center`}>
+                        <p className={`${FONT_SIZES.body.small} mb-3 text-center`}>
                           {pkg.credits} {t("common.credits")}
                         </p>
+                        {getLocalizedText(pkg.description, pkg.descriptionI18n) ? (
+                          <p
+                            className={`${FONT_SIZES.body.small} mb-6 text-pretty text-center text-muted-foreground`}
+                          >
+                            {getLocalizedText(pkg.description, pkg.descriptionI18n)}
+                          </p>
+                        ) : (
+                          <div className="mb-6" />
+                        )}
 
                         <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-wengz-yellow-line" />
 
@@ -785,17 +794,15 @@ export default function LandingPage({
                         </div>
 
                         <ul className="mb-8 flex-grow space-y-2 sm:space-y-3">
-                          {getPackageFeatures(pkg)
-                            .slice(0, 4)
-                            .map((feature, featureIdx) => (
-                              <li
-                                key={`${pkg.id}-${featureIdx}`}
-                                className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
-                              >
-                                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
+                          {getPackageFeatures(pkg).map((feature, featureIdx) => (
+                            <li
+                              key={`${pkg.id}-${featureIdx}`}
+                              className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
+                            >
+                              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
                         </ul>
 
                         <Button

@@ -196,6 +196,11 @@ export default function SubscriptionPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
+                    {(pkgData.descriptionI18n?.[locale] || pkgData.description) && (
+                      <p className="mb-4 text-sm text-pretty text-muted-foreground">
+                        {pkgData.descriptionI18n?.[locale] || pkgData.description}
+                      </p>
+                    )}
                     <ul className="space-y-3">
                       <li className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-primary" />
@@ -219,24 +224,14 @@ export default function SubscriptionPage() {
                         </li>
                       )}
 
-                      {pkgData.featuresI18n
-                        ? (pkgData.featuresI18n[locale] || pkg.features).map(
-                            (feature: string, i: number) => (
-                              <li
-                                key={`${pkg.id}-feature-${i}`}
-                                className="flex items-center gap-2"
-                              >
-                                <Check className="h-4 w-4 text-green-500" />
-                                <span className="text-sm">{feature}</span>
-                              </li>
-                            )
-                          )
-                        : pkg.features.map((feature: string, i: number) => (
-                            <li key={`${pkg.id}-feature-${i}`} className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span className="text-sm">{feature}</span>
-                            </li>
-                          ))}
+                      {(pkgData.featuresI18n?.[locale] || pkg.features).map(
+                        (feature: string, i: number) => (
+                          <li key={`${pkg.id}-feature-${i}`} className="flex items-start gap-2">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                            <span className="text-sm">{feature}</span>
+                          </li>
+                        )
+                      )}
                     </ul>
                   </CardContent>
                   <CardFooter className="mt-auto">

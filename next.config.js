@@ -147,27 +147,16 @@ const nextConfig = {
     return config;
   },
   async headers() {
-    // Public marketing pages — allow CDN/shared caches once cookies aren't forcing private.
+    // Only cache URLs with an explicit locale prefix (or crawl files). Unprefixed
+    // marketing paths are cookie-sensitive under `localePrefix: "as-needed"` —
+    // public caching there previously trapped AR→EN switches via `/` → `/ar`.
     const publicCache = [
       {
         key: "Cache-Control",
         value: "public, s-maxage=3600, stale-while-revalidate=86400",
       },
     ];
-    const publicPaths = [
-      "/",
-      "/privacy",
-      "/terms",
-      "/contact",
-      "/forms/provider",
-      "/ar",
-      "/ar/privacy",
-      "/ar/terms",
-      "/ar/contact",
-      "/ar/forms/provider",
-      "/robots.txt",
-      "/sitemap.xml",
-    ];
+    const publicPaths = ["/robots.txt", "/sitemap.xml"];
     return [
       {
         source: "/:path*",

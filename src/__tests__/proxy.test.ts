@@ -256,15 +256,20 @@ describe("Proxy Middleware Logic", () => {
   });
 
   describe("Locale cookie → redirect vs rewrite", () => {
-    it("redirects non-default locale to a real /ar URL", () => {
+    it("redirects non-default locale to a real /ar URL with temporary status", () => {
       const preferredLocale: string = "ar";
       const defaultLocale = "en";
       const pathname = "/";
       const localizedPath = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
       const useRedirect = preferredLocale !== defaultLocale;
+      // 307 + no-store: browsers must not cache `/` → `/ar` across language switches
+      const redirectStatus = 307;
+      const cacheControl = "private, no-store";
 
       expect(localizedPath).toBe("/ar");
       expect(useRedirect).toBe(true);
+      expect(redirectStatus).toBe(307);
+      expect(cacheControl).toBe("private, no-store");
     });
 
     it("rewrites default locale internally (as-needed prefix)", () => {

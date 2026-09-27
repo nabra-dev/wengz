@@ -16,6 +16,7 @@ import { GtmPageView } from "@/components/analytics/gtm-page-view";
 import { brandName, buildPageMetadata } from "@/lib/seo";
 import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
 import { DeploymentRecovery } from "@/components/system/deployment-recovery";
+import { LocaleHtmlUpdater } from "@/components/system/locale-html-updater";
 
 /** Only inject GTM when explicitly configured — no hardcoded fallback. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -134,6 +135,7 @@ export default async function LocaleLayout({
             <NextIntlClientProvider locale={locale} messages={messages}>
               {GTM_ID ? <GtmPageView /> : null}
               <DeploymentRecovery />
+              <LocaleHtmlUpdater locale={locale} />
               {children}
               <Toaster position="top-right" richColors closeButton />
               <PWAInstallPrompt />

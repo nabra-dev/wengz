@@ -109,7 +109,7 @@ export function PackagesCarousel({ packages, isLoading, isError }: PackagesCarou
                   <h3 className="mb-2 text-base font-semibold leading-7 text-foreground">
                     {getLocalized(pkg.name, pkg.nameI18n)}
                   </h3>
-                  <p className="line-clamp-3 min-h-[5.25rem] text-sm leading-8 text-muted-foreground">
+                  <p className="text-sm leading-8 text-muted-foreground">
                     {getLocalized(pkg.description, pkg.descriptionI18n) ||
                       `${pkg.credits} ${tCommon("credits")} · ${formatCurrency(pkg.price)}`}
                   </p>

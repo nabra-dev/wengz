@@ -7,6 +7,17 @@ import { CANONICAL_HOST } from "./lib/seo";
 
 const handleI18nRouting = createMiddleware(routing);
 
+/**
+ * Locale preference redirects must never be cached (308 + public Cache-Control on `/`
+ * previously trapped AR→EN switches: `/en` → `/` → cached `/ar`).
+ */
+function localeRedirect(url: URL, locale: (typeof routing.locales)[number]): NextResponse {
+  const response = NextResponse.redirect(url, 307);
+  response.headers.set("Cache-Control", "private, no-store");
+  response.cookies.set("NEXT_LOCALE", locale, { path: "/", sameSite: "lax" });
+  return response;
+}
+
 /** WordPress / CMS scanners and similar probes — return 404 without rendering pages. */
 function isProbeNoise(pathname: string): boolean {
   const path = pathname.toLowerCase();
@@ -85,7 +96,8 @@ function handlePublicRouting(req: NextRequest) {
     const normalizedPath = `/${segments[0]}${segments.slice(2).length ? `/${segments.slice(2).join("/")}` : ""}`;
     const url = req.nextUrl.clone();
     url.pathname = normalizedPath || "/";
-    return NextResponse.redirect(url, 308);
+    // 307: URL shape can change with user preference; never cache permanently.
+    return localeRedirect(url, segments[0] as (typeof routing.locales)[number]);
   }
 
   const hasLocale = routing.locales.includes(firstSegment as (typeof routing.locales)[number]);
@@ -101,15 +113,18 @@ function handlePublicRouting(req: NextRequest) {
     const localizedPath = `/${preferredLocale}${pathname === "/" ? "" : pathname}`;
 
     // Non-default locale must be a real URL so canonical and request path match for crawlers.
+    // Must be temporary + uncacheable: a cached 308 `/` → `/ar` traps language switches to EN.
     if (preferredLocale !== routing.defaultLocale) {
       const url = req.nextUrl.clone();
       url.pathname = localizedPath;
-      return NextResponse.redirect(url, 308);
+      return localeRedirect(url, preferredLocale);
     }
 
     const url = req.nextUrl.clone();
     url.pathname = localizedPath;
-    return NextResponse.rewrite(url);
+    const rewrite = NextResponse.rewrite(url);
+    rewrite.cookies.set("NEXT_LOCALE", preferredLocale, { path: "/", sameSite: "lax" });
+    return rewrite;
   }
 
   return handleI18nRouting(req);
