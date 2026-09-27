@@ -38,12 +38,14 @@ Logged-in users can **change password** from their profile Security tab. Anyone 
 
 ## Provider earnings and withdrawals
 
-Completed request work is settled into a **provider wallet** (credits + USD) using two **global** settings (not per service):
+Completed request work is settled into a **provider wallet** (credits + USD) using **global** finance settings (not per service):
 
-- **Credit price (USD)** — value of one credit for settlement (e.g. `$1`).
-- **Platform commission (%)** — share taken from gross settlement before the provider is credited (e.g. `10%`).
+- **Credit price (USD)** — value of one credit for settlement (production: `$0.008`).
+- **Platform commission (%)** — share taken from gross settlement before the provider is credited (production: `0%`).
+- **Min withdrawal (USD)** / **Withdrawal fee (USD)** — provider cash-out thresholds (production: min `$1`, fee `$0`).
+- **Payment instructions** — bank + InstaPay details shown to clients (seeded from production).
 
-Example: a request costing `500` credits with `$1`/credit and `10%` commission settles as **$500** gross, **$50** platform, **$450** / **450** credits to the provider.
+Example: a request costing `500` credits with `$0.008`/credit and `0%` commission settles as **$4.00** gross to the provider.
 
 **Settlement is not immediately withdrawable.** On client approval, the provider share is credited as **on hold** for **7 days** (`PROVIDER_EARNINGS_HOLD_DAYS`). It appears in the wallet (held balance + ledger status) but cannot be withdrawn until a release job moves it to **available**. Withdrawal requests only draw from available balance.
 
