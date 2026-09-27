@@ -437,7 +437,7 @@ export default function LandingPage({
 
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
-        <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:justify-center md:pb-20">
+        <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
           <div className="pointer-events-none absolute inset-0 z-0 min-h-0 overflow-hidden">
             <Image
               src="/images/hero.png"
@@ -468,8 +468,8 @@ export default function LandingPage({
             />
           </div>
 
-          <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col px-4 sm:px-6 lg:px-10">
-            <div className={`max-w-xl ${textDirectionClass}`}>
+          <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
+            <div className={`max-w-xl pt-4 sm:pt-8 md:pt-12 ${textDirectionClass}`}>
               <motion.h1
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -491,10 +491,14 @@ export default function LandingPage({
             </div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mx-auto mt-8 w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-14 sm:rounded-3xl sm:p-4"
+              className={`mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-opacity duration-300 sm:rounded-3xl sm:p-4 ${
+                heroChatPhase === "idle"
+                  ? "opacity-40 hover:opacity-100 focus-within:opacity-100"
+                  : "opacity-100"
+              }`}
             >
               <div className="relative min-h-[4.5rem]">
                 {heroChatPhase === "showingReply" ? (
@@ -724,7 +728,7 @@ export default function LandingPage({
               </p>
             </div>
 
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 pt-2 sm:gap-8 sm:pt-3 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 pt-2 sm:gap-8 sm:pt-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {showPackagesSkeleton && (
                 <div className="col-span-full flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -818,6 +822,58 @@ export default function LandingPage({
                     </div>
                   );
                 })}
+              {!showPackagesSkeleton && (
+                <div className="group relative transition-transform duration-200 hover:-translate-y-1">
+                  <div className="relative flex h-full flex-col overflow-visible rounded-2xl border border-dashed border-[#690DD4]/45 bg-card p-5 transition-all duration-300 hover:border-[#690DD4]/70 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8">
+                    <h3
+                      className={`${FONT_SIZES.cardTitle.main} mb-2 text-center font-semibold text-foreground`}
+                    >
+                      {t("landing.pricing.custom.name")}
+                    </h3>
+                    <p className={`${FONT_SIZES.body.small} mb-3 text-center`}>
+                      {t("landing.pricing.custom.creditsLabel")}
+                    </p>
+                    <p
+                      className={`${FONT_SIZES.body.small} mb-6 text-pretty text-center text-muted-foreground`}
+                    >
+                      {t("landing.pricing.custom.description")}
+                    </p>
+
+                    <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-wengz-yellow-line" />
+
+                    <div className="mb-6">
+                      <div className="mb-1 text-center text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                        {t("landing.pricing.custom.priceLabel")}
+                      </div>
+                      <p className={`${FONT_SIZES.body.small} text-center`}>
+                        {t("landing.pricing.perMonth")}
+                      </p>
+                    </div>
+
+                    <ul className="mb-8 flex-grow space-y-2 sm:space-y-3">
+                      {(t.raw("landing.pricing.custom.features") as string[]).map(
+                        (feature, featureIdx) => (
+                          <li
+                            key={`custom-pkg-${featureIdx}`}
+                            className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
+                          >
+                            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                            <span>{feature}</span>
+                          </li>
+                        )
+                      )}
+                    </ul>
+
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="mt-auto h-11 w-full rounded-full border-border bg-transparent text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      <Link href="/contact">{t("landing.pricing.custom.cta")}</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

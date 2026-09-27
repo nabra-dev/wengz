@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -251,6 +252,40 @@ export default function SubscriptionPage() {
                 </Card>
               );
             })}
+          {!isLoading && (
+            <Card className="flex flex-col border-dashed border-primary/40">
+              <CardHeader>
+                <CardTitle>{t("plans.custom.name")}</CardTitle>
+                <CardDescription>
+                  <span className="text-3xl font-bold text-foreground">
+                    {t("plans.custom.priceLabel")}
+                  </span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <p className="mb-4 text-sm text-pretty text-muted-foreground">
+                  {t("plans.custom.description")}
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <span>{t("plans.custom.creditsLabel")}</span>
+                  </li>
+                  {(t.raw("plans.custom.features") as string[]).map((feature, i) => (
+                    <li key={`custom-plan-feature-${i}`} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter className="mt-auto">
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/contact">{t("plans.custom.cta")}</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
         </div>
       </div>
 

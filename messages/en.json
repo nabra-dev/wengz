@@ -253,7 +253,19 @@
       "featuredBadge": "Featured",
       "cta": "Start my free week",
       "empty": "Plans will appear here once packages are published.",
-      "loadError": "Couldn’t load plans right now. Please refresh and try again."
+      "loadError": "Couldn’t load plans right now. Please refresh and try again.",
+      "custom": {
+        "name": "Custom package",
+        "description": "Need volume, services, or a team plan that doesn’t fit the list? We’ll shape credits and scope with you.",
+        "priceLabel": "Custom",
+        "creditsLabel": "Credits tailored to you",
+        "features": [
+          "Credits and services sized to your needs",
+          "Flexible duration and billing",
+          "Dedicated support for your workflow"
+        ],
+        "cta": "Contact us"
+      }
     },
     "cta": {
       "heading": "Stick with Wengz & get it done",
@@ -1815,7 +1827,19 @@
         "cancelFirstToSwitch": "Cancel first to switch",
         "noPlans": "No plans available",
         "noPlansDesc": "Please check back soon or contact support",
-        "featuredBadge": "Featured"
+        "featuredBadge": "Featured",
+        "custom": {
+          "name": "Custom package",
+          "description": "Need volume, services, or a team plan that doesn’t fit the list? We’ll shape credits and scope with you.",
+          "priceLabel": "Custom",
+          "creditsLabel": "Credits tailored to you",
+          "features": [
+            "Credits and services sized to your needs",
+            "Flexible duration and billing",
+            "Dedicated support for your workflow"
+          ],
+          "cta": "Contact us"
+        }
       },
       "info": {
         "dayDuration": "days",
