@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { PwaInstallButton } from "@/components/ui/pwa-install-button";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { Check, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
@@ -385,6 +386,7 @@ export default function LandingPage({
 
             <div className="relative z-10 flex min-w-0 shrink items-center justify-end gap-0.5 sm:gap-2">
               <div className="flex items-center">
+                <PwaInstallButton />
                 <ThemeSwitcher />
                 <LanguageSwitcher />
               </div>

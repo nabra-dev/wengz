@@ -2409,14 +2409,8 @@
       "description": "Add to your home screen for quick access and offline support",
       "installButton": "Install",
       "dismissButton": "Not now",
-      "ios": {
-        "title": "Install Wengz App",
-        "intro": "To install this app on iPhone/iPad:",
-        "step1": "Tap the Share button or the Options button",
-        "step2": "Scroll and tap \"Add to Home Screen\"",
-        "step3": "Tap \"Add\" to install",
-        "gotIt": "Got it"
-      }
+      "downloadAria": "Download app",
+      "unavailable": "Install isn’t available in this browser yet. Try Chrome or Edge on Android."
     }
   },
   "legal": {
