@@ -686,7 +686,7 @@ export default function AdminPackagesPage() {
                           {pkg.supportAllServices && (
                             <div className="mt-4 pt-4 border-t">
                               <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                                ✓ {t("fields.supportsAllServices") || "Supports All Services"}
+                                ✓ {t("fields.supportAllServices")}
                               </Badge>
                             </div>
                           )}
