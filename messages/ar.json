@@ -405,6 +405,7 @@
       "pendingApprovalDesc": "طلبك قيد المراجعة. ستتمكن من تسجيل الدخول بعد موافقة المسؤول.",
       "accountRejected": "لم تتم الموافقة على الحساب",
       "accountRejectedDesc": "لم تتم الموافقة على طلبك. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+      "accountRejectedReason": "السبب: {reason}",
       "forgotPassword": "نسيت كلمة المرور؟"
     },
     "forgotPassword": {

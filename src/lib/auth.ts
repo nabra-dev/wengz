@@ -95,7 +95,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("ACCOUNT_PENDING_APPROVAL");
         }
         if (user.approvalStatus === "REJECTED") {
-          throw new Error("ACCOUNT_REJECTED");
+          const reason = user.rejectionReason?.trim() || "";
+          throw new Error(
+            reason ? `ACCOUNT_REJECTED:${encodeURIComponent(reason)}` : "ACCOUNT_REJECTED"
+          );
         }
 
         const maintenanceSetting = await db.systemSettings.findUnique({

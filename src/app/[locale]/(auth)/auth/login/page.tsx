@@ -95,8 +95,17 @@ export default function LoginPage() {
           return;
         }
         if (result.error.includes("ACCOUNT_REJECTED")) {
+          const reasonMatch = result.error.match(/ACCOUNT_REJECTED:([^|]*)/);
+          let reason = "";
+          if (reasonMatch?.[1]) {
+            try {
+              reason = decodeURIComponent(reasonMatch[1]);
+            } catch {
+              reason = reasonMatch[1];
+            }
+          }
           toast.error(t("accountRejected"), {
-            description: t("accountRejectedDesc"),
+            description: reason ? t("accountRejectedReason", { reason }) : t("accountRejectedDesc"),
           });
           setIsLoading(false);
           return;

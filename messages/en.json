@@ -409,6 +409,7 @@
       "pendingApprovalDesc": "Your application is under review. You’ll be able to sign in once an admin approves it.",
       "accountRejected": "Account not approved",
       "accountRejectedDesc": "Your application was not approved. Contact support if you think this is a mistake.",
+      "accountRejectedReason": "Reason: {reason}",
       "forgotPassword": "Forgot password?"
     },
     "forgotPassword": {
