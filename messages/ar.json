@@ -872,19 +872,24 @@
         "supportAllServices": "يشمل جميع الخدمات",
         "isFeatured": "مميزة في الصفحة الرئيسية (باقة واحدة فقط)",
         "includedServices": "الخدمات المتضمنة",
-        "noServicesConfigured": "لم يتم تكوين خدمات"
+        "noServicesConfigured": "لم يتم تكوين خدمات",
+        "freePriceLocked": "سعر الخطة المجانية دائماً 0$",
+        "freeCreditsHint": "الكريدت الممنوحة للعملاء الجدد بعد الموافقة",
+        "freeDurationHint": "مدة اشتراك التجربة المجانية"
       },
       "badges": {
         "featured": "مميزة",
         "active": "نشط",
-        "inactive": "غير نشط"
+        "inactive": "غير نشط",
+        "freePlan": "خطة مجانية"
       },
       "info": {
         "credits": "كريدت",
         "dayDuration": "مدة يوم",
         "perMonth": "/شهرياً",
         "includedServicesLabel": "الخدمات المتضمنة:",
-        "packages": "باقات"
+        "packages": "باقات",
+        "freePlanHint": "تُمنح تلقائياً للعملاء الجدد بعد الموافقة. التغييرات تنطبق على المنح المستقبلية فقط."
       },
       "buttons": {
         "cancel": "إلغاء",

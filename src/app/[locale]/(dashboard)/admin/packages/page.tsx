@@ -191,13 +191,20 @@ export default function AdminPackagesPage() {
     if (featuresAr.length) featuresI18n.ar = featuresAr;
 
     const credits = Number.parseInt(formData.get("credits") as string, 10);
-    const price = Number.parseFloat(formData.get("price") as string);
+    const priceRaw = Number.parseFloat(formData.get("price") as string);
+    const durationDays = Number.parseInt(formData.get("durationDays") as string, 10);
+    const isFree = formData.get("isFreePackage") === "true";
+    const price = isFree ? 0 : priceRaw;
     if (!Number.isFinite(credits) || credits < 1) {
       toast.error(t("toast.invalidCredits"));
       return;
     }
-    if (!Number.isFinite(price) || price < 0) {
+    if (!isFree && (!Number.isFinite(price) || price < 0)) {
       toast.error(t("toast.invalidPrice"));
+      return;
+    }
+    if (!Number.isFinite(durationDays) || durationDays < 1) {
+      toast.error(t("toast.invalidDuration"));
       return;
     }
 
@@ -207,12 +214,13 @@ export default function AdminPackagesPage() {
       nameI18n: Object.keys(nameI18n).length ? nameI18n : undefined,
       price,
       credits,
+      durationDays,
       description: descEn || descAr || undefined,
       descriptionI18n: Object.keys(descriptionI18n).length ? descriptionI18n : undefined,
       features: featuresEn,
       featuresI18n: Object.keys(featuresI18n).length ? featuresI18n : undefined,
       supportAllServices: editSupportAllServices,
-      isFeatured: editIsFeatured,
+      isFeatured: isFree ? false : editIsFeatured,
       serviceIds: selectedServiceIds,
     });
   };
@@ -463,14 +471,32 @@ export default function AdminPackagesPage() {
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-4">
+                            <input
+                              type="hidden"
+                              name="isFreePackage"
+                              value={pkg.isFreePackage ? "true" : "false"}
+                            />
+                            {pkg.isFreePackage && (
+                              <p className="text-sm text-muted-foreground rounded-lg border bg-muted/40 p-3">
+                                {t("info.freePlanHint")}
+                              </p>
+                            )}
                             <div className="space-y-2">
                               <Label>{t("fields.price")}</Label>
                               <Input
                                 name="price"
                                 type="number"
                                 step="0.01"
-                                defaultValue={pkg.price}
+                                min={0}
+                                defaultValue={pkg.isFreePackage ? 0 : pkg.price}
+                                disabled={!!pkg.isFreePackage}
+                                readOnly={!!pkg.isFreePackage}
                               />
+                              {pkg.isFreePackage && (
+                                <p className="text-xs text-muted-foreground">
+                                  {t("fields.freePriceLocked")}
+                                </p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t("fields.creditsRequired")}</Label>
@@ -482,6 +508,27 @@ export default function AdminPackagesPage() {
                                 required
                                 defaultValue={pkg.credits}
                               />
+                              {pkg.isFreePackage && (
+                                <p className="text-xs text-muted-foreground">
+                                  {t("fields.freeCreditsHint")}
+                                </p>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <Label>{t("fields.durationRequired")}</Label>
+                              <Input
+                                name="durationDays"
+                                type="number"
+                                min={1}
+                                step={1}
+                                required
+                                defaultValue={pkg.durationDays}
+                              />
+                              {pkg.isFreePackage && (
+                                <p className="text-xs text-muted-foreground">
+                                  {t("fields.freeDurationHint")}
+                                </p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label>{t("fields.localizedDescription")}</Label>
@@ -532,21 +579,23 @@ export default function AdminPackagesPage() {
                               </Label>
                             </div>
 
-                            <div className="flex items-center gap-3 border rounded-lg p-4 bg-muted/50">
-                              <Checkbox
-                                id="edit-is-featured"
-                                checked={editIsFeatured}
-                                onCheckedChange={(checked: boolean) =>
-                                  setEditIsFeatured(checked as boolean)
-                                }
-                              />
-                              <Label
-                                htmlFor="edit-is-featured"
-                                className="cursor-pointer font-medium flex-1"
-                              >
-                                {t("fields.isFeatured")}
-                              </Label>
-                            </div>
+                            {!pkg.isFreePackage && (
+                              <div className="flex items-center gap-3 border rounded-lg p-4 bg-muted/50">
+                                <Checkbox
+                                  id="edit-is-featured"
+                                  checked={editIsFeatured}
+                                  onCheckedChange={(checked: boolean) =>
+                                    setEditIsFeatured(checked as boolean)
+                                  }
+                                />
+                                <Label
+                                  htmlFor="edit-is-featured"
+                                  className="cursor-pointer font-medium flex-1"
+                                >
+                                  {t("fields.isFeatured")}
+                                </Label>
+                              </div>
+                            )}
 
                             <div className="space-y-2">
                               <Label>{t("fields.includedServices")}</Label>
@@ -594,6 +643,9 @@ export default function AdminPackagesPage() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1 space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
+                                {pkg.isFreePackage && (
+                                  <Badge variant="outline">{t("badges.freePlan")}</Badge>
+                                )}
                                 {pkg.isFeatured && (
                                   <Badge className="border-0 bg-[#690DD4] text-[#E0F840] hover:opacity-95">
                                     {t("badges.featured")}
@@ -679,23 +731,25 @@ export default function AdminPackagesPage() {
                             <Edit className="h-3 w-3" />
                             {t("buttons.edit")}
                           </Button>
-                          <div className="flex items-center gap-2 ms-auto">
-                            <Label
-                              htmlFor={`package-active-${pkg.id}`}
-                              className="text-sm text-muted-foreground cursor-pointer"
-                            >
-                              {pkg.isActive ? t("badges.active") : t("badges.inactive")}
-                            </Label>
-                            <Switch
-                              id={`package-active-${pkg.id}`}
-                              checked={pkg.isActive}
-                              disabled={togglingPackageId === pkg.id}
-                              onCheckedChange={(checked: boolean) => {
-                                setTogglingPackageId(pkg.id);
-                                setPackageActive.mutate({ id: pkg.id, isActive: checked });
-                              }}
-                            />
-                          </div>
+                          {!pkg.isFreePackage && (
+                            <div className="flex items-center gap-2 ms-auto">
+                              <Label
+                                htmlFor={`package-active-${pkg.id}`}
+                                className="text-sm text-muted-foreground cursor-pointer"
+                              >
+                                {pkg.isActive ? t("badges.active") : t("badges.inactive")}
+                              </Label>
+                              <Switch
+                                id={`package-active-${pkg.id}`}
+                                checked={pkg.isActive}
+                                disabled={togglingPackageId === pkg.id}
+                                onCheckedChange={(checked: boolean) => {
+                                  setTogglingPackageId(pkg.id);
+                                  setPackageActive.mutate({ id: pkg.id, isActive: checked });
+                                }}
+                              />
+                            </div>
+                          )}
                         </CardFooter>
                       </Card>
                     )

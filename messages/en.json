@@ -876,19 +876,24 @@
         "supportAllServices": "Support All Services",
         "isFeatured": "Featured on landing (only one package)",
         "includedServices": "Included Services",
-        "noServicesConfigured": "No services configured"
+        "noServicesConfigured": "No services configured",
+        "freePriceLocked": "Free plan price is always $0",
+        "freeCreditsHint": "Credits granted to newly approved clients",
+        "freeDurationHint": "How long the free trial subscription lasts"
       },
       "badges": {
         "featured": "Featured",
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "freePlan": "Free plan"
       },
       "info": {
         "credits": "credits",
         "dayDuration": "day duration",
         "perMonth": "/month",
         "includedServicesLabel": "Included Services:",
-        "packages": "packages"
+        "packages": "packages",
+        "freePlanHint": "Granted automatically to newly approved clients. Changes apply to future grants only."
       },
       "buttons": {
         "cancel": "Cancel",

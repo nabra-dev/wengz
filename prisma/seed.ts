@@ -40,9 +40,7 @@ async function main() {
         "SEED_ADMIN_PASSWORD env var is required to seed the admin user in production"
       );
     }
-    console.warn(
-      "⚠️  SEED_ADMIN_PASSWORD not set — using development-only default password"
-    );
+    console.warn("⚠️  SEED_ADMIN_PASSWORD not set — using development-only default password");
   }
   const hashedAdminPassword = await bcrypt.hash(adminPassword || "DevOnly!ChangeMe123", 12);
 
@@ -63,13 +61,13 @@ async function main() {
     data: {
       name: "Free Plan",
       nameI18n: { en: "Free Plan", ar: "الخطة المجانية" },
-      description: "Basic free plan for all new users with 5 credit valid for 14 days",
+      description: "Basic free plan for all new users with 500 credits valid for 14 days",
       descriptionI18n: {
-        en: "Basic free plan for all new users with 5 credit valid for 14 days",
-        ar: "خطة مجانية أساسية لجميع المستخدمين الجدد مع رصيد واحد صالح لمدة 14 يومًا",
+        en: "Basic free plan for all new users with 500 credits valid for 14 days",
+        ar: "خطة مجانية أساسية لجميع المستخدمين الجدد مع 500 كريدت صالحة لمدة 14 يومًا",
       },
       price: 0,
-      credits: 5,
+      credits: 500,
       durationDays: 14,
       isActive: true,
       isFreePackage: true,
@@ -500,7 +498,7 @@ async function main() {
   console.log("─".repeat(50));
   console.log("\n📦 Packages Created:");
   console.log("─".repeat(50));
-  console.log("Free Plan:         1 credit   (14 days) - $0");
+  console.log("Free Plan:       500 credits (14 days) - $0");
   console.log("Basic Package:    30 credits  (30 days) - $100");
   console.log("Standard Package: 60 credits  (30 days) - $200");
   console.log("Premium Package:  120 credits (30 days) - $400");

@@ -1807,6 +1807,7 @@ export const adminRouter = router({
         descriptionI18n: z.record(z.string()).optional(),
         price: z.number().min(0).optional(),
         credits: z.number().min(1).optional(),
+        durationDays: z.number().min(1).optional(),
         features: z.array(z.string()).optional(),
         featuresI18n: z.record(z.array(z.string())).optional(),
         isActive: z.boolean().optional(),
@@ -1817,6 +1818,25 @@ export const adminRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { id, serviceIds, ...data } = input;
+
+      const existing = await ctx.db.package.findUnique({
+        where: { id },
+        select: { id: true, isFreePackage: true },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Package not found",
+        });
+      }
+
+      if (existing.isFreePackage && data.isActive === false) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Cannot deactivate the free package",
+        });
+      }
 
       // Validate service IDs exist if provided
       if (serviceIds !== undefined && serviceIds.length > 0) {
@@ -1833,15 +1853,26 @@ export const adminRouter = router({
         }
       }
 
-      if (input.isFeatured === true) {
+      if (input.isFeatured === true && !existing.isFreePackage) {
         await clearFeaturedExcept(ctx.db, id);
       }
+
+      // Free plan stays $0 and is never landing "featured"
+      const updateData = {
+        ...data,
+        ...(existing.isFreePackage
+          ? {
+              price: 0,
+              isFeatured: false,
+            }
+          : {}),
+      };
 
       // Update package and handle services if provided
       const pkg = await ctx.db.package.update({
         where: { id },
         data: {
-          ...data,
+          ...updateData,
           ...(input.nameI18n !== undefined && { nameI18n: input.nameI18n as any }),
           ...(input.descriptionI18n !== undefined && {
             descriptionI18n: input.descriptionI18n as any,
@@ -1931,7 +1962,7 @@ export const adminRouter = router({
       });
     }),
 
-  // Get all packages (admin only)
+  // Get all packages (admin only) — includes free trial plan for config
   getPackages: adminProcedure
     .input(
       z
@@ -1943,7 +1974,6 @@ export const adminRouter = router({
     .query(async ({ ctx, input }) => {
       const status = input?.status ?? "active";
       const where = {
-        isFreePackage: false,
         ...(status === "active"
           ? { isActive: true }
           : status === "inactive"
@@ -1953,7 +1983,7 @@ export const adminRouter = router({
 
       return ctx.db.package.findMany({
         where,
-        orderBy: { sortOrder: "asc" },
+        orderBy: [{ isFreePackage: "desc" }, { sortOrder: "asc" }],
         select: {
           id: true,
           name: true,
@@ -1968,6 +1998,7 @@ export const adminRouter = router({
           sortOrder: true,
           isActive: true,
           isFeatured: true,
+          isFreePackage: true,
           supportAllServices: true,
           services: {
             select: {

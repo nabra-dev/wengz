@@ -32,7 +32,7 @@ Logged-in users can **change password** from their profile Security tab. Anyone 
 
 - **Packages** bundle a **credit balance** and a **time-bounded entitlement** (`durationDays`, typically monthly). Packages may be scoped to **specific service types** or **support all services**, depending on catalog configuration.
 - **Credits** are the **unit of spend** for opening and evolving requests. A **client subscription** stores **remaining credits** and an **end date**; inactive or expired subscriptions stop new spend unless business rules allow otherwise in code.
-- **Free-trial semantics** exist in the data model (`isFreeTrialUsed`, `isFreePackage`) so the business can distinguish promotional or trial packages from paid tiers.
+- **Free-trial semantics** exist in the data model (`isFreeTrialUsed`, `isFreePackage`) so the business can distinguish promotional or trial packages from paid tiers. The free package (`isFreePackage`) is configured in **Admin → Packages** (credits + duration days; price stays `$0`). Defaults: **500 credits**, **14 days**. Changes apply to **future** grants only (newly approved clients).
 
 **Payment in the field**: clients choose a **payment method** on the payment page. **Bank transfer** and **InstaPay** (when enabled) are active and use **manual payment proofs** (receipt image + details) tied to a subscription; **admins** configure bank/InstaPay instructions under Settings and review approve/reject. Other methods (Fawry, Meeza, Visa, Mastercard) appear as **Coming soon**. Until approved, downstream fulfillment rules should align with your operational policy (the schema supports `PaymentProof` with `PENDING` / `APPROVED` / `REJECTED`).
 
