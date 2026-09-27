@@ -11,6 +11,7 @@ import { NotificationPermissionBanner } from "@/components/ui/notification-permi
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { CurrencySwitcher } from "@/components/ui/currency-switcher";
+import { PwaInstallButton } from "@/components/ui/pwa-install-button";
 import { useRealtimeNotifications } from "@/components/providers/notification-provider";
 import {
   LayoutDashboard,
@@ -60,9 +61,19 @@ const providerNavConfig = [
 ];
 
 const adminNavConfig = [
-  { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard, access: "platform" as const },
+  {
+    href: "/admin",
+    labelKey: "admin.dashboard",
+    icon: LayoutDashboard,
+    access: "platform" as const,
+  },
   { href: "/admin/users", labelKey: "admin.users", icon: Users, access: "platform" as const },
-  { href: "/admin/requests", labelKey: "admin.requests", icon: FileText, access: "requests" as const },
+  {
+    href: "/admin/requests",
+    labelKey: "admin.requests",
+    icon: FileText,
+    access: "requests" as const,
+  },
   {
     href: "/admin/payments",
     labelKey: "admin.payments",
@@ -70,16 +81,36 @@ const adminNavConfig = [
     access: "finance" as const,
   },
   { href: "/admin/finance", labelKey: "admin.finance", icon: Wallet, access: "finance" as const },
-  { href: "/admin/activity", labelKey: "admin.activity", icon: ScrollText, access: "platform" as const },
+  {
+    href: "/admin/activity",
+    labelKey: "admin.activity",
+    icon: ScrollText,
+    access: "platform" as const,
+  },
   {
     href: "/admin/notifications",
     labelKey: "admin.notifications",
     icon: Bell,
     access: "staff" as const,
   },
-  { href: "/admin/packages", labelKey: "admin.packages", icon: CreditCard, access: "platform" as const },
-  { href: "/admin/services", labelKey: "admin.services", icon: Settings, access: "platform" as const },
-  { href: "/admin/settings", labelKey: "admin.settings", icon: Settings2, access: "settings" as const },
+  {
+    href: "/admin/packages",
+    labelKey: "admin.packages",
+    icon: CreditCard,
+    access: "platform" as const,
+  },
+  {
+    href: "/admin/services",
+    labelKey: "admin.services",
+    icon: Settings,
+    access: "platform" as const,
+  },
+  {
+    href: "/admin/settings",
+    labelKey: "admin.settings",
+    icon: Settings2,
+    access: "settings" as const,
+  },
   { href: "/admin/profile", labelKey: "admin.profile", icon: User, access: "staff" as const },
 ];
 
@@ -285,16 +316,19 @@ export function DashboardShell({
               </div>
             </div>
             <div className="space-y-2">
-              <ThemeSwitcher />
-              <CurrencySwitcher variant="full" />
-              <LanguageSwitcher />
+              <div className="flex items-center justify-evenly gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-1">
+                <ThemeSwitcher />
+                <CurrencySwitcher variant="icon" className="h-8 min-w-0 shrink px-2 sm:h-9" />
+                <LanguageSwitcher variant="icon" />
+                <PwaInstallButton />
+              </div>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="w-full justify-start text-xs sm:text-sm flex items-center gap-2"
+                className="w-full justify-start text-xs text-muted-foreground hover:text-foreground sm:text-sm"
                 onClick={() => signOut({ callbackUrl: "/" })}
               >
-                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                <LogOut className="me-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {tNav("signOut")}
               </Button>
             </div>

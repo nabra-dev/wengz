@@ -4,6 +4,7 @@ import { usePathname as useNextPathname } from "next/navigation";
 import { usePathname, routing, type AppLocale } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { buildLocaleSwitchApiHref, LOCALE_SWITCH_CACHE_BUST } from "@/lib/locale-switch";
+import { cn } from "@/lib/utils";
 
 export { LOCALE_SWITCH_CACHE_BUST };
 
@@ -49,7 +50,13 @@ export function localeFromBrowserPath(fullPathname: string): AppLocale {
   return first === "ar" ? "ar" : "en";
 }
 
-export function LanguageSwitcher() {
+type LanguageSwitcherProps = {
+  /** Icon-only control for dense toolbars (sidebar). */
+  variant?: "default" | "icon";
+  className?: string;
+};
+
+export function LanguageSwitcher({ variant = "default", className }: LanguageSwitcherProps) {
   const fullPathname = useNextPathname() || "/";
   const pathname = usePathname() || "/";
 
@@ -59,21 +66,28 @@ export function LanguageSwitcher() {
 
   // API route sets the cookie then redirects — works without client JS onClick.
   const href = buildLocaleSwitchApiHref(targetLocale, pathname);
+  const iconOnly = variant === "icon";
 
   return (
     <Button
       asChild
       variant="ghost"
       size="sm"
-      className="h-8 w-8 shrink-0 gap-0 px-0 text-foreground hover:text-foreground sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
+      className={cn(
+        iconOnly
+          ? "h-8 w-8 shrink-0 gap-0 px-0 text-foreground hover:text-foreground sm:h-9 sm:w-9"
+          : "h-8 w-8 shrink-0 gap-0 px-0 text-foreground hover:text-foreground sm:h-9 sm:w-auto sm:gap-2 sm:px-3",
+        className
+      )}
     >
       <a
         href={href}
         hrefLang={targetLocale}
         aria-label={`Switch language to ${targetLanguage.label}`}
+        title={targetLanguage.label}
       >
         <span className="text-sm">{targetLanguage.flag}</span>
-        <span className="hidden sm:inline text-sm">{targetLanguage.label}</span>
+        {!iconOnly && <span className="hidden sm:inline text-sm">{targetLanguage.label}</span>}
       </a>
     </Button>
   );
