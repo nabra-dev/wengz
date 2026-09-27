@@ -294,6 +294,8 @@
       "sentDesc": "Thanks — we’ll get back to you soon.",
       "pendingTitle": "Application received",
       "pendingDesc": "Thanks — an admin will review your creator application before you can sign in.",
+      "reapplyTitle": "Application re-submitted",
+      "reapplyDesc": "Thanks — an admin will review your application again before you can sign in.",
       "errorTitle": "Couldn’t send",
       "errorDesc": "Please try again in a minute."
     },
@@ -408,8 +410,8 @@
       "pendingApproval": "Account pending approval",
       "pendingApprovalDesc": "Your application is under review. You’ll be able to sign in once an admin approves it.",
       "accountRejected": "Account not approved",
-      "accountRejectedDesc": "Your application was not approved. Contact support if you think this is a mistake.",
-      "accountRejectedReason": "Reason: {reason}",
+      "accountRejectedDesc": "Your application was not approved. You can register again with the same email to re-apply, or contact support if you think this is a mistake.",
+      "accountRejectedReason": "Reason: {reason}. You can register again with the same email to re-apply.",
       "forgotPassword": "Forgot password?"
     },
     "forgotPassword": {
@@ -462,6 +464,7 @@
       "signInLink": "Sign in",
       "accountCreated": "Application received",
       "successMessage": "Thanks — an admin will review your account before you can sign in.",
+      "reapplySuccess": "Application re-submitted. An admin will review it again.",
       "registrationFailed": "Registration Failed",
       "passwordsNotMatch": "Passwords do not match",
       "validationError": "Validation Error",

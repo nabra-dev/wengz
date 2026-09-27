@@ -69,6 +69,7 @@ export const authRouter = router({
         success: z.boolean(),
         message: z.string(),
         userId: z.string(),
+        reapplied: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -99,13 +100,6 @@ export const authRouter = router({
         where: { email: input.email },
       });
 
-      if (existingUser) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Email already registered",
-        });
-      }
-
       // Capture IP for audit, but do not restrict by IP
       const forwarded =
         ctx.req && "headers" in ctx.req && typeof (ctx.req as any).headers?.get === "function"
@@ -122,6 +116,68 @@ export const authRouter = router({
       const ip = forwardedString?.split(",")[0] || realIpString || null;
 
       const hashedPassword = await bcrypt.hash(input.password, 12);
+
+      if (existingUser) {
+        if (existingUser.approvalStatus === "PENDING") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "An application with this email is already pending review.",
+          });
+        }
+        if (existingUser.approvalStatus !== "REJECTED") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Email already registered",
+          });
+        }
+
+        // Rejected applicants may re-apply with the same email.
+        const user = await ctx.db.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: input.name,
+            password: hashedPassword,
+            phone: input.phone || null,
+            image: existingUser.image || DEFAULT_AVATAR,
+            role: "CLIENT",
+            approvalStatus: "PENDING",
+            approvedAt: null,
+            rejectedAt: null,
+            rejectionReason: null,
+            deletedAt: null,
+            registrationIp: ip,
+            sessions: { deleteMany: {} },
+            accounts: { deleteMany: {} },
+          },
+        });
+
+        sendApplicationReceivedEmail({
+          userEmail: user.email,
+          userName: user.name || "User",
+          userRole: "CLIENT",
+          locale: ctx.locale,
+        }).catch((error) => {
+          logger.error("Failed to send application received email:", error);
+        });
+
+        logActivityAsync({
+          action: "auth.register_reapply",
+          message: `Client re-applied after rejection: ${user.email}`,
+          actorId: user.id,
+          actorRole: "CLIENT",
+          entityType: "User",
+          entityId: user.id,
+          ip,
+          metadata: { email: user.email, approvalStatus: "PENDING", reapply: true },
+        });
+
+        return {
+          success: true,
+          reapplied: true,
+          message: "Application re-submitted. An admin will review it shortly.",
+          userId: user.id,
+        };
+      }
 
       const user = await ctx.db.user.create({
         data: {
@@ -195,6 +251,7 @@ export const authRouter = router({
         success: z.boolean(),
         message: z.string(),
         userId: z.string(),
+        reapplied: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -221,14 +278,8 @@ export const authRouter = router({
 
       const existingUser = await ctx.db.user.findUnique({
         where: { email: input.email },
+        include: { providerProfile: true },
       });
-
-      if (existingUser) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Email already registered",
-        });
-      }
 
       const uniqueServiceIds = [...new Set(input.serviceIds)];
       const activeServices = await ctx.db.serviceType.findMany({
@@ -256,6 +307,115 @@ export const authRouter = router({
           return i18n?.[ctx.locale] || s.name;
         })
         .join(", ");
+      const registrationIp = ipForLimit === "unknown" ? null : ipForLimit;
+
+      if (existingUser) {
+        if (existingUser.approvalStatus === "PENDING") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "An application with this email is already pending review.",
+          });
+        }
+        if (existingUser.approvalStatus !== "REJECTED") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Email already registered",
+          });
+        }
+
+        const user = await ctx.db.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: input.name,
+            password: hashedPassword,
+            phone: input.phone,
+            image: existingUser.image || DEFAULT_AVATAR,
+            role: "PROVIDER",
+            approvalStatus: "PENDING",
+            approvedAt: null,
+            rejectedAt: null,
+            rejectionReason: null,
+            deletedAt: null,
+            registrationIp,
+            sessions: { deleteMany: {} },
+            accounts: { deleteMany: {} },
+            providerProfile: existingUser.providerProfile
+              ? {
+                  update: {
+                    bio,
+                    portfolio: input.website.trim() || null,
+                    skillsTags: [],
+                    isActive: true,
+                    supportedServices: {
+                      set: uniqueServiceIds.map((id) => ({ id })),
+                    },
+                  },
+                }
+              : {
+                  create: {
+                    bio,
+                    portfolio: input.website.trim() || null,
+                    skillsTags: [],
+                    isActive: true,
+                    supportedServices: {
+                      connect: uniqueServiceIds.map((id) => ({ id })),
+                    },
+                  },
+                },
+          },
+        });
+
+        sendApplicationReceivedEmail({
+          userEmail: user.email,
+          userName: user.name || "User",
+          userRole: "PROVIDER",
+          locale: ctx.locale,
+        }).catch((error) => {
+          logger.error("Failed to send provider application received email:", error);
+        });
+
+        const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
+        void sendEmail({
+          to: recipient,
+          subject: `Provider re-application pending — ${user.name || user.email}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
+              <h2>Provider re-application (pending approval)</h2>
+              <p><strong>Name:</strong> ${user.name || "—"}</p>
+              <p><strong>Email:</strong> ${user.email}</p>
+              <p><strong>Phone:</strong> ${input.phone}</p>
+              <p><strong>Website:</strong> ${input.website.trim() || "—"}</p>
+              <p><strong>Services:</strong> ${serviceLabels || "—"}</p>
+              <p><strong>Message:</strong></p>
+              <pre style="white-space: pre-wrap;">${messageBody || "—"}</pre>
+            </div>
+          `,
+          replyTo: user.email,
+        }).catch(() => undefined);
+
+        logActivityAsync({
+          action: "auth.register_provider_reapply",
+          message: `Provider re-applied after rejection: ${user.email}`,
+          actorId: user.id,
+          actorRole: "PROVIDER",
+          entityType: "User",
+          entityId: user.id,
+          ip: registrationIp,
+          metadata: {
+            email: user.email,
+            approvalStatus: "PENDING",
+            serviceIds: uniqueServiceIds,
+            reapply: true,
+          },
+        });
+
+        return {
+          success: true,
+          reapplied: true,
+          message: "Application re-submitted. An admin will review it shortly.",
+          userId: user.id,
+        };
+      }
 
       const user = await ctx.db.user.create({
         data: {
@@ -266,7 +426,7 @@ export const authRouter = router({
           image: DEFAULT_AVATAR,
           role: "PROVIDER",
           approvalStatus: "PENDING",
-          registrationIp: ipForLimit === "unknown" ? null : ipForLimit,
+          registrationIp,
           providerProfile: {
             create: {
               bio,
@@ -317,7 +477,7 @@ export const authRouter = router({
         actorRole: "PROVIDER",
         entityType: "User",
         entityId: user.id,
-        ip: ipForLimit === "unknown" ? null : ipForLimit,
+        ip: registrationIp,
         metadata: {
           email: user.email,
           approvalStatus: "PENDING",

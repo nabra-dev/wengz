@@ -42,9 +42,9 @@ export default function RegisterPage() {
 
   // All hooks must be called before any conditional returns
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success(t("accountCreated"), {
-        description: t("successMessage"),
+        description: data.reapplied ? t("reapplySuccess") : t("successMessage"),
       });
       const qs = new URLSearchParams({ registered: "true" });
       if (continueAfterAuth) {

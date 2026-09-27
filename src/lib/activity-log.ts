@@ -4,6 +4,9 @@ import type { Prisma } from "@prisma/client";
 
 export type ActivityAction =
   | "auth.register"
+  | "auth.register_reapply"
+  | "auth.register_provider"
+  | "auth.register_provider_reapply"
   | "auth.login_failed"
   | "auth.password_change"
   | "auth.password_reset_request"

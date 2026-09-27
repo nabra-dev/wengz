@@ -113,7 +113,7 @@ export function ContactFormPage() {
         return;
       }
 
-      await registerProvider.mutateAsync({
+      const result = await registerProvider.mutateAsync({
         name,
         email,
         password,
@@ -128,9 +128,14 @@ export function ContactFormPage() {
       setSelectedServices(new Set());
       setPhoneInput("");
       setCountryCode("+20");
-      toast.success(t("forms.toast.pendingTitle"), {
-        description: t("forms.toast.pendingDesc"),
-      });
+      toast.success(
+        result.reapplied ? t("forms.toast.reapplyTitle") : t("forms.toast.pendingTitle"),
+        {
+          description: result.reapplied
+            ? t("forms.toast.reapplyDesc")
+            : t("forms.toast.pendingDesc"),
+        }
+      );
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "message" in err
