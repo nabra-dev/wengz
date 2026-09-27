@@ -11,10 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FileUpload, type UploadedFile } from "@/components/ui/file-upload";
+import { VoiceRecorder } from "@/components/ui/voice-recorder";
 import { useTranslations, useLocale } from "next-intl";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { UPLOAD_ACCEPT_ATTR } from "@/lib/upload-limits";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
+import { resolveAttributeMaxFiles, resolveAttributeMaxSizeMB } from "@/types/service-attributes";
 
 interface ServiceAttributesFormProps {
   readonly attributes: ServiceAttribute[];
@@ -31,6 +35,17 @@ function isAnswerEmpty(answer: string | string[] | undefined): boolean {
   if (answer === undefined || answer === null) return true;
   if (typeof answer === "string") return answer.trim() === "";
   return answer.length === 0;
+}
+
+function urlsFromAnswer(answer: string | string[]): string[] {
+  if (Array.isArray(answer)) return answer.filter((u) => typeof u === "string" && u.trim());
+  if (typeof answer === "string" && answer.trim()) return [answer.trim()];
+  return [];
+}
+
+function answerFromUrls(urls: string[], maxFiles: number): string | string[] {
+  if (maxFiles <= 1) return urls[0] ?? "";
+  return urls;
 }
 
 export function ServiceAttributesForm({
@@ -85,10 +100,7 @@ export function ServiceAttributesForm({
     return (attr.options || []).map((value) => ({ value, creditCost: attr.creditImpact }));
   };
 
-  const formatOptionLabel = (
-    option: { value: string; creditCost?: number },
-    attr: ServiceAttribute
-  ) => {
+  const formatOptionLabel = (option: { value: string; creditCost?: number }) => {
     const base = option.value;
     if (option.creditCost && option.creditCost > 0) {
       return `${base} • +${option.creditCost} ${t("credit")}`;
@@ -98,6 +110,7 @@ export function ServiceAttributesForm({
 
   const getCreditCostLabel = (attr: ServiceAttribute): string | null => {
     if (!attr.creditImpact || attr.creditImpact === 0) return null;
+    if (attr.type === "file" || attr.type === "voice") return null;
 
     const unit = attr.type === "select" ? t("selection") : t("unit");
 
@@ -130,6 +143,8 @@ export function ServiceAttributesForm({
               showErrors && attr.required && isAnswerEmpty(answer) ? t("required") : null;
             const error = errorFromParent || localRequiredError;
             const invalid = !!error;
+            const maxFiles = resolveAttributeMaxFiles(attr);
+            const maxSizeMB = resolveAttributeMaxSizeMB(attr);
 
             return (
               <div key={`${attr.question}-${index}`} className="space-y-2">
@@ -231,7 +246,7 @@ export function ServiceAttributesForm({
                     <SelectContent>
                       {getOptionsWithCosts(attr).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {formatOptionLabel(option, attr)}
+                          {formatOptionLabel(option)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -273,6 +288,41 @@ export function ServiceAttributesForm({
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {attr.type === "file" && (
+                  <div
+                    className={cn(invalid && "rounded-md ring-1 ring-destructive")}
+                    onBlur={() => onFieldBlur?.(attr.question)}
+                  >
+                    <FileUpload
+                      maxFiles={maxFiles}
+                      maxSizeMB={maxSizeMB}
+                      accept={UPLOAD_ACCEPT_ATTR}
+                      disabled={disabled}
+                      onFilesChange={(files: UploadedFile[]) => {
+                        const urls = files.map((f) => f.url);
+                        updateResponse(attr.question, answerFromUrls(urls, maxFiles));
+                      }}
+                    />
+                  </div>
+                )}
+
+                {attr.type === "voice" && (
+                  <div
+                    className={cn(invalid && "rounded-md ring-1 ring-destructive")}
+                    onBlur={() => onFieldBlur?.(attr.question)}
+                  >
+                    <VoiceRecorder
+                      value={urlsFromAnswer(answer)}
+                      maxFiles={maxFiles}
+                      maxSizeMB={maxSizeMB}
+                      disabled={disabled}
+                      onChange={(urls) =>
+                        updateResponse(attr.question, answerFromUrls(urls, maxFiles))
+                      }
+                    />
                   </div>
                 )}
 

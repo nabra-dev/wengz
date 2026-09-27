@@ -1124,11 +1124,17 @@
       "number": "رقم (إدخال رقمي)",
       "select": "قائمة منسدلة (اختيار واحد)",
       "multiselect": "اختيارات متعددة (اختيارات متعددة)",
+      "file": "رفع ملفات",
+      "voice": "صوت (تسجيل أو رفع ملف صوتي)",
       "required": "مطلوب",
       "settings": "الإعدادات",
       "options": "الخيارات (مفصولة بفواصل)",
       "exampleOptions": "مثال: نعم، لا، ربما",
       "optionsCount": "{count} خيار(ات) محددة",
+      "maxFiles": "الحد الأقصى للملفات",
+      "maxFilesHelp": "عدد الملفات التي يمكن للعميل رفعها (1–10)",
+      "maxSizeMB": "الحد الأقصى للحجم (ميجابايت)",
+      "maxSizeMBHelp": "الحد الأقصى لحجم كل ملف بالميجابايت",
       "placeholder": "النص التوضيحي",
       "placeholderOptional": "النص التوضيحي (اختياري)",
       "minValue": "الحد الأدنى",
@@ -1286,6 +1292,25 @@
       "clearAll": "مسح الكل",
       "maxFilesShort": "بحد أقصى {maxFiles} ملف",
       "fileTooLargeShort": "الملف كبير جداً (بحد أقصى {maxSize}ميجابايت)"
+    },
+    "voiceRecorder": {
+      "record": "تسجيل",
+      "stop": "إيقاف",
+      "uploadAudio": "رفع صوت",
+      "uploading": "جاري الرفع...",
+      "recordingSaved": "تم حفظ التسجيل الصوتي",
+      "micDenied": "تم رفض الوصول إلى الميكروفون أو أنه غير متاح",
+      "hint": "سجّل أو ارفع صوتًا (بحد أقصى {maxSize}ميجابايت لكل ملف، حتى {maxFiles})",
+      "maximumFilesReached": "تم الوصول للحد الأقصى من التسجيلات",
+      "maximumFilesDesc": "يمكنك إضافة حتى {maxFiles} ملف صوتي فقط.",
+      "invalidFileType": "نوع ملف غير صالح",
+      "invalidFileTypeDesc": "{filename} ليس ملفًا صوتيًا.",
+      "fileTooLarge": "الملف كبير جداً",
+      "fileTooLargeDesc": "الصوت يتجاوز حد {maxSize}ميجابايت.",
+      "uploadFailed": "فشل الرفع",
+      "uploadFailedDesc": "فشل رفع الصوت",
+      "uploadComplete": "اكتمل الرفع",
+      "uploadCompleteDesc": "{count, plural, zero {لا توجد ملفات} one {تم رفع ملف صوتي واحد} two {تم رفع ملفين صوتيين} few {تم رفع # ملفات صوتية} many {تم رفع # ملفًا صوتيًا} other {تم رفع # ملف صوتي}}"
     }
   },
   "requests": {
@@ -1453,7 +1478,7 @@
       "helperText": {
         "emailWarning": "تغيير بريدك الإلكتروني سيؤثر على بيانات تسجيل الدخول",
         "currentPhoto": "الصورة الحالية",
-        "maxFileSize": "الحد الأقصى 5 ميجابايت، JPG/PNG/GIF",
+        "maxFileSize": "الحد الأقصى 5 ميجابايت، JPG/PNG/GIF/WEBP",
         "phone": "أضف رقم هاتف لتسهيل التواصل معك"
       },
       "successMessage": "تم تحديث الملف الشخصي بنجاح",

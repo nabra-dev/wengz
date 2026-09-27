@@ -4,8 +4,15 @@ import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { logActivityAsync } from "@/lib/activity-log";
+import { isAllowedUploadUrl } from "@/lib/upload-url";
 
-const DEFAULT_AVATAR = "/images/logo.svg";
+const PROFILE_IMAGE_EXT = /\.(jpe?g|png|gif|webp)$/i;
+
+function isOwnProfileImageUrl(url: string, userId: string): boolean {
+  if (!isAllowedUploadUrl(url, userId)) return false;
+  const path = url.split("?")[0] ?? url;
+  return PROFILE_IMAGE_EXT.test(path);
+}
 
 export const userRouter = router({
   // Get current user profile
@@ -68,10 +75,7 @@ export const userRouter = router({
         });
       }
 
-      return {
-        ...user,
-        image: user.role === "CLIENT" ? user.image : DEFAULT_AVATAR,
-      };
+      return user;
     }),
 
   // Update user profile
@@ -111,7 +115,7 @@ export const userRouter = router({
 
       const existingUser = await ctx.db.user.findUnique({
         where: { id: userId },
-        select: { role: true, image: true },
+        select: { id: true },
       });
 
       if (!existingUser) {
@@ -121,7 +125,12 @@ export const userRouter = router({
         });
       }
 
-      const isClient = existingUser.role === "CLIENT";
+      if (input.image !== undefined && !isOwnProfileImageUrl(input.image, userId)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid image URL",
+        });
+      }
 
       // If email is being changed, check if it's already taken
       if (input.email) {
@@ -147,8 +156,7 @@ export const userRouter = router({
           ...(input.name && { name: input.name }),
           ...(input.email && { email: input.email }),
           ...(input.phone !== undefined && { phone: input.phone }),
-          ...(isClient && input.image !== undefined && { image: input.image }),
-          ...(!isClient && { image: DEFAULT_AVATAR }),
+          ...(input.image !== undefined && { image: input.image }),
         },
         select: {
           id: true,
@@ -163,10 +171,7 @@ export const userRouter = router({
       return {
         success: true,
         message: "Profile updated successfully",
-        user: {
-          ...updatedUser,
-          image: isClient ? updatedUser.image : DEFAULT_AVATAR,
-        },
+        user: updatedUser,
       };
     }),
 

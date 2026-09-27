@@ -138,7 +138,7 @@ model ServiceType {
   descriptionI18n          Json?
   icon                     String?
   formFields               Json?
-  attributes               Json? // Custom Q&A for each service: [{question: string, required: boolean, type: 'text'|'select'|'multiselect', options?: string[]}]
+  attributes               Json? // Custom Q&A: [{question, required, type: 'text'|'textarea'|'number'|'select'|'multiselect'|'file'|'voice', options?, maxFiles?, maxSizeMB?}]
   creditCost               Int                     @default(1) // Number of credits required to create a request for this service
   maxFreeRevisions         Int                     @default(3) // Number of free revisions per request
   paidRevisionCost         Int                     @default(1) // Cost in credits for paid revisions

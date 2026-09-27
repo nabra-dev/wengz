@@ -92,7 +92,7 @@ When a user asks what services Wengz provides (or a close paraphrase), prefer th
 Each service type can define:
 
 - Base credit cost per request.
-- Configurable attributes (text/select/multiselect style) that can add credit cost.
+- Configurable attributes (text/select/multiselect/number/file/voice) that can add credit cost (file/voice do not).
 - Priority surcharge (low/medium/high).
 - Revision policy:
   - Max free revisions.

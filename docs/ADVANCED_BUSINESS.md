@@ -70,7 +70,7 @@ Settlement value is independent of what the client paid for a **package**; packa
 **Service types** are admin-configurable and drive:
 
 - **Per-request credit cost** (base cost for that service).
-- **Attributes** (structured Q&A, options, multiselect) that can **add to** the credit total.
+- **Attributes** (structured Q&A: text, select/multiselect, number, **file upload**, **voice record/upload**) that can **add to** the credit total (text/choice/number only; file and voice answers do not add credits).
 - **Priority surcharges** (low / medium / high) expressed as additional credits per service configuration.
 - **Revisions**: each service defines **free revision allowance**, **paid revision cost**, and whether paid revisions **reset** the free counter—so the business can tune quality-of-service vs. margin.
 - **Max delivery**: each service defines a **maximum estimated delivery time in minutes**; providers cannot set a start-work estimate above that cap.

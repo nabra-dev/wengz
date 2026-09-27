@@ -212,15 +212,31 @@ export function AttributesManager({ attributes, onChange }: AttributesManagerPro
                           <Label htmlFor={`type-${index}`}>{t("answerType")}</Label>
                           <Select
                             value={attr.type}
-                            onValueChange={(value) =>
+                            onValueChange={(value) => {
+                              const type = value as ServiceAttribute["type"];
+                              const isChoice = type === "select" || type === "multiselect";
+                              const isMedia = type === "file" || type === "voice";
                               updateAttribute(index, {
-                                type: value as ServiceAttribute["type"],
-                                options:
-                                  value === "select" || value === "multiselect"
-                                    ? attr.options || []
-                                    : undefined,
-                              })
-                            }
+                                type,
+                                options: isChoice ? attr.options || [] : undefined,
+                                optionsWithCost: isChoice ? attr.optionsWithCost : undefined,
+                                min: type === "number" ? attr.min : undefined,
+                                max: type === "number" ? attr.max : undefined,
+                                creditImpact: type === "number" ? attr.creditImpact : undefined,
+                                includedQuantity:
+                                  type === "number" ? attr.includedQuantity : undefined,
+                                maxFiles: isMedia
+                                  ? type === "voice"
+                                    ? (attr.maxFiles ?? 1)
+                                    : (attr.maxFiles ?? 5)
+                                  : undefined,
+                                maxSizeMB: isMedia
+                                  ? type === "voice"
+                                    ? (attr.maxSizeMB ?? 25)
+                                    : (attr.maxSizeMB ?? 50)
+                                  : undefined,
+                              });
+                            }}
                           >
                             <SelectTrigger id={`type-${index}`}>
                               <SelectValue />
@@ -231,6 +247,8 @@ export function AttributesManager({ attributes, onChange }: AttributesManagerPro
                               <SelectItem value="number">{t("number")}</SelectItem>
                               <SelectItem value="select">{t("select")}</SelectItem>
                               <SelectItem value="multiselect">{t("multiselect")}</SelectItem>
+                              <SelectItem value="file">{t("file")}</SelectItem>
+                              <SelectItem value="voice">{t("voice")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -353,6 +371,47 @@ export function AttributesManager({ attributes, onChange }: AttributesManagerPro
                                 })
                               }
                             />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* File / voice upload limits */}
+                      {(attr.type === "file" || attr.type === "voice") && (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`maxFiles-${index}`}>{t("maxFiles")}</Label>
+                            <Input
+                              id={`maxFiles-${index}`}
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={attr.maxFiles ?? (attr.type === "voice" ? 1 : 5)}
+                              onChange={(e) => {
+                                const n = e.target.value ? Number(e.target.value) : undefined;
+                                updateAttribute(index, {
+                                  maxFiles:
+                                    n === undefined ? undefined : Math.min(10, Math.max(1, n)),
+                                });
+                              }}
+                            />
+                            <p className="text-xs text-muted-foreground">{t("maxFilesHelp")}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`maxSizeMB-${index}`}>{t("maxSizeMB")}</Label>
+                            <Input
+                              id={`maxSizeMB-${index}`}
+                              type="number"
+                              min={1}
+                              value={attr.maxSizeMB ?? (attr.type === "voice" ? 25 : 50)}
+                              onChange={(e) =>
+                                updateAttribute(index, {
+                                  maxSizeMB: e.target.value
+                                    ? Math.max(1, Number(e.target.value))
+                                    : undefined,
+                                })
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">{t("maxSizeMBHelp")}</p>
                           </div>
                         </div>
                       )}

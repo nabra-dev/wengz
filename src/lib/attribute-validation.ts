@@ -3,22 +3,30 @@
  * Helper functions to validate client responses against service Q&A attributes
  */
 
-import { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
+import {
+  ServiceAttribute,
+  AttributeResponse,
+  resolveAttributeMaxFiles,
+} from "@/types/service-attributes";
+import { isAllowedUploadUrl } from "@/lib/upload-url";
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
 
+export type ValidateAttributeOptions = {
+  /** Required to validate file/voice upload URLs belong to this user */
+  userId?: string;
+};
+
 /**
  * Validates client responses against service attributes
- * @param attributes - The service's Q&A attributes
- * @param responses - The client's answers
- * @returns Validation result with errors if any
  */
 export function validateAttributeResponses(
   attributes: ServiceAttribute[],
-  responses: AttributeResponse[]
+  responses: AttributeResponse[],
+  options?: ValidateAttributeOptions
 ): ValidationResult {
   if (!attributes || attributes.length === 0) {
     return { valid: true, errors: [] };
@@ -27,7 +35,7 @@ export function validateAttributeResponses(
   const responseMap = new Map(responses.map((r) => [r.question, r.answer]));
 
   const errors = attributes
-    .map((attribute) => validateSingleAttribute(attribute, responseMap))
+    .map((attribute) => validateSingleAttribute(attribute, responseMap, options))
     .filter((error): error is string => error !== null);
 
   return {
@@ -37,29 +45,46 @@ export function validateAttributeResponses(
 }
 
 /**
- * Validates a single attribute response
+ * Collects upload URLs from file/voice attribute answers for ACL checks.
  */
+export function collectAttributeMediaUrls(
+  attributes: ServiceAttribute[] | null | undefined,
+  responses: AttributeResponse[] | null | undefined
+): string[] {
+  if (!attributes?.length || !responses?.length) return [];
+  const mediaQuestions = new Set(
+    attributes.filter((a) => a.type === "file" || a.type === "voice").map((a) => a.question)
+  );
+  const urls: string[] = [];
+  for (const response of responses) {
+    if (!mediaQuestions.has(response.question)) continue;
+    if (Array.isArray(response.answer)) {
+      urls.push(...response.answer.filter((u) => typeof u === "string" && u.trim()));
+    } else if (typeof response.answer === "string" && response.answer.trim()) {
+      urls.push(response.answer.trim());
+    }
+  }
+  return urls;
+}
+
 function validateSingleAttribute(
   attribute: ServiceAttribute,
-  responseMap: Map<string, string | string[]>
+  responseMap: Map<string, string | string[]>,
+  options?: ValidateAttributeOptions
 ): string | null {
   const answer = responseMap.get(attribute.question);
 
-  // Check required fields
   if (isRequiredFieldMissing(attribute, answer)) {
     return `"${attribute.question}" is required`;
   }
 
-  // Skip validation if not required and no answer provided
   if (!answer) return null;
+  if (Array.isArray(answer) && answer.length === 0) return null;
+  if (typeof answer === "string" && answer.trim() === "") return null;
 
-  // Validate based on type
-  return validateByType(attribute, answer);
+  return validateByType(attribute, answer, options);
 }
 
-/**
- * Checks if a required field is missing
- */
 function isRequiredFieldMissing(
   attribute: ServiceAttribute,
   answer: string | string[] | undefined
@@ -67,13 +92,15 @@ function isRequiredFieldMissing(
   if (!attribute.required) return false;
   if (!answer) return true;
   if (Array.isArray(answer) && answer.length === 0) return true;
+  if (typeof answer === "string" && answer.trim() === "") return true;
   return false;
 }
 
-/**
- * Validates answer based on attribute type
- */
-function validateByType(attribute: ServiceAttribute, answer: string | string[]): string | null {
+function validateByType(
+  attribute: ServiceAttribute,
+  answer: string | string[],
+  options?: ValidateAttributeOptions
+): string | null {
   switch (attribute.type) {
     case "select":
       return validateSelectType(attribute, answer);
@@ -84,14 +111,14 @@ function validateByType(attribute: ServiceAttribute, answer: string | string[]):
     case "text":
     case "textarea":
       return validateTextType(attribute, answer);
+    case "file":
+    case "voice":
+      return validateMediaType(attribute, answer, options);
     default:
       return null;
   }
 }
 
-/**
- * Validates select type attribute
- */
 function validateSelectType(attribute: ServiceAttribute, answer: string | string[]): string | null {
   const allowedOptions = attribute.optionsWithCost?.map((o) => o.value) ?? attribute.options;
   if (allowedOptions && !allowedOptions.includes(answer as string)) {
@@ -100,9 +127,6 @@ function validateSelectType(attribute: ServiceAttribute, answer: string | string
   return null;
 }
 
-/**
- * Validates multiselect type attribute
- */
 function validateMultiselectType(
   attribute: ServiceAttribute,
   answer: string | string[]
@@ -123,9 +147,6 @@ function validateMultiselectType(
   return null;
 }
 
-/**
- * Validates number type attribute
- */
 function validateNumberType(attribute: ServiceAttribute, answer: string | string[]): string | null {
   if (typeof answer !== "string") {
     return `"${attribute.question}" must be a number`;
@@ -147,9 +168,6 @@ function validateNumberType(attribute: ServiceAttribute, answer: string | string
   return null;
 }
 
-/**
- * Validates text/textarea type attribute
- */
 function validateTextType(attribute: ServiceAttribute, answer: string | string[]): string | null {
   if (typeof answer !== "string") {
     return `"${attribute.question}" must be a string`;
@@ -160,11 +178,43 @@ function validateTextType(attribute: ServiceAttribute, answer: string | string[]
   return null;
 }
 
-/**
- * Formats attribute responses for display
- * @param responses - The client's answers
- * @returns Formatted string for display
- */
+function validateMediaType(
+  attribute: ServiceAttribute,
+  answer: string | string[],
+  options?: ValidateAttributeOptions
+): string | null {
+  const urls = Array.isArray(answer) ? answer : [answer];
+  if (urls.length === 0) {
+    return `"${attribute.question}" requires at least one file`;
+  }
+
+  const maxFiles = resolveAttributeMaxFiles(attribute);
+  if (urls.length > maxFiles) {
+    return `"${attribute.question}" allows at most ${maxFiles} file(s)`;
+  }
+
+  for (const url of urls) {
+    if (typeof url !== "string" || !url.trim()) {
+      return `"${attribute.question}" contains an invalid file URL`;
+    }
+  }
+
+  const userId = options?.userId;
+  if (userId) {
+    const invalid = urls.filter((url) => !isAllowedUploadUrl(url, userId));
+    if (invalid.length > 0) {
+      return `"${attribute.question}" contains invalid upload URL(s)`;
+    }
+  } else {
+    const invalid = urls.filter((url) => !url.trim().includes("/api/files/uploads/"));
+    if (invalid.length > 0) {
+      return `"${attribute.question}" must use uploaded file URLs`;
+    }
+  }
+
+  return null;
+}
+
 export function formatAttributeResponses(responses: AttributeResponse[]): string {
   if (!responses || responses.length === 0) {
     return "No additional information provided";
@@ -178,20 +228,6 @@ export function formatAttributeResponses(responses: AttributeResponse[]): string
     .join("\n\n");
 }
 
-/**
- * Calculates additional credits from attribute responses
- *
- * Logic:
- * - For select/number inputs: additionalCredits = selectedValue × creditImpact
- *   Example: User selects "2" segments with creditImpact: 5 → 2 × 5 = 10 credits
- *
- * - For inputs with includedQuantity: additionalCredits = max(0, selectedValue - includedQuantity) × creditImpact
- *   Example: 25 products with includedQuantity: 20 and creditImpact: 1 → (25-20) × 1 = 5 credits
- *
- * @param attributes - The service's Q&A attributes
- * @param responses - The client's answers
- * @returns Total additional credits from all attributes
- */
 export function calculateAttributeCredits(
   attributes: ServiceAttribute[],
   responses: AttributeResponse[]
@@ -215,9 +251,6 @@ export function calculateAttributeCredits(
   return totalAdditionalCredits;
 }
 
-/**
- * Breaks down additional credits per attribute
- */
 export function calculateAttributeCreditBreakdown(
   attributes: ServiceAttribute[],
   responses: AttributeResponse[]
@@ -244,14 +277,14 @@ export function calculateAttributeCreditBreakdown(
   return items;
 }
 
-/**
- * Calculates credits for a single attribute
- */
 function calculateSingleAttributeCredits(
   attribute: ServiceAttribute,
   answer: string | string[]
 ): number {
-  // Per-option credit costs for select/multiselect
+  if (attribute.type === "file" || attribute.type === "voice") {
+    return 0;
+  }
+
   if (attribute.type === "select") {
     const optionCost = getOptionCost(attribute, answer as string);
     if (optionCost !== null) return optionCost;
@@ -265,7 +298,6 @@ function calculateSingleAttributeCredits(
     return costs.reduce((sum, c) => sum + c, 0);
   }
 
-  // Numeric-based impacts (number or select using creditImpact)
   if (Array.isArray(answer)) return 0;
 
   const numericValue = Number.parseFloat(answer);

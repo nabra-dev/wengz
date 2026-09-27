@@ -4,7 +4,11 @@ import { TRPCError } from "@trpc/server";
 import { checkAndDeductCredits } from "@/lib/credit-logic";
 import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 import { handleRevisionRequest, getRevisionInfo } from "@/lib/revision-logic";
-import { validateAttributeResponses, calculateAttributeCredits } from "@/lib/attribute-validation";
+import {
+  validateAttributeResponses,
+  calculateAttributeCredits,
+  collectAttributeMediaUrls,
+} from "@/lib/attribute-validation";
 import { getPriorityCostsForService } from "@/lib/priority-costs";
 import { settleCompletedRequest } from "@/lib/provider-wallet";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
@@ -75,17 +79,33 @@ async function validateServiceAccess(
 /**
  * Validates attribute responses against service type attributes
  */
-function validateServiceAttributes(serviceType: any, attributeResponses: any) {
+function validateServiceAttributes(serviceType: any, attributeResponses: any, userId: string) {
   if (serviceType.attributes && attributeResponses) {
     const validation = validateAttributeResponses(
       serviceType.attributes as ServiceAttribute[],
-      attributeResponses as AttributeResponse[]
+      attributeResponses as AttributeResponse[],
+      { userId }
     );
 
     if (!validation.valid) {
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: `Invalid attribute responses: ${validation.errors.join(", ")}`,
+      });
+    }
+
+    try {
+      assertAllowedUploadUrls(
+        collectAttributeMediaUrls(
+          serviceType.attributes as ServiceAttribute[],
+          attributeResponses as AttributeResponse[]
+        ),
+        userId
+      );
+    } catch {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Invalid attribute file URL. Upload files through the app first.",
       });
     }
   }
@@ -311,7 +331,7 @@ export const requestRouter = router({
       await validateServiceAccess(ctx.db, userId, input.serviceTypeId, serviceType.name);
 
       // Validate attribute responses
-      validateServiceAttributes(serviceType, input.attributeResponses);
+      validateServiceAttributes(serviceType, input.attributeResponses, userId);
 
       // Only allow our private upload URLs — blocks javascript: and external phishing.
       try {
@@ -531,9 +551,7 @@ export const requestRouter = router({
       const sanitized =
         role === "PROVIDER"
           ? requests.map((r) =>
-              r.providerId === userId
-                ? r
-                : { ...r, client: { ...r.client, email: null } }
+              r.providerId === userId ? r : { ...r, client: { ...r.client, email: null } }
             )
           : requests;
 
@@ -611,8 +629,7 @@ export const requestRouter = router({
       const commentsChronological = [...request.comments].reverse();
 
       // Providers viewing an unassigned pending request must not see client PII.
-      const isProviderBrowsing =
-        role === "PROVIDER" && request.providerId !== userId;
+      const isProviderBrowsing = role === "PROVIDER" && request.providerId !== userId;
       const visibleRequest = isProviderBrowsing
         ? {
             ...request,
@@ -1379,7 +1396,9 @@ export const requestRouter = router({
     const allowedServiceIds = supportAllServices
       ? null
       : new Set(
-          activeSubscription.package.services.map((ps: { serviceType: { id: string } }) => ps.serviceType.id)
+          activeSubscription.package.services.map(
+            (ps: { serviceType: { id: string } }) => ps.serviceType.id
+          )
         );
 
     return allServices.map((service) => {

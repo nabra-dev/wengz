@@ -21,7 +21,8 @@ import { toast } from "sonner";
 import { Loader2, User, Mail, Upload, X } from "lucide-react";
 import { showError } from "@/lib/error-handler";
 
-const DEFAULT_AVATAR = "/images/logo.svg";
+const PROFILE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const PROFILE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 
 const getInitials = (value?: string | null) =>
   value
@@ -53,8 +54,6 @@ export function EditProfileForm() {
   const updateProfile = trpc.user.updateProfile.useMutation();
   const { update: updateSession } = useSession();
 
-  const isClient = profile?.role === "CLIENT";
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("+20");
@@ -71,10 +70,9 @@ export function EditProfileForm() {
   // Set form values when profile loads
   useEffect(() => {
     if (!profile) return;
-    const isClientProfile = profile.role === "CLIENT";
     setName(profile.name || "");
     setEmail(profile.email);
-    setProfileImage(isClientProfile ? profile.image || null : DEFAULT_AVATAR);
+    setProfileImage(profile.image || null);
     if (profile.phone) {
       const parts = profile.phone.split(" ");
       if (parts.length > 1 && parts[0].startsWith("+")) {
@@ -136,7 +134,7 @@ export function EditProfileForm() {
         updates.phone = composedPhone;
       }
 
-      if (isClient && profileImage && profileImage !== profile?.image) {
+      if (profileImage && profileImage !== profile?.image) {
         updates.image = profileImage;
       }
 
@@ -156,10 +154,19 @@ export function EditProfileForm() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isClient) return;
-
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
+
+    if (!PROFILE_IMAGE_TYPES.has(file.type)) {
+      toast.error(t("uploadMessages.invalidType"));
+      return;
+    }
+
+    if (file.size > PROFILE_IMAGE_MAX_BYTES) {
+      toast.error(t("uploadMessages.tooLarge"));
+      return;
+    }
 
     setIsUploadingImage(true);
     try {
@@ -178,7 +185,7 @@ export function EditProfileForm() {
       });
       refetch();
     } catch (error) {
-      setProfileImage(isClient ? profile?.image || null : DEFAULT_AVATAR);
+      setProfileImage(profile?.image || null);
       showError(error, t("uploadMessages.failed"));
     } finally {
       setIsUploadingImage(false);
@@ -271,53 +278,47 @@ export function EditProfileForm() {
             </Label>
             <div className="flex items-center gap-3 rounded-md border p-3">
               <Avatar className="h-14 w-14">
-                <AvatarImage
-                  src={isClient ? profileImage || profile?.image || undefined : DEFAULT_AVATAR}
-                  alt="Profile avatar"
-                />
-                <AvatarFallback>{isClient ? getInitials(name) : "NB"}</AvatarFallback>
+                <AvatarImage src={profileImage || undefined} alt="Profile avatar" />
+                <AvatarFallback>{getInitials(name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">{t("helperText.currentPhoto")}</p>
-                {isClient && (
-                  <div className="flex gap-2 mt-2">
-                    <label htmlFor="profileImageInput">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 cursor-pointer"
-                        disabled={isUploadingImage}
-                        onClick={() => document.getElementById("profileImageInput")?.click()}
-                      >
-                        {isUploadingImage ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                        {t("buttons.changePhoto")}
-                      </Button>
-                    </label>
-                    {profileImage && profileImage !== profile?.image && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setProfileImage(profile?.image || null)}
-                      >
-                        <X className="h-4 w-4" />
-                        {t("buttons.reset")}
-                      </Button>
+                <p className="text-xs text-muted-foreground">{t("helperText.maxFileSize")}</p>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={isUploadingImage}
+                    onClick={() => document.getElementById("profileImageInput")?.click()}
+                  >
+                    {isUploadingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
                     )}
-                  </div>
-                )}
+                    {t("buttons.changePhoto")}
+                  </Button>
+                  {profileImage && profileImage !== profile?.image && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProfileImage(profile?.image || null)}
+                    >
+                      <X className="h-4 w-4" />
+                      {t("buttons.reset")}
+                    </Button>
+                  )}
+                </div>
               </div>
               <input
                 id="profileImageInput"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 onChange={handleImageUpload}
-                disabled={isUploadingImage || !isClient}
+                disabled={isUploadingImage}
                 className="hidden"
               />
             </div>
@@ -330,7 +331,7 @@ export function EditProfileForm() {
               onClick={() => {
                 setName(profile?.name || "");
                 setEmail(profile?.email || "");
-                setProfileImage(isClient ? profile?.image || null : DEFAULT_AVATAR);
+                setProfileImage(profile?.image || null);
                 if (profile?.phone) {
                   const parts = profile.phone.split(" ");
                   if (parts.length > 1 && parts[0].startsWith("+")) {

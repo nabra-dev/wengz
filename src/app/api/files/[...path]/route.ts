@@ -115,6 +115,14 @@ async function existsRequestFile(
   return !!request;
 }
 
+async function existsProfileImage(url: string): Promise<boolean> {
+  const user = await db.user.findFirst({
+    where: { image: url },
+    select: { id: true },
+  });
+  return !!user;
+}
+
 async function anyGranted(checks: Promise<boolean>[]): Promise<boolean> {
   if (checks.length === 0) return false;
 
@@ -140,6 +148,7 @@ async function anyGranted(checks: Promise<boolean>[]): Promise<boolean> {
  * - Project managers for request attachments / comment files
  * - Finance managers for payment proofs / withdrawal review images
  * - the uploader (key is namespaced as uploads/<userId>/...)
+ * - any signed-in user when the file is another user's profile photo
  * - users who can see a record that references the file
  */
 async function canAccessFile(userId: string, role: string, key: string): Promise<boolean> {
@@ -161,6 +170,9 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
   if (canManageRequests(role)) {
     checks.push(existsRequestFile(key, url));
   }
+
+  // Profile photos are visible to any signed-in user.
+  checks.push(existsProfileImage(url));
 
   // Owner / participant paths (clients, providers, watchers)
   checks.push(existsPaymentProof(key, url, userId));
@@ -225,9 +237,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
         "Content-Length": buffer.length.toString(),
         // Private content; short browser reuse cuts repeat ACL hits on a page view.
         "Cache-Control": "private, max-age=60",
-        ...(isInlineSafe
-          ? {}
-          : { "Content-Disposition": 'attachment; filename="download"' }),
+        ...(isInlineSafe ? {} : { "Content-Disposition": 'attachment; filename="download"' }),
         "X-Content-Type-Options": "nosniff",
       },
     });

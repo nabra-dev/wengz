@@ -1128,11 +1128,17 @@
       "number": "Number (numeric input)",
       "select": "Select (single choice)",
       "multiselect": "Multiselect (multiple choices)",
+      "file": "File upload",
+      "voice": "Voice (record or upload audio)",
       "required": "Required",
       "settings": "Settings",
       "options": "Options (comma-separated)",
       "exampleOptions": "e.g., Yes, No, Maybe",
       "optionsCount": "{count} option(s) defined",
+      "maxFiles": "Max files",
+      "maxFilesHelp": "How many files the client can upload (1–10)",
+      "maxSizeMB": "Max size (MB)",
+      "maxSizeMBHelp": "Maximum size per file in megabytes",
       "placeholder": "Placeholder",
       "placeholderOptional": "Placeholder (optional)",
       "minValue": "Minimum Value",
@@ -1290,6 +1296,25 @@
       "clearAll": "Clear all",
       "maxFilesShort": "Max {maxFiles} files",
       "fileTooLargeShort": "File too large (max {maxSize}MB)"
+    },
+    "voiceRecorder": {
+      "record": "Record",
+      "stop": "Stop",
+      "uploadAudio": "Upload audio",
+      "uploading": "Uploading...",
+      "recordingSaved": "Voice recording saved",
+      "micDenied": "Microphone access was denied or unavailable",
+      "hint": "Record or upload audio (max {maxSize}MB each, up to {maxFiles})",
+      "maximumFilesReached": "Maximum recordings reached",
+      "maximumFilesDesc": "You can only add up to {maxFiles} audio file(s).",
+      "invalidFileType": "Invalid file type",
+      "invalidFileTypeDesc": "{filename} is not an audio file.",
+      "fileTooLarge": "File too large",
+      "fileTooLargeDesc": "Audio exceeds the {maxSize}MB limit.",
+      "uploadFailed": "Upload failed",
+      "uploadFailedDesc": "Failed to upload audio",
+      "uploadComplete": "Upload complete",
+      "uploadCompleteDesc": "{count, plural, one {# audio file uploaded.} other {# audio files uploaded.}}"
     }
   },
   "requests": {
@@ -1457,7 +1482,7 @@
       "helperText": {
         "emailWarning": "Changing your email will affect your login credentials",
         "currentPhoto": "Current photo",
-        "maxFileSize": "Max 5MB, JPG/PNG/GIF",
+        "maxFileSize": "Max 5MB, JPG/PNG/GIF/WEBP",
         "phone": "Add a phone number so providers can reach you"
       },
       "successMessage": "Profile updated successfully",
