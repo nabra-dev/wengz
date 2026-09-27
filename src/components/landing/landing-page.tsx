@@ -469,32 +469,34 @@ export default function LandingPage({
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
-            <div className={`max-w-xl pt-4 sm:pt-8 md:pt-12 ${textDirectionClass}`}>
-              <motion.h1
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className={`${FONT_SIZES.hero.title} text-white`}
-              >
-                {t("landing.hero.titleBefore")}
-                <span className="text-[#E0F840]">{t("landing.hero.titleHighlight")}</span>
-                {t("landing.hero.titleAfter")}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12 }}
-                className={`mt-3 max-w-md sm:mt-4 ${FONT_SIZES.hero.subtitle} text-white/70`}
-              >
-                {t("landing.hero.subtitle")}
-              </motion.p>
+            <div className="pointer-events-none absolute inset-x-4 top-0 bottom-0 flex items-center sm:inset-x-6 lg:inset-x-10">
+              <div className={`pointer-events-auto max-w-xl ${textDirectionClass}`}>
+                <motion.h1
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className={`${FONT_SIZES.hero.title} text-white`}
+                >
+                  {t("landing.hero.titleBefore")}
+                  <span className="text-[#E0F840]">{t("landing.hero.titleHighlight")}</span>
+                  {t("landing.hero.titleAfter")}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className={`mt-3 max-w-md sm:mt-4 ${FONT_SIZES.hero.subtitle} text-white/70`}
+                >
+                  {t("landing.hero.subtitle")}
+                </motion.p>
+              </div>
             </div>
 
             <motion.div
               initial={{ y: 20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2 }}
-              className={`mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-opacity duration-300 sm:rounded-3xl sm:p-4 ${
+              className={`relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-opacity duration-300 sm:rounded-3xl sm:p-4 ${
                 heroChatPhase === "idle"
                   ? "opacity-40 hover:opacity-100 focus-within:opacity-100"
                   : "opacity-100"
