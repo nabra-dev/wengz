@@ -17,7 +17,7 @@ import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ServicesBento } from "@/components/landing/services-bento";
-import { PackagesCarousel } from "@/components/landing/packages-carousel";
+import { VideoMarquee } from "@/components/landing/video-marquee";
 import { InfoSection } from "@/components/landing/info-section";
 import type { PublicPackage } from "@/lib/public-packages";
 
@@ -627,11 +627,7 @@ export default function LandingPage({
         </section>
 
         <ServicesBento />
-        <PackagesCarousel
-          packages={packages}
-          isLoading={showPackagesSkeleton}
-          isError={isPackagesError}
-        />
+        <VideoMarquee />
         <InfoSection />
 
         {/* Provider form CTA */}
