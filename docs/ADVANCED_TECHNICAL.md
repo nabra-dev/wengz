@@ -96,6 +96,7 @@ flowchart TB
 ## Internationalization
 
 - **Routing**: `src/i18n/routing.ts` — use **`Link` / `redirect` / `useRouter` / `usePathname` from `@/i18n/routing`**, not raw `next/navigation`, for locale-aware URLs (`localePrefix: "as-needed"`).
+- **Language switch**: Client prefers `POST /api/locale` (sets `NEXT_LOCALE`, returns JSON path) + `router.replace(..., { locale })`. GET `/api/locale` remains a no-JS fallback. Redirects must use **`resolvePublicRequestOrigin` / `publicRedirectUrl`** (`src/lib/request-origin.ts`) — never raw `new URL(path, req.url)` behind a reverse proxy (that yields `localhost` Location headers in production). Set `NEXT_PUBLIC_APP_URL` (and `NEXTAUTH_URL`) to the public HTTPS origin; proxy should forward `X-Forwarded-Host` / `X-Forwarded-Proto`.
 - **Messages**: `messages/en.json`, `messages/ar.json`; loaded in `src/app/[locale]/layout.tsx` into `NextIntlClientProvider`.
 - **RTL**: Locale layout sets `dir` for Arabic.
 - **Server copy**: Notification helpers under `src/lib/notifications/` accept **`locale`**; tRPC **`ctx.locale`** (`src/server/trpc.ts`) should be passed through for parity with UI language.

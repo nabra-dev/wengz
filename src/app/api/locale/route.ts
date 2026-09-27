@@ -1,36 +1,71 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { routing, type AppLocale } from "@/i18n/routing";
-import { LOCALE_SWITCH_CACHE_BUST } from "@/lib/locale-switch";
+import { buildLocaleDestinationPath } from "@/lib/locale-switch";
+import { publicRedirectUrl } from "@/lib/request-origin";
 
 function isAppLocale(value: string | null): value is AppLocale {
   return !!value && (routing.locales as readonly string[]).includes(value);
 }
 
-/**
- * Atomically set NEXT_LOCALE and redirect. Used by the language switcher so the
- * preference is applied even when client onClick handlers fail to run.
- */
-export function GET(req: NextRequest) {
-  const localeParam = req.nextUrl.searchParams.get("set");
-  const nextParam = req.nextUrl.searchParams.get("next") || "/";
-
-  if (!isAppLocale(localeParam)) {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
+function parseLocaleSwitchInput(req: NextRequest, body?: { set?: string; next?: string }) {
+  const localeParam = body?.set ?? req.nextUrl.searchParams.get("set");
+  const nextParam = body?.next ?? req.nextUrl.searchParams.get("next") ?? "/";
+  if (!isAppLocale(localeParam)) return null;
 
   // Only allow same-origin relative paths (block open redirects).
   const nextPath = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  const destination = buildLocaleDestinationPath(localeParam, nextPath);
+  return { locale: localeParam, destination };
+}
 
-  let destination = nextPath;
-  if (localeParam === routing.defaultLocale) {
-    const join = nextPath.includes("?") ? "&" : "?";
-    destination = `${nextPath}${join}${LOCALE_SWITCH_CACHE_BUST}=${localeParam}`;
-  } else if (!nextPath.startsWith(`/${localeParam}`)) {
-    destination = nextPath === "/" ? `/${localeParam}` : `/${localeParam}${nextPath}`;
+function applyLocaleCookie(response: NextResponse, locale: AppLocale) {
+  response.cookies.set("NEXT_LOCALE", locale, {
+    path: "/",
+    sameSite: "lax",
+    // Secure in production so the preference sticks on HTTPS only.
+    secure: process.env.NODE_ENV === "production",
+  });
+  response.headers.set("Cache-Control", "private, no-store");
+}
+
+/**
+ * JSON locale switch — preferred by the client switcher.
+ * Sets NEXT_LOCALE and returns the destination path (no Location redirect),
+ * so production never depends on req.url / localhost origins.
+ */
+export async function POST(req: NextRequest) {
+  let body: { set?: string; next?: string } = {};
+  try {
+    body = (await req.json()) as { set?: string; next?: string };
+  } catch {
+    body = {};
   }
 
-  const response = NextResponse.redirect(new URL(destination, req.url), 307);
-  response.cookies.set("NEXT_LOCALE", localeParam, { path: "/", sameSite: "lax" });
-  response.headers.set("Cache-Control", "private, no-store");
+  const parsed = parseLocaleSwitchInput(req, body);
+  if (!parsed) {
+    return NextResponse.json({ ok: false, error: "Invalid locale" }, { status: 400 });
+  }
+
+  const response = NextResponse.json({
+    ok: true,
+    locale: parsed.locale,
+    destination: parsed.destination,
+  });
+  applyLocaleCookie(response, parsed.locale);
+  return response;
+}
+
+/**
+ * GET fallback for progressive enhancement / no-JS.
+ * Redirect must use the public origin (x-forwarded-* / APP_URL), never internal localhost.
+ */
+export function GET(req: NextRequest) {
+  const parsed = parseLocaleSwitchInput(req);
+  if (!parsed) {
+    return NextResponse.redirect(publicRedirectUrl(req, "/"), 307);
+  }
+
+  const response = NextResponse.redirect(publicRedirectUrl(req, parsed.destination), 307);
+  applyLocaleCookie(response, parsed.locale);
   return response;
 }

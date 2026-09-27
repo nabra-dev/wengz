@@ -14,22 +14,52 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
+const THEME_COOKIE = "theme";
+const THEME_STORAGE_KEY = "theme";
+
 function applyTheme(t: Theme) {
   const root = document.documentElement;
   root.classList.remove("dark", "light");
   root.classList.add(t);
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+function persistTheme(t: Theme) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, t);
+  } catch {
+    // ignore quota / private mode
+  }
+  // Cookie lets the server layout paint the correct class (no blocking <script>).
+  document.cookie = `${THEME_COOKIE}=${t};path=/;max-age=31536000;samesite=lax`;
+}
+
+function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // ignore
+  }
+  return "dark";
+}
+
+export function ThemeProvider({
+  children,
+  initialTheme = "dark",
+}: {
+  children: React.ReactNode;
+  /** From NEXT_LOCALE-safe server cookie so SSR matches client. */
+  initialTheme?: Theme;
+}) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    const initial: Theme = stored === "light" ? "light" : "dark";
+    const stored = readStoredTheme();
     // Defer to avoid sync setState-in-effect lint; localStorage is external.
     queueMicrotask(() => {
-      setTheme(initial);
-      applyTheme(initial);
+      setTheme(stored);
+      applyTheme(stored);
+      persistTheme(stored);
     });
   }, []);
 
@@ -37,7 +67,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => {
       const next: Theme = prev === "dark" ? "light" : "dark";
       applyTheme(next);
-      localStorage.setItem("theme", next);
+      persistTheme(next);
       return next;
     });
   }, []);
@@ -48,3 +78,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   return useContext(ThemeContext);
 }
+
+export type { Theme };

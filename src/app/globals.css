@@ -173,7 +173,7 @@
 
   /* Font family based on direction */
   [dir="ltr"] {
-    font-family: var(--font-lato), sans-serif;
+    font-family: var(--font-unbounded), system-ui, sans-serif;
   }
 
   [dir="rtl"] {

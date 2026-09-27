@@ -10,7 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const locale = useLocale();
   const { theme } = useTheme();
   const isRtl = locale === "ar";
-  const fontClass = isRtl ? "font-cairo" : "font-lato";
+  const fontClass = isRtl ? "font-cairo" : "font-unbounded";
 
   return (
     <Sonner

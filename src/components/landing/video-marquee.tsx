@@ -129,6 +129,7 @@ export function VideoMarquee() {
                       <LazyGalleryVideo
                         className="aspect-[9/16] w-full object-cover"
                         src={`/images/landing/${idx}.mp4`}
+                        poster={`/images/landing/${idx}.jpg`}
                         videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
                         muted={muted[idx] ?? true}
                         onClick={() => {

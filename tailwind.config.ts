@@ -34,8 +34,11 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-lato)", "var(--font-cairo)", "sans-serif"],
-        lato: ["var(--font-lato)", "sans-serif"],
+        sans: ["var(--font-unbounded)", "var(--font-cairo)", "sans-serif"],
+        /** English UI — Unbounded */
+        unbounded: ["var(--font-unbounded)", "system-ui", "sans-serif"],
+        /** @deprecated alias — same as unbounded */
+        lato: ["var(--font-unbounded)", "system-ui", "sans-serif"],
         /** Arabic UI — IBM Plex Sans Arabic (`--font-cairo` CSS var) */
         cairo: ["var(--font-cairo)", "Tahoma", "Arial", "sans-serif"],
       },

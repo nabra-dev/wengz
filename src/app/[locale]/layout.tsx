@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import { Lato } from "next/font/google";
 import localFont from "next/font/local";
 import { GoogleTagManager } from "@next/third-parties/google";
 import type { ReactNode } from "react";
@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { routing } from "@/i18n/routing";
 import { Toaster } from "@/components/ui/sonner";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
-import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ThemeProvider, type Theme } from "@/components/providers/theme-provider";
 import { DisplayCurrencyProvider } from "@/components/providers/display-currency-provider";
 import { SiteJsonLd } from "@/components/seo/json-ld";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
@@ -17,15 +17,58 @@ import { brandName, buildPageMetadata } from "@/lib/seo";
 import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
 import { DeploymentRecovery } from "@/components/system/deployment-recovery";
 import { LocaleHtmlUpdater } from "@/components/system/locale-html-updater";
+import { cn } from "@/lib/utils";
 
 /** Only inject GTM when explicitly configured — no hardcoded fallback. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
-const lato = Lato({
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  variable: "--font-lato",
+/** English UI — Unbounded from `/public/fonts`. */
+const unbounded = localFont({
+  src: [
+    {
+      path: "../../../public/fonts/Unbounded-ExtraLight.ttf",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-Light.ttf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-ExtraBold.ttf",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../../../public/fonts/Unbounded-Black.ttf",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-unbounded",
   display: "swap",
+  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
 });
 
 /** Arabic system font — IBM Plex Sans Arabic from `/public/fonts`. */
@@ -118,19 +161,26 @@ export default async function LocaleLayout({
   const allMessages = (await import(`../../../messages/${locale}.json`)).default;
   const messages = pickPublicMessages(allMessages);
   const dir = locale === "ar" ? "rtl" : "ltr";
-  const fontClass = locale === "ar" ? ibmPlexSansArabic.variable : lato.variable;
+  const fontClass = locale === "ar" ? ibmPlexSansArabic.variable : unbounded.variable;
+
+  const themeCookie = (await cookies()).get("theme")?.value;
+  const initialTheme: Theme = themeCookie === "light" ? "light" : "dark";
 
   return (
-    <html lang={locale} dir={dir} className={fontClass} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={cn(fontClass, initialTheme)} suppressHydrationWarning>
       {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
       <head>
-        <script>{`try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='light'?'light':'dark')}catch(e){}`}</script>
         {/* Critical: keep one brand mark visible even if the main CSS bundle fails to load after deploy. */}
-        <style>{`html:not(.dark) .brand-logo-dark{display:none!important}html.dark .brand-logo-light{display:none!important}`}</style>
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              "html:not(.dark) .brand-logo-dark{display:none!important}html.dark .brand-logo-light{display:none!important}",
+          }}
+        />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <SiteJsonLd locale={locale} />
-        <ThemeProvider>
+        <ThemeProvider initialTheme={initialTheme}>
           <DisplayCurrencyProvider>
             <NextIntlClientProvider locale={locale} messages={messages}>
               {GTM_ID ? <GtmPageView /> : null}

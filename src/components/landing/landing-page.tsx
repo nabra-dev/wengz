@@ -81,9 +81,9 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
 const FONT_SIZES = {
   hero: {
     title:
-      "text-balance text-[1.75rem] font-semibold leading-[1.3] tracking-tight min-[380px]:text-4xl sm:text-5xl sm:leading-[1.28] md:text-5xl lg:text-6xl lg:leading-[1.25]",
+      "text-balance text-[1.5rem] font-semibold leading-[1.3] tracking-tight min-[380px]:text-3xl sm:text-4xl sm:leading-[1.28] md:text-4xl lg:text-5xl lg:leading-[1.25]",
     subtitle:
-      "text-[0.875rem] leading-7 text-muted-foreground min-[380px]:text-base min-[380px]:leading-8 sm:text-lg sm:leading-9",
+      "text-[0.8125rem] leading-6 text-muted-foreground min-[380px]:text-sm min-[380px]:leading-7 sm:text-base sm:leading-8",
   },
   sectionTitle: {
     primary:
@@ -451,18 +451,18 @@ export default function LandingPage({
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/35 sm:via-black/70 sm:to-black/25"
+              className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/15 sm:via-black/40 sm:to-black/10"
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/55 sm:via-transparent sm:to-black/50"
+              className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-black/30 sm:via-transparent sm:to-black/25"
               aria-hidden
             />
             <div
-              className="absolute inset-0 opacity-40 mix-blend-screen"
+              className="absolute inset-0 opacity-30 mix-blend-screen"
               style={{
                 backgroundImage:
-                  "radial-gradient(ellipse at 70% 45%, rgba(105,13,212,0.45), transparent 55%)",
+                  "radial-gradient(ellipse at 70% 45%, rgba(105,13,212,0.4), transparent 55%)",
               }}
               aria-hidden
             />
@@ -478,7 +478,9 @@ export default function LandingPage({
                   className={`${FONT_SIZES.hero.title} text-white`}
                 >
                   {t("landing.hero.titleBefore")}
-                  <span className="text-[#E0F840]">{t("landing.hero.titleHighlight")}</span>
+                  <span className="bg-gradient-to-r from-[#690DD4] to-[#E0F840] bg-clip-text text-transparent">
+                    {t("landing.hero.titleHighlight")}
+                  </span>
                   {t("landing.hero.titleAfter")}
                 </motion.h1>
                 <motion.p

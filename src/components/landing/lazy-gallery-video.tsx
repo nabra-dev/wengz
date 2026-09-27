@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type RefCallback } from "react";
 
 interface LazyGalleryVideoProps {
   readonly src: string;
+  /** Static preview shown before the video source loads / plays. */
+  readonly poster?: string;
   readonly className?: string;
   readonly muted?: boolean;
   readonly videoRef?: RefCallback<HTMLVideoElement | null>;
@@ -24,6 +26,7 @@ interface LazyGalleryVideoProps {
  */
 export function LazyGalleryVideo({
   src,
+  poster,
   className,
   muted = true,
   videoRef,
@@ -69,6 +72,7 @@ export function LazyGalleryVideo({
         playsInline
         muted={muted}
         preload="none"
+        poster={poster}
         tabIndex={-1}
         onClick={onClick}
         onLoadedMetadata={onLoadedMetadata}

@@ -10,6 +10,7 @@ jest.mock("@/i18n/routing", () => ({
   __esModule: true,
   routing: { locales: ["en", "ar"], defaultLocale: "en" },
   usePathname: () => "/provider",
+  useRouter: () => ({ replace: jest.fn() }),
 }));
 
 import { usePathname as useNextPathname } from "next/navigation";
@@ -19,7 +20,7 @@ import {
   withLocaleSwitchCacheBust,
   localeFromBrowserPath,
 } from "../language-switcher";
-import { buildLocaleSwitchApiHref } from "@/lib/locale-switch";
+import { buildLocaleSwitchApiHref, buildLocaleDestinationPath } from "@/lib/locale-switch";
 
 describe("buildLocaleSwitchPath", () => {
   it("strips locale and omits default-locale prefix (as-needed)", () => {
@@ -60,6 +61,14 @@ describe("buildLocaleSwitchApiHref", () => {
   it("builds the cookie-setting locale API URL", () => {
     expect(buildLocaleSwitchApiHref("en", "/")).toBe("/api/locale?set=en&next=%2F");
     expect(buildLocaleSwitchApiHref("ar", "/provider")).toBe("/api/locale?set=ar&next=%2Fprovider");
+  });
+});
+
+describe("buildLocaleDestinationPath", () => {
+  it("prefixes non-default locales and cache-busts default", () => {
+    expect(buildLocaleDestinationPath("ar", "/contact")).toBe("/ar/contact");
+    expect(buildLocaleDestinationPath("en", "/contact")).toBe("/contact?lng=en");
+    expect(buildLocaleDestinationPath("ar", "/")).toBe("/ar");
   });
 });
 

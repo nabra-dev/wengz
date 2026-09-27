@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { canAccessAdminPath, getStaffHomePath, isStaffRole } from "./lib/roles";
 import { CANONICAL_HOST } from "./lib/seo";
+import { publicRedirectUrl } from "./lib/request-origin";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -55,7 +56,7 @@ function redirectWwwToApex(req: NextRequest): NextResponse | null {
   const host = req.headers.get("host")?.split(":")[0]?.toLowerCase();
   if (host !== `www.${CANONICAL_HOST}`) return null;
 
-  const url = new URL(req.url);
+  const url = publicRedirectUrl(req, `${req.nextUrl.pathname}${req.nextUrl.search}`);
   url.protocol = "https:";
   url.host = CANONICAL_HOST;
   url.port = "";
@@ -74,7 +75,7 @@ function handlePublicRouting(req: NextRequest) {
   const firstSegment = pathname.split("/").find(Boolean);
 
   if (pathname === "/favicon.ico") {
-    return NextResponse.rewrite(new URL("/images/logo.png", req.url));
+    return NextResponse.rewrite(publicRedirectUrl(req, "/images/logo.png"));
   }
 
   const isApi = pathname.startsWith("/api");
@@ -94,10 +95,11 @@ function handlePublicRouting(req: NextRequest) {
 
   if (isDoubleLocale) {
     const normalizedPath = `/${segments[0]}${segments.slice(2).length ? `/${segments.slice(2).join("/")}` : ""}`;
-    const url = req.nextUrl.clone();
-    url.pathname = normalizedPath || "/";
     // 307: URL shape can change with user preference; never cache permanently.
-    return localeRedirect(url, segments[0] as (typeof routing.locales)[number]);
+    return localeRedirect(
+      publicRedirectUrl(req, normalizedPath || "/"),
+      segments[0] as (typeof routing.locales)[number]
+    );
   }
 
   const hasLocale = routing.locales.includes(firstSegment as (typeof routing.locales)[number]);
@@ -115,9 +117,7 @@ function handlePublicRouting(req: NextRequest) {
     // Non-default locale must be a real URL so canonical and request path match for crawlers.
     // Must be temporary + uncacheable: a cached 308 `/` → `/ar` traps language switches to EN.
     if (preferredLocale !== routing.defaultLocale) {
-      const url = req.nextUrl.clone();
-      url.pathname = localizedPath;
-      return localeRedirect(url, preferredLocale);
+      return localeRedirect(publicRedirectUrl(req, localizedPath), preferredLocale);
     }
 
     const url = req.nextUrl.clone();
@@ -142,10 +142,10 @@ const authMiddleware = withAuth(
     if (basePath.startsWith("admin")) {
       const role = token?.role as string | undefined;
       if (!isStaffRole(role)) {
-        return NextResponse.redirect(new URL("/", req.url));
+        return NextResponse.redirect(publicRedirectUrl(req, "/"));
       }
       if (!canAccessAdminPath(role, basePath)) {
-        return NextResponse.redirect(new URL(getStaffHomePath(role), req.url));
+        return NextResponse.redirect(publicRedirectUrl(req, getStaffHomePath(role)));
       }
     }
 
@@ -154,7 +154,7 @@ const authMiddleware = withAuth(
       token?.role !== "PROVIDER" &&
       token?.role !== "SUPER_ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(publicRedirectUrl(req, "/"));
     }
 
     if (
@@ -162,7 +162,7 @@ const authMiddleware = withAuth(
       token?.role !== "CLIENT" &&
       token?.role !== "SUPER_ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(publicRedirectUrl(req, "/"));
     }
 
     return intlResponse;
