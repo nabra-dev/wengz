@@ -26,17 +26,20 @@ type ServiceTile = {
   imgH: number;
 };
 
+/** Intrinsic pixel sizes (for Next/Image + cover crop inside fixed card tracks). */
 const BENTO_IMG = {
-  design: "/images/landing/bento-imgs/design.png",
-  video: "/images/landing/bento-imgs/video.png",
-  production: "/images/landing/bento-imgs/production.png",
-  voice: "/images/landing/bento-imgs/voice.png",
-  workflow: "/images/landing/workflow.png",
+  design: "/images/landing/bento-imgs/design.png", // 1000×1784 portrait → tall cards
+  video: "/images/landing/bento-imgs/video.png", // 2000×1672
+  content: "/images/landing/bento-imgs/content.png", // 1792×2400 portrait → tall cards
+  production: "/images/landing/bento-imgs/production.png", // 2189×2000
+  voice: "/images/landing/bento-imgs/voice.png", // 2000×1014 wide → short cards
+  studio: "/images/landing/bento-imgs/studio.png", // 2000×1351
+  workflow: "/images/landing/bento-imgs/workflow.png", // 2000×1351
 } as const;
 
 const TILES: ServiceTile[] = [
   {
-    key: "aiImage",
+    key: "aiImage", // Design
     image: BENTO_IMG.design,
     icon: ImageIcon,
     area: "image",
@@ -44,7 +47,7 @@ const TILES: ServiceTile[] = [
     imgH: 528,
   },
   {
-    key: "aiVideo",
+    key: "aiVideo", // Video
     image: BENTO_IMG.video,
     icon: Clapperboard,
     area: "video",
@@ -52,15 +55,15 @@ const TILES: ServiceTile[] = [
     imgH: 354,
   },
   {
-    key: "apps",
-    image: BENTO_IMG.production,
+    key: "apps", // Content
+    image: BENTO_IMG.content,
     icon: LayoutGrid,
     area: "apps",
     imgW: 296,
     imgH: 528,
   },
   {
-    key: "mcp",
+    key: "mcp", // Workflow
     image: BENTO_IMG.workflow,
     icon: Plug,
     area: "mcp",
@@ -68,7 +71,7 @@ const TILES: ServiceTile[] = [
     imgH: 200,
   },
   {
-    key: "flows",
+    key: "flows", // Automation
     image: BENTO_IMG.workflow,
     icon: Workflow,
     area: "flows",
@@ -76,15 +79,15 @@ const TILES: ServiceTile[] = [
     imgH: 324,
   },
   {
-    key: "plugin",
-    image: BENTO_IMG.design,
+    key: "plugin", // Studio
+    image: BENTO_IMG.studio,
     icon: Sparkles,
     area: "plugin",
     imgW: 296,
     imgH: 140,
   },
   {
-    key: "voiceover",
+    key: "voiceover", // Voice
     image: BENTO_IMG.voice,
     icon: Mic2,
     area: "voice",
@@ -92,7 +95,7 @@ const TILES: ServiceTile[] = [
     imgH: 150,
   },
   {
-    key: "music",
+    key: "music", // Sound
     image: BENTO_IMG.voice,
     icon: Music2,
     area: "music",
@@ -100,7 +103,7 @@ const TILES: ServiceTile[] = [
     imgH: 150,
   },
   {
-    key: "studio",
+    key: "studio", // Full production
     image: BENTO_IMG.production,
     icon: Clapperboard,
     area: "studio",
@@ -108,7 +111,6 @@ const TILES: ServiceTile[] = [
     imgH: 324,
   },
 ];
-
 export function ServicesBento() {
   const t = useTranslations("landing.services");
 
