@@ -53,7 +53,7 @@ type ManagedUserRole = AssignableRole;
 
 type ServiceType = { id: string; name: string; nameI18n?: Record<string, string> };
 
-type StatusFilter = "all" | "active" | "inactive";
+type StatusFilter = "all" | "active" | "inactive" | "pending" | "rejected";
 
 type UserData = {
   id: string;
@@ -62,11 +62,16 @@ type UserData = {
   phone?: string | null;
   image: string | null;
   role: string;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
   createdAt: Date;
   deletedAt?: Date | string | null;
   averageRating?: number | null;
   providerProfile: {
     id: string;
+    bio?: string | null;
+    portfolio?: string | null;
+    skillsTags?: string[];
     supportedServices: ServiceType[];
   } | null;
   _count: {
@@ -194,7 +199,11 @@ function UserListItem({
   onEditServices,
   onEdit,
   onActiveChange,
+  onApprove,
+  onReject,
   isToggling,
+  isApproving,
+  isRejecting,
 }: {
   user: UserData;
   getRoleColor: (role: string) => string;
@@ -209,13 +218,18 @@ function UserListItem({
     providerRequestCount: number;
   }) => void;
   onActiveChange: (userId: string, isActive: boolean) => void;
+  onApprove: (userId: string) => void;
+  onReject: (userId: string) => void;
   isToggling?: boolean;
+  isApproving?: boolean;
+  isRejecting?: boolean;
 }): JSX.Element {
   const t = useTranslations("admin.users");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const providerServices = user.providerProfile?.supportedServices || [];
   const isActive = !user.deletedAt;
+  const approvalStatus = user.approvalStatus ?? "APPROVED";
 
   const getRoleLabel = (role: string): string => {
     const roleMap: Record<string, string> = {
@@ -250,14 +264,42 @@ function UserListItem({
             <Badge variant={isActive ? "default" : "secondary"}>
               {isActive ? t("badges.active") : t("badges.inactive")}
             </Badge>
+            {approvalStatus === "PENDING" && (
+              <Badge
+                variant="outline"
+                className="border-amber-500/50 text-amber-600 dark:text-amber-400"
+              >
+                {t("badges.pending")}
+              </Badge>
+            )}
+            {approvalStatus === "REJECTED" && (
+              <Badge variant="destructive">{t("badges.rejected")}</Badge>
+            )}
             <span className="text-xs text-muted-foreground">
               {t("table.joined")} {formatDate(user.createdAt, locale)}
             </span>
           </div>
           {user.role === "PROVIDER" && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              <ProviderServiceBadges services={providerServices} />
+            <div className="mt-2 space-y-1">
+              <div className="flex flex-wrap gap-1">
+                <ProviderServiceBadges services={providerServices} />
+              </div>
+              {user.providerProfile?.skillsTags && user.providerProfile.skillsTags.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("table.skills")}: {user.providerProfile.skillsTags.join(", ")}
+                </p>
+              )}
+              {user.providerProfile?.portfolio && (
+                <p className="text-xs text-muted-foreground truncate max-w-md">
+                  {t("table.portfolio")}: {user.providerProfile.portfolio}
+                </p>
+              )}
             </div>
+          )}
+          {user.rejectionReason && (
+            <p className="mt-1 text-xs text-destructive">
+              {t("table.rejectionReason")}: {user.rejectionReason}
+            </p>
           )}
         </div>
       </div>
@@ -272,7 +314,26 @@ function UserListItem({
           />
         )}
         {user.role !== "SUPER_ADMIN" && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {approvalStatus === "PENDING" && (
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => onApprove(user.id)}
+                  disabled={isApproving || isRejecting}
+                >
+                  {t("actions.approve")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => onReject(user.id)}
+                  disabled={isApproving || isRejecting}
+                >
+                  {t("actions.reject")}
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -327,6 +388,12 @@ export default function AdminUsersPage() {
     id: string;
     email: string;
   } | null>(null);
+  const [confirmReject, setConfirmReject] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [actingUserId, setActingUserId] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<{
     id: string;
     name: string | null;
@@ -403,6 +470,32 @@ export default function AdminUsersPage() {
     },
     onError: (error) => {
       setTogglingUserId(null);
+      toast.error(error.message || t("dialog.toast.statusFailed"));
+    },
+  });
+
+  const approveUser = trpc.admin.approveUser.useMutation({
+    onSuccess: () => {
+      utils.admin.getUsers.invalidate();
+      setActingUserId(null);
+      toast.success(t("dialog.toast.approved"));
+    },
+    onError: (error) => {
+      setActingUserId(null);
+      toast.error(error.message || t("dialog.toast.statusFailed"));
+    },
+  });
+
+  const rejectUser = trpc.admin.rejectUser.useMutation({
+    onSuccess: () => {
+      utils.admin.getUsers.invalidate();
+      setActingUserId(null);
+      setConfirmReject(null);
+      setRejectReason("");
+      toast.success(t("dialog.toast.rejected"));
+    },
+    onError: (error) => {
+      setActingUserId(null);
       toast.error(error.message || t("dialog.toast.statusFailed"));
     },
   });
@@ -503,10 +596,9 @@ export default function AdminUsersPage() {
     total: users?.total || 0,
     clients: allUsers.filter((u) => u.role === "CLIENT").length,
     providers: allUsers.filter((u) => u.role === "PROVIDER").length,
-    admins: allUsers.filter((u) =>
-      u.role === "SUPER_ADMIN" ||
-      u.role === "PROJECT_MANAGER" ||
-      u.role === "FINANCE_MANAGER"
+    admins: allUsers.filter(
+      (u) =>
+        u.role === "SUPER_ADMIN" || u.role === "PROJECT_MANAGER" || u.role === "FINANCE_MANAGER"
     ).length,
   };
 
@@ -689,7 +781,9 @@ export default function AdminUsersPage() {
             <Users className="h-4 w-4 text-[#690DD4] dark:text-[#E0F840]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#690DD4] dark:text-[#E0F840]">{stats.clients}</div>
+            <div className="text-2xl font-bold text-[#690DD4] dark:text-[#E0F840]">
+              {stats.clients}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -756,9 +850,11 @@ export default function AdminUsersPage() {
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as StatusFilter)}
           >
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
               <TabsTrigger value="all">{t("filters.all")}</TabsTrigger>
               <TabsTrigger value="active">{t("filters.active")}</TabsTrigger>
+              <TabsTrigger value="pending">{t("filters.pending")}</TabsTrigger>
+              <TabsTrigger value="rejected">{t("filters.rejected")}</TabsTrigger>
               <TabsTrigger value="inactive">{t("filters.inactive")}</TabsTrigger>
             </TabsList>
 
@@ -796,7 +892,16 @@ export default function AdminUsersPage() {
                       onActiveChange={(userId, isActive) => {
                         handleActiveChange(userId, user.email, isActive);
                       }}
+                      onApprove={(userId) => {
+                        setActingUserId(userId);
+                        approveUser.mutate({ userId });
+                      }}
+                      onReject={(userId) => {
+                        setConfirmReject({ id: userId, email: user.email });
+                      }}
                       isToggling={togglingUserId === user.id}
+                      isApproving={actingUserId === user.id && approveUser.isPending}
+                      isRejecting={actingUserId === user.id && rejectUser.isPending}
                     />
                   ))}
                 </div>
@@ -876,6 +981,63 @@ export default function AdminUsersPage() {
           setUserActive.mutate({ userId: confirmDeactivate.id, isActive: false });
         }}
       />
+
+      <Dialog
+        open={!!confirmReject}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmReject(null);
+            setRejectReason("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("confirmations.rejectTitle")}</DialogTitle>
+            <DialogDescription>
+              {confirmReject
+                ? t("confirmations.reject", { email: confirmReject.email })
+                : undefined}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="reject-reason">{t("confirmations.rejectReason")}</Label>
+            <Input
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={t("confirmations.rejectReasonPlaceholder")}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setConfirmReject(null);
+                setRejectReason("");
+              }}
+            >
+              {t("dialog.buttons.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={rejectUser.isPending}
+              onClick={() => {
+                if (!confirmReject) return;
+                setActingUserId(confirmReject.id);
+                rejectUser.mutate({
+                  userId: confirmReject.id,
+                  reason: rejectReason.trim() || undefined,
+                });
+              }}
+            >
+              {t("actions.reject")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

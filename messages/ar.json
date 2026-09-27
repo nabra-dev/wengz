@@ -288,17 +288,24 @@
     "toast": {
       "sentTitle": "تم الإرسال",
       "sentDesc": "شكراً — سنعود إليك قريباً.",
+      "pendingTitle": "تم استلام الطلب",
+      "pendingDesc": "شكراً — سيراجع المسؤول طلب انضمامك كمبدع قبل تسجيل الدخول.",
       "errorTitle": "تعذّر الإرسال",
       "errorDesc": "جرّب مرة أخرى بعد دقيقة."
     },
     "actions": {
       "send": "إرسال",
-      "sending": "جاري الإرسال..."
+      "sending": "جاري الإرسال...",
+      "submitApplication": "إرسال الطلب"
     },
     "fields": {
       "fullName": "الاسم الكامل",
       "email": "البريد الإلكتروني",
-      "phone": "رقم الهاتف (اختياري)",
+      "phone": "رقم الهاتف",
+      "phoneInvalid": "أدخل رقم هاتف صالح (7–15 رقماً)",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "passwordsNotMatch": "كلمتا المرور غير متطابقتين",
       "company": "الشركة (اختياري)",
       "website": "الموقع / الروابط (اختياري)",
       "message": "الرسالة"
@@ -392,6 +399,10 @@
       "maintenanceNote": "وضع الصيانة مفعل حالياً. تسجيل الدخول غير متاح مؤقتاً.",
       "maintenanceLoginBlocked": "تسجيل الدخول مقيد أثناء الصيانة",
       "maintenanceLoginBlockedDesc": "تسجيل الدخول غير متاح مؤقتاً.",
+      "pendingApproval": "الحساب بانتظار الموافقة",
+      "pendingApprovalDesc": "طلبك قيد المراجعة. ستتمكن من تسجيل الدخول بعد موافقة المسؤول.",
+      "accountRejected": "لم تتم الموافقة على الحساب",
+      "accountRejectedDesc": "لم تتم الموافقة على طلبك. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
       "forgotPassword": "نسيت كلمة المرور؟"
     },
     "forgotPassword": {
@@ -424,7 +435,7 @@
     },
     "register": {
       "title": "إنشاء حساب",
-      "description": "أدخل بياناتك للبدء",
+      "description": "أدخل بياناتك — سيوافق المسؤول قبل أن تتمكن من تسجيل الدخول",
       "nameLabel": "الاسم الكامل",
       "namePlaceholder": "أحمد محمد",
       "nameHint": "مطلوب",
@@ -442,8 +453,8 @@
       "createAccountButton": "إنشاء حساب",
       "haveAccount": "لديك حساب بالفعل؟",
       "signInLink": "تسجيل الدخول",
-      "accountCreated": "تم إنشاء الحساب!",
-      "successMessage": "يمكنك الآن تسجيل الدخول باستخدام بيانات الاعتماد الخاصة بك.",
+      "accountCreated": "تم استلام الطلب",
+      "successMessage": "شكراً — سيراجع المسؤول حسابك قبل أن تتمكن من تسجيل الدخول.",
       "registrationFailed": "فشل التسجيل",
       "passwordsNotMatch": "كلمات المرور غير متطابقة",
       "validationError": "خطأ في التحقق",
@@ -581,6 +592,8 @@
         "admin": "مديرو النظام",
         "all": "الكل",
         "active": "نشط",
+        "pending": "قيد الانتظار",
+        "rejected": "مرفوض",
         "inactive": "غير نشط"
       },
       "tabs": {
@@ -589,6 +602,10 @@
         "providers": "المبدعون"
       },
       "createUser": "إنشاء مستخدم",
+      "actions": {
+        "approve": "موافقة",
+        "reject": "رفض"
+      },
       "table": {
         "user": "المستخدم",
         "role": "الدور",
@@ -596,6 +613,9 @@
         "subscriptions": "الاشتراكات",
         "rating": "{count, plural, zero {لا توجد تقييمات} one {تقييم} two {تقييمان} few {تقييمات} many {تقييماً} other {تقييم}}",
         "services": "الخدمات",
+        "skills": "المهارات",
+        "portfolio": "البورتفوليو",
+        "rejectionReason": "سبب الرفض",
         "joined": "تاريخ الانضمام",
         "actions": "الإجراءات",
         "noUsers": "لم يتم العثور على مستخدمين",
@@ -637,6 +657,8 @@
           "error": "حدث خطأ",
           "activated": "تم تفعيل المستخدم بنجاح",
           "deactivated": "تم إلغاء تفعيل المستخدم بنجاح",
+          "approved": "تمت الموافقة على المستخدم بنجاح",
+          "rejected": "تم رفض المستخدم",
           "statusFailed": "فشل تحديث حالة المستخدم"
         },
         "validation": {
@@ -650,11 +672,17 @@
       },
       "badges": {
         "active": "نشط",
-        "inactive": "غير نشط"
+        "inactive": "غير نشط",
+        "pending": "بانتظار الموافقة",
+        "rejected": "مرفوض"
       },
       "confirmations": {
         "deactivate": "إلغاء تفعيل {email}؟ سيتم تسجيل خروجهم فوراً.",
-        "deactivateConfirm": "إلغاء التفعيل"
+        "deactivateConfirm": "إلغاء التفعيل",
+        "rejectTitle": "رفض الطلب",
+        "reject": "رفض {email}؟ لن يتمكن من تسجيل الدخول.",
+        "rejectReason": "السبب (اختياري)",
+        "rejectReasonPlaceholder": "لماذا تم رفض هذا الطلب؟"
       }
     },
     "requests": {
@@ -2359,6 +2387,34 @@
         "contactSupport": "💬 قم بزيارة مركز المساعدة أو تواصل مع الدعم",
         "copyright": "© {year} وينجز. جميع الحقوق محفوظة.",
         "disclaimer": "تلقيت هذا البريد الإلكتروني لأنك قمت بالتسجيل في وينجز."
+      }
+    },
+    "applicationReceived": {
+      "emailSubject": "استلمنا طلبك في وينجز",
+      "emailBody": {
+        "heading": "تم استلام الطلب",
+        "greeting": "مرحباً {userName}،",
+        "body": "شكراً لتقديمك. سيراجع مسؤول حسابك قبل أن تتمكن من تسجيل الدخول.",
+        "clientNote": "سنراسلُك عند الموافقة على حساب العميل.",
+        "providerNote": "سنراسلُك عند الموافقة على حساب المبدع."
+      }
+    },
+    "accountApproved": {
+      "emailSubject": "تمت الموافقة على حسابك في وينجز",
+      "emailBody": {
+        "heading": "تمت الموافقة",
+        "greeting": "مرحباً {userName}،",
+        "body": "تمت الموافقة على حسابك. يمكنك تسجيل الدخول وبدء استخدام وينجز.",
+        "cta": "تسجيل الدخول"
+      }
+    },
+    "accountRejected": {
+      "emailSubject": "تحديث بخصوص طلبك في وينجز",
+      "emailBody": {
+        "heading": "لم تتم الموافقة على الطلب",
+        "greeting": "مرحباً {userName}،",
+        "body": "للأسف لم تتم الموافقة على طلبك في الوقت الحالي.",
+        "reasonLabel": "السبب:"
       }
     },
     "paymentVerification": {

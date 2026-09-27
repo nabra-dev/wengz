@@ -91,6 +91,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
+        if (user.approvalStatus === "PENDING") {
+          throw new Error("ACCOUNT_PENDING_APPROVAL");
+        }
+        if (user.approvalStatus === "REJECTED") {
+          throw new Error("ACCOUNT_REJECTED");
+        }
+
         const maintenanceSetting = await db.systemSettings.findUnique({
           where: { key: "maintenance_mode" },
           select: { value: true },

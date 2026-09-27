@@ -87,6 +87,20 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
+        if (result.error.includes("ACCOUNT_PENDING_APPROVAL")) {
+          toast.error(t("pendingApproval"), {
+            description: t("pendingApprovalDesc"),
+          });
+          setIsLoading(false);
+          return;
+        }
+        if (result.error.includes("ACCOUNT_REJECTED")) {
+          toast.error(t("accountRejected"), {
+            description: t("accountRejectedDesc"),
+          });
+          setIsLoading(false);
+          return;
+        }
         toast.error(t("loginFailed"), {
           description: t("invalidCredentials"),
         });
@@ -116,7 +130,6 @@ export default function LoginPage() {
         globalThis.location.href = `/${locale}/client`;
       }
     } catch (err) {
-
       toast.error(t("error"), {
         description: t("errorMessage"),
       });
@@ -165,20 +178,11 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="password">{t("passwordLabel")} *</Label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                >
+                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
                   {t("forgotPassword")}
                 </Link>
               </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                disabled={isLoading}
-              />
+              <Input id="password" name="password" type="password" required disabled={isLoading} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

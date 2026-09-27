@@ -14,15 +14,15 @@ The application is **bilingual (English and Arabic)** end-to-end, including mark
 
 ## Actors and permissions
 
-| Role                 | Typical use                                                                 | Access (conceptual)                                                                          |
-| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Client**           | Buys packages, creates and tracks requests, messages, rates completed work  | Client dashboard: subscriptions, payment proof, requests, notifications, profile             |
-| **Provider**         | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile |
-| **Project manager**  | Oversees client–provider requests only                                      | Admin requests: list, assign/unassign, request detail, messaging oversight, notifications, profile |
-| **Finance manager**  | Handles money flows only                                                    | Admin finance + payments + finance/payment settings, subscriptions list, notifications, profile |
-| **Super admin**      | Full platform control                                                       | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity |
+| Role                | Typical use                                                                                      | Access (conceptual)                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Client**          | Buys packages, creates and tracks requests, messages, rates completed work                       | Client dashboard: subscriptions, payment proof, requests, notifications, profile                   |
+| **Provider**        | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile                    |
+| **Project manager** | Oversees client–provider requests only                                                           | Admin requests: list, assign/unassign, request detail, messaging oversight, notifications, profile |
+| **Finance manager** | Handles money flows only                                                                         | Admin finance + payments + finance/payment settings, subscriptions list, notifications, profile    |
+| **Super admin**     | Full platform control                                                                            | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity   |
 
-Registration and login are **credential-based** (email/password). Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
+Registration and login are **credential-based** (email/password). **Self-serve** client registration and the creator form create accounts in **PENDING** status; login is blocked until an admin approves. Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
 
 Logged-in users can **change password** from their profile Security tab. Anyone can use **forgot password** (`/auth/forgot-password`) to receive a one-time email link (1 hour TTL) and set a new password at `/auth/reset-password`.
 
@@ -110,6 +110,7 @@ Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval re
 ## Trust, safety, and compliance (surface level)
 
 - User records support **soft delete** (`deletedAt`) and **registration IP** for abuse-oriented workflows.
+- **Self-serve signup** (client register + creator/provider form) creates users with `approvalStatus: PENDING`. They cannot sign in until an admin **approves** (free trial + welcome email run on approve for clients). Admin-created users are **APPROVED** immediately. Soft-delete remains a separate deactivate path from pending/rejected.
 - **System settings** (`SystemSettings` key/value) allow storing configurable policy without code changes for supported keys.
 
 For legal, finance, and DPA details, extend this document in your own wiki; the codebase reflects **technical** enforcement points, not regulatory advice.
@@ -118,15 +119,15 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 
 ## Glossary
 
-| Term              | Meaning                                                                          |
-| ----------------- | -------------------------------------------------------------------------------- |
-| **Credit**        | Spendable unit from an active subscription used to create or extend request work |
-| **Package**       | Sellable bundle of credits + duration (+ optional service scope)                 |
-| **Service type**  | Configurable line of work with pricing, attributes, and revision rules           |
-| **Request**       | A unit of client–provider work tracked through statuses, comments, and ratings   |
-| **Payment proof** | Client-submitted evidence for manual verification of off-platform payment        |
+| Term                | Meaning                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Credit**          | Spendable unit from an active subscription used to create or extend request work                                    |
+| **Package**         | Sellable bundle of credits + duration (+ optional service scope)                                                    |
+| **Service type**    | Configurable line of work with pricing, attributes, and revision rules                                              |
+| **Request**         | A unit of client–provider work tracked through statuses, comments, and ratings                                      |
+| **Payment proof**   | Client-submitted evidence for manual verification of off-platform payment                                           |
 | **Provider wallet** | Provider earnings from completed requests (available + 7-day hold + withdrawal pending), tracked in credits and USD |
-| **Withdrawal**    | Provider request (or admin-recorded payout) reviewed manually with status + reason |
+| **Withdrawal**      | Provider request (or admin-recorded payout) reviewed manually with status + reason                                  |
 
 ---
 

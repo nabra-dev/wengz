@@ -9,8 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { trpc } from "@/lib/trpc/client";
+import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
 
 const fieldClass =
   "h-12 rounded-xl border-border/70 bg-background/70 shadow-sm transition-all placeholder:text-muted-foreground/60 focus-visible:border-[#690DD4]/50 focus-visible:ring-2 focus-visible:ring-[#690DD4]/25";
@@ -32,39 +41,6 @@ export const PROVIDER_FORM_SERVICE_IDS = [
 
 export type ProviderFormServiceId = (typeof PROVIDER_FORM_SERVICE_IDS)[number];
 
-interface SubmitDebugInfo {
-  source: "contact-api";
-  status: number;
-  ok: boolean;
-  contentType: string | null;
-  requestId: string | null;
-  bodySnippet: string;
-}
-
-async function inspectSubmissionResponse(
-  source: SubmitDebugInfo["source"],
-  response: Response
-): Promise<SubmitDebugInfo> {
-  const contentType = response.headers.get("content-type");
-  const requestId =
-    response.headers.get("x-request-id") ||
-    response.headers.get("x-amzn-requestid") ||
-    response.headers.get("cf-ray");
-  const rawBody = await response
-    .clone()
-    .text()
-    .catch(() => "");
-
-  return {
-    source,
-    status: response.status,
-    ok: response.ok,
-    contentType,
-    requestId,
-    bodySnippet: rawBody.slice(0, 600),
-  };
-}
-
 export function ContactFormPage() {
   const t = useTranslations();
   const tSvc = useTranslations("forms.provider.serviceOptions");
@@ -72,7 +48,11 @@ export function ContactFormPage() {
   const [selectedServices, setSelectedServices] = useState<Set<ProviderFormServiceId>>(
     () => new Set()
   );
+  const [countryCode, setCountryCode] = useState("+20");
+  const [phoneInput, setPhoneInput] = useState("");
   const submitLockRef = useRef(false);
+
+  const registerProvider = trpc.auth.registerProvider.useMutation();
 
   function toggleService(id: ProviderFormServiceId) {
     setSelectedServices((prev) => {
@@ -95,50 +75,72 @@ export function ContactFormPage() {
       const v = formData.get(key);
       return typeof v === "string" ? v.trim() : "";
     };
+
+    const name = getText("fullName");
+    const email = getText("email").toLowerCase();
+    const password = getText("password");
+    const confirmPassword = getText("confirmPassword");
+    const company = getText("company");
+    const website = getText("website");
+    const message = getText("message");
     const serviceIds = Array.from(selectedServices);
-    const payload = {
-      type: "provider" as const,
-      fullName: getText("fullName"),
-      email: getText("email"),
-      phone: getText("phone"),
-      company: getText("company"),
-      website: getText("website"),
-      message: getText("message"),
-      services: serviceIds,
-    };
 
     try {
-      const serviceLabelsForEmail =
-        payload.services.length > 0
-          ? payload.services.map((id) => tSvc(id)).join(", ")
-          : "—";
-
-      const res = await fetch("/api/forms/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...payload,
-          serviceLabels: serviceLabelsForEmail,
-        }),
-      });
-
-      const debug = await inspectSubmissionResponse("contact-api", res);
-
-      if (debug.ok) {
-        formEl.reset();
-        setSelectedServices(new Set());
-        toast.success(t("forms.toast.sentTitle"), { description: t("forms.toast.sentDesc") });
+      const emailValidation = emailSchema.safeParse(email);
+      if (!emailValidation.success) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description: emailValidation.error.errors[0]?.message || t("forms.toast.errorDesc"),
+        });
         return;
       }
 
-      toast.error(t("forms.toast.errorTitle"), { description: t("forms.toast.errorDesc") });
-    } catch {
-      toast.error(t("forms.toast.errorTitle"), { description: t("forms.toast.errorDesc") });
+      const phoneValidation = phoneNumberOnlySchema.safeParse(phoneInput);
+      if (!phoneValidation.success || !phoneInput) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description: t("forms.fields.phoneInvalid"),
+        });
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description: t("forms.fields.passwordsNotMatch"),
+        });
+        return;
+      }
+
+      await registerProvider.mutateAsync({
+        name,
+        email,
+        password,
+        confirmPassword,
+        phone: `${countryCode} ${phoneInput}`,
+        company,
+        website,
+        message,
+        services: serviceIds,
+      });
+
+      formEl.reset();
+      setSelectedServices(new Set());
+      setPhoneInput("");
+      setCountryCode("+20");
+      toast.success(t("forms.toast.pendingTitle"), {
+        description: t("forms.toast.pendingDesc"),
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: string }).message)
+          : t("forms.toast.errorDesc");
+      toast.error(t("forms.toast.errorTitle"), { description: msg });
     } finally {
       setLoading(false);
       submitLockRef.current = false;
     }
   }
+
+  const busy = loading || registerProvider.isPending;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -165,7 +167,6 @@ export function ContactFormPage() {
           <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#690DD4]/80 to-[#E0F840]/55" />
 
           <div className="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
-            {/* Pitch panel */}
             <aside className="relative border-b border-border/60 bg-gradient-to-br from-[#690DD4]/[0.12] via-muted/20 to-[#E0F840]/[0.06] px-6 py-8 sm:px-8 sm:py-10 lg:border-b-0 lg:border-e lg:border-border/60">
               <div
                 className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(105,13,212,0.18),transparent_55%)]"
@@ -205,7 +206,6 @@ export function ContactFormPage() {
               </div>
             </aside>
 
-            {/* Form panel */}
             <div className="px-5 py-8 sm:px-8 sm:py-10">
               <form onSubmit={onSubmit} className="space-y-7">
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-x-5 md:gap-y-5">
@@ -222,6 +222,7 @@ export function ContactFormPage() {
                       required
                       className={fieldClass}
                       autoComplete="name"
+                      disabled={busy}
                     />
                   </div>
                   <div className="space-y-2 md:min-w-0">
@@ -238,22 +239,77 @@ export function ContactFormPage() {
                       required
                       className={fieldClass}
                       autoComplete="email"
+                      disabled={busy}
                     />
                   </div>
-                  <div className="space-y-2 md:min-w-0">
+                  <div className="space-y-2 md:min-w-0 md:col-span-2">
                     <Label htmlFor="phone" className="text-sm font-medium">
                       {t("forms.fields.phone")}
                       <span className="ms-1 text-destructive" aria-hidden>
                         *
                       </span>
                     </Label>
+                    <div className="flex rtl:flex-row-reverse gap-2">
+                      <Select value={countryCode} onValueChange={setCountryCode} disabled={busy}>
+                        <SelectTrigger className="h-12 w-[110px] rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="+20">🇪🇬 +20</SelectItem>
+                          <SelectItem value="+966">🇸🇦 +966</SelectItem>
+                          <SelectItem value="+971">🇦🇪 +971</SelectItem>
+                          <SelectItem value="+965">🇰🇼 +965</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        required
+                        className={cn(fieldClass, "flex-1")}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        value={phoneInput}
+                        onChange={(e) => {
+                          setPhoneInput(e.target.value.replaceAll(/\D/g, ""));
+                        }}
+                        pattern="\d{7,15}"
+                        disabled={busy}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 md:min-w-0">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      {t("forms.fields.password")}
+                      <span className="ms-1 text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </Label>
                     <Input
-                      id="phone"
-                      name="phone"
+                      id="password"
+                      name="password"
+                      type="password"
                       required
                       className={fieldClass}
-                      autoComplete="tel"
-                      inputMode="tel"
+                      autoComplete="new-password"
+                      disabled={busy}
+                    />
+                  </div>
+                  <div className="space-y-2 md:min-w-0">
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                      {t("forms.fields.confirmPassword")}
+                      <span className="ms-1 text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                      className={fieldClass}
+                      autoComplete="new-password"
+                      disabled={busy}
                     />
                   </div>
                   <div className="space-y-2 md:min-w-0">
@@ -265,9 +321,10 @@ export function ContactFormPage() {
                       name="company"
                       className={fieldClass}
                       autoComplete="organization"
+                      disabled={busy}
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2 md:min-w-0">
                     <Label htmlFor="website" className="text-sm font-medium">
                       {t("forms.fields.website")}
                     </Label>
@@ -276,6 +333,7 @@ export function ContactFormPage() {
                       name="website"
                       className={fieldClass}
                       placeholder={t("forms.provider.websitePlaceholder")}
+                      disabled={busy}
                     />
                   </div>
                 </div>
@@ -301,6 +359,7 @@ export function ContactFormPage() {
                           type="button"
                           onClick={() => toggleService(id)}
                           aria-pressed={selected}
+                          disabled={busy}
                           className={cn(
                             "flex items-start gap-3 rounded-xl border px-3.5 py-3 text-start text-sm shadow-sm transition-all",
                             selected
@@ -336,17 +395,18 @@ export function ContactFormPage() {
                     className={textareaClass}
                     rows={6}
                     placeholder={t("forms.provider.messagePlaceholder")}
+                    disabled={busy}
                   />
                 </div>
 
                 <div className="border-t border-border/60 pt-5">
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={busy}
                     size="lg"
                     className="h-12 w-full rounded-xl bg-[#690DD4] text-base font-semibold text-[#E0F840] shadow-[0_10px_32px_rgba(105,13,212,0.32)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.4)] sm:h-11"
                   >
-                    {loading ? t("forms.actions.sending") : t("forms.actions.send")}
+                    {busy ? t("forms.actions.sending") : t("forms.actions.submitApplication")}
                   </Button>
                 </div>
               </form>

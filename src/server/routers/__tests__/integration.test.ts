@@ -34,6 +34,9 @@ jest.mock("@/lib/db", () => ({
 
 jest.mock("@/lib/notifications", () => ({
   sendWelcomeEmail: jest.fn().mockResolvedValue(undefined),
+  sendApplicationReceivedEmail: jest.fn().mockResolvedValue(undefined),
+  sendAccountApprovedEmail: jest.fn().mockResolvedValue(undefined),
+  sendAccountRejectedEmail: jest.fn().mockResolvedValue(undefined),
   notifyNewMessage: jest.fn().mockResolvedValue(undefined),
   notifyStatusChange: jest.fn().mockResolvedValue(undefined),
 }));

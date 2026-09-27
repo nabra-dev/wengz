@@ -292,17 +292,24 @@
     "toast": {
       "sentTitle": "Sent",
       "sentDesc": "Thanks — we’ll get back to you soon.",
+      "pendingTitle": "Application received",
+      "pendingDesc": "Thanks — an admin will review your creator application before you can sign in.",
       "errorTitle": "Couldn’t send",
       "errorDesc": "Please try again in a minute."
     },
     "actions": {
       "send": "Send",
-      "sending": "Sending..."
+      "sending": "Submitting...",
+      "submitApplication": "Submit application"
     },
     "fields": {
       "fullName": "Full name",
       "email": "Email",
-      "phone": "Phone (optional)",
+      "phone": "Phone",
+      "phoneInvalid": "Enter a valid phone number (7–15 digits)",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "passwordsNotMatch": "Passwords do not match",
       "company": "Company (optional)",
       "website": "Website / links (optional)",
       "message": "Message"
@@ -396,6 +403,10 @@
       "maintenanceNote": "Maintenance mode is active. Login is temporarily unavailable.",
       "maintenanceLoginBlocked": "Login restricted during maintenance",
       "maintenanceLoginBlockedDesc": "Login is temporarily unavailable.",
+      "pendingApproval": "Account pending approval",
+      "pendingApprovalDesc": "Your application is under review. You’ll be able to sign in once an admin approves it.",
+      "accountRejected": "Account not approved",
+      "accountRejectedDesc": "Your application was not approved. Contact support if you think this is a mistake.",
       "forgotPassword": "Forgot password?"
     },
     "forgotPassword": {
@@ -428,7 +439,7 @@
     },
     "register": {
       "title": "Create an account",
-      "description": "Enter your details to get started",
+      "description": "Enter your details — an admin will approve before you can sign in",
       "nameLabel": "Full Name",
       "namePlaceholder": "John Doe",
       "nameHint": "Required",
@@ -446,8 +457,8 @@
       "createAccountButton": "Create Account",
       "haveAccount": "Already have an account?",
       "signInLink": "Sign in",
-      "accountCreated": "Account created!",
-      "successMessage": "You can now sign in with your credentials.",
+      "accountCreated": "Application received",
+      "successMessage": "Thanks — an admin will review your account before you can sign in.",
       "registrationFailed": "Registration Failed",
       "passwordsNotMatch": "Passwords do not match",
       "validationError": "Validation Error",
@@ -585,6 +596,8 @@
         "admin": "Super Admins",
         "all": "All",
         "active": "Active",
+        "pending": "Pending",
+        "rejected": "Rejected",
         "inactive": "Inactive"
       },
       "tabs": {
@@ -593,6 +606,10 @@
         "providers": "Providers"
       },
       "createUser": "Create User",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+      },
       "table": {
         "user": "User",
         "role": "Role",
@@ -600,6 +617,9 @@
         "subscriptions": "Subscriptions",
         "rating": "{count, plural, one {Rating} other {Ratings}}",
         "services": "Services",
+        "skills": "Skills",
+        "portfolio": "Portfolio",
+        "rejectionReason": "Rejection reason",
         "joined": "Joined",
         "actions": "Actions",
         "noUsers": "No users found",
@@ -641,6 +661,8 @@
           "error": "An error occurred",
           "activated": "User activated successfully",
           "deactivated": "User deactivated successfully",
+          "approved": "User approved successfully",
+          "rejected": "User rejected",
           "statusFailed": "Failed to update user status"
         },
         "validation": {
@@ -654,11 +676,17 @@
       },
       "badges": {
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "pending": "Pending approval",
+        "rejected": "Rejected"
       },
       "confirmations": {
         "deactivate": "Deactivate {email}? They will be signed out immediately.",
-        "deactivateConfirm": "Deactivate"
+        "deactivateConfirm": "Deactivate",
+        "rejectTitle": "Reject application",
+        "reject": "Reject {email}? They will not be able to sign in.",
+        "rejectReason": "Reason (optional)",
+        "rejectReasonPlaceholder": "Why was this application rejected?"
       }
     },
     "requests": {
@@ -2367,6 +2395,34 @@
         "contactSupport": "💬 Visit our help center or contact support",
         "copyright": "© {year} Wengz. All rights reserved.",
         "disclaimer": "You received this email because you signed up for Wengz."
+      }
+    },
+    "applicationReceived": {
+      "emailSubject": "We received your Wengz application",
+      "emailBody": {
+        "heading": "Application received",
+        "greeting": "Hi {userName},",
+        "body": "Thanks for applying. An admin will review your account before you can sign in.",
+        "clientNote": "We’ll email you when your client account is approved.",
+        "providerNote": "We’ll email you when your creator account is approved."
+      }
+    },
+    "accountApproved": {
+      "emailSubject": "Your Wengz account is approved",
+      "emailBody": {
+        "heading": "You’re approved",
+        "greeting": "Hi {userName},",
+        "body": "Your account is approved. You can sign in and start using Wengz.",
+        "cta": "Sign in"
+      }
+    },
+    "accountRejected": {
+      "emailSubject": "Update on your Wengz application",
+      "emailBody": {
+        "heading": "Application not approved",
+        "greeting": "Hi {userName},",
+        "body": "Unfortunately your application was not approved at this time.",
+        "reasonLabel": "Reason:"
       }
     },
     "paymentVerification": {

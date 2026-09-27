@@ -2,9 +2,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/notifications";
+import { sendPasswordResetEmail, sendApplicationReceivedEmail } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
-import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logger } from "@/lib/logger";
@@ -14,11 +13,19 @@ import {
   createPasswordResetToken,
   PASSWORD_RESET_TTL_MS,
 } from "@/lib/password-reset";
+import { sendEmail } from "@/lib/notifications/email";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
 const GENERIC_RESET_MESSAGE =
   "If an account exists for that email, a password reset link has been sent.";
+
+const requiredPhoneSchema = z
+  .string()
+  .regex(
+    /^\+[1-9]\d{1,3}\s\d{7,15}$/,
+    "Phone must be in format: +countryCode phoneNumber (e.g., +20 1234567890)"
+  );
 
 function getClientIp(req: unknown): string {
   const headersGet =
@@ -123,39 +130,177 @@ export const authRouter = router({
           password: hashedPassword,
           phone: input.phone || null,
           image: DEFAULT_AVATAR,
-          role: "CLIENT", // Default role
+          role: "CLIENT",
+          approvalStatus: "PENDING",
           registrationIp: ip,
         },
       });
 
-      await assignFreeClientSubscription(ctx.db, user.id);
-
-      // Send welcome email (non-blocking)
-      sendWelcomeEmail({
-        userId: user.id,
-        userName: user.name || "User",
+      sendApplicationReceivedEmail({
         userEmail: user.email,
-        userRole: user.role,
+        userName: user.name || "User",
+        userRole: "CLIENT",
         locale: ctx.locale,
       }).catch((error) => {
-        logger.error("Failed to send welcome email:", error);
-        // Don't throw - email failure shouldn't break registration
+        logger.error("Failed to send application received email:", error);
       });
 
       logActivityAsync({
         action: "auth.register",
-        message: `New client registered: ${user.email}`,
+        message: `New client application pending: ${user.email}`,
         actorId: user.id,
         actorRole: "CLIENT",
         entityType: "User",
         entityId: user.id,
         ip,
-        metadata: { email: user.email },
+        metadata: { email: user.email, approvalStatus: "PENDING" },
       });
 
       return {
         success: true,
-        message: "Account created successfully",
+        message: "Application submitted. An admin will review it shortly.",
+        userId: user.id,
+      };
+    }),
+
+  /** Public provider application — creates PENDING PROVIDER + profile. */
+  registerProvider: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/auth/register-provider",
+        tags: ["auth"],
+        summary: "Submit a provider application (pending approval)",
+      },
+    })
+    .input(
+      z
+        .object({
+          name: z.string().min(1, "Name is required"),
+          email: z.string().email("Invalid email address").toLowerCase(),
+          password: z.string().min(1, "Password is required"),
+          confirmPassword: z.string().min(1, "Confirm password is required"),
+          phone: requiredPhoneSchema,
+          company: z.string().optional().default(""),
+          website: z.string().optional().default(""),
+          message: z.string().optional().default(""),
+          services: z.array(z.string()).optional().default([]),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: "Passwords do not match",
+          path: ["confirmPassword"],
+        })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        message: z.string(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const forwardedFor =
+        ctx.req && "headers" in ctx.req && typeof (ctx.req as any).headers?.get === "function"
+          ? (ctx.req as any).headers.get("x-forwarded-for")
+          : (ctx.req as any)?.headers?.["x-forwarded-for"];
+      const realIpHeader =
+        ctx.req && "headers" in ctx.req && typeof (ctx.req as any).headers?.get === "function"
+          ? (ctx.req as any).headers.get("x-real-ip")
+          : (ctx.req as any)?.headers?.["x-real-ip"];
+      const ipForLimit =
+        (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(",")[0]?.trim() ||
+        (Array.isArray(realIpHeader) ? realIpHeader[0] : realIpHeader) ||
+        "unknown";
+
+      const rl = rateLimit(`register-provider:${ipForLimit}`, { limit: 5, windowMs: 60_000 });
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many registration attempts. Please try again shortly.",
+        });
+      }
+
+      const existingUser = await ctx.db.user.findUnique({
+        where: { email: input.email },
+      });
+
+      if (existingUser) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Email already registered",
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(input.password, 12);
+      const companyLine = input.company.trim() ? `Company: ${input.company.trim()}` : "";
+      const messageBody = input.message.trim();
+      const bio = [companyLine, messageBody].filter(Boolean).join("\n\n") || null;
+
+      const user = await ctx.db.user.create({
+        data: {
+          name: input.name,
+          email: input.email,
+          password: hashedPassword,
+          phone: input.phone,
+          image: DEFAULT_AVATAR,
+          role: "PROVIDER",
+          approvalStatus: "PENDING",
+          registrationIp: ipForLimit === "unknown" ? null : ipForLimit,
+          providerProfile: {
+            create: {
+              bio,
+              portfolio: input.website.trim() || null,
+              skillsTags: input.services,
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      sendApplicationReceivedEmail({
+        userEmail: user.email,
+        userName: user.name || "User",
+        userRole: "PROVIDER",
+        locale: ctx.locale,
+      }).catch((error) => {
+        logger.error("Failed to send provider application received email:", error);
+      });
+
+      // Ops notify (best-effort) — same recipient as legacy contact form
+      const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
+      void sendEmail({
+        to: recipient,
+        subject: `Provider application pending — ${user.name || user.email}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
+            <h2>New provider application (pending approval)</h2>
+            <p><strong>Name:</strong> ${user.name || "—"}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Phone:</strong> ${input.phone}</p>
+            <p><strong>Company:</strong> ${input.company.trim() || "—"}</p>
+            <p><strong>Website:</strong> ${input.website.trim() || "—"}</p>
+            <p><strong>Services:</strong> ${input.services.length ? input.services.join(", ") : "—"}</p>
+            <p><strong>Message:</strong></p>
+            <pre style="white-space: pre-wrap;">${messageBody || "—"}</pre>
+          </div>
+        `,
+        replyTo: user.email,
+      }).catch(() => undefined);
+
+      logActivityAsync({
+        action: "auth.register_provider",
+        message: `New provider application pending: ${user.email}`,
+        actorId: user.id,
+        actorRole: "PROVIDER",
+        entityType: "User",
+        entityId: user.id,
+        ip: ipForLimit === "unknown" ? null : ipForLimit,
+        metadata: { email: user.email, approvalStatus: "PENDING", services: input.services },
+      });
+
+      return {
+        success: true,
+        message: "Application submitted. An admin will review it shortly.",
         userId: user.id,
       };
     }),

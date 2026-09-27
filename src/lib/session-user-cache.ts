@@ -10,6 +10,7 @@ type SessionUserSnapshot = {
   id: string;
   role: AppRole;
   deletedAt: Date | null;
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
 };
 
 type MemoryEntry = {
@@ -23,6 +24,21 @@ function sessionUserCacheKey(userId: string) {
   return `session:user:${userId}`;
 }
 
+function assertSessionAllowed(snapshot: SessionUserSnapshot): void {
+  if (snapshot.deletedAt) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is no longer active. Please sign in again.",
+    });
+  }
+  if (snapshot.approvalStatus !== "APPROVED") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Your account is awaiting approval or has been rejected.",
+    });
+  }
+}
+
 /**
  * Revalidate JWT session user against DB with an in-memory short TTL.
  * Redis is best-effort (fire-and-forget) so a dead Redis never stalls auth.
@@ -31,26 +47,24 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
   const now = Date.now();
   const mem = memoryCache.get(userId);
   if (mem && mem.expiresAt > now) {
-    if (mem.value.deletedAt) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Your account is no longer active. Please sign in again.",
-      });
-    }
+    assertSessionAllowed(mem.value);
     return mem.value;
   }
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, deletedAt: true },
+    select: { id: true, role: true, deletedAt: true, approvalStatus: true },
   });
 
-  if (!user || user.deletedAt) {
+  if (!user || user.deletedAt || user.approvalStatus !== "APPROVED") {
     memoryCache.delete(userId);
     void deleteCached([sessionUserCacheKey(userId), cacheKeys.USER(userId)]);
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Your account is no longer active. Please sign in again.",
+      message:
+        user?.approvalStatus && user.approvalStatus !== "APPROVED"
+          ? "Your account is awaiting approval or has been rejected."
+          : "Your account is no longer active. Please sign in again.",
     });
   }
 
@@ -58,6 +72,7 @@ export async function revalidateSessionUser(userId: string): Promise<SessionUser
     id: user.id,
     role: user.role,
     deletedAt: user.deletedAt,
+    approvalStatus: user.approvalStatus,
   };
 
   memoryCache.set(userId, { value: snapshot, expiresAt: now + MEMORY_TTL_MS });

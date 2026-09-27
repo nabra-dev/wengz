@@ -17,6 +17,10 @@ model User {
   image               String?
   phone               String?
   role                Role                    @default(CLIENT)
+  approvalStatus      ApprovalStatus          @default(APPROVED)
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?
   registrationIp      String? // IP address during registration for abuse prevention
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
@@ -46,6 +50,7 @@ model User {
   @@index([deletedAt])
   @@index([registrationIp])
   @@index([role])
+  @@index([approvalStatus])
 }
 
 model Account {
@@ -477,6 +482,12 @@ enum Role {
   FINANCE_MANAGER
   PROVIDER
   CLIENT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum RequestStatus {

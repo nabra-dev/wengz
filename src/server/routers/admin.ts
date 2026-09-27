@@ -14,6 +14,9 @@ import {
   notifyProviderAssignment,
   notifyProviderWithdrawalReviewed,
   notifyProviderFinanceDisputeReviewed,
+  sendWelcomeEmail,
+  sendAccountApprovedEmail,
+  sendAccountRejectedEmail,
 } from "@/lib/notifications";
 import { phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
@@ -1431,7 +1434,9 @@ export const adminRouter = router({
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
           search: z.string().optional(),
-          status: z.enum(["all", "active", "inactive"]).optional(),
+          status: z
+            .enum(["all", "active", "inactive", "pending", "rejected", "approved"])
+            .optional(),
         })
         .optional()
     )
@@ -1450,10 +1455,17 @@ export const adminRouter = router({
         ];
       }
 
-      // Filter by active / inactive (inactive = soft-deleted)
+      // Filter by lifecycle: active = approved + not soft-deleted
       const status = input?.status ?? "active";
-      if (status === "active") {
+      if (status === "active" || status === "approved") {
         where.deletedAt = null;
+        where.approvalStatus = "APPROVED";
+      } else if (status === "pending") {
+        where.deletedAt = null;
+        where.approvalStatus = "PENDING";
+      } else if (status === "rejected") {
+        where.deletedAt = null;
+        where.approvalStatus = "REJECTED";
       } else if (status === "inactive") {
         where.deletedAt = { not: null };
       }
@@ -1468,11 +1480,18 @@ export const adminRouter = router({
             phone: true,
             image: true,
             role: true,
+            approvalStatus: true,
+            approvedAt: true,
+            rejectedAt: true,
+            rejectionReason: true,
             createdAt: true,
             deletedAt: true,
             providerProfile: {
               select: {
                 id: true,
+                bio: true,
+                portfolio: true,
+                skillsTags: true,
                 supportedServices: {
                   select: { id: true, name: true, nameI18n: true },
                 },
@@ -2283,6 +2302,8 @@ export const adminRouter = router({
           password: hashedPassword,
           role: input.role,
           phone: input.phone,
+          approvalStatus: "APPROVED",
+          approvedAt: new Date(),
         },
       });
 
@@ -2419,6 +2440,149 @@ export const adminRouter = router({
         success: true,
         message: `User ${user.email} has been ${input.isActive ? "activated" : "deactivated"}`,
         user: updatedUser,
+      };
+    }),
+
+  approveUser: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        include: { providerProfile: true },
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (isSuperAdmin(user.role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be modified",
+        });
+      }
+
+      if (user.deletedAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Reactivate the user before approving",
+        });
+      }
+
+      if (user.approvalStatus === "APPROVED") {
+        return { success: true, message: "User is already approved", user };
+      }
+
+      const updated = await ctx.db.user.update({
+        where: { id: user.id },
+        data: {
+          approvalStatus: "APPROVED",
+          approvedAt: new Date(),
+          rejectedAt: null,
+          rejectionReason: null,
+        },
+      });
+
+      if (user.role === "PROVIDER" && !user.providerProfile) {
+        await ctx.db.providerProfile.create({
+          data: { userId: user.id, skillsTags: [] },
+        });
+      }
+
+      if (user.role === "CLIENT") {
+        await assignFreeClientSubscription(ctx.db, user.id);
+      }
+
+      sendWelcomeEmail({
+        userId: user.id,
+        userName: user.name || "User",
+        userEmail: user.email,
+        userRole: user.role,
+        locale: ctx.locale,
+      }).catch(() => undefined);
+
+      sendAccountApprovedEmail({
+        userEmail: user.email,
+        userName: user.name || "User",
+        locale: ctx.locale,
+      }).catch(() => undefined);
+
+      await invalidateSessionUserCache(user.id);
+
+      logActivityAsync({
+        action: "admin.approve_user",
+        message: `Approved user ${user.email}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: user.id,
+        metadata: { email: user.email, role: user.role },
+      });
+
+      return {
+        success: true,
+        message: `User ${user.email} has been approved`,
+        user: updated,
+      };
+    }),
+
+  rejectUser: adminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        reason: z.string().max(500).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (isSuperAdmin(user.role)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be modified",
+        });
+      }
+
+      const updated = await ctx.db.user.update({
+        where: { id: user.id },
+        data: {
+          approvalStatus: "REJECTED",
+          rejectedAt: new Date(),
+          rejectionReason: input.reason?.trim() || null,
+          sessions: { deleteMany: {} },
+          accounts: { deleteMany: {} },
+        },
+      });
+
+      await invalidateSessionUserCache(user.id);
+
+      sendAccountRejectedEmail({
+        userEmail: user.email,
+        userName: user.name || "User",
+        reason: input.reason,
+        locale: ctx.locale,
+      }).catch(() => undefined);
+
+      logActivityAsync({
+        action: "admin.reject_user",
+        message: `Rejected user ${user.email}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: user.id,
+        metadata: { email: user.email, reason: input.reason || null },
+      });
+
+      return {
+        success: true,
+        message: `User ${user.email} has been rejected`,
+        user: updated,
       };
     }),
 

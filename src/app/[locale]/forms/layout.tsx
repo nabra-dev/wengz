@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { TRPCProvider } from "@/components/providers/trpc-provider";
 
 /** Public lead-gen forms — indexable marketing pages. */
 export const metadata: Metadata = {
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function FormsLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <>{children}</>;
+  return <TRPCProvider>{children}</TRPCProvider>;
 }
