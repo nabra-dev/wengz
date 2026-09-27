@@ -81,9 +81,9 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
 const FONT_SIZES = {
   hero: {
     title:
-      "text-balance text-[1.5rem] font-semibold leading-[1.3] tracking-tight min-[380px]:text-3xl sm:text-4xl sm:leading-[1.28] md:text-4xl lg:text-5xl lg:leading-[1.25]",
+      "text-balance text-[1.25rem] font-semibold leading-[1.3] tracking-tight min-[380px]:text-2xl sm:text-3xl sm:leading-[1.28] md:text-3xl lg:text-4xl lg:leading-[1.25]",
     subtitle:
-      "text-[0.8125rem] leading-6 text-muted-foreground min-[380px]:text-sm min-[380px]:leading-7 sm:text-base sm:leading-8",
+      "text-[0.75rem] leading-5 text-muted-foreground min-[380px]:text-[0.8125rem] min-[380px]:leading-6 sm:text-sm sm:leading-7",
   },
   sectionTitle: {
     primary:
@@ -470,7 +470,7 @@ export default function LandingPage({
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
             <div className="pointer-events-none absolute inset-x-4 top-0 bottom-0 flex items-center sm:inset-x-6 lg:inset-x-10">
-              <div className={`pointer-events-auto max-w-xl ${textDirectionClass}`}>
+              <div className={`pointer-events-auto max-w-md sm:max-w-lg ${textDirectionClass}`}>
                 <motion.h1
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -487,7 +487,7 @@ export default function LandingPage({
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 }}
-                  className={`mt-3 max-w-md sm:mt-4 ${FONT_SIZES.hero.subtitle} text-white/70`}
+                  className={`mt-2 max-w-sm sm:mt-3 ${FONT_SIZES.hero.subtitle} text-white/70`}
                 >
                   {t("landing.hero.subtitle")}
                 </motion.p>
