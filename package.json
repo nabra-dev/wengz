@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "predev": "prisma generate",
+    "predev": "node scripts/prisma-generate.mjs",
     "dev": "next dev --webpack -p 3001",
     "build": "node scripts/prisma-generate.mjs --for-build && next build --webpack",
     "start": "next start",

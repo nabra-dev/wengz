@@ -284,14 +284,14 @@ function UserListItem({
               <div className="flex flex-wrap gap-1">
                 <ProviderServiceBadges services={providerServices} />
               </div>
-              {user.providerProfile?.skillsTags && user.providerProfile.skillsTags.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {t("table.skills")}: {user.providerProfile.skillsTags.join(", ")}
-                </p>
-              )}
               {user.providerProfile?.portfolio && (
                 <p className="text-xs text-muted-foreground truncate max-w-md">
                   {t("table.portfolio")}: {user.providerProfile.portfolio}
+                </p>
+              )}
+              {user.providerProfile?.bio && (
+                <p className="text-xs text-muted-foreground line-clamp-2 max-w-md">
+                  {user.providerProfile.bio}
                 </p>
               )}
             </div>

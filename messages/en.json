@@ -323,8 +323,10 @@
       "pitchBullet1": "Share your portfolio / LinkedIn—show your craft",
       "pitchBullet2": "We’ll match you with the right requests—you pick the best AI and ship strong results",
       "servicesLabel": "Services you provide",
-      "servicesOptional": "optional",
-      "servicesHint": "Select all areas you work in — we’ll include them in your application.",
+      "servicesRequired": "Select at least one service",
+      "servicesHint": "Select the catalog services you can deliver — admins will see these on your application.",
+      "servicesLoading": "Loading services…",
+      "servicesEmpty": "No services are available right now. Please try again later.",
       "websitePlaceholder": "Portfolio / LinkedIn / social links",
       "messagePlaceholder": "Tell us about your experience, how you use AI, and what makes your work stand out…",
       "serviceOptions": {

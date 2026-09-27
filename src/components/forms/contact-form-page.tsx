@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,34 +27,32 @@ const fieldClass =
 const textareaClass =
   "min-h-[148px] resize-y rounded-xl border-border/70 bg-background/70 shadow-sm transition-all focus-visible:border-[#690DD4]/50 focus-visible:ring-2 focus-visible:ring-[#690DD4]/25";
 
-/** Stable ids for provider form — labels come from `forms.provider.serviceOptions.*` */
-export const PROVIDER_FORM_SERVICE_IDS = [
-  "design",
-  "social",
-  "video",
-  "ads",
-  "accounts",
-  "paid_campaigns",
-  "digital",
-  "other",
-] as const;
+type PublicService = {
+  id: string;
+  name: string;
+  nameI18n?: Record<string, string> | null;
+};
 
-export type ProviderFormServiceId = (typeof PROVIDER_FORM_SERVICE_IDS)[number];
+function serviceLabel(service: PublicService, locale: string) {
+  return service.nameI18n?.[locale] || service.name;
+}
 
 export function ContactFormPage() {
   const t = useTranslations();
-  const tSvc = useTranslations("forms.provider.serviceOptions");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
-  const [selectedServices, setSelectedServices] = useState<Set<ProviderFormServiceId>>(
-    () => new Set()
-  );
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(() => new Set());
   const [countryCode, setCountryCode] = useState("+20");
   const [phoneInput, setPhoneInput] = useState("");
   const submitLockRef = useRef(false);
 
+  const { data: catalogServices, isLoading: servicesLoading } =
+    trpc.admin.getPublicServiceTypes.useQuery(undefined, {
+      staleTime: 1000 * 60 * 5,
+    });
   const registerProvider = trpc.auth.registerProvider.useMutation();
 
-  function toggleService(id: ProviderFormServiceId) {
+  function toggleService(id: string) {
     setSelectedServices((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -80,7 +78,6 @@ export function ContactFormPage() {
     const email = getText("email").toLowerCase();
     const password = getText("password");
     const confirmPassword = getText("confirmPassword");
-    const company = getText("company");
     const website = getText("website");
     const message = getText("message");
     const serviceIds = Array.from(selectedServices);
@@ -109,16 +106,22 @@ export function ContactFormPage() {
         return;
       }
 
+      if (serviceIds.length === 0) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description: t("forms.provider.servicesRequired"),
+        });
+        return;
+      }
+
       await registerProvider.mutateAsync({
         name,
         email,
         password,
         confirmPassword,
         phone: `${countryCode} ${phoneInput}`,
-        company,
         website,
         message,
-        services: serviceIds,
+        serviceIds,
       });
 
       formEl.reset();
@@ -141,6 +144,7 @@ export function ContactFormPage() {
   }
 
   const busy = loading || registerProvider.isPending;
+  const services = (catalogServices as PublicService[] | undefined) ?? [];
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -312,19 +316,7 @@ export function ContactFormPage() {
                       disabled={busy}
                     />
                   </div>
-                  <div className="space-y-2 md:min-w-0">
-                    <Label htmlFor="company" className="text-sm font-medium">
-                      {t("forms.fields.company")}
-                    </Label>
-                    <Input
-                      id="company"
-                      name="company"
-                      className={fieldClass}
-                      autoComplete="organization"
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-2 md:min-w-0">
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="website" className="text-sm font-medium">
                       {t("forms.fields.website")}
                     </Label>
@@ -342,47 +334,60 @@ export function ContactFormPage() {
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {t("forms.provider.servicesLabel")}
-                      <span className="ms-1 font-normal text-muted-foreground">
-                        ({t("forms.provider.servicesOptional")})
+                      <span className="ms-1 text-destructive" aria-hidden>
+                        *
                       </span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {t("forms.provider.servicesHint")}
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    {PROVIDER_FORM_SERVICE_IDS.map((id) => {
-                      const selected = selectedServices.has(id);
-                      return (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => toggleService(id)}
-                          aria-pressed={selected}
-                          disabled={busy}
-                          className={cn(
-                            "flex items-start gap-3 rounded-xl border px-3.5 py-3 text-start text-sm shadow-sm transition-all",
-                            selected
-                              ? "border-[#690DD4]/45 bg-[#690DD4]/10 shadow-[0_0_0_1px_rgba(105,13,212,0.12)]"
-                              : "border-border/70 bg-background/50 hover:border-border hover:bg-muted/40"
-                          )}
-                        >
-                          <span
+                  {servicesLoading ? (
+                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("forms.provider.servicesLoading")}
+                    </div>
+                  ) : services.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t("forms.provider.servicesEmpty")}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {services.map((service) => {
+                        const selected = selectedServices.has(service.id);
+                        return (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => toggleService(service.id)}
+                            aria-pressed={selected}
+                            disabled={busy}
                             className={cn(
-                              "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                              "flex items-start gap-3 rounded-xl border px-3.5 py-3 text-start text-sm shadow-sm transition-all",
                               selected
-                                ? "border-[#690DD4] bg-[#690DD4] text-[#E0F840]"
-                                : "border-muted-foreground/40 bg-background"
+                                ? "border-[#690DD4]/45 bg-[#690DD4]/10 shadow-[0_0_0_1px_rgba(105,13,212,0.12)]"
+                                : "border-border/70 bg-background/50 hover:border-border hover:bg-muted/40"
                             )}
-                            aria-hidden
                           >
-                            {selected ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : null}
-                          </span>
-                          <span className="leading-snug text-foreground">{tSvc(id)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            <span
+                              className={cn(
+                                "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                                selected
+                                  ? "border-[#690DD4] bg-[#690DD4] text-[#E0F840]"
+                                  : "border-muted-foreground/40 bg-background"
+                              )}
+                              aria-hidden
+                            >
+                              {selected ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : null}
+                            </span>
+                            <span className="leading-snug text-foreground">
+                              {serviceLabel(service, locale)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -402,7 +407,7 @@ export function ContactFormPage() {
                 <div className="border-t border-border/60 pt-5">
                   <Button
                     type="submit"
-                    disabled={busy}
+                    disabled={busy || servicesLoading || services.length === 0}
                     size="lg"
                     className="h-12 w-full rounded-xl bg-[#690DD4] text-base font-semibold text-[#E0F840] shadow-[0_10px_32px_rgba(105,13,212,0.32)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.4)] sm:h-11"
                   >

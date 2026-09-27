@@ -181,10 +181,9 @@ export const authRouter = router({
           password: z.string().min(1, "Password is required"),
           confirmPassword: z.string().min(1, "Confirm password is required"),
           phone: requiredPhoneSchema,
-          company: z.string().optional().default(""),
           website: z.string().optional().default(""),
           message: z.string().optional().default(""),
-          services: z.array(z.string()).optional().default([]),
+          serviceIds: z.array(z.string().min(1)).min(1, "Select at least one service"),
         })
         .refine((data) => data.password === data.confirmPassword, {
           message: "Passwords do not match",
@@ -231,10 +230,32 @@ export const authRouter = router({
         });
       }
 
+      const uniqueServiceIds = [...new Set(input.serviceIds)];
+      const activeServices = await ctx.db.serviceType.findMany({
+        where: {
+          id: { in: uniqueServiceIds },
+          isActive: true,
+          deletedAt: null,
+        },
+        select: { id: true, name: true, nameI18n: true },
+      });
+
+      if (activeServices.length !== uniqueServiceIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "One or more selected services are invalid",
+        });
+      }
+
       const hashedPassword = await bcrypt.hash(input.password, 12);
-      const companyLine = input.company.trim() ? `Company: ${input.company.trim()}` : "";
       const messageBody = input.message.trim();
-      const bio = [companyLine, messageBody].filter(Boolean).join("\n\n") || null;
+      const bio = messageBody || null;
+      const serviceLabels = activeServices
+        .map((s) => {
+          const i18n = s.nameI18n as Record<string, string> | null;
+          return i18n?.[ctx.locale] || s.name;
+        })
+        .join(", ");
 
       const user = await ctx.db.user.create({
         data: {
@@ -250,8 +271,11 @@ export const authRouter = router({
             create: {
               bio,
               portfolio: input.website.trim() || null,
-              skillsTags: input.services,
+              skillsTags: [],
               isActive: true,
+              supportedServices: {
+                connect: uniqueServiceIds.map((id) => ({ id })),
+              },
             },
           },
         },
@@ -277,9 +301,8 @@ export const authRouter = router({
             <p><strong>Name:</strong> ${user.name || "—"}</p>
             <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Phone:</strong> ${input.phone}</p>
-            <p><strong>Company:</strong> ${input.company.trim() || "—"}</p>
             <p><strong>Website:</strong> ${input.website.trim() || "—"}</p>
-            <p><strong>Services:</strong> ${input.services.length ? input.services.join(", ") : "—"}</p>
+            <p><strong>Services:</strong> ${serviceLabels || "—"}</p>
             <p><strong>Message:</strong></p>
             <pre style="white-space: pre-wrap;">${messageBody || "—"}</pre>
           </div>
@@ -295,7 +318,11 @@ export const authRouter = router({
         entityType: "User",
         entityId: user.id,
         ip: ipForLimit === "unknown" ? null : ipForLimit,
-        metadata: { email: user.email, approvalStatus: "PENDING", services: input.services },
+        metadata: {
+          email: user.email,
+          approvalStatus: "PENDING",
+          serviceIds: uniqueServiceIds,
+        },
       });
 
       return {
