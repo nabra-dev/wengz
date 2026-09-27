@@ -29,6 +29,7 @@ import {
   CheckCircle,
   Settings2,
   ScrollText,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 import { getInitials } from "@/lib/utils";
@@ -234,6 +235,26 @@ export function DashboardShell({
               <BrandLogo className="h-6 sm:h-7" />
             </Link>
           </div>
+
+          {/* Client CTA — pinned above scrollable nav so it stays visible */}
+          {isClient && (
+            <div className="shrink-0 border-b px-2 sm:px-3 py-2.5 sm:py-3">
+              <Button
+                asChild
+                size="sm"
+                className={`w-full justify-center gap-2 font-semibold shadow-sm ${
+                  pathname.startsWith("/client/requests/new")
+                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+                    : ""
+                }`}
+              >
+                <Link href="/client/requests/new" onClick={() => setSidebarOpen(false)}>
+                  <Plus className="h-4 w-4 shrink-0" />
+                  {tNav("newRequest")}
+                </Link>
+              </Button>
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 space-y-0.5 sm:space-y-1 px-2 sm:px-3 py-3 sm:py-4 overflow-y-auto">

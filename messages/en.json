@@ -384,7 +384,8 @@
       },
       "signOut": "Sign Out",
       "credits": "Credits",
-      "creditsCount": "{count, plural, one {# credit} other {# credits}}"
+      "creditsCount": "{count, plural, one {# credit} other {# credits}}",
+      "newRequest": "New Request"
     }
   },
   "auth": {

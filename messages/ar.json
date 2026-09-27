@@ -380,7 +380,8 @@
       },
       "signOut": "تسجيل الخروج",
       "credits": "الكريدت",
-      "creditsCount": "{count, plural, one {# كريدت} other {# كريدت}}"
+      "creditsCount": "{count, plural, one {# كريدت} other {# كريدت}}",
+      "newRequest": "طلب جديد"
     }
   },
   "auth": {
