@@ -793,7 +793,8 @@
       "actions": {
         "view": "عرض التفاصيل",
         "assignProvider": "تعيين مبدع",
-        "delete": "حذف الطلب"
+        "delete": "حذف الطلب",
+        "createRequest": "إنشاء طلب"
       },
       "confirmations": {
         "delete": "حذف \"{title}\"؟ لا يمكن التراجع عن هذا الإجراء."
@@ -815,6 +816,47 @@
         "toast": {
           "assigned": "تم تعيين المبدع بنجاح",
           "error": "فشل تعيين المبدع"
+        }
+      },
+      "new": {
+        "title": "إنشاء طلب",
+        "subtitle": "أنشئ طلباً نيابةً عن عميل. يتم خصم الكريدت من اشتراك العميل.",
+        "requestDetails": "تفاصيل الطلب",
+        "requestDetailsDesc": "اختر العميل أولاً. باقة العميل والكريدت المتبقي يحددان الخدمات المتاحة.",
+        "fields": {
+          "client": "العميل",
+          "clientPlaceholder": "اختر عميلاً",
+          "clientSearch": "بحث عن العملاء",
+          "clientSearchPlaceholder": "تصفية بالاسم أو البريد...",
+          "clientCredits": "{count} كريدت متاح · {package}",
+          "creditsAvailable": "{count} كريدت",
+          "noSubscription": "لا يوجد اشتراك نشط",
+          "provider": "المبدع (اختياري)",
+          "providerPlaceholder": "عيّن مبدعاً الآن أو اتركه بدون تعيين",
+          "providerNone": "بدون تعيين",
+          "providerHint": "عند التعيين يبقى الطلب قيد الانتظار حتى يبدأ المبدع العمل.",
+          "activeJobs": "مهام نشطة"
+        },
+        "noSubscription": {
+          "title": "العميل بلا اشتراك نشط",
+          "description": "يجب أن يكون لدى العميل باقة نشطة بكريدت قبل إنشاء الطلب."
+        },
+        "insufficientCredits": {
+          "title": "كريدت العميل غير كافٍ",
+          "description": "هذا الطلب يتطلب {required} كريدت بينما لدى العميل {available} فقط.",
+          "zeroCredits": "هذا العميل لديه 0 كريدت متبقٍ."
+        },
+        "validation": {
+          "selectClient": "يرجى اختيار عميل"
+        },
+        "actions": {
+          "cancel": "إلغاء",
+          "create": "إنشاء الطلب ({cost} كريدت)",
+          "creating": "جاري الإنشاء..."
+        },
+        "toast": {
+          "created": "تم إنشاء الطلب",
+          "error": "فشل إنشاء الطلب"
         }
       },
       "detail": {
@@ -2613,6 +2655,10 @@
     "newRequestAvailable": {
       "title": "طلب جديد متاح",
       "message": "طلب جديد لخدمة {serviceName}: \"{requestTitle}\""
+    },
+    "requestCreatedByAdmin": {
+      "title": "تم إنشاء طلب نيابةً عنك",
+      "message": "تم إنشاء الطلب \"{requestTitle}\" نيابةً عنك. تم خصم الكريدت من اشتراكك."
     },
     "requestAccepted": {
       "title": "تم قبول الطلب",

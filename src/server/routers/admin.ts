@@ -49,6 +49,7 @@ import {
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { roundMoney } from "@/lib/utils";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
+import { createServiceRequest } from "@/lib/create-request";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -2215,6 +2216,258 @@ export const adminRouter = router({
         supportedServices: p.providerProfile?.supportedServices || [],
         activeRequests: p._count.providerRequests,
       }));
+    }),
+
+  // Approved clients for admin request creation (includes subscription/credits)
+  getClientsForRequest: requestManagerProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const search = input?.search?.trim();
+      const clients = await ctx.db.user.findMany({
+        where: {
+          role: "CLIENT",
+          deletedAt: null,
+          approvalStatus: "APPROVED",
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" } },
+                  { email: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          clientSubscriptions: {
+            where: {
+              isActive: true,
+              endDate: { gte: new Date() },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              remainingCredits: true,
+              endDate: true,
+              package: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameI18n: true,
+                  supportAllServices: true,
+                  services: {
+                    select: { serviceId: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        take: input?.limit ?? 50,
+        orderBy: { name: "asc" },
+      });
+
+      return clients.map((client) => {
+        const sub = client.clientSubscriptions[0] ?? null;
+        return {
+          id: client.id,
+          name: client.name || client.email,
+          email: client.email,
+          remainingCredits: sub?.remainingCredits ?? 0,
+          subscriptionEndDate: sub?.endDate ?? null,
+          hasActiveSubscription: Boolean(sub),
+          package: sub
+            ? {
+                id: sub.package.id,
+                name: sub.package.name,
+                nameI18n: sub.package.nameI18n,
+                supportAllServices: Boolean(
+                  (sub.package as { supportAllServices?: boolean }).supportAllServices
+                ),
+                allowedServiceIds: (
+                  sub.package as {
+                    supportAllServices?: boolean;
+                    services: { serviceId: string }[];
+                  }
+                ).supportAllServices
+                  ? null
+                  : sub.package.services.map((s) => s.serviceId),
+              }
+            : null,
+        };
+      });
+    }),
+
+  // Service types filtered by a client's package (for admin create-request UI)
+  getServiceTypesForClient: requestManagerProcedure
+    .input(z.object({ clientId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const client = await ctx.db.user.findFirst({
+        where: {
+          id: input.clientId,
+          role: "CLIENT",
+          deletedAt: null,
+          approvalStatus: "APPROVED",
+        },
+        select: { id: true },
+      });
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Client not found, inactive, or not approved",
+        });
+      }
+
+      const activeSubscription = await ctx.db.clientSubscription.findFirst({
+        where: {
+          userId: input.clientId,
+          isActive: true,
+          endDate: { gte: new Date() },
+        },
+        include: {
+          package: {
+            select: {
+              id: true,
+              name: true,
+              nameI18n: true,
+              supportAllServices: true,
+              services: {
+                select: {
+                  serviceType: { select: { id: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!activeSubscription) {
+        return {
+          remainingCredits: 0,
+          package: null,
+          services: [] as Array<{
+            id: string;
+            name: string;
+            nameI18n: unknown;
+            description: string | null;
+            descriptionI18n: unknown;
+            icon: string | null;
+            attributes: unknown;
+            creditCost: number;
+            isActive: boolean;
+            sortOrder: number;
+            isSupported: boolean;
+          }>,
+        };
+      }
+
+      const allServices = await getOrSetCached(
+        cacheKeys.SERVICE_TYPES,
+        () =>
+          ctx.db.serviceType.findMany({
+            where: { isActive: true, deletedAt: null },
+            select: {
+              id: true,
+              name: true,
+              nameI18n: true,
+              description: true,
+              descriptionI18n: true,
+              icon: true,
+              attributes: true,
+              creditCost: true,
+              isActive: true,
+              sortOrder: true,
+            },
+            orderBy: { sortOrder: "asc" },
+          }),
+        cacheTTL.SERVICE_TYPES
+      );
+
+      const supportAllServices = Boolean(
+        (activeSubscription.package as { supportAllServices?: boolean }).supportAllServices
+      );
+      const allowedServiceIds = supportAllServices
+        ? null
+        : new Set(
+            activeSubscription.package.services.map(
+              (ps: { serviceType: { id: string } }) => ps.serviceType.id
+            )
+          );
+
+      return {
+        remainingCredits: activeSubscription.remainingCredits,
+        package: {
+          id: activeSubscription.package.id,
+          name: activeSubscription.package.name,
+          nameI18n: activeSubscription.package.nameI18n,
+          supportAllServices,
+        },
+        services: allServices.map((service) => ({
+          ...service,
+          isSupported: supportAllServices || allowedServiceIds?.has(service.id) || false,
+        })),
+      };
+    }),
+
+  // Create a request on behalf of a client (deducts the client's credits)
+  createRequest: requestManagerProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/request",
+        tags: ["admin"],
+        summary: "Create a request for a client",
+      },
+    })
+    .input(
+      z.object({
+        clientId: z.string().min(1, "Client is required"),
+        providerId: z.string().optional(),
+        title: z.string().min(1, "Title is required"),
+        description: z.string().min(1, "Description is required"),
+        serviceTypeId: z.string().min(1, "Service type is required"),
+        formData: z.record(z.any()).optional(),
+        attributeResponses: z.any().optional(),
+        attachments: z.array(z.string()).optional(),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        request: z.any(),
+        creditsRemaining: z.number(),
+        message: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await createServiceRequest({
+        db: ctx.db,
+        clientId: input.clientId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        locale: ctx.locale,
+        title: input.title,
+        description: input.description,
+        serviceTypeId: input.serviceTypeId,
+        formData: input.formData,
+        attributeResponses: input.attributeResponses,
+        attachments: input.attachments,
+        providerId: input.providerId,
+        uploaderUserId: ctx.session.user.id,
+        createdByStaff: true,
+      });
+
+      return result;
     }),
 
   // Assign request to provider

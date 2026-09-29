@@ -84,8 +84,8 @@ When a client creates a request, the system can persist **base** and **attribute
 
 Requests move through statuses such as **pending**, **in progress**, **delivered**, **revision requested**, **completed**, and **cancelled** (see `RequestStatus` in the schema). Typical expectations:
 
-1. **Creation** — Client spends credits according to service rules; optional attachments and structured answers are stored on the request.
-2. **Assignment** — A provider may be linked to the request; “available” listings help providers discover unassigned work where the product supports it.
+1. **Creation** — Client spends credits according to service rules; optional attachments and structured answers are stored on the request. **Request managers / super admins** may also create a request **on behalf of an approved client** (Admin → Requests → Create Request): the **client** is required, an optional **provider** can be assigned at create time, and the same validations apply (active subscription, package includes the service, sufficient remaining credits). Credits are always deducted from the **client’s** subscription; the staff actor is recorded in the activity log.
+2. **Assignment** — A provider may be linked to the request (at creation or later via assign/unassign); “available” listings help providers discover unassigned work where the product supports it.
 3. **Active work (provider concurrency)** — A provider may actively work on **one** request at a time (`IN_PROGRESS` or `REVISION_REQUESTED`). Delivering frees the slot. Exception: if they have a **revision requested**, they may also start **one** additional `IN_PROGRESS` job (revision + one new). Assigned-but-not-started (`PENDING`) and `DELIVERED` (awaiting client) do not consume the slot.
 4. **Collaboration** — **Comments** support messages, system lines, and deliverable-style posts; unread flags support inbox-style UX.
 5. **Delivery approval SLA** — When work is **delivered**, `deliveredAt` is recorded. If the client has not approved within **1 hour**, they receive a reminder email/notification. If still not approved after **12 hours**, the request is flagged `needsManualApproval` for admins (label only; no auto-approve).
@@ -93,7 +93,7 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 
 **Watchers** on a request allow additional stakeholders to follow activity where the product uses that relation.
 
-**Audit / activity log** — every request lifecycle mutation writes an immutable `ActivityLog` row (`entityType: Request`) with actor, role, timestamp, and optional **reason/note** when the user supplied one (revision feedback, deliverable message, review text). Chat messages log metadata only (`commentId`, length) — full text stays in `RequestComment`. Covered actions include create, claim, admin assign/unassign, accept, start work, status/deliver, revision, approve, message, rate, soft-delete, restore. Cron approval work is summarized in a single `cron.deliveredApprovals` row. Super admins review this under **Activity**; filter by `request.` or a request id.
+**Audit / activity log** — every request lifecycle mutation writes an immutable `ActivityLog` row (`entityType: Request`) with actor, role, timestamp, and optional **reason/note** when the user supplied one (revision feedback, deliverable message, review text). Chat messages log metadata only (`commentId`, length) — full text stays in `RequestComment`. Covered actions include create (client or staff-on-behalf), claim, admin assign/unassign, accept, start work, status/deliver, revision, approve, message, rate, soft-delete, restore. Cron approval work is summarized in a single `cron.deliveredApprovals` row. Super admins review this under **Activity**; filter by `request.` or a request id.
 
 ---
 

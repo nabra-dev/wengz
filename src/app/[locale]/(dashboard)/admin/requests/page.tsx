@@ -25,6 +25,7 @@ import {
   PlayCircle,
   UserPlus,
   Trash,
+  Plus,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { AssignProviderDialog } from "@/components/admin/assign-provider-dialog";
@@ -94,9 +95,17 @@ export default function AdminRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        <Button asChild className="shrink-0 gap-2">
+          <Link href="/admin/requests/new">
+            <Plus className="h-4 w-4" />
+            {t("actions.createRequest")}
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}

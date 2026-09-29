@@ -797,7 +797,8 @@
       "actions": {
         "view": "View Details",
         "assignProvider": "Assign Provider",
-        "delete": "Delete Request"
+        "delete": "Delete Request",
+        "createRequest": "Create Request"
       },
       "confirmations": {
         "delete": "Delete \"{title}\"? This action cannot be undone."
@@ -819,6 +820,47 @@
         "toast": {
           "assigned": "Provider assigned successfully",
           "error": "Failed to assign provider"
+        }
+      },
+      "new": {
+        "title": "Create Request",
+        "subtitle": "Create a request on behalf of a client. Credits are deducted from the client's subscription.",
+        "requestDetails": "Request Details",
+        "requestDetailsDesc": "Select a client first. The client's package and remaining credits determine which services are available.",
+        "fields": {
+          "client": "Client",
+          "clientPlaceholder": "Select a client",
+          "clientSearch": "Search clients",
+          "clientSearchPlaceholder": "Filter by name or email...",
+          "clientCredits": "{count} credits available · {package}",
+          "creditsAvailable": "{count} credits",
+          "noSubscription": "No active subscription",
+          "provider": "Provider (optional)",
+          "providerPlaceholder": "Assign a provider now, or leave unassigned",
+          "providerNone": "Leave unassigned",
+          "providerHint": "If assigned, the request stays pending until the provider starts work.",
+          "activeJobs": "active jobs"
+        },
+        "noSubscription": {
+          "title": "Client has no active subscription",
+          "description": "This client must have an active package with credits before a request can be created."
+        },
+        "insufficientCredits": {
+          "title": "Insufficient client credits",
+          "description": "This request costs {required} credits but the client only has {available}.",
+          "zeroCredits": "This client has 0 credits remaining."
+        },
+        "validation": {
+          "selectClient": "Please select a client"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "create": "Create Request ({cost} credits)",
+          "creating": "Creating..."
+        },
+        "toast": {
+          "created": "Request created",
+          "error": "Failed to create request"
         }
       },
       "detail": {
@@ -2621,6 +2663,10 @@
     "newRequestAvailable": {
       "title": "New Request Available",
       "message": "New {serviceName} request: \"{requestTitle}\""
+    },
+    "requestCreatedByAdmin": {
+      "title": "New request created for you",
+      "message": "A request \"{requestTitle}\" was created on your behalf. Credits were deducted from your subscription."
     },
     "requestAccepted": {
       "title": "Request Accepted",

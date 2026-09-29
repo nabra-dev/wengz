@@ -1,14 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, clientProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { checkAndDeductCredits } from "@/lib/credit-logic";
-import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 import { handleRevisionRequest, getRevisionInfo } from "@/lib/revision-logic";
-import {
-  validateAttributeResponses,
-  calculateAttributeCredits,
-  collectAttributeMediaUrls,
-} from "@/lib/attribute-validation";
+import { calculateAttributeCredits } from "@/lib/attribute-validation";
 import { settleCompletedRequest } from "@/lib/provider-wallet";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
@@ -25,182 +19,8 @@ import {
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { canManageRequests } from "@/lib/roles";
 import { logRequestActivity } from "@/lib/request-activity";
+import { createServiceRequest } from "@/lib/create-request";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
-
-/**
- * Validates that the user's subscription package allows access to the requested service
- */
-async function validateServiceAccess(
-  db: any,
-  userId: string,
-  serviceTypeId: string,
-  serviceName: string
-) {
-  const activeSubscription = await db.clientSubscription.findFirst({
-    where: {
-      userId: userId,
-      isActive: true,
-      endDate: { gte: new Date() },
-    },
-    include: {
-      package: {
-        include: {
-          services: true,
-        },
-      },
-    },
-  });
-
-  if (!activeSubscription) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "No active subscription found. Please subscribe to a package to create requests.",
-    });
-  }
-
-  // Check if the selected service is allowed by the user's package
-  const hasAllServicesSupport = Boolean(
-    (activeSubscription.package as { supportAllServices?: boolean }).supportAllServices
-  );
-  if (!hasAllServicesSupport) {
-    const allowedServiceIds = activeSubscription.package.services.map(
-      (s: { serviceId: string }) => s.serviceId
-    );
-    if (!allowedServiceIds.includes(serviceTypeId)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `Your ${activeSubscription.package.name} package does not include ${serviceName} service. Please upgrade your subscription to access this service.`,
-      });
-    }
-  }
-}
-
-/**
- * Validates attribute responses against service type attributes
- */
-function validateServiceAttributes(serviceType: any, attributeResponses: any, userId: string) {
-  if (serviceType.attributes && attributeResponses) {
-    const validation = validateAttributeResponses(
-      serviceType.attributes as ServiceAttribute[],
-      attributeResponses as AttributeResponse[],
-      { userId }
-    );
-
-    if (!validation.valid) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: `Invalid attribute responses: ${validation.errors.join(", ")}`,
-      });
-    }
-
-    try {
-      assertAllowedUploadUrls(
-        collectAttributeMediaUrls(
-          serviceType.attributes as ServiceAttribute[],
-          attributeResponses as AttributeResponse[]
-        ),
-        userId
-      );
-    } catch {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Invalid attribute file URL. Upload files through the app first.",
-      });
-    }
-  }
-}
-
-/**
- * Calculates total credit cost including base and attributes
- */
-function calculateTotalCreditCost(serviceType: any, attributeResponses: any) {
-  const baseCreditCost = serviceType.creditCost || 1;
-
-  const attributeCredits =
-    serviceType.attributes && attributeResponses
-      ? calculateAttributeCredits(
-          serviceType.attributes as ServiceAttribute[],
-          attributeResponses as AttributeResponse[]
-        )
-      : 0;
-
-  return {
-    baseCreditCost,
-    attributeCredits,
-    totalCreditCost: baseCreditCost + attributeCredits,
-  };
-}
-
-/**
- * Notifies providers who support the requested service type
- */
-async function notifyMatchingProviders(
-  db: any,
-  serviceTypeId: string,
-  serviceName: string,
-  requestTitle: string,
-  requestId: string,
-  locale: string
-) {
-  const providersWithService = await db.providerProfile.findMany({
-    where: {
-      isActive: true,
-      supportedServices: {
-        some: {
-          id: serviceTypeId,
-        },
-      },
-    },
-    select: {
-      userId: true,
-    },
-  });
-
-  if (providersWithService.length > 0) {
-    const title = await getTranslation(locale, "notifications.newRequestAvailable.title");
-    const message = await getTranslation(locale, "notifications.newRequestAvailable.message", {
-      serviceName,
-      requestTitle,
-    });
-    await Promise.all(
-      providersWithService.map((provider: { userId: string }) =>
-        createNotification({
-          userId: provider.userId,
-          title,
-          message,
-          type: "general",
-          link: `/provider/available/${requestId}`,
-          requestId,
-          sendEmail: false,
-          locale,
-          sseI18n: {
-            titleKey: "notifications.newRequestAvailable.title",
-            messageKey: "notifications.newRequestAvailable.message",
-            messageParams: { serviceName, requestTitle },
-          },
-        })
-      )
-    );
-  }
-}
-
-/**
- * Builds cost breakdown message for the response
- */
-function buildCostBreakdownMessage(
-  baseCreditCost: number,
-  attributeCredits: number,
-  totalCreditCost: number
-): string {
-  const costBreakdown = [];
-  costBreakdown.push(`Base: ${baseCreditCost}`);
-  if (attributeCredits > 0) {
-    costBreakdown.push(`Attributes: ${attributeCredits}`);
-  }
-  const breakdownMessage = costBreakdown.length > 1 ? ` (${costBreakdown.join(" + ")})` : "";
-
-  return `Request created successfully. ${totalCreditCost} credit${totalCreditCost === 1 ? "" : "s"} ${totalCreditCost === 1 ? "has" : "have"} been deducted${breakdownMessage}.`;
-}
 
 /**
  * Validates request access based on user role
@@ -295,131 +115,21 @@ export const requestRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      // Get service type
-      const serviceType = (await ctx.db.serviceType.findUnique({
-        where: { id: input.serviceTypeId },
-      })) as any;
-
-      if (!serviceType) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Service type not found",
-        });
-      }
-
-      // Validate subscription and service access
-      await validateServiceAccess(ctx.db, userId, input.serviceTypeId, serviceType.name);
-
-      // Validate attribute responses
-      validateServiceAttributes(serviceType, input.attributeResponses, userId);
-
-      // Only allow our private upload URLs — blocks javascript: and external phishing.
-      try {
-        assertAllowedUploadUrls(input.attachments, userId);
-      } catch {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid attachment URL. Upload files through the app first.",
-        });
-      }
-
-      // Calculate total credit cost
-      const costDetails = calculateTotalCreditCost(serviceType, input.attributeResponses);
-
-      // Deduct credits, create the request, and write the system comment in
-      // one transaction: either everything commits or the credits roll back.
-      const requestCreatedComment = await getTranslation(
-        ctx.locale,
-        "requests.messages.systemMessages.requestCreated"
-      );
-
-      const { request, creditResult } = await ctx.db.$transaction(async (tx) => {
-        const creditResult = await checkAndDeductCredits(
-          userId,
-          costDetails.totalCreditCost,
-          `New request: ${input.title}`,
-          tx
-        );
-
-        if (!creditResult.allowed || !creditResult.success) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: creditResult.message,
-          });
-        }
-
-        const request = await tx.request.create({
-          data: {
-            title: input.title,
-            description: input.description,
-            clientId: userId,
-            serviceTypeId: input.serviceTypeId,
-            creditCost: costDetails.totalCreditCost,
-            baseCreditCost: costDetails.baseCreditCost,
-            attributeCredits: costDetails.attributeCredits,
-            priorityCreditCost: 0,
-            isRevision: false,
-            formData: input.formData || {},
-            attributeResponses: input.attributeResponses || null,
-            attachments: input.attachments || [],
-            status: "PENDING",
-          } as any,
-          include: {
-            serviceType: true,
-          },
-        });
-
-        await tx.requestComment.create({
-          data: {
-            requestId: request.id,
-            userId,
-            content: requestCreatedComment,
-            type: "SYSTEM",
-          },
-        });
-
-        return { request, creditResult };
-      });
-
-      await invalidateSubscriptionCache(userId);
-
-      logRequestActivity({
-        action: "request.create",
-        requestId: request.id,
+      return createServiceRequest({
+        db: ctx.db,
+        clientId: userId,
         actorId: userId,
         actorRole: ctx.session.user.role,
-        message: `Request created: ${input.title}`,
-        metadata: {
-          title: input.title,
-          serviceTypeId: input.serviceTypeId,
-          creditCost: costDetails.totalCreditCost,
-          attachmentCount: input.attachments?.length ?? 0,
-        },
+        locale: ctx.locale,
+        title: input.title,
+        description: input.description,
+        serviceTypeId: input.serviceTypeId,
+        formData: input.formData,
+        attributeResponses: input.attributeResponses,
+        attachments: input.attachments,
+        uploaderUserId: userId,
+        createdByStaff: false,
       });
-
-      // Notify matching providers
-      await notifyMatchingProviders(
-        ctx.db,
-        input.serviceTypeId,
-        serviceType.name,
-        input.title,
-        request.id,
-        ctx.locale
-      );
-
-      // Build success message with cost breakdown
-      const message = buildCostBreakdownMessage(
-        costDetails.baseCreditCost,
-        costDetails.attributeCredits,
-        costDetails.totalCreditCost
-      );
-
-      return {
-        success: true,
-        request,
-        creditsRemaining: creditResult.newBalance,
-        message,
-      };
     }),
 
   // Get all requests for current user (role-based)
