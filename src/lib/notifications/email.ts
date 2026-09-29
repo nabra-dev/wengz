@@ -373,9 +373,6 @@ export async function getWelcomeEmailTemplate(
     locale,
     "notifications.welcome.emailBody.contactSupport"
   );
-  const copyright = await getTranslation(locale, "notifications.welcome.emailBody.copyright", {
-    year: new Date().getFullYear().toString(),
-  });
   const disclaimer = await getTranslation(locale, "notifications.welcome.emailBody.disclaimer");
   const contact = contactEmailAddress();
 
@@ -397,9 +394,8 @@ export async function getWelcomeEmailTemplate(
       ${emailUs}
       <a href="mailto:${contact}" style="color: ${EMAIL_COLORS.purple}; text-decoration: none; font-weight: 600;">${contact}</a>
     </p>
-    <p style="margin: 0 0 16px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">${contactSupport}</p>
-    <p style="margin: 0 0 4px; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${copyright}</p>
-    <p style="margin: 0; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${disclaimer}</p>`;
+    <p style="margin: 0 0 12px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">${contactSupport}</p>
+    <p style="margin: 0 0 12px; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${disclaimer}</p>`;
 
   const html = await wrapEmailHtml(
     `
@@ -414,14 +410,7 @@ export async function getWelcomeEmailTemplate(
       title: heading,
       preheader: subject,
       hideFooter: true,
-      footerExtraHtml: `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">
-          <tr>
-            <td style="padding: 24px 0 0; border-top: 1px solid ${EMAIL_COLORS.border};">
-              ${footerExtra}
-            </td>
-          </tr>
-        </table>`,
+      footerExtraHtml: footerExtra,
     }
   );
 

@@ -180,6 +180,7 @@ export async function wrapEmailHtml(bodyHtml: string, options: WrapOptions = {})
   });
   const needHelp = await getTranslation(locale, "notifications.emailLayout.needHelp");
   const emailUs = await getTranslation(locale, "notifications.emailLayout.emailUs");
+  const visitSite = await getTranslation(locale, "notifications.emailLayout.visitSite");
 
   const preheader = options.preheader
     ? `<div style="display:none;font-size:1px;color:#f1f5f9;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${options.preheader}</div>`
@@ -187,17 +188,33 @@ export async function wrapEmailHtml(bodyHtml: string, options: WrapOptions = {})
 
   const titleBlock = options.title ? emailHeading(options.title) : "";
 
+  const siteUrlHtml = `
+            <p style="margin: 0 0 8px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">
+              ${visitSite}
+              <a href="${escapeAttr(base)}" style="color: ${EMAIL_COLORS.purple}; text-decoration: none; font-weight: 600;">${base}</a>
+            </p>`;
+
   const footer = options.hideFooter
-    ? options.footerExtraHtml || ""
+    ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">
+        <tr>
+          <td style="padding: 24px 8px 8px; border-top: 1px solid ${EMAIL_COLORS.border}; text-align: ${align};">
+            ${options.footerExtraHtml || ""}
+            ${siteUrlHtml}
+            <p style="margin: 0 0 4px; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${copyright}</p>
+          </td>
+        </tr>
+      </table>`
     : `
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">
         <tr>
           <td style="padding: 24px 8px 8px; border-top: 1px solid ${EMAIL_COLORS.border}; text-align: ${align};">
             <p style="margin: 0 0 8px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">${needHelp}</p>
-            <p style="margin: 0 0 16px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">
+            <p style="margin: 0 0 8px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">
               ${emailUs}
               <a href="mailto:${escapeAttr(contact)}" style="color: ${EMAIL_COLORS.purple}; text-decoration: none; font-weight: 600;">${contact}</a>
             </p>
+            ${siteUrlHtml}
             ${options.footerExtraHtml || ""}
             <p style="margin: 0 0 4px; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${copyright}</p>
             <p style="margin: 0; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${disclaimer}</p>

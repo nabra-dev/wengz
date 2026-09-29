@@ -2439,7 +2439,8 @@
       "copyright": "© {year} {brand}. جميع الحقوق محفوظة.",
       "disclaimer": "تصلك هذه الرسالة لأن لديك حساباً في {brand}.",
       "needHelp": "تحتاج مساعدة؟",
-      "emailUs": "راسلنا على"
+      "emailUs": "راسلنا على",
+      "visitSite": "زُر موقعنا"
     },
     "newMessage": {
       "title": "رسالة جديدة من {senderName}",

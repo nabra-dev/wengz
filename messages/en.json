@@ -2447,7 +2447,8 @@
       "copyright": "© {year} {brand}. All rights reserved.",
       "disclaimer": "You’re receiving this email because you have a {brand} account.",
       "needHelp": "Need help?",
-      "emailUs": "Email us at"
+      "emailUs": "Email us at",
+      "visitSite": "Visit us at"
     },
     "newMessage": {
       "title": "New message from {senderName}",
