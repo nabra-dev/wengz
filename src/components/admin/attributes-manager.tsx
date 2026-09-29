@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { LocalizedInput } from "@/components/ui/localized-input";
 
 interface AttributeWithId extends ServiceAttribute {
   _id?: string;
+  _optionsRaw?: string;
 }
 
 interface AttributesManagerProps {
@@ -27,19 +28,56 @@ interface AttributesManagerProps {
   readonly onChange: (attributes: ServiceAttribute[]) => void;
 }
 
+function createStableId(prefix: string): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** Strip editor-only fields before persisting attributes JSON. */
+export function sanitizeAttributesForSave(attributes: ServiceAttribute[]): ServiceAttribute[] {
+  return attributes.map((attr) => {
+    const { _id: _omitId, _optionsRaw: _omitRaw, ...rest } = attr as AttributeWithId;
+    const cleaned: ServiceAttribute = { ...rest };
+    if (cleaned.optionsWithCost?.length) {
+      cleaned.optionsWithCost = cleaned.optionsWithCost.map((opt) => {
+        const { _id: _omitOptId, ...optRest } = opt as {
+          value: string;
+          creditCost?: number;
+          _id?: string;
+          labelI18n?: { [locale: string]: string };
+        };
+        return optRest;
+      });
+    }
+    return cleaned;
+  });
+}
+
 export function AttributesManager({ attributes, onChange }: AttributesManagerProps) {
   const t = useTranslations("admin.attributesManager");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // Add stable IDs to attributes if they don't have them (only once, not on every render)
+  // Persist stable IDs into controlled state when missing (e.g. attributes loaded from DB).
+  // Never derive keys from editable text — that remounts inputs after every keystroke.
+  useLayoutEffect(() => {
+    const needsIds = attributes.some((attr) => !(attr as AttributeWithId)._id);
+    if (!needsIds) return;
+    onChange(
+      attributes.map((attr) => {
+        const existing = attr as AttributeWithId;
+        if (existing._id) return existing;
+        return { ...attr, _id: createStableId("attr") };
+      })
+    );
+  }, [attributes, onChange]);
+
   const attributesWithIds: AttributeWithId[] = attributes.map((attr, idx) => {
-    if ((attr as AttributeWithId)._id) {
-      return attr as AttributeWithId;
-    }
-    return {
-      ...attr,
-      _id: `attr-${idx}-${attr.question || "new"}`,
-    };
+    const existing = attr as AttributeWithId;
+    if (existing._id) return existing;
+    // First paint only — index-based, never includes editable question text.
+    return { ...attr, _id: `attr-pending-${idx}` };
   });
 
   const addAttribute = () => {
@@ -47,28 +85,24 @@ export function AttributesManager({ attributes, onChange }: AttributesManagerPro
       question: "",
       required: true,
       type: "text",
-      _id: `attr-${Date.now()}-new`,
+      _id: createStableId("attr"),
     };
     onChange([...attributes, newAttribute]);
   };
 
   const updateAttribute = (index: number, updates: Partial<ServiceAttribute>) => {
     const newAttributes = [...attributes];
-    newAttributes[index] = { ...newAttributes[index], ...updates };
+    const current = attributes[index] as AttributeWithId;
+    newAttributes[index] = {
+      ...current,
+      ...updates,
+      _id: current._id || createStableId("attr"),
+    } as AttributeWithId;
     onChange(newAttributes);
   };
 
   const removeAttribute = (index: number) => {
     onChange(attributes.filter((_, i) => i !== index));
-  };
-
-  const updateOptions = (index: number, optionsText: string) => {
-    // Store the raw input text in a special field to preserve user's typing including commas
-    const options = optionsText
-      .split(",")
-      .map((opt) => opt.trim())
-      .filter((opt) => opt.length > 0);
-    updateAttribute(index, { options, _optionsRaw: optionsText } as any);
   };
 
   const moveAttribute = (fromIndex: number, toIndex: number) => {
@@ -87,7 +121,7 @@ export function AttributesManager({ attributes, onChange }: AttributesManagerPro
     updateAttribute(index, {
       optionsWithCost: next,
       options: next.map((o) => o.value),
-    } as any);
+    } as Partial<ServiceAttribute>);
   };
 
   const addOptionRow = (index: number) => {

@@ -147,7 +147,7 @@ export function ServiceAttributesForm({
             const maxSizeMB = resolveAttributeMaxSizeMB(attr);
 
             return (
-              <div key={`${attr.question}-${index}`} className="space-y-2">
+              <div key={`service-attr-${index}`} className="space-y-2">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <Label htmlFor={`attr-${index}`} className="flex items-center gap-1 min-w-0">
                     {resolveLocalizedText((attr as any).questionI18n, locale, attr.question)}

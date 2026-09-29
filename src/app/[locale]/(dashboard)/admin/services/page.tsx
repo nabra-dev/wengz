@@ -18,7 +18,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
 import { Plus, Edit, ArrowUp, ArrowDown } from "lucide-react";
-import { AttributesManager } from "@/components/admin/attributes-manager";
+import {
+  AttributesManager,
+  sanitizeAttributesForSave,
+} from "@/components/admin/attributes-manager";
 import type { ServiceAttribute } from "@/types/service-attributes";
 import { toast } from "sonner";
 import { LocalizedInput } from "@/components/ui/localized-input";
@@ -188,7 +191,7 @@ export default function AdminServicesPage() {
     maxDeliveryMinutes: data.maxDeliveryMinutesValue
       ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
       : 480,
-    attributes: attributes.length > 0 ? attributes : undefined,
+    attributes: attributes.length > 0 ? sanitizeAttributesForSave(attributes) : undefined,
   });
 
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
