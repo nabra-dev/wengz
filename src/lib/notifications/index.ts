@@ -9,6 +9,9 @@ import {
   getSubscriptionExpiredEmailTemplate,
   getWelcomeEmailTemplate,
   getPasswordResetEmailTemplate,
+  getApplicationReceivedEmailTemplate,
+  getAccountApprovedEmailTemplate,
+  getAccountRejectedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -782,33 +785,16 @@ export async function sendApplicationReceivedEmail(params: {
   locale?: string;
 }) {
   const locale = params.locale ?? "en";
-  const subject = await getTranslation(locale, "notifications.applicationReceived.emailSubject");
-  const heading = await getTranslation(
+  const template = await getApplicationReceivedEmailTemplate({
+    userName: params.userName,
+    userRole: params.userRole,
     locale,
-    "notifications.applicationReceived.emailBody.heading"
-  );
-  const greeting = await getTranslation(
-    locale,
-    "notifications.applicationReceived.emailBody.greeting",
-    { userName: params.userName }
-  );
-  const body = await getTranslation(locale, "notifications.applicationReceived.emailBody.body");
-  const roleNote =
-    params.userRole === "PROVIDER"
-      ? await getTranslation(locale, "notifications.applicationReceived.emailBody.providerNote")
-      : await getTranslation(locale, "notifications.applicationReceived.emailBody.clientNote");
+  });
 
   void sendEmail({
     to: params.userEmail,
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.5;">
-        <h2>${heading}</h2>
-        <p>${greeting}</p>
-        <p>${body}</p>
-        <p>${roleNote}</p>
-      </div>
-    `,
+    subject: template.subject,
+    html: template.html,
   });
 }
 
@@ -819,30 +805,15 @@ export async function sendAccountApprovedEmail(params: {
   locale?: string;
 }) {
   const locale = params.locale ?? "en";
-  const subject = await getTranslation(locale, "notifications.accountApproved.emailSubject");
-  const heading = await getTranslation(locale, "notifications.accountApproved.emailBody.heading");
-  const greeting = await getTranslation(
+  const template = await getAccountApprovedEmailTemplate({
+    userName: params.userName,
     locale,
-    "notifications.accountApproved.emailBody.greeting",
-    {
-      userName: params.userName,
-    }
-  );
-  const body = await getTranslation(locale, "notifications.accountApproved.emailBody.body");
-  const cta = await getTranslation(locale, "notifications.accountApproved.emailBody.cta");
-  const loginUrl = `${process.env.NEXTAUTH_URL || ""}/auth/login`;
+  });
 
   void sendEmail({
     to: params.userEmail,
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.5;">
-        <h2>${heading}</h2>
-        <p>${greeting}</p>
-        <p>${body}</p>
-        <p><a href="${loginUrl}" style="background: #690DD4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">${cta}</a></p>
-      </div>
-    `,
+    subject: template.subject,
+    html: template.html,
   });
 }
 
@@ -853,36 +824,16 @@ export async function sendAccountRejectedEmail(params: {
   locale?: string;
 }) {
   const locale = params.locale ?? "en";
-  const subject = await getTranslation(locale, "notifications.accountRejected.emailSubject");
-  const heading = await getTranslation(locale, "notifications.accountRejected.emailBody.heading");
-  const greeting = await getTranslation(
+  const template = await getAccountRejectedEmailTemplate({
+    userName: params.userName,
+    reason: params.reason,
     locale,
-    "notifications.accountRejected.emailBody.greeting",
-    {
-      userName: params.userName,
-    }
-  );
-  const body = await getTranslation(locale, "notifications.accountRejected.emailBody.body");
-  const reasonLabel = await getTranslation(
-    locale,
-    "notifications.accountRejected.emailBody.reasonLabel"
-  );
+  });
 
   void sendEmail({
     to: params.userEmail,
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.5;">
-        <h2>${heading}</h2>
-        <p>${greeting}</p>
-        <p>${body}</p>
-        ${
-          params.reason
-            ? `<p><strong>${reasonLabel}</strong> ${params.reason.replaceAll("<", "&lt;")}</p>`
-            : ""
-        }
-      </div>
-    `,
+    subject: template.subject,
+    html: template.html,
   });
 }
 

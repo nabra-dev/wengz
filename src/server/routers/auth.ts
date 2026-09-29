@@ -13,7 +13,7 @@ import {
   createPasswordResetToken,
   PASSWORD_RESET_TTL_MS,
 } from "@/lib/password-reset";
-import { sendEmail } from "@/lib/notifications/email";
+import { sendEmail, getOpsNotifyEmailHtml } from "@/lib/notifications/email";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -375,23 +375,26 @@ export const authRouter = router({
         });
 
         const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
-        void sendEmail({
-          to: recipient,
-          subject: `Provider re-application pending — ${user.name || user.email}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
-              <h2>Provider re-application (pending approval)</h2>
-              <p><strong>Name:</strong> ${user.name || "—"}</p>
-              <p><strong>Email:</strong> ${user.email}</p>
-              <p><strong>Phone:</strong> ${input.phone}</p>
-              <p><strong>Website:</strong> ${input.website.trim() || "—"}</p>
-              <p><strong>Services:</strong> ${serviceLabels || "—"}</p>
-              <p><strong>Message:</strong></p>
-              <pre style="white-space: pre-wrap;">${messageBody || "—"}</pre>
-            </div>
-          `,
-          replyTo: user.email,
-        }).catch(() => undefined);
+        void getOpsNotifyEmailHtml({
+          title: "Provider re-application (pending approval)",
+          rows: [
+            { label: "Name", value: user.name || "—" },
+            { label: "Email", value: user.email },
+            { label: "Phone", value: input.phone },
+            { label: "Website", value: input.website.trim() || "—" },
+            { label: "Services", value: serviceLabels || "—" },
+          ],
+          messageBody: messageBody || "—",
+        })
+          .then((html) =>
+            sendEmail({
+              to: recipient,
+              subject: `Provider re-application pending — ${user.name || user.email}`,
+              html,
+              replyTo: user.email,
+            })
+          )
+          .catch(() => undefined);
 
         logActivityAsync({
           action: "auth.register_provider_reapply",
@@ -452,23 +455,26 @@ export const authRouter = router({
 
       // Ops notify (best-effort) — same recipient as legacy contact form
       const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
-      void sendEmail({
-        to: recipient,
-        subject: `Provider application pending — ${user.name || user.email}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
-            <h2>New provider application (pending approval)</h2>
-            <p><strong>Name:</strong> ${user.name || "—"}</p>
-            <p><strong>Email:</strong> ${user.email}</p>
-            <p><strong>Phone:</strong> ${input.phone}</p>
-            <p><strong>Website:</strong> ${input.website.trim() || "—"}</p>
-            <p><strong>Services:</strong> ${serviceLabels || "—"}</p>
-            <p><strong>Message:</strong></p>
-            <pre style="white-space: pre-wrap;">${messageBody || "—"}</pre>
-          </div>
-        `,
-        replyTo: user.email,
-      }).catch(() => undefined);
+      void getOpsNotifyEmailHtml({
+        title: "New provider application (pending approval)",
+        rows: [
+          { label: "Name", value: user.name || "—" },
+          { label: "Email", value: user.email },
+          { label: "Phone", value: input.phone },
+          { label: "Website", value: input.website.trim() || "—" },
+          { label: "Services", value: serviceLabels || "—" },
+        ],
+        messageBody: messageBody || "—",
+      })
+        .then((html) =>
+          sendEmail({
+            to: recipient,
+            subject: `Provider application pending — ${user.name || user.email}`,
+            html,
+            replyTo: user.email,
+          })
+        )
+        .catch(() => undefined);
 
       logActivityAsync({
         action: "auth.register_provider",

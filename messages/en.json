@@ -2442,6 +2442,13 @@
     }
   },
   "notifications": {
+    "emailLayout": {
+      "tagline": "Creative work, delivered.",
+      "copyright": "© {year} {brand}. All rights reserved.",
+      "disclaimer": "You’re receiving this email because you have a {brand} account.",
+      "needHelp": "Need help?",
+      "emailUs": "Email us at"
+    },
     "newMessage": {
       "title": "New message from {senderName}",
       "message": "{messagePreview}",

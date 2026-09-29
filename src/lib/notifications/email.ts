@@ -1,6 +1,17 @@
 import nodemailer from "nodemailer";
 import { getTranslation } from "./i18n-helper";
 import { logger } from "@/lib/logger";
+import {
+  appBaseUrl,
+  contactEmailAddress,
+  emailButton,
+  emailCallout,
+  emailMetaRows,
+  emailPanel,
+  emailParagraph,
+  EMAIL_COLORS,
+  wrapEmailHtml,
+} from "./email-layout";
 
 interface EmailOptions {
   to: string;
@@ -67,6 +78,39 @@ export async function sendEmail({
   }
 }
 
+const FONT =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, Tahoma, sans-serif";
+
+function statusLabel(status: string): string {
+  return status.replaceAll("_", " ");
+}
+
+async function quickStartSteps(
+  locale: string,
+  role: "client" | "provider" | "admin"
+): Promise<string> {
+  const steps = await Promise.all(
+    [1, 2, 3].map(async (n) => {
+      const title = await getTranslation(
+        locale,
+        `notifications.welcome.emailBody.${role}.step${n}Title`
+      );
+      const desc = await getTranslation(
+        locale,
+        `notifications.welcome.emailBody.${role}.step${n}Desc`
+      );
+      return `
+        <tr>
+          <td style="padding: 0 0 16px;">
+            <div style="font-family: ${FONT}; font-size: 14px; font-weight: 700; color: ${EMAIL_COLORS.purple}; margin-bottom: 4px;">${title}</div>
+            <div style="font-family: ${FONT}; font-size: 14px; line-height: 1.5; color: ${EMAIL_COLORS.muted};">${desc}</div>
+          </td>
+        </tr>`;
+    })
+  );
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${steps.join("")}</table>`;
+}
+
 // Email templates
 export async function getNewMessageEmailTemplate(
   senderName: string,
@@ -84,19 +128,16 @@ export async function getNewMessageEmailTemplate(
   });
   const viewButton = await getTranslation(locale, "notifications.newMessage.emailBody.viewButton");
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${heading}</h2>
-        <p>${intro}</p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 0;">${messagePreview}</p>
-        </div>
-        <p><a href="${process.env.NEXTAUTH_URL}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${viewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailPanel(`<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${EMAIL_COLORS.ink};">${messagePreview}</p>`)}
+      ${emailButton(viewButton, appBaseUrl())}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getStatusChangeEmailTemplate(
@@ -119,20 +160,19 @@ export async function getStatusChangeEmailTemplate(
     "notifications.statusChange.emailBody.viewButton"
   );
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${heading}</h2>
-        <p>${intro}</p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>${fromLabel}</strong> ${oldStatus.replaceAll("_", " ")}</p>
-          <p style="margin: 10px 0 0;"><strong>${toLabel}</strong> ${newStatus.replaceAll("_", " ")}</p>
-        </div>
-        <p><a href="${process.env.NEXTAUTH_URL}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${viewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailMetaRows([
+        { label: fromLabel, value: statusLabel(oldStatus) },
+        { label: toLabel, value: statusLabel(newStatus) },
+      ])}
+      ${emailButton(viewButton, appBaseUrl())}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getAssignmentEmailTemplate(
@@ -149,16 +189,15 @@ export async function getAssignmentEmailTemplate(
   });
   const viewButton = await getTranslation(locale, "notifications.assignment.emailBody.viewButton");
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${heading}</h2>
-        <p>${intro}</p>
-        <p><a href="${process.env.NEXTAUTH_URL}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${viewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailButton(viewButton, appBaseUrl())}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getApprovalReminderEmailTemplate(
@@ -178,17 +217,16 @@ export async function getApprovalReminderEmailTemplate(
     "notifications.approvalReminder.emailBody.viewButton"
   );
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">${heading}</h2>
-        <p>${intro}</p>
-        <p>${body}</p>
-        <p><a href="${process.env.NEXTAUTH_URL}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${viewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailCallout(`<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;">${body}</p>`, "warning")}
+      ${emailButton(viewButton, appBaseUrl(), "warning")}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getSubscriptionExpiringEmailTemplate(
@@ -230,21 +268,21 @@ export async function getSubscriptionExpiringEmailTemplate(
     "notifications.subscriptionExpiring.emailBody.renewButton"
   );
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #ff9800;">${heading}</h2>
-        <p>${intro}</p>
-        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>${remainingCreditsLabel}</strong> ${remainingCredits}</p>
-          <p style="margin: 10px 0 0;"><strong>${expiryDateLabel}</strong> ${expiryDateValue}</p>
-        </div>
-        <p>${message}</p>
-        <p><a href="${process.env.NEXTAUTH_URL}/client/subscription" style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">${renewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailCallout(
+        `<p style="margin:0 0 8px;font-family:${FONT};font-size:15px;"><strong>${remainingCreditsLabel}</strong> ${remainingCredits}</p>
+         <p style="margin:0;font-family:${FONT};font-size:15px;"><strong>${expiryDateLabel}</strong> ${expiryDateValue}</p>`,
+        "warning"
+      )}
+      ${emailParagraph(message)}
+      ${emailButton(renewButton, `${appBaseUrl()}/client/subscription`, "warning")}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getSubscriptionExpiredEmailTemplate(
@@ -272,20 +310,20 @@ export async function getSubscriptionExpiredEmailTemplate(
     "notifications.subscriptionExpired.emailBody.renewButton"
   );
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc3545;">${heading}</h2>
-        <p>${intro}</p>
-        <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0;">${message}</p>
-          <p style="margin: 10px 0 0;">${message2}</p>
-        </div>
-        <p><a href="${process.env.NEXTAUTH_URL}/client/subscription" style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">${renewButton}</a></p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${emailCallout(
+        `<p style="margin:0 0 8px;font-family:${FONT};font-size:15px;">${message}</p>
+         <p style="margin:0;font-family:${FONT};font-size:15px;">${message2}</p>`,
+        "danger"
+      )}
+      ${emailButton(renewButton, `${appBaseUrl()}/client/subscription`, "danger")}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
 }
 
 export async function getWelcomeEmailTemplate(
@@ -295,11 +333,11 @@ export async function getWelcomeEmailTemplate(
 ) {
   let dashboardLink: string;
   if (userRole === "CLIENT") {
-    dashboardLink = `${process.env.NEXTAUTH_URL}/client`;
+    dashboardLink = `${appBaseUrl()}/client`;
   } else if (userRole === "PROVIDER") {
-    dashboardLink = `${process.env.NEXTAUTH_URL}/provider`;
+    dashboardLink = `${appBaseUrl()}/provider`;
   } else {
-    dashboardLink = `${process.env.NEXTAUTH_URL}/admin`;
+    dashboardLink = `${appBaseUrl()}/admin`;
   }
 
   const subject = await getTranslation(locale, "notifications.welcome.emailSubject");
@@ -314,125 +352,11 @@ export async function getWelcomeEmailTemplate(
     "notifications.welcome.emailBody.quickStartTitle"
   );
 
-  let quickStartGuide: string;
-  if (userRole === "CLIENT") {
-    const step1Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step1Title"
-    );
-    const step1Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step1Desc"
-    );
-    const step2Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step2Title"
-    );
-    const step2Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step2Desc"
-    );
-    const step3Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step3Title"
-    );
-    const step3Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.client.step3Desc"
-    );
-    quickStartGuide = `
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step1Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step1Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step2Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step2Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step3Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step3Desc}</p>
-          </div>
-          `;
-  } else if (userRole === "PROVIDER") {
-    const step1Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step1Title"
-    );
-    const step1Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step1Desc"
-    );
-    const step2Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step2Title"
-    );
-    const step2Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step2Desc"
-    );
-    const step3Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step3Title"
-    );
-    const step3Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.provider.step3Desc"
-    );
-    quickStartGuide = `
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step1Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step1Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step2Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step2Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step3Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step3Desc}</p>
-          </div>
-          `;
-  } else {
-    const step1Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step1Title"
-    );
-    const step1Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step1Desc"
-    );
-    const step2Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step2Title"
-    );
-    const step2Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step2Desc"
-    );
-    const step3Title = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step3Title"
-    );
-    const step3Desc = await getTranslation(
-      locale,
-      "notifications.welcome.emailBody.admin.step3Desc"
-    );
-    quickStartGuide = `
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step1Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step1Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step2Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step2Desc}</p>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #2563eb;">${step3Title}</strong>
-            <p style="margin: 5px 0 0 0; color: #64748b;">${step3Desc}</p>
-          </div>
-          `;
-  }
+  let roleKey: "client" | "provider" | "admin" = "admin";
+  if (userRole === "CLIENT") roleKey = "client";
+  else if (userRole === "PROVIDER") roleKey = "provider";
+
+  const quickStartGuide = await quickStartSteps(locale, roleKey);
 
   const dashboardButton = await getTranslation(
     locale,
@@ -453,56 +377,55 @@ export async function getWelcomeEmailTemplate(
     year: new Date().getFullYear().toString(),
   });
   const disclaimer = await getTranslation(locale, "notifications.welcome.emailBody.disclaimer");
+  const contact = contactEmailAddress();
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2563eb; margin: 0;">${heading}</h1>
-          <p style="color: #64748b; margin-top: 10px;">${subheading}</p>
-        </div>
+  const hero = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin: 0 0 24px; background-color: ${EMAIL_COLORS.purple}; border-radius: 14px;">
+      <tr>
+        <td style="padding: 24px 22px;">
+          <div style="font-family: ${FONT}; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: ${EMAIL_COLORS.yellow}; margin-bottom: 8px;">${subheading}</div>
+          <div style="font-family: ${FONT}; font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">${greeting}</div>
+          <div style="font-family: ${FONT}; font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.9);">${intro}</div>
+        </td>
+      </tr>
+    </table>`;
 
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
-          <h2 style="margin: 0 0 10px 0;">${greeting}</h2>
-          <p style="margin: 0; font-size: 16px; line-height: 1.6;">${intro}</p>
-        </div>
+  const footerExtra = `
+    <p style="margin: 0 0 8px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">${needHelp}</p>
+    <p style="margin: 0 0 4px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">
+      ${emailUs}
+      <a href="mailto:${contact}" style="color: ${EMAIL_COLORS.purple}; text-decoration: none; font-weight: 600;">${contact}</a>
+    </p>
+    <p style="margin: 0 0 16px; font-family: ${FONT}; font-size: 13px; color: ${EMAIL_COLORS.muted};">${contactSupport}</p>
+    <p style="margin: 0 0 4px; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${copyright}</p>
+    <p style="margin: 0; font-family: ${FONT}; font-size: 12px; color: ${EMAIL_COLORS.faint};">${disclaimer}</p>`;
 
-        <div style="background: #f8fafc; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
-          <h3 style="color: #1e293b; margin-top: 0;">${quickStartTitle}</h3>
-          
-          ${quickStartGuide}
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${dashboardLink}" style="background: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">${dashboardButton}</a>
-        </div>
-
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0; border-radius: 5px;">
-          <p style="margin: 0; color: #92400e;"><strong>${proTip}</strong> ${proTipMessage}</p>
-        </div>
-
-        <div style="border-top: 2px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
-          <p style="color: #64748b; font-size: 14px; margin-bottom: 10px;">${needHelp}</p>
-          <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
-            ${emailUs} <a href="mailto:${process.env.EMAIL_FROM}" style="color: #2563eb;">${process.env.EMAIL_FROM}</a>
-          </p>
-          <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
-            ${contactSupport}
-          </p>
-        </div>
-
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-          <p style="color: #94a3b8; font-size: 12px; margin: 5px 0;">
-            ${copyright}
-          </p>
-          <p style="color: #94a3b8; font-size: 12px; margin: 5px 0;">
-            ${disclaimer}
-          </p>
-        </div>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${hero}
+      <div style="font-family: ${FONT}; font-size: 16px; font-weight: 700; color: ${EMAIL_COLORS.ink}; margin: 0 0 12px;">${quickStartTitle}</div>
+      ${emailPanel(quickStartGuide)}
+      ${emailButton(dashboardButton, dashboardLink)}
+      ${emailCallout(`<strong>${proTip}</strong> ${proTipMessage}`, "warning")}
     `,
-  };
+    {
+      locale,
+      title: heading,
+      preheader: subject,
+      hideFooter: true,
+      footerExtraHtml: `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">
+          <tr>
+            <td style="padding: 24px 0 0; border-top: 1px solid ${EMAIL_COLORS.border};">
+              ${footerExtra}
+            </td>
+          </tr>
+        </table>`,
+    }
+  );
+
+  return { subject, html };
 }
 
 export async function getPasswordResetEmailTemplate(params: {
@@ -528,25 +451,135 @@ export async function getPasswordResetEmailTemplate(params: {
     "notifications.passwordReset.emailBody.linkFallback"
   );
 
-  return {
-    subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #111827;">${heading}</h1>
-        <p>${greeting}</p>
-        <p>${intro}</p>
-        <p style="margin: 28px 0;">
-          <a href="${params.resetUrl}"
-             style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-            ${button}
-          </a>
-        </p>
-        <p style="color: #64748b; font-size: 14px;">${expiry}</p>
-        <p style="color: #64748b; font-size: 14px;">${ignore}</p>
-        <p style="color: #94a3b8; font-size: 12px; word-break: break-all; margin-top: 24px;">
-          ${linkFallback}<br/>${params.resetUrl}
-        </p>
-      </div>
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(greeting)}
+      ${emailParagraph(intro)}
+      ${emailButton(button, params.resetUrl)}
+      ${emailParagraph(expiry, true)}
+      ${emailParagraph(ignore, true)}
+      ${emailPanel(
+        `<p style="margin:0 0 8px;font-family:${FONT};font-size:12px;color:${EMAIL_COLORS.muted};">${linkFallback}</p>
+         <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.5;color:${EMAIL_COLORS.faint};word-break:break-all;">${params.resetUrl}</p>`
+      )}
     `,
-  };
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
+}
+
+export async function getApplicationReceivedEmailTemplate(params: {
+  userName: string;
+  userRole: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const subject = await getTranslation(locale, "notifications.applicationReceived.emailSubject");
+  const heading = await getTranslation(
+    locale,
+    "notifications.applicationReceived.emailBody.heading"
+  );
+  const greeting = await getTranslation(
+    locale,
+    "notifications.applicationReceived.emailBody.greeting",
+    { userName: params.userName }
+  );
+  const body = await getTranslation(locale, "notifications.applicationReceived.emailBody.body");
+  const roleNote =
+    params.userRole === "PROVIDER"
+      ? await getTranslation(locale, "notifications.applicationReceived.emailBody.providerNote")
+      : await getTranslation(locale, "notifications.applicationReceived.emailBody.clientNote");
+
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(greeting)}
+      ${emailParagraph(body)}
+      ${emailCallout(roleNote, "warning")}
+    `,
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
+}
+
+export async function getAccountApprovedEmailTemplate(params: {
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const subject = await getTranslation(locale, "notifications.accountApproved.emailSubject");
+  const heading = await getTranslation(locale, "notifications.accountApproved.emailBody.heading");
+  const greeting = await getTranslation(
+    locale,
+    "notifications.accountApproved.emailBody.greeting",
+    { userName: params.userName }
+  );
+  const body = await getTranslation(locale, "notifications.accountApproved.emailBody.body");
+  const cta = await getTranslation(locale, "notifications.accountApproved.emailBody.cta");
+  const loginUrl = `${appBaseUrl()}/auth/login`;
+
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(greeting)}
+      ${emailParagraph(body)}
+      ${emailButton(cta, loginUrl, "success")}
+    `,
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
+}
+
+export async function getAccountRejectedEmailTemplate(params: {
+  userName: string;
+  reason?: string | null;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const subject = await getTranslation(locale, "notifications.accountRejected.emailSubject");
+  const heading = await getTranslation(locale, "notifications.accountRejected.emailBody.heading");
+  const greeting = await getTranslation(
+    locale,
+    "notifications.accountRejected.emailBody.greeting",
+    { userName: params.userName }
+  );
+  const body = await getTranslation(locale, "notifications.accountRejected.emailBody.body");
+  const reasonLabel = await getTranslation(
+    locale,
+    "notifications.accountRejected.emailBody.reasonLabel"
+  );
+  const safeReason = params.reason?.replaceAll("<", "&lt;") ?? null;
+
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(greeting)}
+      ${emailParagraph(body)}
+      ${safeReason ? emailCallout(`<strong>${reasonLabel}</strong> ${safeReason}`, "danger") : ""}
+    `,
+    { locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
+}
+
+/** Ops / internal notify — English layout, no user-facing i18n. */
+export async function getOpsNotifyEmailHtml(params: {
+  title: string;
+  rows: Array<{ label: string; value: string }>;
+  messageBody?: string;
+}): Promise<string> {
+  const messageBlock = params.messageBody
+    ? emailPanel(
+        `<pre style="margin:0;white-space:pre-wrap;font-family:${FONT};font-size:14px;line-height:1.55;color:${EMAIL_COLORS.ink};">${params.messageBody}</pre>`
+      )
+    : "";
+
+  return wrapEmailHtml(
+    `
+      ${emailMetaRows(params.rows)}
+      ${messageBlock}
+    `,
+    { locale: "en", title: params.title, hideFooter: true }
+  );
 }

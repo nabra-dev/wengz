@@ -2434,6 +2434,13 @@
     }
   },
   "notifications": {
+    "emailLayout": {
+      "tagline": "أعمال إبداعية، تُسلَّم باحتراف.",
+      "copyright": "© {year} {brand}. جميع الحقوق محفوظة.",
+      "disclaimer": "تصلك هذه الرسالة لأن لديك حساباً في {brand}.",
+      "needHelp": "تحتاج مساعدة؟",
+      "emailUs": "راسلنا على"
+    },
     "newMessage": {
       "title": "رسالة جديدة من {senderName}",
       "message": "{messagePreview}",
