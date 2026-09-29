@@ -977,7 +977,9 @@
         "edit": "Edit",
         "save": "Save",
         "pick": "Pick",
-        "hide": "Hide"
+        "hide": "Hide",
+        "moveUp": "Move up",
+        "moveDown": "Move down"
       },
       "badges": {
         "active": "Active",
@@ -986,7 +988,8 @@
       "toast": {
         "activated": "Service activated successfully",
         "deactivated": "Service deactivated successfully",
-        "statusFailed": "Failed to update service status"
+        "statusFailed": "Failed to update service status",
+        "reorderFailed": "Failed to reorder service"
       },
       "display": {
         "questionLabel": "question",

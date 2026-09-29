@@ -59,7 +59,6 @@ export const createRequestSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   serviceTypeId: z.string().min(1, "Please select a service type"),
-  priority: z.number().min(1).max(5),
 });
 
 // Comment validation

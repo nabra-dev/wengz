@@ -60,7 +60,6 @@ export default function AvailableJobsPage() {
                   title={request.title}
                   description={request.description}
                   status={request.status}
-                  priority={request.priority}
                   creditCost={request.creditCost || 0}
                   createdAt={request.createdAt}
                   serviceType={request.serviceType}

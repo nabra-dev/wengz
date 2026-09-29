@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/routing";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, getStatusColor, getPriorityColor } from "@/lib/utils";
+import { formatDate, getStatusColor } from "@/lib/utils";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { Clock } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
@@ -10,10 +10,7 @@ interface RequestCardProps {
   readonly title: string;
   readonly description?: string;
   readonly status: string;
-  readonly priority?: number;
   readonly creditCost: number;
-  readonly baseCreditCost?: number;
-  readonly priorityCreditCost?: number;
   readonly isRevision?: boolean;
   readonly revisionType?: string | null;
   readonly createdAt: Date;
@@ -45,10 +42,7 @@ export function RequestCard({
   title,
   description,
   status,
-  priority,
   creditCost,
-  baseCreditCost,
-  priorityCreditCost,
   isRevision,
   revisionType,
   createdAt,
@@ -72,23 +66,12 @@ export function RequestCard({
     ? tSidebar("brandProviderName")
     : provider?.name || provider?.email;
 
-  const getPriorityKey = (priority: number): "LOW" | "MEDIUM" | "HIGH" => {
-    if (priority === 1) return "LOW";
-    if (priority === 3) return "HIGH";
-    return "MEDIUM";
-  };
-
-  const hasCreditBreakdown = baseCreditCost !== undefined && priorityCreditCost !== undefined;
-
   const content = (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3 sm:gap-4">
       <div className="flex-1 min-w-0 space-y-2">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {unread && (
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary"
-              title={tCard("unread")}
-            >
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" title={tCard("unread")}>
               <span className="sr-only">{tCard("unread")}</span>
             </span>
           )}
@@ -107,19 +90,9 @@ export function RequestCard({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          {priority && (
-            <Badge variant={null} className={`${getPriorityColor(priority)} text-xs`}>
-              {tCommon(`priority.${getPriorityKey(priority)}` as any)}
-            </Badge>
-          )}
           {creditCost !== undefined && creditCost !== null && (
             <Badge variant="outline" className="font-semibold text-xs flex items-center gap-1">
               💳 {creditCost}
-              {hasCreditBreakdown && (
-                <span className="text-muted-foreground text-[10px] sm:text-xs">
-                  ({baseCreditCost}+{priorityCreditCost})
-                </span>
-              )}
             </Badge>
           )}
           {isRevision && revisionType && (

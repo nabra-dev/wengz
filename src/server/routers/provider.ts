@@ -213,7 +213,7 @@ export const providerRouter = router({
           },
           serviceType: true,
         },
-        orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+        orderBy: { createdAt: "asc" },
         take: input?.limit || 20,
         cursor: input?.cursor ? { id: input.cursor } : undefined,
         skip: input?.cursor ? 1 : 0,

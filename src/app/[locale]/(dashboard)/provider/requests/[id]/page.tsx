@@ -196,8 +196,6 @@ export default function ProviderRequestDetailPage() {
     return existing;
   })();
 
-  const priorityCreditCost = (request as any).priorityCreditCost ?? 0;
-
   const estimatePreview = (() => {
     const selectedMinutes =
       estimatedDeliveryMode === "custom" ? customEstimatedMinutes : estimatedPresetMinutes;
@@ -248,11 +246,10 @@ export default function ProviderRequestDetailPage() {
       <RequestHeader
         title={request.title}
         status={request.status}
-        priority={request.priority}
         creditCost={(request as any).creditCost}
         baseCreditCost={(request as any).baseCreditCost}
         attributeCredits={attributeCredits}
-        priorityCreditCost={priorityCreditCost}
+        priorityCreditCost={(request as any).priorityCreditCost ?? 0}
         isRevision={(request as any).isRevision}
         revisionType={(request as any).revisionType}
         paidRevisionCost={(request.serviceType as any).paidRevisionCost}

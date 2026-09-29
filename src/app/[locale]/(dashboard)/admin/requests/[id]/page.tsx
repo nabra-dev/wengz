@@ -65,8 +65,6 @@ export default function AdminRequestDetailPage() {
     return existing;
   })();
 
-  const priorityCreditCost = request.priorityCreditCost ?? 0;
-
   const chatPanel = request.provider ? (
     <MessagesCard
       requestId={requestId}
@@ -92,11 +90,10 @@ export default function AdminRequestDetailPage() {
       <RequestHeader
         title={request.title}
         status={request.status}
-        priority={request.priority}
         creditCost={(request as any).creditCost}
         baseCreditCost={request.baseCreditCost}
         attributeCredits={attributeCredits}
-        priorityCreditCost={priorityCreditCost}
+        priorityCreditCost={request.priorityCreditCost ?? 0}
         isRevision={request.isRevision}
         revisionType={request.revisionType}
         paidRevisionCost={(request.serviceType as any).paidRevisionCost}

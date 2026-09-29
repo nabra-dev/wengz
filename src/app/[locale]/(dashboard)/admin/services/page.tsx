@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, ArrowUp, ArrowDown } from "lucide-react";
 import { AttributesManager } from "@/components/admin/attributes-manager";
 import type { ServiceAttribute } from "@/types/service-attributes";
 import { toast } from "sonner";
@@ -133,15 +133,27 @@ export default function AdminServicesPage() {
     },
   });
 
+  const reorderService = trpc.admin.reorderServiceType.useMutation({
+    onSuccess: () => {
+      void utils.admin.getServiceTypes.invalidate();
+      void utils.request.getServiceTypes.invalidate();
+    },
+    onError: (error) => {
+      showError(error, t("toast.reorderFailed"));
+    },
+  });
+
+  const handleReorder = (id: string, direction: "up" | "down") => {
+    if (reorderService.isPending) return;
+    reorderService.mutate({ id, direction, status: statusFilter });
+  };
+
   const extractFormData = (formData: FormData) => ({
     iconValue: formData.get("icon") as string,
     creditCostValue: formData.get("creditCost") as string,
     maxFreeRevisionsValue: formData.get("maxFreeRevisions") as string,
     paidRevisionCostValue: formData.get("paidRevisionCost") as string,
     resetFreeRevisionsOnPaidValue: formData.get("resetFreeRevisionsOnPaid") === "on",
-    priorityCostLowValue: formData.get("priorityCostLow") as string,
-    priorityCostMediumValue: formData.get("priorityCostMedium") as string,
-    priorityCostHighValue: formData.get("priorityCostHigh") as string,
     maxDeliveryMinutesValue: formData.get("maxDeliveryMinutes") as string,
     nameEn: (formData.get("name_en") as string) || "",
     nameAr: (formData.get("name_ar") as string) || "",
@@ -173,13 +185,6 @@ export default function AdminServicesPage() {
       ? Number.parseInt(data.paidRevisionCostValue, 10)
       : 1,
     resetFreeRevisionsOnPaid: data.resetFreeRevisionsOnPaidValue,
-    priorityCostLow: data.priorityCostLowValue ? Number.parseInt(data.priorityCostLowValue, 10) : 0,
-    priorityCostMedium: data.priorityCostMediumValue
-      ? Number.parseInt(data.priorityCostMediumValue, 10)
-      : 1,
-    priorityCostHigh: data.priorityCostHighValue
-      ? Number.parseInt(data.priorityCostHighValue, 10)
-      : 2,
     maxDeliveryMinutes: data.maxDeliveryMinutesValue
       ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
       : 480,
@@ -207,15 +212,6 @@ export default function AdminServicesPage() {
         : undefined,
       paidRevisionCost: data.paidRevisionCostValue
         ? Number.parseInt(data.paidRevisionCostValue, 10)
-        : undefined,
-      priorityCostLow: data.priorityCostLowValue
-        ? Number.parseInt(data.priorityCostLowValue, 10)
-        : undefined,
-      priorityCostMedium: data.priorityCostMediumValue
-        ? Number.parseInt(data.priorityCostMediumValue, 10)
-        : undefined,
-      priorityCostHigh: data.priorityCostHighValue
-        ? Number.parseInt(data.priorityCostHighValue, 10)
         : undefined,
       maxDeliveryMinutes: data.maxDeliveryMinutesValue
         ? Number.parseInt(data.maxDeliveryMinutesValue, 10)
@@ -383,48 +379,6 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      {/* Priority Costs for Edit */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor={`priorityCostLow-${service.id}`}>{t("fields.priorityCostLow")}</Label>
-          <Input
-            id={`priorityCostLow-${service.id}`}
-            name="priorityCostLow"
-            type="number"
-            min="0"
-            defaultValue={service.priorityCostLow ?? 0}
-            required
-          />
-          <p className="text-xs text-muted-foreground">{t("fields.priorityCostLowHint")}</p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`priorityCostMedium-${service.id}`}>
-            {t("fields.priorityCostMedium")}
-          </Label>
-          <Input
-            id={`priorityCostMedium-${service.id}`}
-            name="priorityCostMedium"
-            type="number"
-            min="0"
-            defaultValue={service.priorityCostMedium ?? 1}
-            required
-          />
-          <p className="text-xs text-muted-foreground">{t("fields.priorityCostMediumHint")}</p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`priorityCostHigh-${service.id}`}>{t("fields.priorityCostHigh")}</Label>
-          <Input
-            id={`priorityCostHigh-${service.id}`}
-            name="priorityCostHigh"
-            type="number"
-            min="0"
-            defaultValue={service.priorityCostHigh ?? 2}
-            required
-          />
-          <p className="text-xs text-muted-foreground">{t("fields.priorityCostHighHint")}</p>
-        </div>
-      </div>
-
       {/* Max Delivery for Edit */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
@@ -457,12 +411,38 @@ export default function AdminServicesPage() {
     </form>
   );
 
-  const renderServiceDisplay = (service: any) => (
-    <div key={service.id} className="flex items-center justify-between p-4 rounded-lg border">
-      <div className="flex items-center gap-4">
-        {service.icon && <span className="text-2xl">{service.icon}</span>}
-        <div>
-          <div className="flex items-center gap-2">
+  const renderServiceDisplay = (service: any, index: number, total: number) => (
+    <div key={service.id} className="flex items-center justify-between p-4 rounded-lg border gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex flex-col shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={index === 0 || reorderService.isPending}
+            onClick={() => handleReorder(service.id, "up")}
+            title={t("buttons.moveUp")}
+            aria-label={t("buttons.moveUp")}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={index === total - 1 || reorderService.isPending}
+            onClick={() => handleReorder(service.id, "down")}
+            title={t("buttons.moveDown")}
+            aria-label={t("buttons.moveDown")}
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+        </div>
+        {service.icon && <span className="text-2xl shrink-0">{service.icon}</span>}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-medium">
               {resolveLocalizedText((service as any).nameI18n, locale, service.name)}
             </p>
@@ -473,7 +453,7 @@ export default function AdminServicesPage() {
           <p className="text-sm text-muted-foreground">
             {resolveLocalizedText((service as any).descriptionI18n, locale, service.description)}
           </p>
-          <div className="flex gap-3 mt-1">
+          <div className="flex gap-3 mt-1 flex-wrap">
             {service.attributes && service.attributes.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 📋 {service.attributes.length}{" "}
@@ -506,7 +486,7 @@ export default function AdminServicesPage() {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         <Button
           variant="outline"
           size="sm"
@@ -537,10 +517,10 @@ export default function AdminServicesPage() {
     </div>
   );
 
-  const renderServiceItem = (service: any) => {
+  const renderServiceItem = (service: any, index: number, total: number) => {
     return editingId === service.id
       ? renderServiceEditForm(service)
-      : renderServiceDisplay(service);
+      : renderServiceDisplay(service, index, total);
   };
 
   return (
@@ -568,12 +548,7 @@ export default function AdminServicesPage() {
                 <div className="space-y-2">
                   <Label htmlFor="create-icon">{t("fields.iconOptional")}</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="create-icon"
-                      name="icon"
-                      placeholder="🎨"
-                      className="flex-1"
-                    />
+                    <Input id="create-icon" name="icon" placeholder="🎨" className="flex-1" />
                     <Button
                       type="button"
                       variant="outline"
@@ -691,50 +666,6 @@ export default function AdminServicesPage() {
                 </div>
               </div>
 
-              {/* Priority Costs */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="priorityCostLow">{t("fields.priorityCostLow")}</Label>
-                  <Input
-                    id="priorityCostLow"
-                    name="priorityCostLow"
-                    type="number"
-                    min="0"
-                    defaultValue="0"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">{t("fields.priorityCostLowHint")}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priorityCostMedium">{t("fields.priorityCostMedium")}</Label>
-                  <Input
-                    id="priorityCostMedium"
-                    name="priorityCostMedium"
-                    type="number"
-                    min="0"
-                    defaultValue="1"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("fields.priorityCostMediumHint")}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priorityCostHigh">{t("fields.priorityCostHigh")}</Label>
-                  <Input
-                    id="priorityCostHigh"
-                    name="priorityCostHigh"
-                    type="number"
-                    min="0"
-                    defaultValue="2"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("fields.priorityCostHighHint")}
-                  </p>
-                </div>
-              </div>
-
               {/* Max Delivery */}
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
@@ -802,14 +733,15 @@ export default function AdminServicesPage() {
               )}
               {!isLoading && (services?.length ?? 0) > 0 && (
                 <div className="space-y-4">
-                  {services?.map((service: any) => renderServiceItem(service))}
+                  {services?.map((service: any, index: number) =>
+                    renderServiceItem(service, index, services.length)
+                  )}
                 </div>
               )}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
-
     </div>
   );
 }

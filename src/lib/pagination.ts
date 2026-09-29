@@ -83,7 +83,6 @@ export const requestSelectShort = {
   id: true,
   title: true,
   status: true,
-  priority: true,
   serviceTypeId: true,
   clientId: true,
   providerId: true,

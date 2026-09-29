@@ -973,7 +973,9 @@
         "edit": "تعديل",
         "save": "حفظ",
         "pick": "اختر",
-        "hide": "إخفاء"
+        "hide": "إخفاء",
+        "moveUp": "تحريك لأعلى",
+        "moveDown": "تحريك لأسفل"
       },
       "badges": {
         "active": "نشط",
@@ -982,7 +984,8 @@
       "toast": {
         "activated": "تم تفعيل الخدمة بنجاح",
         "deactivated": "تم إلغاء تفعيل الخدمة بنجاح",
-        "statusFailed": "فشل تحديث حالة الخدمة"
+        "statusFailed": "فشل تحديث حالة الخدمة",
+        "reorderFailed": "فشل إعادة ترتيب الخدمة"
       },
       "display": {
         "questionLabel": "سؤال",

@@ -1598,11 +1598,8 @@ export const adminRouter = router({
         maxFreeRevisions: z.number().min(0).default(3), // Number of free revisions per request
         paidRevisionCost: z.number().min(1).default(1), // Cost in credits for paid revisions
         resetFreeRevisionsOnPaid: z.boolean().default(true), // Reset free revision counter after paid revision
-        priorityCostLow: z.number().min(0).default(0), // Additional credits for low priority
-        priorityCostMedium: z.number().min(0).default(1), // Additional credits for medium priority
-        priorityCostHigh: z.number().min(0).default(2), // Additional credits for high priority
         maxDeliveryMinutes: z.number().min(15).default(480), // Max estimated delivery time in minutes
-        sortOrder: z.number().default(0),
+        sortOrder: z.number().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1617,6 +1614,11 @@ export const adminRouter = router({
         });
       }
 
+      const maxSort = await ctx.db.serviceType.aggregate({
+        _max: { sortOrder: true },
+      });
+      const nextSortOrder = input.sortOrder ?? (maxSort._max.sortOrder ?? -1) + 1;
+
       const serviceType = await ctx.db.serviceType.create({
         data: {
           name: input.name,
@@ -1630,11 +1632,8 @@ export const adminRouter = router({
           maxFreeRevisions: input.maxFreeRevisions,
           paidRevisionCost: input.paidRevisionCost,
           resetFreeRevisionsOnPaid: input.resetFreeRevisionsOnPaid,
-          priorityCostLow: input.priorityCostLow,
-          priorityCostMedium: input.priorityCostMedium,
-          priorityCostHigh: input.priorityCostHigh,
           maxDeliveryMinutes: input.maxDeliveryMinutes,
-          sortOrder: input.sortOrder,
+          sortOrder: nextSortOrder,
         } as any,
       });
 
@@ -1662,9 +1661,6 @@ export const adminRouter = router({
         maxFreeRevisions: z.number().min(0).optional(), // Number of free revisions per request
         paidRevisionCost: z.number().min(1).optional(), // Cost in credits for paid revisions
         resetFreeRevisionsOnPaid: z.boolean().optional(), // Reset free revision counter after paid revision
-        priorityCostLow: z.number().min(0).optional(), // Additional credits for low priority
-        priorityCostMedium: z.number().min(0).optional(), // Additional credits for medium priority
-        priorityCostHigh: z.number().min(0).optional(), // Additional credits for high priority
         maxDeliveryMinutes: z.number().min(15).optional(), // Max estimated delivery time in minutes
         sortOrder: z.number().optional(),
         isActive: z.boolean().optional(),
@@ -1721,6 +1717,67 @@ export const adminRouter = router({
         success: true,
         message: `Service type "${serviceType.name}" has been ${input.isActive ? "activated" : "deactivated"}`,
       };
+    }),
+
+  // Reorder service type within the current filter; keeps create-request order in sync
+  reorderServiceType: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        direction: z.enum(["up", "down"]),
+        status: z.enum(["all", "active", "inactive"]).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const status = input.status ?? "all";
+
+      const allServices = await ctx.db.serviceType.findMany({
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: { id: true, isActive: true },
+      });
+
+      const matchesFilter = (service: { isActive: boolean }) => {
+        if (status === "active") return service.isActive;
+        if (status === "inactive") return !service.isActive;
+        return true;
+      };
+
+      const filtered = allServices.filter(matchesFilter);
+      const filteredIndex = filtered.findIndex((s) => s.id === input.id);
+      if (filteredIndex === -1) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Service type not found",
+        });
+      }
+
+      const swapFilteredIndex = input.direction === "up" ? filteredIndex - 1 : filteredIndex + 1;
+      if (swapFilteredIndex < 0 || swapFilteredIndex >= filtered.length) {
+        return { success: true, message: "Already at edge" };
+      }
+
+      const currentId = filtered[filteredIndex]!.id;
+      const neighborId = filtered[swapFilteredIndex]!.id;
+      const currentGlobalIndex = allServices.findIndex((s) => s.id === currentId);
+      const neighborGlobalIndex = allServices.findIndex((s) => s.id === neighborId);
+
+      const reordered = [...allServices];
+      const tmp = reordered[currentGlobalIndex]!;
+      reordered[currentGlobalIndex] = reordered[neighborGlobalIndex]!;
+      reordered[neighborGlobalIndex] = tmp;
+
+      await ctx.db.$transaction(
+        reordered.map((service, i) =>
+          ctx.db.serviceType.update({
+            where: { id: service.id },
+            data: { sortOrder: i },
+          })
+        )
+      );
+
+      await invalidateServiceTypesCache();
+
+      return { success: true };
     }),
 
   // Create package

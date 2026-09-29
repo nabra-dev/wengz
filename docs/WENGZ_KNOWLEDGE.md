@@ -93,7 +93,6 @@ Each service type can define:
 
 - Base credit cost per request.
 - Configurable attributes (text/select/multiselect/number/file/voice) that can add credit cost (file/voice do not).
-- Priority surcharge (low/medium/high).
 - Revision policy:
   - Max free revisions.
   - Paid revision cost.
@@ -103,7 +102,6 @@ Request records can store pricing breakdown:
 
 - baseCreditCost
 - attributeCredits
-- priorityCreditCost
 - creditCost (total)
 
 ## Request Lifecycle

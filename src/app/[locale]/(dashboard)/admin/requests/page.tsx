@@ -33,7 +33,6 @@ type Request = {
   id: string;
   title: string;
   status: string;
-  priority: number;
   createdAt: string | Date;
   client: { id: string; name: string | null; email: string };
   provider: { id: string; name: string | null; email: string } | null;
@@ -235,9 +234,7 @@ export default function AdminRequestsPage() {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() =>
-                          setConfirmDelete({ id: request.id, title: request.title })
-                        }
+                        onClick={() => setConfirmDelete({ id: request.id, title: request.title })}
                         disabled={deleteRequest.isPending}
                         className="flex items-center gap-1"
                       >
@@ -270,9 +267,7 @@ export default function AdminRequestsPage() {
         }}
         title={t("actions.delete")}
         description={
-          confirmDelete
-            ? t("confirmations.delete", { title: confirmDelete.title })
-            : undefined
+          confirmDelete ? t("confirmations.delete", { title: confirmDelete.title }) : undefined
         }
         confirmLabel={t("actions.delete")}
         variant="destructive"

@@ -142,7 +142,6 @@ export default function RequestDetailPage() {
       <RequestHeader
         title={request.title}
         status={request.status}
-        priority={request.priority}
         creditCost={(request as any).creditCost}
         baseCreditCost={(request as any).baseCreditCost}
         attributeCredits={(request as any).attributeCredits}

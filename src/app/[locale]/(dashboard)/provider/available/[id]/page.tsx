@@ -110,7 +110,6 @@ export default function AvailableJobDetailPage() {
       <RequestHeader
         title={request.title}
         status={request.status}
-        priority={request.priority}
         creditCost={(request as any).creditCost}
         baseCreditCost={(request as any).baseCreditCost}
         priorityCreditCost={(request as any).priorityCreditCost}

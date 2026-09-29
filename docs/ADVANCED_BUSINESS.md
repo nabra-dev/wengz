@@ -73,11 +73,10 @@ Settlement value is independent of what the client paid for a **package**; packa
 
 - **Per-request credit cost** (base cost for that service).
 - **Attributes** (structured Q&A: text, select/multiselect, number, **file upload**, **voice record/upload**) that can **add to** the credit total (text/choice/number only; file and voice answers do not add credits).
-- **Priority surcharges** (low / medium / high) expressed as additional credits per service configuration.
 - **Revisions**: each service defines **free revision allowance**, **paid revision cost**, and whether paid revisions **reset** the free counter—so the business can tune quality-of-service vs. margin.
 - **Max delivery**: each service defines a **maximum estimated delivery time in minutes**; providers cannot set a start-work estimate above that cap.
 
-When a client creates a request, the system can persist **base**, **attribute**, and **priority** components of cost for auditing and display (`baseCreditCost`, `attributeCredits`, `priorityCreditCost`, `creditCost` on `Request`).
+When a client creates a request, the system can persist **base** and **attribute** components of cost for auditing and display (`baseCreditCost`, `attributeCredits`, `creditCost` on `Request`).
 
 ---
 

@@ -9,7 +9,6 @@ import {
   calculateAttributeCredits,
   collectAttributeMediaUrls,
 } from "@/lib/attribute-validation";
-import { getPriorityCostsForService } from "@/lib/priority-costs";
 import { settleCompletedRequest } from "@/lib/provider-wallet";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
@@ -112,14 +111,9 @@ function validateServiceAttributes(serviceType: any, attributeResponses: any, us
 }
 
 /**
- * Calculates total credit cost including base, attributes, and priority
+ * Calculates total credit cost including base and attributes
  */
-async function calculateTotalCreditCost(
-  serviceType: any,
-  attributeResponses: any,
-  priority: number,
-  serviceTypeId: string
-) {
+function calculateTotalCreditCost(serviceType: any, attributeResponses: any) {
   const baseCreditCost = serviceType.creditCost || 1;
 
   const attributeCredits =
@@ -130,19 +124,10 @@ async function calculateTotalCreditCost(
         )
       : 0;
 
-  const costs = await getPriorityCostsForService(serviceTypeId);
-  const priorityCosts: Record<number, number> = {
-    1: costs.low,
-    2: costs.medium,
-    3: costs.high,
-  };
-  const priorityCost = priorityCosts[priority] ?? costs.medium;
-
   return {
     baseCreditCost,
     attributeCredits,
-    priorityCost,
-    totalCreditCost: baseCreditCost + attributeCredits + priorityCost,
+    totalCreditCost: baseCreditCost + attributeCredits,
   };
 }
 
@@ -205,16 +190,12 @@ async function notifyMatchingProviders(
 function buildCostBreakdownMessage(
   baseCreditCost: number,
   attributeCredits: number,
-  priorityCost: number,
   totalCreditCost: number
 ): string {
   const costBreakdown = [];
   costBreakdown.push(`Base: ${baseCreditCost}`);
   if (attributeCredits > 0) {
     costBreakdown.push(`Attributes: ${attributeCredits}`);
-  }
-  if (priorityCost > 0) {
-    costBreakdown.push(`Priority: ${priorityCost}`);
   }
   const breakdownMessage = costBreakdown.length > 1 ? ` (${costBreakdown.join(" + ")})` : "";
 
@@ -298,7 +279,6 @@ export const requestRouter = router({
         title: z.string().min(1, "Title is required"),
         description: z.string().min(1, "Description is required"),
         serviceTypeId: z.string(),
-        priority: z.number().min(1).max(3).default(1),
         formData: z.record(z.any()).optional(),
         attributeResponses: z.any().optional(), // Client's answers to service Q&A: [{question: string, answer: string}]
         attachments: z.array(z.string()).optional(),
@@ -344,12 +324,7 @@ export const requestRouter = router({
       }
 
       // Calculate total credit cost
-      const costDetails = await calculateTotalCreditCost(
-        serviceType,
-        input.attributeResponses,
-        input.priority,
-        input.serviceTypeId
-      );
+      const costDetails = calculateTotalCreditCost(serviceType, input.attributeResponses);
 
       // Deduct credits, create the request, and write the system comment in
       // one transaction: either everything commits or the credits roll back.
@@ -362,7 +337,7 @@ export const requestRouter = router({
         const creditResult = await checkAndDeductCredits(
           userId,
           costDetails.totalCreditCost,
-          `New request: ${input.title} (Priority ${input.priority})`,
+          `New request: ${input.title}`,
           tx
         );
 
@@ -379,11 +354,10 @@ export const requestRouter = router({
             description: input.description,
             clientId: userId,
             serviceTypeId: input.serviceTypeId,
-            priority: input.priority,
             creditCost: costDetails.totalCreditCost,
             baseCreditCost: costDetails.baseCreditCost,
             attributeCredits: costDetails.attributeCredits,
-            priorityCreditCost: costDetails.priorityCost,
+            priorityCreditCost: 0,
             isRevision: false,
             formData: input.formData || {},
             attributeResponses: input.attributeResponses || null,
@@ -418,7 +392,6 @@ export const requestRouter = router({
         metadata: {
           title: input.title,
           serviceTypeId: input.serviceTypeId,
-          priority: input.priority,
           creditCost: costDetails.totalCreditCost,
           attachmentCount: input.attachments?.length ?? 0,
         },
@@ -438,7 +411,6 @@ export const requestRouter = router({
       const message = buildCostBreakdownMessage(
         costDetails.baseCreditCost,
         costDetails.attributeCredits,
-        costDetails.priorityCost,
         costDetails.totalCreditCost
       );
 
@@ -1361,9 +1333,6 @@ export const requestRouter = router({
             icon: true,
             attributes: true,
             creditCost: true,
-            priorityCostLow: true,
-            priorityCostMedium: true,
-            priorityCostHigh: true,
             isActive: true,
             sortOrder: true,
           },

@@ -42,7 +42,6 @@ export default function NewRequestPage() {
   const t = useTranslations("client.newRequest");
   const router = useRouter();
   const [selectedServiceType, setSelectedServiceType] = useState("");
-  const [priority] = useState("1");
   const [attachments, setAttachments] = useState<UploadedFile[]>([]);
   const [attributeResponses, setAttributeResponses] = useState<AttributeResponse[]>([]);
   const [title, setTitle] = useState("");
@@ -121,14 +120,7 @@ export default function NewRequestPage() {
     return calculateAttributeCredits(attributes, attributeResponses);
   }, [selectedService, attributeResponses]);
 
-  // Priority costs from the selected service type
-  const lowCost = (selectedService as { priorityCostLow?: number })?.priorityCostLow ?? 0;
-  const mediumCost = (selectedService as { priorityCostMedium?: number })?.priorityCostMedium ?? 1;
-  const highCost = (selectedService as { priorityCostHigh?: number })?.priorityCostHigh ?? 2;
-
-  const priorityCostsMap: Record<string, number> = { "1": lowCost, "2": mediumCost, "3": highCost };
-  const priorityCost = priorityCostsMap[priority] ?? lowCost;
-  const totalCreditCost = baseCreditCost + attributeCredits + priorityCost;
+  const totalCreditCost = baseCreditCost + attributeCredits;
 
   const canAffordService = Boolean(
     subscription && subscription.remainingCredits >= totalCreditCost
@@ -203,9 +195,6 @@ export default function NewRequestPage() {
     e.preventDefault();
     setSubmitAttempted(true);
 
-    const formData = new FormData(e.currentTarget);
-    const formPriority = Number.parseInt(formData.get("priority") as string) || 1;
-
     const nextServiceError = getServiceError(selectedServiceType);
     const nextTitleError = getTitleError(title);
     const nextDescriptionError = getDescriptionError(description);
@@ -227,7 +216,6 @@ export default function NewRequestPage() {
       title: title.trim(),
       description: description.trim(),
       serviceTypeId: selectedServiceType,
-      priority: formPriority,
       attachments: attachments.map((f) => f.url),
       attributeResponses: attributeResponses.length > 0 ? attributeResponses : undefined,
     });
@@ -255,18 +243,12 @@ export default function NewRequestPage() {
             </CardTitle>
             <CardDescription className="text-orange-700 dark:text-orange-300">
               {selectedServiceType
-                ? t(
-                    priorityCost > 0
-                      ? "insufficientCredits.description"
-                      : "insufficientCredits.descriptionNoPriority",
-                    {
-                      required: totalCreditCost,
-                      credit: totalCreditCost === 1 ? t("credit") : t("credits"),
-                      baseCost: baseCreditCost,
-                      priorityCost,
-                      available: subscription?.remainingCredits || 0,
-                    }
-                  )
+                ? t("insufficientCredits.descriptionNoPriority", {
+                    required: totalCreditCost,
+                    credit: totalCreditCost === 1 ? t("credit") : t("credits"),
+                    baseCost: baseCreditCost,
+                    available: subscription?.remainingCredits || 0,
+                  })
                 : t("insufficientCredits.zeroCredits")}
             </CardDescription>
           </CardHeader>
@@ -495,33 +477,6 @@ export default function NewRequestPage() {
                 )}
               </div>
             </div>
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="priority">{t("fields.priority")}</Label>
-              <Select
-                name="priority"
-                value={priority}
-                onValueChange={setPriority}
-                disabled={!hasCredits}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">{t("fields.priorityLow", { cost: lowCost })}</SelectItem>
-                  <SelectItem value="2">
-                    {t("fields.priorityMedium", {
-                      cost: mediumCost,
-                      credit: mediumCost === 1 ? t("credit") : t("credits"),
-                    })}
-                  </SelectItem>
-                  <SelectItem value="3">{t("fields.priorityHigh", { cost: highCost })}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {t("fields.priorityHint", { low: lowCost, medium: mediumCost, high: highCost })}
-              </p>
-            </div> */}
 
             <div className="space-y-2">
               <Label>{t("fields.attachments")}</Label>

@@ -2,16 +2,16 @@ import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
-import { getStatusColor, getPriorityColor, formatDate } from "@/lib/utils";
+import { getStatusColor, formatDate } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 
 interface RequestHeaderProps {
   readonly title: string;
   readonly status: string;
-  readonly priority: number;
   readonly creditCost: number;
   readonly baseCreditCost?: number;
   readonly attributeCredits?: number;
+  /** Legacy field — used only to keep historical cost math correct; not displayed. */
   readonly priorityCreditCost?: number;
   readonly isRevision?: boolean;
   readonly revisionType?: string | null;
@@ -29,7 +29,6 @@ interface CreditBreakdownData {
   hasCreditBreakdown: boolean;
   base: number;
   attrs: number;
-  prio: number;
   paidRevisionTotal: number;
   hasPaidRevisions: boolean;
   paidRevisionMultiplier: number;
@@ -47,7 +46,7 @@ function calculateCreditBreakdown(
   isRevision?: boolean,
   revisionType?: string | null
 ): CreditBreakdownData {
-  const hasCreditBreakdown = baseCreditCost !== undefined && priorityCreditCost !== undefined;
+  const hasCreditBreakdown = baseCreditCost !== undefined;
   const base = baseCreditCost ?? 0;
   let attrs = attributeCredits ?? 0;
   const prio = priorityCreditCost ?? 0;
@@ -68,7 +67,6 @@ function calculateCreditBreakdown(
     hasCreditBreakdown,
     base,
     attrs,
-    prio,
     paidRevisionTotal,
     hasPaidRevisions,
     paidRevisionMultiplier,
@@ -111,7 +109,6 @@ function RevisionCostDisplay({
 export function RequestHeader({
   title,
   status,
-  priority,
   creditCost,
   baseCreditCost,
   attributeCredits,
@@ -132,12 +129,6 @@ export function RequestHeader({
   const tCard = useTranslations("requests.card");
   const locale = useLocale();
 
-  const getPriorityKey = (priority: number): "LOW" | "MEDIUM" | "HIGH" => {
-    if (priority === 1) return "LOW";
-    if (priority === 3) return "HIGH";
-    return "MEDIUM";
-  };
-
   const breakdown = calculateCreditBreakdown(
     creditCost,
     baseCreditCost,
@@ -153,7 +144,6 @@ export function RequestHeader({
     const parts = [
       t("tooltipBase", { count: breakdown.base }),
       ...(breakdown.attrs > 0 ? [t("tooltipAttributes", { count: breakdown.attrs })] : []),
-      t("tooltipPriority", { count: breakdown.prio }),
     ];
     if (breakdown.hasPaidRevisions) {
       const canShowMultiplier =
@@ -196,11 +186,6 @@ export function RequestHeader({
                 {tCard("needsManualApproval")}
               </Badge>
             )}
-            {!(priority === 1 && priorityCreditCost === 0) && (
-              <Badge variant={null} className={getPriorityColor(priority)}>
-                {tCommon(`priority.${getPriorityKey(priority)}` as any)} {t("priority")}
-              </Badge>
-            )}
             <Badge variant="outline" className="font-semibold" title={creditTooltip}>
               {creditCost} {creditCost === 1 ? t("credit") : t("credits")}
             </Badge>
@@ -224,18 +209,6 @@ export function RequestHeader({
                 {breakdown.base} {breakdown.base === 1 ? t("credit") : t("credits")}
               </span>
             </div>
-            {breakdown.prio !== 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("priorityCost", {
-                    priority: tCommon(`priority.${getPriorityKey(priority)}` as any),
-                  })}
-                </span>
-                <span className="font-medium">
-                  +{breakdown.prio} {breakdown.prio === 1 ? t("credit") : t("credits")}
-                </span>
-              </div>
-            )}
             {breakdown.attrs > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("attributesCost")}</span>

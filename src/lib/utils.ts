@@ -88,24 +88,6 @@ export function getStatusLabel(status: string): string {
   return labels[status] || status.replaceAll("_", " ");
 }
 
-export function getPriorityLabel(priority: number): string {
-  const labels: Record<number, string> = {
-    1: "Low",
-    2: "Medium",
-    3: "High",
-  };
-  return labels[priority] || "Medium";
-}
-
-export function getPriorityColor(priority: number): string {
-  const colors: Record<number, string> = {
-    1: "bg-gray-100 text-gray-800",
-    2: "bg-yellow-100 text-yellow-800",
-    3: "bg-red-100 text-red-800",
-  };
-  return colors[priority] || "bg-gray-100 text-gray-800";
-}
-
 export function calculateDaysRemaining(endDate: Date): number {
   const now = Date.now();
   const end = new Date(endDate).getTime();
