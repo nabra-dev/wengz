@@ -2,6 +2,7 @@ import {
   findContactLeaks,
   findContactLeaksInFields,
   isOffPlatformContactUrl,
+  normalizeForContactScan,
   textHasContactLeak,
 } from "@/lib/contact-leak";
 
@@ -56,6 +57,34 @@ describe("findContactLeaks", () => {
     expect(textHasContactLeak("Print 01001234567 on the poster", "brief")).toBe(false);
     expect(textHasContactLeak("WhatsApp me for details", "brief")).toBe(true);
     expect(textHasContactLeak("https://wa.me/201000000000", "brief")).toBe(true);
+  });
+
+  it("detects obfuscated platform names", () => {
+    expect(textHasContactLeak("contact me on w.h.a.t.s.a.p.p")).toBe(true);
+    expect(textHasContactLeak("watsapp me please")).toBe(true);
+    expect(textHasContactLeak("what s app me")).toBe(true);
+    expect(textHasContactLeak("my tele gram is open")).toBe(true);
+  });
+
+  it("detects obfuscated emails", () => {
+    expect(textHasContactLeak("mail me john at gmail dot com")).toBe(true);
+    expect(textHasContactLeak("reach me name(at)brand(dot)co")).toBe(true);
+  });
+
+  it("detects spaced and spoken phone numbers", () => {
+    expect(textHasContactLeak("call 0 1 0 0 1 2 3 4 5 6 7")).toBe(true);
+    expect(textHasContactLeak("zero one zero zero one two three four five six seven")).toBe(true);
+    expect(textHasContactLeak("رقمي ٠١٠٠١٢٣٤٥٦٧")).toBe(true);
+  });
+});
+
+describe("normalizeForContactScan", () => {
+  it("collapses separator obfuscation", () => {
+    expect(normalizeForContactScan("w.h.a.t.s.a.p.p")).toContain("whatsapp");
+  });
+
+  it("maps arabic digits", () => {
+    expect(normalizeForContactScan("٠١٠٠")).toContain("0100");
   });
 });
 
