@@ -80,6 +80,36 @@ export function rateLimit(
   };
 }
 
+/** Peek at a key without incrementing. Returns null if no active window. */
+export function getRateLimitState(
+  key: string,
+  options: { limit: number }
+): {
+  count: number;
+  remaining: number;
+  resetAt: number;
+  blocked: boolean;
+} | null {
+  const existing = buckets.get(key);
+  if (!existing) return null;
+  const now = Date.now();
+  if (existing.resetAt <= now) {
+    buckets.delete(key);
+    return null;
+  }
+  return {
+    count: existing.count,
+    remaining: Math.max(0, options.limit - existing.count),
+    resetAt: existing.resetAt,
+    blocked: existing.count > options.limit,
+  };
+}
+
+/** Remove a rate-limit window (e.g. admin clears a contact-leak lockout). */
+export function clearRateLimit(key: string): boolean {
+  return buckets.delete(key);
+}
+
 /** Best-effort client IP from proxy headers (e.g. Nginx). */
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");

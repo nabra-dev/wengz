@@ -41,6 +41,7 @@ export type ActivityAction =
   | "contact.status"
   | "security.contact_leak"
   | "security.contact_leak_rate_limited"
+  | "security.contact_leak_cleared"
   | "cron.subscriptions"
   | "cron.deliveredApprovals"
   | "cron.releaseProviderHolds"

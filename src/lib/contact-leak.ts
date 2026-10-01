@@ -153,6 +153,10 @@ export const CONTACT_LEAK_RATE_LIMIT_MESSAGE =
 /** How many blocked contact-leak attempts before temporary lockout. */
 export const CONTACT_LEAK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60_000 } as const;
 
+export function contactLeakRateLimitKey(actorId: string): string {
+  return `contact-leak:${actorId}`;
+}
+
 function pushUnique(hits: ContactLeakHit[], kind: ContactLeakKind, match: string) {
   const normalized = match.trim();
   if (!normalized) return;

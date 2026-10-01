@@ -1399,7 +1399,7 @@
         "total7d": "Total events (7d)"
       },
       "tableTitle": "Recent events",
-      "tableDescription": "Newest first. Open a request to review the conversation context.",
+      "tableDescription": "Newest first. Clear strikes to lift a false-positive lockout. Open a request to review context.",
       "filters": {
         "all": "All",
         "blocked": "Blocked",
@@ -1410,7 +1410,9 @@
       "newest": "Newest",
       "type": {
         "blocked": "Blocked",
-        "rateLimited": "Rate-limited"
+        "rateLimited": "Rate-limited",
+        "lockedNow": "Locked now",
+        "strikes": "{count} strikes"
       },
       "columns": {
         "time": "Time",
@@ -1418,7 +1420,8 @@
         "kinds": "Detected",
         "actor": "Actor",
         "field": "Field",
-        "request": "Request"
+        "request": "Request",
+        "actions": "Actions"
       },
       "kinds": {
         "messaging_url": "Messaging link",
@@ -1427,6 +1430,13 @@
         "phone": "Phone",
         "handle": "Handle",
         "solicitation": "Solicitation"
+      },
+      "clearStrikes": "Clear strikes",
+      "clearStrikesHint": "Reset this user’s contact-leak strike counter and unlock them if rate-limited",
+      "toast": {
+        "cleared": "Strikes cleared — user can post again",
+        "alreadyClear": "No active strikes for this user",
+        "clearError": "Could not clear strikes"
       }
     }
   },

@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { logActivityAsync } from "@/lib/activity-log";
-import { rateLimit } from "@/lib/rate-limit";
+import { clearRateLimit, getRateLimitState, rateLimit } from "@/lib/rate-limit";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { createNotification } from "@/lib/notifications";
 import { db } from "@/lib/db";
@@ -9,6 +9,7 @@ import {
   CONTACT_LEAK_ERROR_MESSAGE,
   CONTACT_LEAK_RATE_LIMIT,
   CONTACT_LEAK_RATE_LIMIT_MESSAGE,
+  contactLeakRateLimitKey,
   findContactLeaks,
   findContactLeaksInFields,
   summarizeContactLeakHits,
@@ -114,7 +115,7 @@ async function handleContactLeakHits(
   });
 
   if (actorId) {
-    const rl = rateLimit(`contact-leak:${actorId}`, CONTACT_LEAK_RATE_LIMIT);
+    const rl = rateLimit(contactLeakRateLimitKey(actorId), CONTACT_LEAK_RATE_LIMIT);
     if (!rl.success) {
       logActivityAsync({
         action: "security.contact_leak_rate_limited",
@@ -179,4 +180,17 @@ export async function enforceNoContactLeakInFields(
   const hits = findContactLeaksInFields(input);
   if (hits.length === 0) return;
   await handleContactLeakHits(hits, { ...ctx, field: ctx.field ?? "request_fields" });
+}
+
+/** Current in-memory strike / lockout state for a user (null = clean). */
+export function getContactLeakStrikeState(actorId: string) {
+  return getRateLimitState(contactLeakRateLimitKey(actorId), CONTACT_LEAK_RATE_LIMIT);
+}
+
+/**
+ * Admin clears contact-leak strikes / lockout for a user (false-positive recovery).
+ * Returns whether an active window was cleared.
+ */
+export function clearContactLeakStrikes(actorId: string): boolean {
+  return clearRateLimit(contactLeakRateLimitKey(actorId));
 }

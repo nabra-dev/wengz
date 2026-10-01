@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc/client";
-import { ExternalLink, ShieldAlert } from "lucide-react";
+import { ExternalLink, ShieldAlert, ShieldOff } from "lucide-react";
 
 type LeakFilter = "all" | "blocked" | "rate_limited";
 
@@ -28,6 +29,7 @@ type LeakEvent = {
   level: string;
   entityType: string | null;
   entityId: string | null;
+  actorId: string | null;
   actorRole: string | null;
   metadata: Record<string, unknown> | null;
   createdAt: string | Date;
@@ -37,6 +39,13 @@ type LeakEvent = {
     email: string;
     role: string;
   } | null;
+};
+
+type StrikeState = {
+  count: number;
+  remaining: number;
+  resetAt: number;
+  blocked: boolean;
 };
 
 function metadataKinds(metadata: LeakEvent["metadata"]): string[] {
@@ -55,8 +64,10 @@ function metadataField(metadata: LeakEvent["metadata"]): string | null {
 export default function AdminContactLeaksPage() {
   const t = useTranslations("admin.contactLeaks");
   const locale = useLocale();
+  const utils = trpc.useUtils();
   const [filter, setFilter] = useState<LeakFilter>("all");
   const [cursor, setCursor] = useState<string | undefined>();
+  const [clearingUserId, setClearingUserId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching } = trpc.admin.getContactLeakEvents.useQuery({
     filter,
@@ -64,8 +75,20 @@ export default function AdminContactLeaksPage() {
     cursor,
   });
 
+  const clearStrikes = trpc.admin.clearContactLeakStrikes.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.cleared ? t("toast.cleared") : t("toast.alreadyClear"));
+      void utils.admin.getContactLeakEvents.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || t("toast.clearError"));
+    },
+    onSettled: () => setClearingUserId(null),
+  });
+
   const events = (data?.events ?? []) as LeakEvent[];
   const stats = data?.stats;
+  const strikeStates = (data?.strikeStates ?? {}) as Record<string, StrikeState>;
 
   const kindLabel = useMemo(
     () =>
@@ -79,6 +102,11 @@ export default function AdminContactLeaksPage() {
       }) as Record<string, string>,
     [t]
   );
+
+  const handleClearStrikes = (userId: string) => {
+    setClearingUserId(userId);
+    clearStrikes.mutate({ userId, reason: "Admin cleared false-positive lockout" });
+  };
 
   return (
     <div className="space-y-6">
@@ -171,6 +199,7 @@ export default function AdminContactLeaksPage() {
                     <TableHead>{t("columns.actor")}</TableHead>
                     <TableHead>{t("columns.field")}</TableHead>
                     <TableHead>{t("columns.request")}</TableHead>
+                    <TableHead className="text-end">{t("columns.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -178,15 +207,28 @@ export default function AdminContactLeaksPage() {
                     const kinds = metadataKinds(row.metadata);
                     const field = metadataField(row.metadata);
                     const isRateLimited = row.action === "security.contact_leak_rate_limited";
+                    const actorId = row.actor?.id ?? row.actorId;
+                    const strike = actorId ? strikeStates[actorId] : undefined;
                     return (
                       <TableRow key={row.id}>
                         <TableCell className="whitespace-nowrap text-sm">
                           {new Date(row.createdAt).toLocaleString(locale)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={isRateLimited ? "destructive" : "secondary"}>
-                            {isRateLimited ? t("type.rateLimited") : t("type.blocked")}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant={isRateLimited ? "destructive" : "secondary"}>
+                              {isRateLimited ? t("type.rateLimited") : t("type.blocked")}
+                            </Badge>
+                            {strike?.blocked ? (
+                              <Badge variant="destructive" className="w-fit">
+                                {t("type.lockedNow")}
+                              </Badge>
+                            ) : strike ? (
+                              <Badge variant="outline" className="w-fit text-xs font-normal">
+                                {t("type.strikes", { count: strike.count })}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -224,6 +266,23 @@ export default function AdminContactLeaksPage() {
                                 </span>
                                 <ExternalLink className="h-3 w-3" aria-hidden />
                               </Link>
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-end">
+                          {actorId ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              disabled={clearingUserId === actorId && clearStrikes.isPending}
+                              onClick={() => handleClearStrikes(actorId)}
+                              title={t("clearStrikesHint")}
+                            >
+                              <ShieldOff className="h-3.5 w-3.5" aria-hidden />
+                              {t("clearStrikes")}
                             </Button>
                           ) : (
                             <span className="text-muted-foreground">—</span>

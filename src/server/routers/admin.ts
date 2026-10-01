@@ -50,6 +50,10 @@ import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { roundMoney } from "@/lib/utils";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import { createServiceRequest } from "@/lib/create-request";
+import {
+  clearContactLeakStrikes as clearContactLeakStrikesForUser,
+  getContactLeakStrikeState,
+} from "@/lib/contact-leak-enforce";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -1452,6 +1456,15 @@ export const adminRouter = router({
           totalLast7d: z.number(),
         }),
         events: z.array(z.any()),
+        strikeStates: z.record(
+          z.string(),
+          z.object({
+            count: z.number(),
+            remaining: z.number(),
+            resetAt: z.number(),
+            blocked: z.boolean(),
+          })
+        ),
         nextCursor: z.string().nullable(),
       })
     )
@@ -1523,6 +1536,23 @@ export const adminRouter = router({
         nextCursor = next?.id ?? null;
       }
 
+      const actorIds = new Set<string>();
+      for (const row of uniqueActorRows) {
+        if (row.actorId) actorIds.add(row.actorId);
+      }
+      for (const row of events) {
+        if (row.actorId) actorIds.add(row.actorId);
+      }
+
+      const strikeStates: Record<
+        string,
+        { count: number; remaining: number; resetAt: number; blocked: boolean }
+      > = {};
+      for (const actorId of actorIds) {
+        const state = getContactLeakStrikeState(actorId);
+        if (state) strikeStates[actorId] = state;
+      }
+
       return {
         stats: {
           blockedLast24h,
@@ -1531,8 +1561,63 @@ export const adminRouter = router({
           totalLast7d,
         },
         events,
+        strikeStates,
         nextCursor,
       };
+    }),
+
+  clearContactLeakStrikes: requestManagerProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/contact-leaks/clear-strikes",
+        tags: ["admin"],
+        summary: "Clear contact-leak strikes / lockout for a user",
+      },
+    })
+    .input(
+      z.object({
+        userId: z.string().min(1),
+        reason: z.string().max(500).optional(),
+      })
+    )
+    .output(
+      z.object({
+        cleared: z.boolean(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findFirst({
+        where: { id: input.userId, deletedAt: null },
+        select: { id: true, email: true, name: true, role: true },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const cleared = clearContactLeakStrikesForUser(user.id);
+
+      logActivityAsync({
+        action: "security.contact_leak_cleared",
+        level: "info",
+        message: cleared
+          ? `Cleared contact-leak strikes for ${user.email}`
+          : `No active contact-leak strikes for ${user.email}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: user.id,
+        metadata: {
+          targetUserId: user.id,
+          targetEmail: user.email,
+          targetRole: user.role,
+          cleared,
+          reason: input.reason?.trim() || null,
+        },
+      });
+
+      return { cleared, userId: user.id };
     }),
 
   // Get all users
