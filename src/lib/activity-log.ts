@@ -39,6 +39,8 @@ export type ActivityAction =
   | "admin.user_update"
   | "contact.submit"
   | "contact.status"
+  | "security.contact_leak"
+  | "security.contact_leak_rate_limited"
   | "cron.subscriptions"
   | "cron.deliveredApprovals"
   | "cron.releaseProviderHolds"

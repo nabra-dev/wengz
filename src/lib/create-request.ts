@@ -11,11 +11,8 @@ import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import { createNotification, notifyProviderAssignment } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { logRequestActivity } from "@/lib/request-activity";
-import {
-  assertNoContactLeakInFields,
-  collectAttributeTextAnswers,
-  getContactLeakErrorMessage,
-} from "@/lib/contact-leak";
+import { collectAttributeTextAnswers } from "@/lib/contact-leak";
+import { enforceNoContactLeakInFields } from "@/lib/contact-leak-enforce";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
@@ -352,14 +349,18 @@ export async function createServiceRequest(
 
   validateServiceAttributes(serviceType, attributeResponses, uploaderUserId);
 
-  const contactLeakMessage = await getContactLeakErrorMessage(locale);
-  assertNoContactLeakInFields(
+  await enforceNoContactLeakInFields(
     {
       title,
       description,
       attributeAnswers: collectAttributeTextAnswers(attributeResponses),
     },
-    contactLeakMessage
+    {
+      locale,
+      actorId,
+      actorRole,
+      field: "create_request",
+    }
   );
 
   try {

@@ -20,7 +20,7 @@ import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { canManageRequests } from "@/lib/roles";
 import { logRequestActivity } from "@/lib/request-activity";
 import { createServiceRequest } from "@/lib/create-request";
-import { assertNoContactLeak, getContactLeakErrorMessage } from "@/lib/contact-leak";
+import { enforceNoContactLeak } from "@/lib/contact-leak-enforce";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 /**
@@ -540,7 +540,13 @@ export const requestRouter = router({
       }
 
       if (input.message) {
-        assertNoContactLeak(input.message, "strict", await getContactLeakErrorMessage(ctx.locale));
+        await enforceNoContactLeak(input.message, "strict", {
+          locale: ctx.locale,
+          actorId: userId,
+          actorRole: ctx.session.user.role,
+          entityId: input.requestId,
+          field: "status_message",
+        });
       }
 
       const updatedRequest = await ctx.db.request.update({
@@ -645,7 +651,13 @@ export const requestRouter = router({
         });
       }
 
-      assertNoContactLeak(input.feedback, "strict", await getContactLeakErrorMessage(ctx.locale));
+      await enforceNoContactLeak(input.feedback, "strict", {
+        locale: ctx.locale,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        entityId: input.requestId,
+        field: "revision_feedback",
+      });
 
       // Add the client's feedback as a comment
       await ctx.db.requestComment.create({
@@ -833,7 +845,13 @@ export const requestRouter = router({
         });
       }
 
-      assertNoContactLeak(input.content, "strict", await getContactLeakErrorMessage(ctx.locale));
+      await enforceNoContactLeak(input.content, "strict", {
+        locale: ctx.locale,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        entityId: input.requestId,
+        field: "message",
+      });
 
       const comment = await ctx.db.requestComment.create({
         data: {

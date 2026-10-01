@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,8 +54,12 @@ function metadataReason(metadata: ActivityRow["metadata"]): string | null {
 export default function AdminActivityLogsPage() {
   const t = useTranslations("admin.activityLogs");
   const locale = useLocale();
-  const [level, setLevel] = useState<ActivityLevel>("ALL");
-  const [actionFilter, setActionFilter] = useState("");
+  const searchParams = useSearchParams();
+  const actionFromUrl = searchParams?.get("action") ?? "";
+  const [level, setLevel] = useState<ActivityLevel>(() =>
+    actionFromUrl.startsWith("security.") ? "warn" : "ALL"
+  );
+  const [actionFilter, setActionFilter] = useState(actionFromUrl);
   const [entityIdFilter, setEntityIdFilter] = useState("");
   const [cursor, setCursor] = useState<string | undefined>();
 
@@ -168,12 +173,8 @@ export default function AdminActivityLogsPage() {
                         <TableCell className="text-sm">
                           {row.actor ? (
                             <>
-                              <div className="font-medium">
-                                {row.actor.name || row.actor.email}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {row.actor.role}
-                              </div>
+                              <div className="font-medium">{row.actor.name || row.actor.email}</div>
+                              <div className="text-xs text-muted-foreground">{row.actor.role}</div>
                             </>
                           ) : row.actorRole ? (
                             <div className="text-xs text-muted-foreground">{row.actorRole}</div>

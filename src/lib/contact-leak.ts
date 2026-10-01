@@ -1,5 +1,3 @@
-import { TRPCError } from "@trpc/server";
-
 /**
  * Detects off-platform contact sharing used to pull users out of Wengz
  * (WhatsApp/Telegram/LinkedIn/etc. links, phones, emails, handles, solicitations).
@@ -8,6 +6,8 @@ import { TRPCError } from "@trpc/server";
  * - `strict` — messages, titles, descriptions (block phones/emails too)
  * - `brief` — Q&A attribute answers (allow bare phones/emails for design copy;
  *   still block chat-app links and “contact me on WhatsApp” style text)
+ *
+ * Client-safe: no server-only imports. Enforcement lives in `contact-leak-enforce.ts`.
  */
 
 export type ContactLeakKind =
@@ -78,6 +78,12 @@ const CONTACT_URL_HOST_HINTS = [
 export const CONTACT_LEAK_ERROR_MESSAGE =
   "Sharing phone numbers, emails, or off-platform contact links (WhatsApp, Telegram, LinkedIn, etc.) is not allowed. Please keep all communication on Wengz.";
 
+export const CONTACT_LEAK_RATE_LIMIT_MESSAGE =
+  "Too many attempts to share off-platform contact details. Please wait before trying again, and keep communication on Wengz.";
+
+/** How many blocked contact-leak attempts before temporary lockout. */
+export const CONTACT_LEAK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60_000 } as const;
+
 function pushUnique(hits: ContactLeakHit[], kind: ContactLeakKind, match: string) {
   const normalized = match.trim();
   if (!normalized) return;
@@ -96,10 +102,6 @@ function digitCount(value: string): number {
   return (value.match(/\d/g) || []).length;
 }
 
-/**
- * Reject phone-like matches that are more likely IDs/prices (too few digits,
- * look like years, or are embedded in obvious non-phone contexts).
- */
 function isPlausiblePhone(match: string, fullText: string): boolean {
   const digits = digitCount(match);
   if (digits < 8 || digits > 15) return false;
@@ -204,34 +206,11 @@ export function collectAttributeTextAnswers(attributeResponses: unknown): string
   return out;
 }
 
-export function assertNoContactLeak(
-  text: string | undefined | null,
-  mode: ContactLeakMode = "strict",
-  message: string = CONTACT_LEAK_ERROR_MESSAGE
-): void {
-  if (!text) return;
-  if (!textHasContactLeak(text, mode)) return;
-  throw new TRPCError({
-    code: "BAD_REQUEST",
-    message,
-  });
-}
-
-export function assertNoContactLeakInFields(
-  input: ContactLeakScanInput,
-  message: string = CONTACT_LEAK_ERROR_MESSAGE
-): void {
-  const hits = findContactLeaksInFields(input);
-  if (hits.length === 0) return;
-  throw new TRPCError({
-    code: "BAD_REQUEST",
-    message,
-  });
-}
-
-/** Localized BAD_REQUEST copy for contact-leak violations. */
-export async function getContactLeakErrorMessage(locale: string): Promise<string> {
-  const { getTranslation } = await import("@/lib/notifications/i18n-helper");
-  const message = await getTranslation(locale, "errors.contactNotAllowed");
-  return message === "errors.contactNotAllowed" ? CONTACT_LEAK_ERROR_MESSAGE : message;
+/** Safe metadata for activity logs — kinds only, no raw PII payloads. */
+export function summarizeContactLeakHits(hits: ContactLeakHit[]): {
+  kinds: ContactLeakKind[];
+  hitCount: number;
+} {
+  const kinds = [...new Set(hits.map((h) => h.kind))];
+  return { kinds, hitCount: hits.length };
 }

@@ -25,6 +25,8 @@ function getMessageForCode(code: string | undefined, message: string, t?: Transl
         return message || "The requested resource was not found";
       case "BAD_REQUEST":
         return message || "Invalid request. Please check your input.";
+      case "TOO_MANY_REQUESTS":
+        return message || "Too many attempts. Please wait and try again.";
       case "CONFLICT":
         return message || "A conflict occurred. Please try again.";
       case "INTERNAL_SERVER_ERROR":
@@ -43,6 +45,8 @@ function getMessageForCode(code: string | undefined, message: string, t?: Transl
       return message || t("errors.notFound");
     case "BAD_REQUEST":
       return message || t("errors.badRequest");
+    case "TOO_MANY_REQUESTS":
+      return message || t("errors.tooManyRequests");
     case "CONFLICT":
       return message || t("errors.conflict");
     case "INTERNAL_SERVER_ERROR":

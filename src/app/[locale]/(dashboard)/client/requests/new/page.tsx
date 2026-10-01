@@ -23,6 +23,8 @@ import { FileUpload, type UploadedFile } from "@/components/ui/file-upload";
 import { ServiceAttributesForm } from "@/components/client/service-attributes-form";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
+import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
+import { findContactLeaksInFields, collectAttributeTextAnswers } from "@/lib/contact-leak";
 import { ArrowLeft } from "lucide-react";
 import type { AttributeResponse, ServiceAttribute } from "@/types/service-attributes";
 import { calculateAttributeCredits } from "@/lib/attribute-validation";
@@ -40,6 +42,7 @@ function isAttrAnswerEmpty(answer: string | string[] | undefined): boolean {
 
 export default function NewRequestPage() {
   const t = useTranslations("client.newRequest");
+  const tErrors = useTranslations("errors");
   const router = useRouter();
   const [selectedServiceType, setSelectedServiceType] = useState("");
   const [attachments, setAttachments] = useState<UploadedFile[]>([]);
@@ -209,6 +212,18 @@ export default function NewRequestPage() {
       toast.error(t("toast.validationError"), {
         description: t("validation.fixErrors"),
       });
+      return;
+    }
+
+    const contactHits = findContactLeaksInFields({
+      title: title.trim(),
+      description: description.trim(),
+      attributeAnswers: collectAttributeTextAnswers(
+        attributeResponses.length > 0 ? attributeResponses : undefined
+      ),
+    });
+    if (contactHits.length > 0) {
+      toast.error(tErrors("contactNotAllowed"));
       return;
     }
 
@@ -501,6 +516,16 @@ export default function NewRequestPage() {
                 onFieldChange={(question) => markTouched(`attr:${question}`)}
               />
             )}
+
+            <ContactPolicyNotice
+              fields={{
+                title,
+                description,
+                attributeAnswers: collectAttributeTextAnswers(
+                  attributeResponses.length > 0 ? attributeResponses : undefined
+                ),
+              }}
+            />
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-4">
               <Button asChild type="button" variant="outline" className="w-full sm:w-auto">

@@ -25,10 +25,12 @@ import {
   MessageSquare,
   Paperclip,
 } from "lucide-react";
-import { cn, formatDateTime, getInitials } from "@/lib/utils";
-import { LinkifiedText } from "@/components/ui/linkified-text";
-import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
+import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
+import { LinkifiedText } from "@/components/ui/linkified-text";
+import { textHasContactLeak } from "@/lib/contact-leak";
+import { cn, formatDateTime, getInitials } from "@/lib/utils";
+import { trpc } from "@/lib/trpc/client";
 import { useTranslations, useLocale } from "next-intl";
 import { pickSupportedAudioMime } from "@/lib/audio-recording";
 import { normalizeUploadMime, resolveUploadMime } from "@/lib/upload-limits";
@@ -170,6 +172,7 @@ export function MessagesCard({
 }: MessagesCardProps) {
   const t = useTranslations("requests.messages");
   const tSidebar = useTranslations("requests.sidebar");
+  const tErrors = useTranslations("errors");
   const locale = useLocale();
   const { data: session } = useSession();
   const myUserId = session?.user?.id;
@@ -223,6 +226,10 @@ export function MessagesCard({
   const handleSendComment = () => {
     const hasContent = comment.trim().length > 0 || commentFiles.length > 0;
     if (!hasContent || addComment.isPending || isRecording || isUploadingVoice) return;
+    if (comment.trim() && textHasContactLeak(comment.trim(), "strict")) {
+      toast.error(tErrors("contactNotAllowed"));
+      return;
+    }
     addComment.mutate({
       requestId,
       content: comment.trim() || t("attachmentFallback"),
@@ -494,6 +501,8 @@ export function MessagesCard({
                 {t("recordingInProgress")}
               </p>
             )}
+
+            <ContactPolicyNotice text={comment} mode="strict" className="mb-2" />
 
             <div className="flex items-end gap-1.5 sm:gap-2">
               <Button

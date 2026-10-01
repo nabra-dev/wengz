@@ -13,7 +13,7 @@ import { openProviderFinanceDispute } from "@/lib/finance-disputes";
 import { getFinanceSettings } from "@/lib/finance-settings";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logRequestActivity } from "@/lib/request-activity";
-import { assertNoContactLeak, getContactLeakErrorMessage } from "@/lib/contact-leak";
+import { enforceNoContactLeak } from "@/lib/contact-leak-enforce";
 import {
   getProviderWorkload,
   canClaimAdditionalRequest,
@@ -825,11 +825,13 @@ export const providerRouter = router({
         });
       }
 
-      assertNoContactLeak(
-        input.deliverableMessage,
-        "strict",
-        await getContactLeakErrorMessage(ctx.locale)
-      );
+      await enforceNoContactLeak(input.deliverableMessage, "strict", {
+        locale: ctx.locale,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        entityId: input.requestId,
+        field: "deliverable_message",
+      });
 
       // Update request status — fresh delivery resets approval SLA timers
       const updatedRequest = await ctx.db.request.update({

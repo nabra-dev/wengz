@@ -1209,10 +1209,10 @@
     },
     "activityLogs": {
       "title": "Activity history",
-      "subtitle": "Immutable audit trail of backend events (requests, auth, payments, wallet, cron)",
+      "subtitle": "Immutable audit trail of backend events (requests, auth, payments, wallet, security, cron)",
       "tableTitle": "Recent activity",
-      "tableDescription": "Newest events first. Filter by level, action key (e.g. request.), or request id.",
-      "actionPlaceholder": "Filter action (e.g. request.)",
+      "tableDescription": "Newest events first. Filter by level, action key (e.g. request. or security.), or request id.",
+      "actionPlaceholder": "Filter action (e.g. security.contact_leak)",
       "entityIdPlaceholder": "Filter by request id",
       "reasonLabel": "Reason / note",
       "filterAll": "All",
@@ -2474,6 +2474,8 @@
     "conflict": "A conflict occurred. Please try again.",
     "providerAtCapacity": "You can only work on one request at a time. Deliver your current work first, or finish a revision before starting another.",
     "contactNotAllowed": "Sharing phone numbers, emails, or off-platform contact (WhatsApp, Telegram, LinkedIn, Instagram, etc.) is not allowed. Please keep all communication on Wengz.",
+    "contactLeakRateLimited": "Too many attempts to share off-platform contact details. Please wait before trying again, and keep communication on Wengz.",
+    "tooManyRequests": "Too many attempts. Please wait and try again.",
     "internalError": "An unexpected error occurred. Please try again later.",
     "somethingWrong": "Something went wrong",
     "validationError": "Validation error occurred",
@@ -2660,6 +2662,10 @@
     "contactMessage": {
       "title": "New contact message",
       "message": "{fullName} ({email}) — {topic}"
+    },
+    "contactLeakRepeat": {
+      "title": "Repeated off-platform contact attempts",
+      "message": "A user repeatedly tried to share off-platform contact ({kinds}). Review Activity → security.contact_leak."
     },
     "newRequestAvailable": {
       "title": "New Request Available",
