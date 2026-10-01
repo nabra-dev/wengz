@@ -51,9 +51,7 @@ export function isAssignableRole(role: string | null | undefined): role is Assig
 
 export function isStaffRole(role: string | null | undefined): role is StaffRole {
   return (
-    role === ROLES.SUPER_ADMIN ||
-    role === ROLES.PROJECT_MANAGER ||
-    role === ROLES.FINANCE_MANAGER
+    role === ROLES.SUPER_ADMIN || role === ROLES.PROJECT_MANAGER || role === ROLES.FINANCE_MANAGER
   );
 }
 
@@ -144,7 +142,7 @@ export function canAccessAdminPath(
     return canManagePlatform(role);
   }
 
-  if (section === "requests") {
+  if (section === "requests" || section === "contact-leaks") {
     return canManageRequests(role);
   }
 

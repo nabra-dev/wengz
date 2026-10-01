@@ -1423,6 +1423,118 @@ export const adminRouter = router({
       return { logs, nextCursor };
     }),
 
+  // Contact-leak security events for request managers / super admins
+  getContactLeakEvents: requestManagerProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/contact-leaks",
+        tags: ["admin"],
+        summary: "List blocked off-platform contact attempts",
+      },
+    })
+    .input(
+      z
+        .object({
+          filter: z.enum(["all", "blocked", "rate_limited"]).default("all"),
+          actorId: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
+    .output(
+      z.object({
+        stats: z.object({
+          blockedLast24h: z.number(),
+          rateLimitedLast24h: z.number(),
+          uniqueActorsLast7d: z.number(),
+          totalLast7d: z.number(),
+        }),
+        events: z.array(z.any()),
+        nextCursor: z.string().nullable(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const filter = input?.filter ?? "all";
+      const limit = input?.limit ?? 50;
+      const now = new Date();
+      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const actionFilter =
+        filter === "blocked"
+          ? "security.contact_leak"
+          : filter === "rate_limited"
+            ? "security.contact_leak_rate_limited"
+            : { startsWith: "security.contact_leak" };
+
+      const where = {
+        action: actionFilter,
+        ...(input?.actorId ? { actorId: input.actorId } : {}),
+      };
+
+      const [blockedLast24h, rateLimitedLast24h, totalLast7d, uniqueActorRows, events] =
+        await Promise.all([
+          ctx.db.activityLog.count({
+            where: {
+              action: "security.contact_leak",
+              createdAt: { gte: dayAgo },
+            },
+          }),
+          ctx.db.activityLog.count({
+            where: {
+              action: "security.contact_leak_rate_limited",
+              createdAt: { gte: dayAgo },
+            },
+          }),
+          ctx.db.activityLog.count({
+            where: {
+              action: { startsWith: "security.contact_leak" },
+              createdAt: { gte: weekAgo },
+            },
+          }),
+          ctx.db.activityLog.findMany({
+            where: {
+              action: { startsWith: "security.contact_leak" },
+              createdAt: { gte: weekAgo },
+              actorId: { not: null },
+            },
+            select: { actorId: true },
+            distinct: ["actorId"],
+          }),
+          ctx.db.activityLog.findMany({
+            where,
+            include: {
+              actor: {
+                select: { id: true, name: true, email: true, role: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: limit + 1,
+            cursor: input?.cursor ? { id: input.cursor } : undefined,
+            skip: input?.cursor ? 1 : 0,
+          }),
+        ]);
+
+      let nextCursor: string | null = null;
+      if (events.length > limit) {
+        const next = events.pop();
+        nextCursor = next?.id ?? null;
+      }
+
+      return {
+        stats: {
+          blockedLast24h,
+          rateLimitedLast24h,
+          uniqueActorsLast7d: uniqueActorRows.length,
+          totalLast7d,
+        },
+        events,
+        nextCursor,
+      };
+    }),
+
   // Get all users
   getUsers: adminProcedure
     .meta({

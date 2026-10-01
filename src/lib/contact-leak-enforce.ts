@@ -49,13 +49,7 @@ export async function getContactLeakRateLimitMessage(locale: string): Promise<st
   );
 }
 
-async function notifyAdminsContactLeakRepeat(params: {
-  actorId: string;
-  actorRole?: string | null;
-  entityId?: string | null;
-  kinds: string[];
-  locale: string;
-}) {
+async function notifyAdminsContactLeakRepeat(params: { kinds: string[]; locale: string }) {
   const admins = await db.user.findMany({
     where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
     select: { id: true },
@@ -74,9 +68,7 @@ async function notifyAdminsContactLeakRepeat(params: {
     { kinds: params.kinds.join(", ") || "contact" }
   );
 
-  const link = params.entityId
-    ? `/admin/requests/${params.entityId}`
-    : `/admin/activity?action=security.contact_leak`;
+  const link = `/admin/contact-leaks`;
 
   await Promise.all(
     admins.map((admin) =>
@@ -140,9 +132,6 @@ async function handleContactLeakHits(
       });
 
       void notifyAdminsContactLeakRepeat({
-        actorId,
-        actorRole: ctx.actorRole,
-        entityId: ctx.entityId,
         kinds: summary.kinds,
         locale: ctx.locale,
       });

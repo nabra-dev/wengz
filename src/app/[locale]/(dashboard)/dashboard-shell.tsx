@@ -31,6 +31,7 @@ import {
   ScrollText,
   Plus,
   MessageSquare,
+  ShieldAlert,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getInitials } from "@/lib/utils";
@@ -81,6 +82,12 @@ const adminNavConfig = [
     href: "/admin/requests",
     labelKey: "admin.requests",
     icon: FileText,
+    access: "requests" as const,
+  },
+  {
+    href: "/admin/contact-leaks",
+    labelKey: "admin.contactLeaks",
+    icon: ShieldAlert,
     access: "requests" as const,
   },
   {

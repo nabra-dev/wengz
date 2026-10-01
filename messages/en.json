@@ -405,7 +405,8 @@
         "packages": "Packages",
         "services": "Services",
         "settings": "Settings",
-        "profile": "Profile"
+        "profile": "Profile",
+        "contactLeaks": "Contact leaks"
       },
       "signOut": "Sign Out",
       "credits": "Credits",
@@ -1386,6 +1387,46 @@
       },
       "info": {
         "to": "to"
+      }
+    },
+    "contactLeaks": {
+      "title": "Contact leaks",
+      "subtitle": "Blocked attempts to share off-platform contact details (links, phones, emails, handles)",
+      "stats": {
+        "blocked24h": "Blocked (24h)",
+        "rateLimited24h": "Rate-limited (24h)",
+        "uniqueActors7d": "Unique actors (7d)",
+        "total7d": "Total events (7d)"
+      },
+      "tableTitle": "Recent events",
+      "tableDescription": "Newest first. Open a request to review the conversation context.",
+      "filters": {
+        "all": "All",
+        "blocked": "Blocked",
+        "rateLimited": "Rate-limited"
+      },
+      "empty": "No contact-leak events yet.",
+      "loadMore": "Load more",
+      "newest": "Newest",
+      "type": {
+        "blocked": "Blocked",
+        "rateLimited": "Rate-limited"
+      },
+      "columns": {
+        "time": "Time",
+        "type": "Type",
+        "kinds": "Detected",
+        "actor": "Actor",
+        "field": "Field",
+        "request": "Request"
+      },
+      "kinds": {
+        "messaging_url": "Messaging link",
+        "social_url": "Social link",
+        "email": "Email",
+        "phone": "Phone",
+        "handle": "Handle",
+        "solicitation": "Solicitation"
       }
     }
   },
