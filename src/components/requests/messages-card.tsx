@@ -26,6 +26,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { cn, formatDateTime, getInitials } from "@/lib/utils";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { useTranslations, useLocale } from "next-intl";
@@ -437,13 +438,16 @@ export function MessagesCard({
                     {showText && (
                       <div
                         className={cn(
-                          "rounded-2xl px-3.5 py-2.5 text-sm sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words shadow-sm",
+                          "rounded-2xl px-3.5 py-2.5 text-sm sm:text-[15px] leading-relaxed break-words shadow-sm",
                           isMine
                             ? "rounded-tr-md bg-primary text-primary-foreground"
                             : "rounded-tl-md bg-muted text-foreground"
                         )}
                       >
-                        {threadComment.content}
+                        <LinkifiedText
+                          text={threadComment.content}
+                          className={cn(isMine && "[&_a]:text-primary-foreground [&_a]:underline")}
+                        />
                       </div>
                     )}
 

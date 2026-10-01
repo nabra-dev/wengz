@@ -9,6 +9,7 @@ import { resolveLocalizedText } from "@/lib/i18n";
 import { useTranslations, useLocale } from "next-intl";
 import { calculateAttributeCreditBreakdown } from "@/lib/attribute-validation";
 import { AudioPlayer } from "@/components/ui/audio-player";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import {
   filenameFromUrl,
   getExtension,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/file-display";
 import { cn } from "@/lib/utils";
 import { FileArchive, FileAudio, FileIcon, FileText, FileVideo, ExternalLink } from "lucide-react";
+import { textContainsUrl } from "@/lib/linkify";
 
 interface AttributeResponsesDisplayProps {
   readonly responses: AttributeResponse[];
@@ -202,8 +204,16 @@ function AnswerContent({
         {nonMedia.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {nonMedia.map((item) => (
-              <Badge key={String(item)} variant="secondary">
-                {String(item)}
+              <Badge
+                key={String(item)}
+                variant="secondary"
+                className="max-w-full whitespace-normal"
+              >
+                {textContainsUrl(String(item)) ? (
+                  <LinkifiedText text={String(item)} inline className="whitespace-normal" />
+                ) : (
+                  String(item)
+                )}
               </Badge>
             ))}
           </div>
@@ -216,15 +226,19 @@ function AnswerContent({
     return (
       <div className="flex flex-wrap gap-2">
         {answer.map((item) => (
-          <Badge key={item} variant="secondary">
-            {item}
+          <Badge key={item} variant="secondary" className="max-w-full whitespace-normal">
+            {textContainsUrl(item) ? (
+              <LinkifiedText text={item} inline className="whitespace-normal" />
+            ) : (
+              item
+            )}
           </Badge>
         ))}
       </div>
     );
   }
 
-  return <p className="text-foreground whitespace-pre-wrap">{answer}</p>;
+  return <LinkifiedText text={answer} className="text-foreground" />;
 }
 
 export function AttributeResponsesDisplay({

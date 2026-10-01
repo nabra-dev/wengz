@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "next-intl";
 import { AudioPlayer } from "@/components/ui/audio-player";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 import { filenameFromUrl, prettyFilename, resolveFileKind } from "@/lib/file-display";
 import { FileArchive, FileIcon, FileText } from "lucide-react";
 
@@ -80,7 +81,7 @@ export function RequestDescription({ description, attachments }: RequestDescript
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="whitespace-pre-wrap">{description}</p>
+        <LinkifiedText text={description} />
 
         {attachments && attachments.length > 0 && (
           <div className="pt-4 border-t">

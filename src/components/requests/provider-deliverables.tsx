@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatDateTime, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AudioPlayer } from "@/components/ui/audio-player";
+import { LinkifiedText } from "@/components/ui/linkified-text";
 
 interface Comment {
   id: string;
@@ -91,7 +92,10 @@ export function ProviderDeliverables({
                     {formatDateTime(comment.createdAt, locale)}
                   </span>
                 </div>
-                <p className="text-sm mt-2 whitespace-pre-wrap text-green-900">{comment.content}</p>
+                <LinkifiedText
+                  text={comment.content}
+                  className="text-sm mt-2 text-green-900 [&_a]:text-green-800"
+                />
 
                 {/* Deliverable Files */}
                 {comment.files.length > 0 && (
