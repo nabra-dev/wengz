@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { createNotification } from "@/lib/notifications";
 import { db } from "@/lib/db";
+import { isSuperAdmin } from "@/lib/roles";
 import {
   CONTACT_LEAK_ERROR_MESSAGE,
   CONTACT_LEAK_RATE_LIMIT,
@@ -152,6 +153,7 @@ async function handleContactLeakHits(
 /**
  * Block a single free-text field when it contains off-platform contact.
  * Logs each block; after repeated blocks, rate-limits the actor and alerts admins.
+ * Super admins are exempt (ops/testing).
  */
 export async function enforceNoContactLeak(
   text: string | undefined | null,
@@ -159,6 +161,7 @@ export async function enforceNoContactLeak(
   ctx: ContactLeakEnforceContext
 ): Promise<void> {
   if (!text) return;
+  if (isSuperAdmin(ctx.actorRole)) return;
   const hits = findContactLeaks(text, mode);
   if (hits.length === 0) return;
   await handleContactLeakHits(hits, ctx);
@@ -166,11 +169,13 @@ export async function enforceNoContactLeak(
 
 /**
  * Block request create payloads (title/description/Q&A) with contact leaks.
+ * Super admins are exempt (ops/testing).
  */
 export async function enforceNoContactLeakInFields(
   input: ContactLeakScanInput,
   ctx: ContactLeakEnforceContext
 ): Promise<void> {
+  if (isSuperAdmin(ctx.actorRole)) return;
   const hits = findContactLeaksInFields(input);
   if (hits.length === 0) return;
   await handleContactLeakHits(hits, { ...ctx, field: ctx.field ?? "request_fields" });
