@@ -2473,6 +2473,7 @@
     "badRequest": "Invalid request. Please check your input.",
     "conflict": "A conflict occurred. Please try again.",
     "providerAtCapacity": "You can only work on one request at a time. Deliver your current work first, or finish a revision before starting another.",
+    "contactNotAllowed": "Sharing phone numbers, emails, or off-platform contact (WhatsApp, Telegram, LinkedIn, Instagram, etc.) is not allowed. Please keep all communication on Wengz.",
     "internalError": "An unexpected error occurred. Please try again later.",
     "somethingWrong": "Something went wrong",
     "validationError": "Validation error occurred",

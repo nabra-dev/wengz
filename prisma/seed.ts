@@ -128,21 +128,22 @@ async function main() {
         },
         {
           type: "text",
-          helpText: "e.g. phone number: 123456789",
+          helpText:
+            "e.g. brand website or store name to print on the design (not for contacting the provider)",
           question: "What should we add for communication on the design?",
           required: true,
-          placeholder: "e.g. Mobile number - WhatsApp - Instagram - Website",
+          placeholder: "e.g. website URL or brand handle to show on the artwork",
           helpTextI18n: {
-            ar: "e.g. phone number: 123456789",
-            en: "e.g. phone number: 123456789",
+            ar: "مثال: موقع العلامة أو اسم المتجر للطباعة على التصميم (وليس للتواصل مع المبدع)",
+            en: "e.g. brand website or store name to print on the design (not for contacting the provider)",
           },
           questionI18n: {
             ar: "ماذا نضيف للتواصل على التصميم؟",
             en: "What should we add for communication on the design?",
           },
           placeholderI18n: {
-            ar: "e.g. Mobile number - WhatsApp - Instagram - Website",
-            en: "e.g. Mobile number - WhatsApp - Instagram - Website",
+            ar: "مثال: رابط الموقع أو اسم العلامة للظهور على التصميم",
+            en: "e.g. website URL or brand handle to show on the artwork",
           },
         },
         {

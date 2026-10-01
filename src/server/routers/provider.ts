@@ -13,6 +13,7 @@ import { openProviderFinanceDispute } from "@/lib/finance-disputes";
 import { getFinanceSettings } from "@/lib/finance-settings";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logRequestActivity } from "@/lib/request-activity";
+import { assertNoContactLeak, getContactLeakErrorMessage } from "@/lib/contact-leak";
 import {
   getProviderWorkload,
   canClaimAdditionalRequest,
@@ -823,6 +824,12 @@ export const providerRouter = router({
           message: "Request must be in progress or revision requested to deliver",
         });
       }
+
+      assertNoContactLeak(
+        input.deliverableMessage,
+        "strict",
+        await getContactLeakErrorMessage(ctx.locale)
+      );
 
       // Update request status — fresh delivery resets approval SLA timers
       const updatedRequest = await ctx.db.request.update({

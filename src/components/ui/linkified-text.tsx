@@ -1,6 +1,7 @@
 "use client";
 
 import { linkifyText } from "@/lib/linkify";
+import { isOffPlatformContactUrl } from "@/lib/contact-leak";
 import { cn } from "@/lib/utils";
 
 interface LinkifiedTextProps {
@@ -12,6 +13,7 @@ interface LinkifiedTextProps {
 
 /**
  * Renders plain text with http(s)/www URLs as safe external links.
+ * Off-platform contact URLs (WhatsApp, Telegram, LinkedIn profiles, …) stay plain text.
  */
 export function LinkifiedText({ text, className, inline = false }: LinkifiedTextProps) {
   const segments = linkifyText(text);
@@ -22,6 +24,18 @@ export function LinkifiedText({ text, className, inline = false }: LinkifiedText
       {segments.map((segment, index) => {
         if (segment.type === "text") {
           return <span key={`t-${index}`}>{segment.value}</span>;
+        }
+
+        if (isOffPlatformContactUrl(segment.href) || isOffPlatformContactUrl(segment.value)) {
+          return (
+            <span
+              key={`b-${index}`}
+              className="break-all text-muted-foreground line-through decoration-destructive/60"
+              title="Off-platform contact links are blocked"
+            >
+              {segment.value}
+            </span>
+          );
         }
 
         return (

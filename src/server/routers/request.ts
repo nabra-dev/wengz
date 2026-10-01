@@ -20,6 +20,7 @@ import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { canManageRequests } from "@/lib/roles";
 import { logRequestActivity } from "@/lib/request-activity";
 import { createServiceRequest } from "@/lib/create-request";
+import { assertNoContactLeak, getContactLeakErrorMessage } from "@/lib/contact-leak";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 /**
@@ -538,6 +539,10 @@ export const requestRouter = router({
         });
       }
 
+      if (input.message) {
+        assertNoContactLeak(input.message, "strict", await getContactLeakErrorMessage(ctx.locale));
+      }
+
       const updatedRequest = await ctx.db.request.update({
         where: { id: input.requestId },
         data:
@@ -639,6 +644,8 @@ export const requestRouter = router({
           message: result.message,
         });
       }
+
+      assertNoContactLeak(input.feedback, "strict", await getContactLeakErrorMessage(ctx.locale));
 
       // Add the client's feedback as a comment
       await ctx.db.requestComment.create({
@@ -825,6 +832,8 @@ export const requestRouter = router({
           message: "Invalid file URL. Upload files through the app first.",
         });
       }
+
+      assertNoContactLeak(input.content, "strict", await getContactLeakErrorMessage(ctx.locale));
 
       const comment = await ctx.db.requestComment.create({
         data: {
