@@ -8,11 +8,17 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { PwaInstallButton } from "@/components/ui/pwa-install-button";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import { Check, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
+import { Check, ChevronDown, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
@@ -398,16 +404,35 @@ export default function LandingPage({
               >
                 <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
               </Button>
-              <Button
-                asChild
-                size="sm"
-                className="h-8 shrink-0 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-5 sm:text-sm"
-              >
-                <Link href="/auth/register">
-                  <span className="sm:hidden">{t("landing.cta.primaryShort")}</span>
-                  <span className="hidden sm:inline">{t("landing.cta.primary")}</span>
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:gap-1.5 sm:px-5 sm:text-sm"
+                  >
+                    <span className="sm:hidden">{t("landing.cta.primaryShort")}</span>
+                    <span className="hidden sm:inline">{t("landing.cta.primary")}</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-80 sm:h-4 sm:w-4" aria-hidden />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="min-w-[11rem] rounded-xl border-border bg-background/95 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.16)] backdrop-blur-xl"
+                >
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
+                  >
+                    <Link href="/auth/register">{t("landing.cta.asClient")}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
+                  >
+                    <Link href="/forms/provider">{t("landing.cta.asProvider")}</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

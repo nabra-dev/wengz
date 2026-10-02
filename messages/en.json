@@ -273,6 +273,8 @@
       "primary": "Start your free trial",
       "primaryShort": "Try free",
       "startTrial": "Start your free trial",
+      "asClient": "As a client",
+      "asProvider": "As a provider",
       "viewPlans": "Explore plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
