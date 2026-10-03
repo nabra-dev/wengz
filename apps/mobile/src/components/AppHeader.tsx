@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
 import { BRAND } from "../theme/brand";
 import { t } from "../i18n";
-import { isRtlLocale } from "./typography";
+import { isRtlLocale, localeDirection } from "./typography";
 
 const c = BRAND.colors;
 const LOGO_HEIGHT = 32;
@@ -34,7 +34,7 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
   const rtl = isRtlLocale();
 
   return (
-    <SafeAreaView edges={["top"]} style={[styles.safe, { direction: rtl ? "rtl" : "ltr" }]}>
+    <SafeAreaView edges={["top"]} style={[styles.safe, { direction: localeDirection() }]}>
       <View style={styles.bar}>
         <View style={styles.side}>
           {showBack ? (

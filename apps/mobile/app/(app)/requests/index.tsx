@@ -119,7 +119,7 @@ export default function RequestsScreen() {
                   </View>
                 </View>
                 <Ionicons
-                  name="chevron-forward"
+                  name={i18n.locale === "ar" ? "chevron-back" : "chevron-forward"}
                   size={18}
                   color={colors.mutedForeground}
                   style={{ marginTop: 4 }}

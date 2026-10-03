@@ -22,7 +22,7 @@ import { useAuth } from "../providers/auth";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
-import { AppText, AppTextInput, isRtlLocale } from "./typography";
+import { AppText, AppTextInput, isRtlLocale, localeDirection } from "./typography";
 import { colors } from "./ui";
 
 export type ChatComment = {
@@ -516,6 +516,8 @@ export function RequestChat({
     return (
       <View
         style={{
+          // WhatsApp keeps mine on the physical right even in Arabic.
+          direction: "ltr",
           flexDirection: "row",
           justifyContent: isMine ? "flex-end" : "flex-start",
           paddingHorizontal: 10,
@@ -622,7 +624,7 @@ export function RequestChat({
   }
 
   return (
-    <View style={{ flex: 1, direction: "ltr" as const }}>
+    <View style={{ flex: 1, direction: localeDirection() }}>
       <FlatList
         data={listData}
         inverted
@@ -662,20 +664,20 @@ export function RequestChat({
               <Ionicons name="chatbubbles-outline" size={28} color={colors.purple} />
             </View>
             <AppText
+              align="center"
               style={{
                 color: colors.foreground,
                 fontFamily: fonts.semiBold,
                 ...typeScale.lg,
-                textAlign: "center",
               }}
             >
               {t("requests.messages.noMessages")}
             </AppText>
             <AppText
+              align="center"
               style={{
                 color: colors.mutedForeground,
                 ...typeScale.sm,
-                textAlign: "center",
                 maxWidth: 280,
               }}
             >
@@ -694,7 +696,7 @@ export function RequestChat({
             paddingHorizontal: 8,
             paddingTop: 8,
             paddingBottom: 8,
-            direction: "ltr" as const,
+            direction: localeDirection(),
           }}
         >
           {showAttach || pendingFiles.length > 0 ? (
@@ -844,7 +846,12 @@ export function RequestChat({
                 {sending ? (
                   <ActivityIndicator color={colors.yellow} />
                 ) : (
-                  <Ionicons name="send" size={18} color={colors.yellow} style={{ marginLeft: 2 }} />
+                  <Ionicons
+                    name="send"
+                    size={18}
+                    color={colors.yellow}
+                    style={{ marginStart: 2 }}
+                  />
                 )}
               </Pressable>
             ) : (

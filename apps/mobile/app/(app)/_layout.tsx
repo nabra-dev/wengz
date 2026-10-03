@@ -1,4 +1,4 @@
-import { Redirect, Tabs } from "expo-router";
+import { Redirect, Tabs, router } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { useLocale } from "../../src/providers/locale";
 import { t } from "../../src/i18n";
@@ -58,6 +58,14 @@ export default function AppLayout() {
             />
           ),
         }}
+        listeners={{
+          // Create lives on the requests stack — always land on the list tab,
+          // not a leftover Create screen sitting on top.
+          tabPress: (e) => {
+            e.preventDefault();
+            router.navigate("/requests");
+          },
+        }}
       />
       <Tabs.Screen
         name="new-request"
@@ -65,6 +73,13 @@ export default function AppLayout() {
           title: t("tabs.newRequest"),
           headerShown: false,
           tabBarButton: () => <CenterNewRequestButton />,
+        }}
+        listeners={{
+          // Never focus this placeholder tab — FAB handles navigation.
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push("/requests/create");
+          },
         }}
       />
       <Tabs.Screen

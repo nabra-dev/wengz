@@ -1,6 +1,10 @@
-import { Redirect } from "expo-router";
+import { View } from "react-native";
 
-/** Tab slot only — center button navigates to create; this is a safety redirect. */
+/**
+ * Placeholder tab slot only. The center FAB navigates to `/requests/create`.
+ * Never redirect from here — focusing this tab accidentally would open Create
+ * on top of the Requests stack.
+ */
 export default function NewRequestTabSlot() {
-  return <Redirect href="/requests/create" />;
+  return <View style={{ flex: 1 }} />;
 }

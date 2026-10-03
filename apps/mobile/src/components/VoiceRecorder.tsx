@@ -13,7 +13,7 @@ import { uploadFile } from "../lib/api";
 import { fileNameFromUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
-import { AppText, isRtlLocale } from "./typography";
+import { AppText } from "./typography";
 import { VoiceNotePreview } from "./VoiceNotePreview";
 
 type Props = {
@@ -240,7 +240,7 @@ export function VoiceRecorder({
   const atLimit = value.length >= maxFiles;
 
   return (
-    <View style={{ gap: 10, direction: isRtlLocale() ? "rtl" : "ltr" }}>
+    <View style={{ gap: 10 }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         <Pressable
           onPress={() => void toggleRecord()}

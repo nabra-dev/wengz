@@ -60,11 +60,11 @@ export default function LoginScreen() {
 
       <Card>
         <AppText
+          align="center"
           style={{
             color: colors.foreground,
             fontFamily: fonts.semiBold,
             ...typeScale.xl,
-            textAlign: "center",
             marginBottom: 16,
           }}
         >

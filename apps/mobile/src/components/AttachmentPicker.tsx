@@ -10,7 +10,7 @@ import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
 import { colors } from "./ui";
-import { AppText, isRtlLocale } from "./typography";
+import { AppText } from "./typography";
 
 function isAudioUrl(url: string) {
   return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(url.split("?")[0] ?? "");
@@ -156,10 +156,8 @@ export function AttachmentPicker({
     }
   }
 
-  const direction = isRtlLocale() ? "rtl" : "ltr";
-
   return (
-    <View style={{ gap: 10, direction }}>
+    <View style={{ gap: 10 }}>
       {label ? (
         <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
           {label}
@@ -209,7 +207,7 @@ export function AttachmentPicker({
             {t("client.request.attachments.addFiles")}
           </AppText>
         </Pressable>
-        {busy ? <ActivityIndicator color={colors.yellow} style={{ marginLeft: 4 }} /> : null}
+        {busy ? <ActivityIndicator color={colors.yellow} style={{ marginStart: 4 }} /> : null}
       </View>
 
       {hint ? (

@@ -88,8 +88,16 @@ export function getTypeScale(): TypeScale {
   return (i18n.locale === "ar" ? typeScaleAr : typeScaleEn) as TypeScale;
 }
 
-/** @deprecated Prefer getTypeScale() — kept for EN defaults / static spreads. */
-export const typeScale = typeScaleEn;
+/**
+ * Locale-aware type scale (read at render time).
+ * Spreading `...typeScale.md` in StyleSheet.create still freezes EN — use at render.
+ */
+export const typeScale: TypeScale = new Proxy({} as TypeScale, {
+  get(_target, prop: string) {
+    const scale = getTypeScale();
+    return scale[prop as keyof TypeScale];
+  },
+});
 
 export function statusStyle(status: string): { bg: string; fg: string } {
   const map: Record<string, { bg: string; fg: string }> = {

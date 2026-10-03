@@ -5,6 +5,7 @@ import {
   type TextProps,
   type TextInputProps,
   type TextStyle,
+  type ViewStyle,
 } from "react-native";
 import { i18n } from "../i18n";
 import { fonts } from "../theme/brand";
@@ -13,7 +14,16 @@ export function isRtlLocale(): boolean {
   return i18n.locale === "ar";
 }
 
-/** Start-aligned text — physical right in AR, left in EN (works on web + native). */
+export function localeDirection(): "rtl" | "ltr" {
+  return isRtlLocale() ? "rtl" : "ltr";
+}
+
+/** Apply on containers that should mirror with Arabic (inherits to children). */
+export function rtlContainerStyle(extra?: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  return [{ direction: localeDirection() }, extra];
+}
+
+/** Start-aligned text — physical right in AR, left in EN. */
 export function rtlTextAlign(): "left" | "right" {
   return isRtlLocale() ? "right" : "left";
 }
@@ -39,12 +49,20 @@ type WebTextExtras = {
   lang?: string;
 };
 
+type AppTextProps = TextProps & {
+  /** Override alignment; default is start (right in AR). Use "center" for tabs/buttons. */
+  align?: "start" | "center" | "left" | "right";
+};
+
 /**
  * App-wide Text. Forces `dir` (never browser `auto`) so Arabic UI stays RTL
  * even when the string is Latin/numeric.
  */
-export function AppText({ style, ...rest }: TextProps) {
+export function AppText({ style, align = "start", ...rest }: AppTextProps) {
   const rtl = isRtlLocale();
+  const textAlign =
+    align === "center" ? "center" : align === "left" || align === "right" ? align : rtlTextAlign();
+
   const webProps: WebTextExtras = {
     dir: rtl ? "rtl" : "ltr",
     lang: i18n.locale === "ar" ? "ar" : "en",
@@ -57,7 +75,7 @@ export function AppText({ style, ...rest }: TextProps) {
       style={[
         {
           fontFamily: fonts.regular,
-          textAlign: rtlTextAlign(),
+          textAlign,
           writingDirection: rtlWritingDirection(),
         },
         style,

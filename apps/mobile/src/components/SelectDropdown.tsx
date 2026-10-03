@@ -3,7 +3,7 @@ import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "reac
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
-import { AppText, isRtlLocale } from "./typography";
+import { AppText, isRtlLocale, localeDirection } from "./typography";
 
 export type SelectOption = {
   value: string;
@@ -38,6 +38,7 @@ export function SelectDropdown({
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const triggerRef = useRef<View>(null);
   const selected = options.find((o) => o.value === value);
+  const rtl = isRtlLocale();
 
   const openMenu = () => {
     if (disabled) return;
@@ -49,7 +50,6 @@ export function SelectDropdown({
 
   const windowH = Dimensions.get("window").height;
   const windowW = Dimensions.get("window").width;
-  const rtl = isRtlLocale();
   const menuWidth = compact
     ? Math.min(180, windowW - 24)
     : Math.min(Math.max(anchor?.width ?? 0, 200), windowW - 24);
@@ -71,6 +71,7 @@ export function SelectDropdown({
         marginBottom: compact ? 0 : 12,
         minWidth: compact ? 96 : undefined,
         zIndex: open ? 50 : 1,
+        direction: localeDirection(),
       }}
     >
       <View ref={triggerRef} collapsable={false}>
@@ -89,7 +90,6 @@ export function SelectDropdown({
             justifyContent: "space-between",
             gap: 8,
             opacity: disabled ? 0.5 : 1,
-            direction: rtl ? "rtl" : "ltr",
           }}
         >
           <AppText
@@ -98,6 +98,7 @@ export function SelectDropdown({
               fontFamily: fonts.regular,
               ...typeScale.md,
               flexShrink: 1,
+              flex: 1,
             }}
             numberOfLines={compact ? 1 : 2}
           >
@@ -112,7 +113,7 @@ export function SelectDropdown({
       </View>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={styles.modalRoot} pointerEvents="box-none">
+        <View style={[styles.modalRoot, { direction: localeDirection() }]} pointerEvents="box-none">
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
           {anchor ? (
             <View style={[styles.menu, { top: menuTop, left: menuLeft, width: menuWidth }]}>

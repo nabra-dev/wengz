@@ -243,6 +243,8 @@ export function VoiceNotePreview({
           minWidth: 200,
           paddingVertical: 6,
           paddingHorizontal: 4,
+          // Media controls stay LTR (play on the left of the bar).
+          direction: "ltr",
         }}
       >
         {body}
@@ -261,6 +263,7 @@ export function VoiceNotePreview({
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.muted,
+        direction: "ltr",
       }}
     >
       {body}

@@ -439,7 +439,15 @@ export default function RequestDetailScreen() {
               {t("client.requestDetail.rateService.title")}
             </AppText>
             <Muted>{t("client.requestDetail.rateService.description")}</Muted>
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                marginBottom: 10,
+                // Keep 1→5 left-to-right even in Arabic.
+                direction: "ltr",
+              }}
+            >
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable
                   key={n}

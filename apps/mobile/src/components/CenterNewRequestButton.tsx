@@ -95,7 +95,10 @@ export function CenterNewRequestButton() {
           onPressOut={() => {
             press.value = withSpring(0, { damping: 14, stiffness: 260 });
           }}
-          onPress={() => router.push("/requests/create")}
+          onPress={() => {
+            // Push onto the requests stack as a modal; Requests tab resets to list.
+            router.push("/requests/create");
+          }}
           accessibilityRole="button"
           accessibilityLabel={t("tabs.newRequest")}
           hitSlop={8}
@@ -126,6 +129,7 @@ export function CenterNewRequestButton() {
       </View>
 
       <AppText
+        align="center"
         numberOfLines={1}
         style={{
           marginTop: 10,
@@ -133,7 +137,6 @@ export function CenterNewRequestButton() {
           color: BRAND.colors.mutedForeground,
           fontFamily: fonts.medium,
           ...typeScale.sm,
-          textAlign: "center",
         }}
       >
         {t("tabs.newRequest")}

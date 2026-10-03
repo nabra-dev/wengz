@@ -35,6 +35,7 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
         />
       </View>
       <AppText
+        align="center"
         numberOfLines={1}
         ellipsizeMode="tail"
         style={{
@@ -42,7 +43,6 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
           color,
           fontFamily: focused ? fonts.semiBold : fonts.medium,
           ...typeScale.sm,
-          textAlign: "center",
           width: "100%",
         }}
       >

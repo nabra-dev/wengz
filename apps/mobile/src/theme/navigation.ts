@@ -23,7 +23,9 @@ export const brandStackOptions = {
   headerStatusBarHeight: 0,
   // Do not set statusBarStyle here — it requires UIViewControllerBasedStatusBarAppearance=YES
   // and crashes Expo Go (host Info.plist can't be changed). Root `<StatusBar style="light" />` handles it.
-  animation: stackPushAnimation(),
+  get animation() {
+    return stackPushAnimation();
+  },
   animationDuration: 280,
   gestureEnabled: true,
   fullScreenGestureEnabled: true,

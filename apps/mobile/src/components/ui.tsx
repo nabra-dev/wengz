@@ -16,7 +16,7 @@ import {
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
 import { t } from "../i18n";
-import { AppText, AppTextInput, isRtlLocale } from "./typography";
+import { AppText, AppTextInput, isRtlLocale, localeDirection } from "./typography";
 
 const c = BRAND.colors;
 
@@ -47,10 +47,9 @@ export function Screen({
   padded?: boolean;
   edges?: Edge[];
 }) {
-  const direction = isRtlLocale() ? "rtl" : "ltr";
   return (
     <SafeAreaView
-      style={[styles.screen, padded && styles.padded, { direction }, style]}
+      style={[styles.screen, padded && styles.padded, { direction: localeDirection() }, style]}
       edges={edges}
     >
       {children}
@@ -125,15 +124,22 @@ export function PageHeader({
   description?: string;
   right?: React.ReactNode;
 }) {
+  const rtl = isRtlLocale();
+  const titleBlock = (
+    <View style={{ flex: 1 }}>
+      <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
+      {description ? (
+        <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
+      ) : null}
+    </View>
+  );
+
   return (
-    <View style={styles.pageHeader}>
-      <View style={{ flex: 1 }}>
-        <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
-        {description ? (
-          <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
-        ) : null}
-      </View>
-      {right}
+    <View style={[styles.pageHeader, { direction: localeDirection() }]}>
+      {/* Under RTL, first child sits on the right — put badge first so it stays on the outer edge. */}
+      {rtl ? right : null}
+      {titleBlock}
+      {!rtl ? right : null}
     </View>
   );
 }
@@ -192,9 +198,10 @@ export function Button({
       ]}
     >
       <AppText
+        align="center"
         style={[
           styles.btnText,
-          { fontFamily: fonts.semiBold, textAlign: "center" },
+          { fontFamily: fonts.semiBold },
           variant === "primary" && styles.btnTextOnPurple,
           variant === "secondary" && styles.btnTextOnYellow,
           (variant === "ghost" || variant === "danger") && { color: c.foreground },
@@ -286,9 +293,10 @@ export function SegmentedTabs<T extends string>({
             style={[styles.segmentItem, active && styles.segmentItemActive]}
           >
             <AppText
+              align="center"
               style={[
                 styles.segmentLabel,
-                { fontFamily: fonts.medium, textAlign: "center" },
+                { fontFamily: fonts.medium },
                 active && styles.segmentLabelActive,
               ]}
             >
