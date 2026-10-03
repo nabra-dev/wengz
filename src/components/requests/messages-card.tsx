@@ -718,7 +718,8 @@ export function MessagesCard({
 
             <ContactPolicyNotice text={comment} mode="strict" className="mb-2" />
 
-            <div dir="ltr" className="flex items-end gap-1.5 sm:gap-2">
+            {/* Inherit page dir so attach/send mirror in Arabic (was hard-locked LTR). */}
+            <div className="flex items-end gap-1.5 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -770,7 +771,7 @@ export function MessagesCard({
                   {addComment.isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Send className="h-5 w-5" />
+                    <Send className="h-5 w-5 rtl:-scale-x-100" />
                   )}
                 </Button>
               ) : (
