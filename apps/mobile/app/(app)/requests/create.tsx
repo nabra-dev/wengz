@@ -58,6 +58,7 @@ export default function CreateRequestScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({});
   const [attributeResponses, setAttributeResponses] = useState<AttributeResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +88,28 @@ export default function CreateRequestScreen() {
       (sub.data as { package?: { nameI18n?: Record<string, string> } } | null)?.package?.nameI18n
     ) || "—";
 
+  function isAnswerFilled(answer: string | string[] | undefined): boolean {
+    if (answer === undefined) return false;
+    if (typeof answer === "string") return Boolean(answer.trim());
+    return Array.isArray(answer) && answer.length > 0;
+  }
+
+  const requiredAttributesFilled = useMemo(
+    () =>
+      attributes
+        .filter((a) => a.required)
+        .every((attr) =>
+          isAnswerFilled(attributeResponses.find((r) => r.question === attr.question)?.answer)
+        ),
+    [attributes, attributeResponses]
+  );
+
+  const formValid =
+    Boolean(serviceTypeId) &&
+    Boolean(title.trim()) &&
+    Boolean(description.trim()) &&
+    requiredAttributesFilled;
+
   const create = useMutation({
     mutationFn: () =>
       createRequest({
@@ -107,30 +130,7 @@ export default function CreateRequestScreen() {
 
   function onSubmit() {
     setError(null);
-    if (!serviceTypeId) {
-      setError(t("client.newRequest.validation.selectService"));
-      return;
-    }
-    if (!title.trim() || !description.trim()) {
-      setError(t("client.newRequest.validation.requiredField"));
-      return;
-    }
-    for (const attr of attributes) {
-      if (!attr.required) continue;
-      const ans = attributeResponses.find((r) => r.question === attr.question)?.answer;
-      const empty =
-        ans === undefined ||
-        (typeof ans === "string" && !ans.trim()) ||
-        (Array.isArray(ans) && ans.length === 0);
-      if (empty) {
-        setError(
-          t("client.newRequest.validation.requiredAttribute", {
-            field: attr.questionI18n?.[i18n.locale] || attr.question,
-          })
-        );
-        return;
-      }
-    }
+    if (!formValid || !canAfford || !hasCredits) return;
     create.mutate();
   }
 
@@ -223,7 +223,7 @@ export default function CreateRequestScreen() {
             {t("client.newRequest.requestDetails")}
           </Text>
 
-          <Label>{t("client.newRequest.fields.serviceType")} *</Label>
+          <Label required>{t("client.newRequest.fields.serviceType")}</Label>
           <Pressable
             disabled={!hasCredits}
             onPress={() => setPickerOpen((v) => !v)}
@@ -325,7 +325,7 @@ export default function CreateRequestScreen() {
             </View>
           ) : null}
 
-          <Label>{t("client.newRequest.fields.title")} *</Label>
+          <Label required>{t("client.newRequest.fields.title")}</Label>
           <Muted>{t("client.newRequest.fields.titleHint")}</Muted>
           <Field
             editable={hasCredits}
@@ -334,7 +334,7 @@ export default function CreateRequestScreen() {
             onChangeText={setTitle}
           />
 
-          <Label>{t("client.newRequest.fields.description")} *</Label>
+          <Label required>{t("client.newRequest.fields.description")}</Label>
           <Muted>{t("client.newRequest.fields.descriptionHint")}</Muted>
           <Field
             editable={hasCredits}
@@ -355,8 +355,10 @@ export default function CreateRequestScreen() {
 
           <AttachmentPicker
             label={t("client.newRequest.fields.attachments")}
-            urls={attachments}
+            value={attachments}
             onChange={setAttachments}
+            localPreviews={attachmentPreviews}
+            onLocalPreviewsChange={setAttachmentPreviews}
             max={5}
             disabled={!hasCredits}
             hint={t("profile.editProfile.helperText.maxFileSize")}
@@ -396,7 +398,7 @@ export default function CreateRequestScreen() {
         <Button
           label={buttonLabel}
           variant="secondary"
-          disabled={create.isPending || !canAfford || !serviceTypeId || !hasCredits}
+          disabled={create.isPending || !canAfford || !hasCredits || !formValid}
           onPress={onSubmit}
         />
       </View>

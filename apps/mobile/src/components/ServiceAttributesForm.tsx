@@ -50,10 +50,7 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
 
         return (
           <View key={attr.question} style={{ marginBottom: 14 }}>
-            <Label>
-              {q}
-              {attr.required ? " *" : ""}
-            </Label>
+            <Label required={attr.required}>{q}</Label>
             {help ? <Muted style={{ marginBottom: 6 }}>{help}</Muted> : null}
 
             {(attr.type === "text" || attr.type === "number") && (
@@ -118,13 +115,13 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
 
             {(attr.type === "file" || attr.type === "voice") && (
               <AttachmentPicker
-                urls={fileUrls}
+                value={fileUrls}
                 onChange={(next) => onChange(upsert(responses, attr.question, next))}
                 max={attr.type === "voice" ? 1 : 3}
                 disabled={disabled}
                 hint={
                   attr.type === "voice"
-                    ? t("requests.workspace.attach")
+                    ? t("requests.messages.attach")
                     : t("profile.editProfile.helperText.maxFileSize")
                 }
               />

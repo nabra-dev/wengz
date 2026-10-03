@@ -138,8 +138,13 @@ export function Muted({ children, style }: { children: React.ReactNode; style?: 
   return <Text style={[styles.muted, style]}>{children}</Text>;
 }
 
-export function Label({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.label}>{children}</Text>;
+export function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <Text style={styles.label}>
+      {children}
+      {required ? <Text style={{ color: c.destructive }}> *</Text> : null}
+    </Text>
+  );
 }
 
 export function Field(props: TextInputProps) {

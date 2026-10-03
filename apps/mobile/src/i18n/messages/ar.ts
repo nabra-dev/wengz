@@ -309,9 +309,19 @@ export const ar: MessageTree = {
       noRequestsDesc: "أنشئ طلبك الأول للبدء",
       createRequest: "إنشاء طلب",
     },
+    request: {
+      attachments: {
+        addImages: "إضافة صور",
+        addFiles: "إضافة ملفات",
+        remove: "إزالة",
+        permissionDenied: "يلزم إذن مكتبة الصور لإرفاق الصور.",
+      },
+    },
     requestDetail: {
       notFound: "الطلب غير موجود",
       backToRequests: "العودة إلى الطلبات",
+      attachmentsTitle: "المرفقات ({count})",
+      questionsTitle: "أسئلة الخدمة",
       deliverableReady: {
         title: "التسليم جاهز",
         description: "راجع التسليم وإما وافق عليه أو اطلب مراجعة.",

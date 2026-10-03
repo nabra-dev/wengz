@@ -90,11 +90,12 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
  * Upload a local file (ImagePicker URI) to `/api/upload`.
  * Expo's fetch FormData only accepts Blob/string — not RN `{ uri, name, type }`.
  */
-export async function uploadFile(uri: string, name: string, mimeType: string): Promise<string> {
-  const safeName = name.includes(".")
-    ? name
-    : `${name}.${mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg"}`;
+export async function uploadFile(uri: string, name: string, mimeType?: string): Promise<string> {
   const type = mimeType || "image/jpeg";
+  const baseName = name?.trim() || `file-${Date.now()}`;
+  const safeName = baseName.includes(".")
+    ? baseName
+    : `${baseName}.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : type.includes("pdf") ? "pdf" : "jpg"}`;
 
   let blob: Blob;
   try {

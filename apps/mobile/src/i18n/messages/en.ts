@@ -315,9 +315,19 @@ export const en = {
       noRequestsDesc: "Create your first request to get started",
       createRequest: "Create Request",
     },
+    request: {
+      attachments: {
+        addImages: "Add photos",
+        addFiles: "Add files",
+        remove: "Remove",
+        permissionDenied: "Photo library permission is required to attach images.",
+      },
+    },
     requestDetail: {
       notFound: "Request not found",
       backToRequests: "Back to Requests",
+      attachmentsTitle: "Attachments ({count})",
+      questionsTitle: "Service questions",
       deliverableReady: {
         title: "Deliverable Ready",
         description: "Review the deliverable and either approve or request a revision.",

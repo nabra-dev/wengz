@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   addComment,
   approveRequest,
@@ -11,6 +12,8 @@ import {
 } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
 import { AttachmentPicker } from "../../../src/components/AttachmentPicker";
+import { MediaImage, MediaThumbGrid } from "../../../src/components/MediaImage";
+import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
 import {
   Button,
   Card,
@@ -29,8 +32,77 @@ import {
   listFillStyle,
 } from "../../../src/components/ui";
 import { fonts } from "../../../src/theme/brand";
+import type { AttributeResponse, ServiceAttribute } from "../../../src/types/service-attributes";
 
 type Tab = "messages" | "details";
+
+type Comment = {
+  id: string;
+  content: string;
+  type?: string;
+  createdAt?: string;
+  files?: string[];
+  user?: { name?: string | null; role?: string | null };
+};
+
+function asAttributeResponses(raw: unknown): AttributeResponse[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (r): r is AttributeResponse =>
+      Boolean(r) && typeof r === "object" && typeof (r as AttributeResponse).question === "string"
+  );
+}
+
+function answerUrls(answer: string | string[]): string[] {
+  const parts = Array.isArray(answer) ? answer : [answer];
+  return parts
+    .flatMap((p) => String(p).split(","))
+    .map((s) => s.trim())
+    .filter((s) => s.includes("/api/files/") || s.startsWith("http"));
+}
+
+function FileChip({ url }: { url: string }) {
+  if (isLikelyImageUrl(url)) {
+    return (
+      <MediaImage
+        uri={url}
+        zoomable
+        style={{
+          width: 88,
+          height: 88,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.muted,
+        }}
+      />
+    );
+  }
+  return (
+    <View
+      style={{
+        width: 88,
+        minHeight: 88,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.muted,
+        padding: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+      }}
+    >
+      <Ionicons name="document-outline" size={24} color={colors.mutedForeground} />
+      <Text
+        numberOfLines={2}
+        style={{ fontSize: 10, color: colors.mutedForeground, textAlign: "center" }}
+      >
+        {fileNameFromUrl(url)}
+      </Text>
+    </View>
+  );
+}
 
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,6 +110,7 @@ export default function RequestDetailScreen() {
   const [tab, setTab] = useState<Tab>("messages");
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +133,7 @@ export default function RequestDetailScreen() {
     onSuccess: () => {
       setMessage("");
       setPendingFiles([]);
+      setPendingPreviews({});
       invalidate();
     },
     onError: (e: Error) => setError(e.message),
@@ -103,18 +177,31 @@ export default function RequestDetailScreen() {
     title?: string;
     status?: string;
     description?: string;
+    attachments?: string[];
+    attributeResponses?: unknown;
     needsManualApproval?: boolean;
     providerId?: string | null;
+    provider?: { name?: string | null; image?: string | null };
     rating?: { rating?: number; reviewText?: string | null } | null;
     revisionInfo?: { freeRevisionsRemaining?: number; paidRevisionCost?: number };
-    comments?: Array<{ id: string; content: string; user?: { name?: string | null } }>;
-    serviceType?: { name?: string; nameI18n?: Record<string, string> };
+    comments?: Comment[];
+    serviceType?: {
+      name?: string;
+      nameI18n?: Record<string, string>;
+      attributes?: ServiceAttribute[];
+    };
   };
 
   const serviceName =
     request.serviceType?.nameI18n?.[i18n.locale] ||
     request.serviceType?.nameI18n?.en ||
     request.serviceType?.name;
+
+  const attachments = request.attachments ?? [];
+  const attributeResponses = asAttributeResponses(request.attributeResponses);
+  const comments = request.comments ?? [];
+  const deliverables = comments.filter((c) => c.type === "DELIVERABLE");
+  const threadComments = comments.filter((c) => c.type !== "DELIVERABLE");
 
   const header = (
     <View>
@@ -145,10 +232,147 @@ export default function RequestDetailScreen() {
     return (
       <ScrollScreen>
         {header}
+
         <Card>
           <Label>{t("client.newRequest.fields.description")}</Label>
-          <Muted style={{ marginBottom: 0 }}>{request.description}</Muted>
+          <Muted style={{ marginBottom: attachments.length ? 12 : 0 }}>
+            {request.description || "—"}
+          </Muted>
+          {attachments.length > 0 ? (
+            <>
+              <Label>
+                {t("client.requestDetail.attachmentsTitle", { count: attachments.length })}
+              </Label>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {attachments.map((url, i) => (
+                  <FileChip key={`${url}-${i}`} url={url} />
+                ))}
+              </View>
+            </>
+          ) : null}
         </Card>
+
+        {attributeResponses.length > 0 ? (
+          <Card>
+            <Text
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 10 }}
+            >
+              {t("client.requestDetail.questionsTitle")}
+            </Text>
+            {attributeResponses.map((resp, index) => {
+              const attr = request.serviceType?.attributes?.find(
+                (a) => a.question === resp.question
+              );
+              const question =
+                attr?.questionI18n?.[i18n.locale] || attr?.questionI18n?.en || resp.question;
+              const urls = answerUrls(resp.answer);
+              const textAnswer =
+                urls.length === 0
+                  ? Array.isArray(resp.answer)
+                    ? resp.answer.join(", ")
+                    : String(resp.answer || "")
+                  : null;
+              return (
+                <View
+                  key={`${resp.question}-${index}`}
+                  style={{
+                    marginBottom: index < attributeResponses.length - 1 ? 14 : 0,
+                    paddingBottom: index < attributeResponses.length - 1 ? 14 : 0,
+                    borderBottomWidth: index < attributeResponses.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.mutedForeground,
+                      fontFamily: fonts.medium,
+                      fontSize: 12,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {question}
+                  </Text>
+                  {textAnswer ? (
+                    <Text
+                      style={{
+                        color: colors.foreground,
+                        fontFamily: fonts.regular,
+                        lineHeight: 20,
+                      }}
+                    >
+                      {textAnswer}
+                    </Text>
+                  ) : null}
+                  {urls.length > 0 ? (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                      {urls.map((url, i) => (
+                        <FileChip key={`${url}-${i}`} url={url} />
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </Card>
+        ) : null}
+
+        {deliverables.length > 0 ? (
+          <Card highlight>
+            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}>
+              {t("client.newRequest.deliverables.title")}
+            </Text>
+            {deliverables.map((d, idx) => (
+              <View
+                key={d.id}
+                style={{
+                  marginBottom: idx < deliverables.length - 1 ? 14 : 0,
+                  paddingBottom: idx < deliverables.length - 1 ? 14 : 0,
+                  borderBottomWidth: idx < deliverables.length - 1 ? 1 : 0,
+                  borderBottomColor: colors.border,
+                }}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}
+                >
+                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium, fontSize: 12 }}>
+                    {request.provider?.name || t("requests.card.provider")}
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: "rgba(224,248,64,0.15)",
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Text style={{ color: colors.yellow, fontSize: 11, fontFamily: fonts.medium }}>
+                      {t("client.newRequest.deliverables.badge")}
+                    </Text>
+                  </View>
+                </View>
+                {d.content?.trim() ? (
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: fonts.regular,
+                      lineHeight: 20,
+                      marginBottom: d.files?.length ? 8 : 0,
+                    }}
+                  >
+                    {d.content}
+                  </Text>
+                ) : null}
+                {d.files?.length ? (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {d.files.map((url, i) => (
+                      <FileChip key={`${url}-${i}`} url={url} />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </Card>
+        ) : null}
 
         {request.status === "DELIVERED" ? (
           <Card highlight>
@@ -277,7 +501,7 @@ export default function RequestDetailScreen() {
           <FlatList
             style={listFillStyle}
             contentContainerStyle={listContentDefaults}
-            data={request.comments ?? []}
+            data={threadComments}
             keyExtractor={(cmt) => cmt.id}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -311,11 +535,14 @@ export default function RequestDetailScreen() {
                 >
                   {item.user?.name ?? "User"}
                 </Text>
-                <Text
-                  style={{ color: colors.foreground, fontFamily: fonts.regular, lineHeight: 20 }}
-                >
-                  {item.content}
-                </Text>
+                {item.content?.trim() ? (
+                  <Text
+                    style={{ color: colors.foreground, fontFamily: fonts.regular, lineHeight: 20 }}
+                  >
+                    {item.content}
+                  </Text>
+                ) : null}
+                {item.files?.length ? <MediaThumbGrid urls={item.files} /> : null}
               </View>
             )}
           />
@@ -332,13 +559,15 @@ export default function RequestDetailScreen() {
             }}
           >
             <AttachmentPicker
-              urls={pendingFiles}
+              value={pendingFiles}
               onChange={setPendingFiles}
+              localPreviews={pendingPreviews}
+              onLocalPreviewsChange={setPendingPreviews}
               max={3}
               hint={
                 pendingFiles.length
-                  ? t("requests.workspace.attachmentsSendHint")
-                  : t("requests.workspace.attach")
+                  ? t("requests.messages.attachmentsSendHint")
+                  : t("requests.messages.attach")
               }
             />
             <Field

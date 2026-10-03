@@ -7,8 +7,13 @@ import { existsRequestFile, shouldAllowUnclaimedPendingFiles } from "@/lib/file-
 import { logger } from "@/lib/logger";
 import { canManageFinance, canManageRequests, isSuperAdmin } from "@/lib/roles";
 import { contentTypeFromFilename } from "@/lib/upload-limits";
+import { appCorsOptionsResponse, withAppCors } from "@/lib/cors";
 
 export const runtime = "nodejs";
+
+export async function OPTIONS(req: Request) {
+  return appCorsOptionsResponse(req) ?? new NextResponse(null, { status: 204 });
+}
 
 const STORAGE_ROOT = process.env.LOCAL_UPLOAD_DIR || path.join(process.cwd(), "storage");
 
@@ -196,30 +201,31 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const respond = (res: NextResponse) => withAppCors(req, res);
   try {
     const { session } = await getRequestSession(req);
     const userId = session?.user?.id ?? null;
     const role = session?.user?.role ?? "";
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return respond(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
     }
 
     const { path: pathSegments } = await params;
     const key = pathSegments.map((segment) => decodeURIComponent(segment)).join("/");
 
     if (!key.startsWith("uploads/")) {
-      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+      return respond(NextResponse.json({ error: "Invalid path" }, { status: 400 }));
     }
 
     const filePath = resolveUploadPath(key);
     if (!filePath) {
-      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+      return respond(NextResponse.json({ error: "Invalid path" }, { status: 400 }));
     }
 
     const allowed = await canAccessFile(userId, role, key);
     if (!allowed) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return respond(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
     }
 
     const [fileStat, metadata] = await Promise.all([
@@ -259,28 +265,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
         await handle.close();
       }
 
-      return new NextResponse(buffer, {
-        status: 206,
-        headers: {
-          ...commonHeaders,
-          "Content-Length": String(length),
-          "Content-Range": `bytes ${range.start}-${range.end}/${size}`,
-        },
-      });
+      return respond(
+        new NextResponse(buffer, {
+          status: 206,
+          headers: {
+            ...commonHeaders,
+            "Content-Length": String(length),
+            "Content-Range": `bytes ${range.start}-${range.end}/${size}`,
+          },
+        })
+      );
     }
 
     const buffer = await readFile(filePath);
-    return new NextResponse(buffer, {
-      status: 200,
-      headers: {
-        ...commonHeaders,
-        "Content-Length": String(size),
-      },
-    });
+    return respond(
+      new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          ...commonHeaders,
+          "Content-Length": String(size),
+        },
+      })
+    );
   } catch (error) {
     logger.error("Failed to serve private file", {
       error: error instanceof Error ? error : undefined,
     });
-    return NextResponse.json({ error: "Failed to fetch file" }, { status: 500 });
+    return respond(NextResponse.json({ error: "Failed to fetch file" }, { status: 500 }));
   }
 }
