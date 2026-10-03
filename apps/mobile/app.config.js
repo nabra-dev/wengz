@@ -51,6 +51,14 @@ module.exports = {
     "expo-router",
     "expo-secure-store",
     [
+      "expo-splash-screen",
+      {
+        image: "./assets/splash-icon.png",
+        backgroundColor: "#0E0A14",
+        resizeMode: "contain",
+      },
+    ],
+    [
       "expo-localization",
       {
         supportsRTL: true,

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { ApiError } from "../../src/lib/api";
@@ -122,6 +122,39 @@ export default function LoginScreen() {
           label={busy ? t("auth.login.signingIn") : t("auth.login.signInButton")}
           onPress={onSubmit}
           disabled={busy}
+        />
+
+        <View
+          style={{
+            ...row(),
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 6,
+            marginTop: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <AppText compact style={{ color: colors.mutedForeground, ...typeScale.sm }}>
+            {t("auth.login.noAccount")}
+          </AppText>
+          <Link href="/(auth)/register">
+            <AppText
+              compact
+              style={{
+                color: colors.purple,
+                ...typeScale.sm,
+                fontFamily: fonts.medium,
+              }}
+            >
+              {t("auth.login.signUp")}
+            </AppText>
+          </Link>
+        </View>
+
+        <Button
+          label={t("common.back")}
+          onPress={() => router.replace("/(auth)/welcome")}
+          variant="ghost"
         />
       </Card>
     </ScrollScreen>

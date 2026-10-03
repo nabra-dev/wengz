@@ -23,6 +23,12 @@ export const ar: MessageTree = {
     },
   },
   auth: {
+    welcome: {
+      headline: "أعمالك الإبداعية، بإدارة أسهل",
+      tagline: "اطلب الخدمات، تابع التسليم، وأدر رصيدك — في مكان واحد.",
+      signIn: "تسجيل الدخول",
+      createAccount: "إنشاء حساب",
+    },
     login: {
       title: "تسجيل الدخول",
       description: "سجّل الدخول للمتابعة",

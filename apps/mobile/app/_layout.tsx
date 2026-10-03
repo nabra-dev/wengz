@@ -6,6 +6,7 @@ import {
 import { View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -23,11 +24,13 @@ import {
 } from "@expo-google-fonts/cairo";
 import { AuthProvider } from "../src/providers/auth";
 import { AppLocaleProvider, useLocale } from "../src/providers/locale";
-import { Button, Loading, Muted, Title } from "../src/components/ui";
+import { Button, Muted, Title } from "../src/components/ui";
 import { t } from "../src/i18n";
 import { DebugUiProvider } from "../src/debug/DebugProvider";
 import { BRAND } from "../src/theme/brand";
 import { stackPushAnimation } from "../src/theme/navigation";
+
+void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,7 +96,8 @@ export default function RootLayout() {
     Cairo_700Bold,
   });
 
-  if (!fontsLoaded) return <Loading />;
+  // Keep the native splash up until fonts are ready (locale splash hide is below).
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: BRAND.colors.background }}>

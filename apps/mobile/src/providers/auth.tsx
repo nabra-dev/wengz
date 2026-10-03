@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { router } from "expo-router";
 import {
   clearSession,
   getAccessToken,
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearSession();
     setToken(null);
     setUser(null);
+    router.replace("/(auth)/welcome");
   }, []);
 
   const refreshUser = useCallback(async () => {

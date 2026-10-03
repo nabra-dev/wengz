@@ -168,6 +168,25 @@ export function mobileLogin(email: string, password: string) {
   });
 }
 
+/** Client signup — account stays PENDING until super admin approves. */
+export function registerClient(input: {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}) {
+  return apiRequest<{
+    success: boolean;
+    message: string;
+    userId: string;
+    reapplied?: boolean;
+  }>("/auth/register", {
+    method: "POST",
+    auth: false,
+    body: input,
+  });
+}
+
 export function getActiveSubscription() {
   return apiRequest<Record<string, unknown> | null>("/subscription/active");
 }

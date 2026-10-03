@@ -15,7 +15,7 @@ export default function AppLayout() {
   const { ready, token } = useAuth();
   const { locale, direction } = useLocale();
   if (!ready) return <Loading />;
-  if (!token) return <Redirect href="/(auth)/login" />;
+  if (!token) return <Redirect href="/(auth)/welcome" />;
 
   return (
     <Tabs

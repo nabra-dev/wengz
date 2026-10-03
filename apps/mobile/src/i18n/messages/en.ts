@@ -22,6 +22,12 @@ export const en = {
     },
   },
   auth: {
+    welcome: {
+      headline: "Your creative work, managed",
+      tagline: "Request services, track delivery, and manage credits — all in one place.",
+      signIn: "Sign In",
+      createAccount: "Create Account",
+    },
     login: {
       title: "Sign In",
       description: "Sign in to continue",

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import { applyLocale, initLocale, type AppLocale, i18n } from "../i18n";
-import { Loading } from "../components/ui";
 import { LocaleContext, type LocaleContextValue, type LocaleDirection } from "./locale-context";
 
 export type { LocaleDirection, LocaleContextValue };
@@ -22,7 +22,10 @@ export function AppLocaleProvider({ children }: { children: React.ReactNode }) {
     void initLocale().then(({ locale: next, reloading }) => {
       setLocaleState(next);
       // Keep the splash up while the app reloads into native RTL.
-      if (!reloading) setReady(true);
+      if (!reloading) {
+        setReady(true);
+        void SplashScreen.hideAsync();
+      }
     });
   }, []);
 
@@ -41,7 +44,8 @@ export function AppLocaleProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ locale, direction, setLocale }), [locale, direction, setLocale]);
 
-  if (!ready) return <Loading />;
+  // Null keeps the native splash visible (no spinner flash).
+  if (!ready) return null;
 
   /*
     No `direction` style wrapper here on purpose. Mirroring is owned by
