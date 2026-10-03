@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "eas:build": "eas build --platform all",
-    "eas:submit": "eas submit --platform all"
+    "eas:submit": "eas submit --platform all",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo-google-fonts/cairo": "^0.4.2",

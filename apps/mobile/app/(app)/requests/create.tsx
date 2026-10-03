@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { View } from "react-native";
@@ -62,17 +62,13 @@ export default function CreateRequestScreen() {
   const [attributeResponses, setAttributeResponses] = useState<AttributeResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const serviceList = (services.data ?? []) as ServiceRow[];
+  const serviceList = useMemo(() => (services.data ?? []) as ServiceRow[], [services.data]);
   const selected = useMemo(
     () => serviceList.find((s) => s.id === serviceTypeId),
     [serviceList, serviceTypeId]
   );
+  const attributes = useMemo(() => selected?.attributes ?? [], [selected]);
 
-  useEffect(() => {
-    setAttributeResponses([]);
-  }, [serviceTypeId]);
-
-  const attributes = selected?.attributes ?? [];
   const baseCost = selected?.creditCost ?? 1;
   const attrCost = calculateAttributeCredits(attributes, attributeResponses);
   const totalCost = baseCost + attrCost;
@@ -110,6 +106,27 @@ export default function CreateRequestScreen() {
     Boolean(description.trim()) &&
     requiredAttributesFilled;
 
+  const serviceOptions = useMemo(
+    () =>
+      serviceList.map((s) => {
+        const name = localized(s.name, s.nameI18n);
+        const allowed = Boolean(s.isSupported);
+        const pkgHint =
+          s.supportingPackages?.[0] &&
+          localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
+        return {
+          value: s.id,
+          label: `${s.icon ? `${s.icon} ` : ""}${name} · ${s.creditCost ?? 1} ${t("client.newRequest.credits")}`,
+          subtitle:
+            !allowed && pkgHint
+              ? t("client.newRequest.supportedFromPackage", { name: pkgHint })
+              : undefined,
+          disabled: !allowed,
+        };
+      }),
+    [serviceList]
+  );
+
   const create = useMutation({
     mutationFn: () =>
       createRequest({
@@ -134,6 +151,11 @@ export default function CreateRequestScreen() {
     create.mutate();
   }
 
+  function onSelectService(id: string) {
+    setServiceTypeId(id);
+    setAttributeResponses([]);
+  }
+
   if (services.isLoading || sub.isLoading) return <Loading />;
 
   const buttonLabel = create.isPending
@@ -141,27 +163,6 @@ export default function CreateRequestScreen() {
     : totalCost === 1
       ? t("client.newRequest.actions.create", { cost: totalCost })
       : t("client.newRequest.actions.createCredits", { cost: totalCost });
-
-  const serviceOptions = useMemo(
-    () =>
-      serviceList.map((s) => {
-        const name = localized(s.name, s.nameI18n);
-        const allowed = Boolean(s.isSupported);
-        const pkgHint =
-          s.supportingPackages?.[0] &&
-          localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
-        return {
-          value: s.id,
-          label: `${s.icon ? `${s.icon} ` : ""}${name} · ${s.creditCost ?? 1} ${t("client.newRequest.credits")}`,
-          subtitle:
-            !allowed && pkgHint
-              ? t("client.newRequest.supportedFromPackage", { name: pkgHint })
-              : undefined,
-          disabled: !allowed,
-        };
-      }),
-    [serviceList]
-  );
 
   const footerPad = 88 + Math.max(insets.bottom, 12);
 
@@ -236,7 +237,7 @@ export default function CreateRequestScreen() {
           <SelectDropdown
             value={serviceTypeId ?? ""}
             options={serviceOptions}
-            onChange={setServiceTypeId}
+            onChange={onSelectService}
             placeholder={t("client.newRequest.fields.serviceTypePlaceholder")}
             disabled={!hasCredits || serviceList.length === 0}
           />
