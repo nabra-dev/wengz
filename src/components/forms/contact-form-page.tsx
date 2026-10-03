@@ -422,11 +422,19 @@ export function ContactFormPage() {
                       }}
                     />
                     {cvFile ? (
-                      <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/70 px-3.5 py-3">
-                        <FileText className="h-5 w-5 shrink-0 text-[#690DD4]" />
-                        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                          {cvFile.filename}
-                        </span>
+                      <div className="flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-border/70 bg-background/70 px-4 py-5">
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 items-center gap-3 text-start transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                          disabled={busy || cvUploading}
+                          onClick={() => cvInputRef.current?.click()}
+                          aria-label={t("forms.provider.cvChoose")}
+                        >
+                          <FileText className="h-5 w-5 shrink-0 text-[#690DD4]" />
+                          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                            {cvFile.filename}
+                          </span>
+                        </button>
                         <Button
                           type="button"
                           variant="ghost"
@@ -440,25 +448,30 @@ export function ContactFormPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        className="h-12 w-full justify-start rounded-xl border-dashed"
+                        className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 px-4 py-8 text-center transition-colors hover:border-primary/55 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={busy || cvUploading}
                         onClick={() => cvInputRef.current?.click()}
                       >
                         {cvUploading ? (
                           <>
-                            <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                            {t("forms.provider.cvUploading")}
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {t("forms.provider.cvUploading")}
+                            </span>
                           </>
                         ) : (
                           <>
-                            <FileText className="me-2 h-4 w-4" />
-                            {t("forms.provider.cvChoose")}
+                            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <FileText className="h-6 w-6" />
+                            </span>
+                            <span className="text-sm font-semibold text-primary">
+                              {t("forms.provider.cvChoose")}
+                            </span>
                           </>
                         )}
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>

@@ -276,52 +276,56 @@ export function EditProfileForm() {
               <User className="inline h-4 w-4" />
               {t("labels.profileImage")}
             </Label>
-            <div className="flex items-center gap-3 rounded-md border p-3">
+            <input
+              id="profileImageInput"
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleImageUpload}
+              disabled={isUploadingImage}
+              className="hidden"
+            />
+            <button
+              type="button"
+              disabled={isUploadingImage}
+              onClick={() => document.getElementById("profileImageInput")?.click()}
+              className="flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-muted-foreground/30 p-4 text-start transition-colors hover:border-primary/55 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label={t("buttons.changePhoto")}
+            >
               <Avatar className="h-14 w-14">
                 <AvatarImage src={profileImage || undefined} alt="Profile avatar" />
                 <AvatarFallback>{getInitials(name)}</AvatarFallback>
               </Avatar>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-primary">
+                  {isUploadingImage ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("buttons.changePhoto")}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      {t("buttons.changePhoto")}
+                    </span>
+                  )}
+                </p>
                 <p className="text-sm text-muted-foreground">{t("helperText.currentPhoto")}</p>
                 <p className="text-xs text-muted-foreground">{t("helperText.maxFileSize")}</p>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    disabled={isUploadingImage}
-                    onClick={() => document.getElementById("profileImageInput")?.click()}
-                  >
-                    {isUploadingImage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    {t("buttons.changePhoto")}
-                  </Button>
-                  {profileImage && profileImage !== profile?.image && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setProfileImage(profile?.image || null)}
-                    >
-                      <X className="h-4 w-4" />
-                      {t("buttons.reset")}
-                    </Button>
-                  )}
-                </div>
               </div>
-              <input
-                id="profileImageInput"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleImageUpload}
-                disabled={isUploadingImage}
-                className="hidden"
-              />
-            </div>
+            </button>
+            {profileImage && profileImage !== profile?.image ? (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setProfileImage(profile?.image || null)}
+                >
+                  <X className="h-4 w-4" />
+                  {t("buttons.reset")}
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-4">

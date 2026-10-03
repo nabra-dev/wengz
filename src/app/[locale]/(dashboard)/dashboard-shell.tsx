@@ -419,7 +419,8 @@ export function DashboardShell({
                 <ThemeSwitcher />
                 <CurrencySwitcher variant="icon" className="h-8 min-w-0 shrink px-2 sm:h-9" />
                 <LanguageSwitcher variant="icon" />
-                <PwaInstallButton />
+                {/* PWA install prompt is unreliable on mobile browsers — desktop only. */}
+                <PwaInstallButton className="hidden h-8 w-8 shrink-0 text-foreground hover:text-foreground lg:inline-flex sm:h-9 sm:w-9" />
               </div>
               <Button
                 variant="ghost"

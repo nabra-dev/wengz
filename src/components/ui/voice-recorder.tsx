@@ -194,6 +194,8 @@ export function VoiceRecorder({
   const busy = disabled || isUploading;
   const atLimit = value.length >= maxFiles;
 
+  const canUpload = allowUpload && !busy && !atLimit;
+
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex flex-wrap items-center gap-2">
@@ -217,30 +219,6 @@ export function VoiceRecorder({
           )}
         </Button>
 
-        {allowUpload && (
-          <>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="audio/*,.webm,.m4a,.mp3,.ogg,.wav,.aac"
-              multiple={maxFiles > 1}
-              className="hidden"
-              disabled={busy || atLimit}
-              onChange={(e) => handleFilePick(e.target.files)}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={busy || atLimit}
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload className="h-4 w-4 me-1.5" />
-              {t("uploadAudio")}
-            </Button>
-          </>
-        )}
-
         {isUploading && (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -248,6 +226,38 @@ export function VoiceRecorder({
           </span>
         )}
       </div>
+
+      {allowUpload && (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="audio/*,.webm,.m4a,.mp3,.ogg,.wav,.aac"
+            multiple={maxFiles > 1}
+            className="hidden"
+            disabled={!canUpload}
+            onChange={(e) => handleFilePick(e.target.files)}
+          />
+          <button
+            type="button"
+            disabled={!canUpload}
+            onClick={() => {
+              if (canUpload) inputRef.current?.click();
+            }}
+            className={cn(
+              "flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-3 py-5 text-center transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              canUpload
+                ? "cursor-pointer border-muted-foreground/30 hover:border-primary/55 hover:bg-primary/5"
+                : "cursor-not-allowed border-muted-foreground/20 opacity-60"
+            )}
+            aria-label={t("uploadAudio")}
+          >
+            <Upload className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-primary">{t("uploadAudio")}</span>
+          </button>
+        </>
+      )}
 
       <p className="text-xs text-muted-foreground">{t("hint", { maxSize: maxSizeMB, maxFiles })}</p>
 

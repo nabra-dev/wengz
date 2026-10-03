@@ -200,24 +200,30 @@ export function FileUpload({
     void handleFiles(e.dataTransfer.files);
   };
 
+  const atLimit = uploadedFiles.length >= maxFiles;
+  const canPick = !disabled && !isUploading && !atLimit;
+
   return (
     <div className={cn("space-y-4", className)}>
-      <section
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         aria-label={t("clickToUpload")}
+        disabled={!canPick}
         className={cn(
-          "relative rounded-lg border-2 border-dashed p-6 transition-colors",
-          dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25",
-          (disabled || isUploading) && "opacity-60 pointer-events-none"
+          "relative flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors sm:py-10",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          dragActive
+            ? "border-primary bg-primary/10"
+            : "border-muted-foreground/30 hover:border-primary/55 hover:bg-primary/5",
+          canPick ? "cursor-pointer" : "cursor-not-allowed opacity-60"
         )}
+        onClick={() => {
+          if (canPick) inputRef.current?.click();
+        }}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-        }}
       >
         <input
           ref={inputRef}
@@ -225,43 +231,35 @@ export function FileUpload({
           multiple
           accept={accept}
           className="hidden"
+          onClick={(e) => e.stopPropagation()}
           onChange={(e) => handleFiles(e.target.files)}
-          disabled={disabled || isUploading}
+          disabled={!canPick}
         />
 
-        <div className="flex flex-col items-center gap-2">
-          {isUploading ? (
-            <>
-              <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">
-                {uploadPercent === null
-                  ? t("uploading")
-                  : t("uploadingProgress", { percent: uploadPercent })}
-              </p>
-            </>
-          ) : (
-            <>
-              <Upload className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <Button
-                  className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-black focus:ring-2 focus:ring-primary/30"
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => inputRef.current?.click()}
-                  disabled={disabled || uploadedFiles.length >= maxFiles}
-                >
-                  {t("clickToUpload")}
-                </Button>
-                <span className="text-sm text-muted-foreground"> {t("dragAndDrop")}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t("fileTypesInfo", { maxSize: maxSizeMB, maxFiles })}
-              </p>
-            </>
-          )}
-        </div>
-      </section>
+        {isUploading ? (
+          <>
+            <Loader2 className="h-9 w-9 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {uploadPercent === null
+                ? t("uploading")
+                : t("uploadingProgress", { percent: uploadPercent })}
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Upload className="h-6 w-6" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-primary">{t("clickToUpload")}</p>
+              <p className="text-sm text-muted-foreground">{t("dragAndDrop")}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("fileTypesInfo", { maxSize: maxSizeMB, maxFiles })}
+            </p>
+          </>
+        )}
+      </button>
 
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
@@ -388,6 +386,8 @@ export function InlineFileUpload({
     onFilesChange([]);
   };
 
+  const canPick = !disabled && !isUploading && uploadedFiles.length < maxFiles;
+
   return (
     <div className="space-y-2">
       <input
@@ -397,50 +397,60 @@ export function InlineFileUpload({
         accept={UPLOAD_ACCEPT_ATTR}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
-        disabled={disabled || isUploading}
+        disabled={!canPick}
       />
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={disabled || isUploading || uploadedFiles.length >= maxFiles}
-          className="flex items-center gap-2"
-        >
-          {isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Upload className="h-4 w-4" />
-          )}
-          <span>
-            {isUploading
-              ? uploadPercent === null
-                ? t("uploading")
-                : t("uploadingProgress", { percent: uploadPercent })
-              : t("attachFiles")}
-          </span>
-        </Button>
-
-        {uploadedFiles.length > 0 && (
+      <button
+        type="button"
+        onClick={() => {
+          if (canPick) inputRef.current?.click();
+        }}
+        disabled={!canPick}
+        className={cn(
+          "flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-3 py-5 text-center transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          canPick
+            ? "cursor-pointer border-muted-foreground/30 hover:border-primary/55 hover:bg-primary/5"
+            : "cursor-not-allowed border-muted-foreground/20 opacity-60"
+        )}
+        aria-label={t("attachFiles")}
+      >
+        {isUploading ? (
           <>
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {t("filesAttached", { count: uploadedFiles.length })}
+              {uploadPercent === null
+                ? t("uploading")
+                : t("uploadingProgress", { percent: uploadPercent })}
             </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={clearFiles}
-              className="text-xs h-8"
-              disabled={disabled}
-            >
-              {t("clearAll")}
-            </Button>
+          </>
+        ) : (
+          <>
+            <Upload className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-primary">{t("attachFiles")}</span>
+            {uploadedFiles.length > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {t("filesAttached", { count: uploadedFiles.length })}
+              </span>
+            ) : null}
           </>
         )}
-      </div>
+      </button>
+
+      {uploadedFiles.length > 0 ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={clearFiles}
+            className="h-8 text-xs"
+            disabled={disabled}
+          >
+            {t("clearAll")}
+          </Button>
+        </div>
+      ) : null}
 
       {uploadedFiles.length > 0 && (
         <ul className="space-y-2">
