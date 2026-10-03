@@ -15,8 +15,9 @@ interface NotificationResults {
   errors: string[];
 }
 
-const EXPIRING_TITLE = "⚠️ Subscription Expiring Soon";
-const EXPIRED_TITLE = "❌ Subscription Expired";
+/** Locale-stable dedupe keys (titles are translated per preferredLocale). */
+const EXPIRING_TYPE = "subscription_expiring";
+const EXPIRED_TYPE = "subscription_expired";
 const BATCH_SIZE = 200;
 
 export async function GET(request: Request) {
@@ -83,18 +84,18 @@ export async function GET(request: Request) {
         : await db.notification.findMany({
             where: {
               userId: { in: allUserIds },
-              title: { in: [EXPIRING_TITLE, EXPIRED_TITLE] },
+              type: { in: [EXPIRING_TYPE, EXPIRED_TYPE] },
               createdAt: { gte: oneWeekAgo },
             },
-            select: { userId: true, title: true },
+            select: { userId: true, type: true },
           });
 
-    const notifiedKeys = new Set(recentNotifications.map((n) => `${n.userId}:${n.title}`));
+    const notifiedKeys = new Set(recentNotifications.map((n) => `${n.userId}:${n.type}`));
     const locales = await getPreferredLocalesByUserIds(allUserIds);
 
     for (const subscription of expiringSubscriptions) {
       try {
-        const key = `${subscription.userId}:${EXPIRING_TITLE}`;
+        const key = `${subscription.userId}:${EXPIRING_TYPE}`;
         if (notifiedKeys.has(key)) continue;
 
         const daysRemaining = Math.ceil(
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
 
     for (const subscription of expiredSubscriptions) {
       try {
-        const key = `${subscription.userId}:${EXPIRED_TITLE}`;
+        const key = `${subscription.userId}:${EXPIRED_TYPE}`;
         if (notifiedKeys.has(key)) continue;
 
         await notifySubscriptionExpired({

@@ -608,7 +608,15 @@ export const requestRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      // Use the smart revision logic
+      // Scan feedback before any status/credit mutation so a leak cannot leave a revision applied.
+      await enforceNoContactLeak(input.feedback, "strict", {
+        locale: ctx.locale,
+        actorId: userId,
+        actorRole: ctx.session.user.role,
+        entityId: input.requestId,
+        field: "revision_feedback",
+      });
+
       const result = await handleRevisionRequest(input.requestId, userId, ctx.locale);
 
       if (!result.allowed) {
@@ -617,14 +625,6 @@ export const requestRouter = router({
           message: result.message,
         });
       }
-
-      await enforceNoContactLeak(input.feedback, "strict", {
-        locale: ctx.locale,
-        actorId: userId,
-        actorRole: ctx.session.user.role,
-        entityId: input.requestId,
-        field: "revision_feedback",
-      });
 
       // Add the client's feedback as a comment
       await ctx.db.requestComment.create({
@@ -949,6 +949,16 @@ export const requestRouter = router({
         throw new TRPCError({
           code: "CONFLICT",
           message: "This request has already been rated",
+        });
+      }
+
+      if (input.reviewText?.trim()) {
+        await enforceNoContactLeak(input.reviewText, "strict", {
+          locale: ctx.locale,
+          actorId: userId,
+          actorRole: ctx.session.user.role,
+          entityId: input.requestId,
+          field: "rating_review",
         });
       }
 
