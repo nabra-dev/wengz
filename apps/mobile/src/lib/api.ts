@@ -133,6 +133,29 @@ export function getActiveSubscription() {
   return apiRequest<Record<string, unknown> | null>("/subscription/active");
 }
 
+export function getPendingSubscription() {
+  return apiRequest<Record<string, unknown> | null>("/subscription/pending");
+}
+
+export function getUsageStats() {
+  return apiRequest<{
+    activeRequests?: number;
+    completedRequests?: number;
+    totalRequests?: number;
+  }>("/subscription/usage");
+}
+
+export function cancelSubscription(subscriptionId: string) {
+  return apiRequest("/subscription/cancel", {
+    method: "POST",
+    body: { subscriptionId },
+  });
+}
+
+export function getTransactionHistory() {
+  return apiRequest<Record<string, unknown>[]>("/subscription/transactions");
+}
+
 export function getRequests(limit = 50) {
   return apiRequest<{ requests: Record<string, unknown>[]; nextCursor: string | null }>(
     `/request/list?limit=${limit}`
@@ -172,7 +195,12 @@ export function getProfile() {
   return apiRequest<Record<string, unknown>>("/user/me");
 }
 
-export function updateProfile(data: { name?: string; phone?: string }) {
+export function updateProfile(data: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  image?: string;
+}) {
   return apiRequest("/user/me", { method: "PUT", body: data });
 }
 
@@ -205,7 +233,7 @@ export function submitPaymentProof(body: Record<string, unknown>) {
 }
 
 export function getServiceTypes() {
-  return apiRequest<Record<string, unknown>[]>("/request/service-types");
+  return apiRequest<Record<string, unknown>[]>("/services");
 }
 
 export function createRequest(body: Record<string, unknown>) {
@@ -245,10 +273,10 @@ export function requestPasswordReset(email: string) {
   });
 }
 
-export function resetPassword(token: string, password: string) {
+export function resetPassword(token: string, newPassword: string, confirmPassword: string) {
   return apiRequest("/auth/reset-password", {
     method: "POST",
     auth: false,
-    body: { token, newPassword: password, confirmPassword: password },
+    body: { token, newPassword, confirmPassword },
   });
 }

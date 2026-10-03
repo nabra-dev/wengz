@@ -1,5 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
@@ -7,21 +8,6 @@ import { BRAND, fonts } from "../../src/theme/brand";
 import { BrandLogo } from "../../src/components/BrandLogo";
 
 const c = BRAND.colors;
-
-function TabLabel({ label, focused }: { label: string; focused: boolean }) {
-  return (
-    <Text
-      style={{
-        color: focused ? c.yellow : c.mutedForeground,
-        fontSize: 10,
-        fontFamily: fonts.medium,
-        letterSpacing: 0.3,
-      }}
-    >
-      {label}
-    </Text>
-  );
-}
 
 export default function AppLayout() {
   const { ready, token } = useAuth();
@@ -39,7 +25,7 @@ export default function AppLayout() {
         headerTintColor: c.foreground,
         headerTitleStyle: { fontFamily: fonts.semiBold, fontSize: 16 },
         headerTitle: () => (
-          <View style={{ paddingVertical: 4 }}>
+          <View style={{ paddingVertical: 6 }}>
             <BrandLogo height={22} tone="yellow" />
           </View>
         ),
@@ -47,19 +33,26 @@ export default function AppLayout() {
           backgroundColor: c.card,
           borderTopColor: c.border,
           borderTopWidth: 1,
-          height: 62,
-          paddingTop: 6,
-          paddingBottom: 8,
+          height: 68,
+          paddingTop: 8,
+          paddingBottom: 10,
         },
         tabBarActiveTintColor: c.yellow,
         tabBarInactiveTintColor: c.mutedForeground,
+        tabBarLabelStyle: {
+          fontFamily: fonts.medium,
+          fontSize: 10,
+          marginTop: 2,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: t("tabs.home"),
-          tabBarLabel: ({ focused }) => <TabLabel label={t("tabs.home")} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -67,15 +60,21 @@ export default function AppLayout() {
         options={{
           title: t("tabs.requests"),
           headerShown: false,
-          tabBarLabel: ({ focused }) => <TabLabel label={t("tabs.requests")} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "list" : "list-outline"} size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: t("tabs.notifications"),
-          tabBarLabel: ({ focused }) => (
-            <TabLabel label={t("tabs.notifications")} focused={focused} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "notifications" : "notifications-outline"}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -83,11 +82,16 @@ export default function AppLayout() {
         name="profile"
         options={{
           title: t("tabs.profile"),
-          tabBarLabel: ({ focused }) => <TabLabel label={t("tabs.profile")} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />
+          ),
         }}
       />
-      <Tabs.Screen name="subscribe" options={{ href: null, title: t("subscribe.title") }} />
-      <Tabs.Screen name="payment" options={{ href: null, title: t("subscribe.paymentTitle") }} />
+      <Tabs.Screen
+        name="subscribe"
+        options={{ href: null, title: t("client.subscription.title") }}
+      />
+      <Tabs.Screen name="payment" options={{ href: null, title: t("client.payment.title") }} />
     </Tabs>
   );
 }

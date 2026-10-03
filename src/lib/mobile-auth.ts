@@ -105,10 +105,15 @@ export async function issueMobileAccessToken(user: MobileAuthUser): Promise<{
 }
 
 export async function sessionFromBearerToken(rawToken: string): Promise<Session | null> {
-  const token = await decode({
-    token: rawToken,
-    secret: getSecret(),
-  });
+  let token: JWT | null = null;
+  try {
+    token = await decode({
+      token: rawToken,
+      secret: getSecret(),
+    });
+  } catch {
+    return null;
+  }
 
   if (!token?.id || typeof token.id !== "string" || !token.role) {
     return null;

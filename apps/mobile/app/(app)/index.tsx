@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
-import { getActiveSubscription, getRequests } from "../../src/lib/api";
+import { RefreshControl, Text, View } from "react-native";
+import { getActiveSubscription, getRequests, getUsageStats } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { t, i18n } from "../../src/i18n";
 import {
@@ -10,7 +10,7 @@ import {
   Loading,
   Muted,
   PageHeader,
-  Screen,
+  ScrollScreen,
   SectionTitle,
   StatCard,
   StatusBadge,
@@ -21,6 +21,7 @@ import { fonts } from "../../src/theme/brand";
 export default function HomeScreen() {
   const { user } = useAuth();
   const sub = useQuery({ queryKey: ["subscription"], queryFn: getActiveSubscription });
+  const usage = useQuery({ queryKey: ["usage"], queryFn: getUsageStats });
   const requests = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(5) });
 
   if (sub.isLoading) return <Loading />;
@@ -28,81 +29,98 @@ export default function HomeScreen() {
   const pkg = sub.data as {
     package?: { name?: string; nameI18n?: Record<string, string> };
     remainingCredits?: number;
+    daysRemaining?: number;
   } | null;
   const planName =
     pkg?.package?.nameI18n?.[i18n.locale] ||
     pkg?.package?.nameI18n?.en ||
     pkg?.package?.name ||
-    "—";
+    t("client.dashboard.stats.noActivePlan");
   const credits = pkg?.remainingCredits ?? 0;
-  const firstName = user?.name?.split(" ")[0] || "";
+  const firstName = user?.name?.trim().split(/\s+/)[0] || user?.email?.split("@")[0] || "there";
 
   return (
-    <Screen>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={sub.isFetching || requests.isFetching}
-            onRefresh={() => {
-              void sub.refetch();
-              void requests.refetch();
-            }}
-            tintColor={colors.yellow}
-          />
-        }
-      >
-        <PageHeader
-          title={t("home.welcome") + (firstName ? `, ${firstName}` : "")}
-          description={t("home.recentRequests")}
-          right={
-            <View style={{ width: 120 }}>
-              <Button
-                label={t("home.newRequest")}
-                onPress={() => router.push("/(app)/requests/create")}
-                variant="secondary"
-              />
-            </View>
-          }
+    <ScrollScreen
+      keyboard={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={sub.isFetching || requests.isFetching || usage.isFetching}
+          onRefresh={() => {
+            void sub.refetch();
+            void requests.refetch();
+            void usage.refetch();
+          }}
+          tintColor={colors.yellow}
         />
+      }
+    >
+      <PageHeader
+        title={t("client.dashboard.welcome", { name: firstName })}
+        description={t("client.dashboard.overview")}
+      />
+      <View style={{ marginBottom: 16 }}>
+        <Button
+          label={t("client.dashboard.newRequest")}
+          onPress={() => router.push("/(app)/requests/create")}
+          variant="secondary"
+        />
+      </View>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
-          <StatCard
-            label={t("common.credits")}
-            value={credits}
-            hint={sub.data ? `${t("home.activePlan")}: ${planName}` : t("home.noPlan")}
-            highlight={!sub.data}
+      {!sub.data ? (
+        <Card highlight style={{ marginBottom: 14 }}>
+          <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            {t("client.dashboard.noSubscription.title")}
+          </Text>
+          <Muted>{t("client.dashboard.noSubscription.description")}</Muted>
+          <Button
+            label={t("client.dashboard.noSubscription.viewPlans")}
+            onPress={() => router.push("/(app)/subscribe")}
+            variant="secondary"
           />
-        </View>
+        </Card>
+      ) : null}
 
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Button
-              label={t("home.viewPackages")}
-              onPress={() => router.push("/(app)/subscribe")}
-              variant="ghost"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button
-              label={t("tabs.requests")}
-              onPress={() => router.push("/(app)/requests")}
-              variant="primary"
-            />
-          </View>
-        </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+        <StatCard
+          label={t("client.dashboard.stats.creditsAvailable")}
+          value={credits}
+          hint={planName}
+          highlight={!sub.data}
+        />
+        <StatCard
+          label={t("client.dashboard.stats.activeRequests")}
+          value={usage.data?.activeRequests ?? 0}
+          hint={t("client.dashboard.stats.inProgressOrPending")}
+        />
+        <StatCard
+          label={t("client.dashboard.stats.completed")}
+          value={usage.data?.completedRequests ?? 0}
+          hint={t("client.dashboard.stats.allTime")}
+        />
+        {typeof pkg?.daysRemaining === "number" ? (
+          <StatCard
+            label={t("client.dashboard.stats.daysRemaining")}
+            value={pkg.daysRemaining}
+            hint={t("client.dashboard.stats.subscription")}
+          />
+        ) : null}
+      </View>
 
-        <SectionTitle>{t("home.recentRequests")}</SectionTitle>
-        {(requests.data?.requests ?? []).length === 0 ? (
-          <Card>
-            <Muted>{t("requests.empty")}</Muted>
-            <Button
-              label={t("requests.create")}
-              onPress={() => router.push("/(app)/requests/create")}
-            />
-          </Card>
-        ) : (
-          (requests.data?.requests ?? []).map((r) => (
+      <SectionTitle>{t("client.dashboard.recentRequests.title")}</SectionTitle>
+      <Muted style={{ marginBottom: 12 }}>{t("client.dashboard.recentRequests.description")}</Muted>
+
+      {(requests.data?.requests ?? []).length === 0 ? (
+        <Card>
+          <Muted>{t("client.dashboard.recentRequests.noRequests")}</Muted>
+          <Muted>{t("client.dashboard.recentRequests.noRequestsDescription")}</Muted>
+          <Button
+            label={t("client.requests.createRequest")}
+            onPress={() => router.push("/(app)/requests/create")}
+          />
+        </Card>
+      ) : (
+        <>
+          {(requests.data?.requests ?? []).map((r) => (
             <Card key={String(r.id)} onPress={() => router.push(`/(app)/requests/${r.id}`)}>
               <Text
                 style={{
@@ -116,9 +134,14 @@ export default function HomeScreen() {
               </Text>
               <StatusBadge status={String(r.status)} />
             </Card>
-          ))
-        )}
-      </ScrollView>
-    </Screen>
+          ))}
+          <Button
+            label={t("client.dashboard.recentRequests.viewAll")}
+            onPress={() => router.push("/(app)/requests")}
+            variant="ghost"
+          />
+        </>
+      )}
+    </ScrollScreen>
   );
 }

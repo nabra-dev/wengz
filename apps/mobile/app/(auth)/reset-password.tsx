@@ -4,23 +4,32 @@ import { View } from "react-native";
 import { resetPassword } from "../../src/lib/api";
 import { t } from "../../src/i18n";
 import { BrandLogo } from "../../src/components/BrandLogo";
-import { Button, Card, ErrorText, Field, Label, Screen } from "../../src/components/ui";
+import { Button, Card, ErrorText, Field, Label, ScrollScreen } from "../../src/components/ui";
 
 export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
     if (!token) {
-      setError("Missing token");
+      setError(t("auth.resetPassword.missingToken"));
+      return;
+    }
+    if (password.length < 8) {
+      setError(t("auth.resetPassword.required"));
+      return;
+    }
+    if (password !== confirm) {
+      setError(t("auth.resetPassword.mismatch"));
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await resetPassword(String(token), password);
+      await resetPassword(String(token), password, confirm);
       router.replace("/(auth)/login");
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.error"));
@@ -30,26 +39,27 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen>
-      <View style={{ alignItems: "center", marginBottom: 24, marginTop: 48 }}>
+    <ScrollScreen
+      edges={["top", "left", "right", "bottom"]}
+      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
+    >
+      <View style={{ alignItems: "center", marginBottom: 24 }}>
         <BrandLogo height={36} tone="yellow" />
       </View>
       <Card>
-        <Label>{t("auth.resetTitle")}</Label>
+        <Label>{t("auth.resetPassword.title")}</Label>
         {error ? <ErrorText>{error}</ErrorText> : null}
-        <Field
-          secureTextEntry
-          placeholder={t("auth.newPassword")}
-          value={password}
-          onChangeText={setPassword}
-        />
+        <Label>{t("auth.resetPassword.newPasswordLabel")}</Label>
+        <Field secureTextEntry value={password} onChangeText={setPassword} />
+        <Label>{t("auth.resetPassword.confirmPasswordLabel")}</Label>
+        <Field secureTextEntry value={confirm} onChangeText={setConfirm} />
         <Button
-          label={busy ? t("common.loading") : t("common.submit")}
+          label={busy ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submitButton")}
           onPress={onSubmit}
           disabled={busy}
           variant="secondary"
         />
       </Card>
-    </Screen>
+    </ScrollScreen>
   );
 }

@@ -4,7 +4,15 @@ import { View } from "react-native";
 import { requestPasswordReset } from "../../src/lib/api";
 import { t } from "../../src/i18n";
 import { BrandLogo } from "../../src/components/BrandLogo";
-import { Button, Card, ErrorText, Field, Label, Muted, Screen } from "../../src/components/ui";
+import {
+  Button,
+  Card,
+  ErrorText,
+  Field,
+  Label,
+  Muted,
+  ScrollScreen,
+} from "../../src/components/ui";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -26,34 +34,50 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen>
-      <View style={{ alignItems: "center", marginBottom: 24, marginTop: 48 }}>
+    <ScrollScreen
+      edges={["top", "left", "right", "bottom"]}
+      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
+    >
+      <View style={{ alignItems: "center", marginBottom: 24 }}>
         <BrandLogo height={36} tone="yellow" />
       </View>
       <Card>
-        <Label>{t("auth.forgotTitle")}</Label>
-        <Muted>{t("auth.forgotHint")}</Muted>
+        <Label>{t("auth.forgotPassword.title")}</Label>
+        <Muted>{t("auth.forgotPassword.description")}</Muted>
         {error ? <ErrorText>{error}</ErrorText> : null}
         {done ? (
-          <Muted>OK — check your email</Muted>
+          <>
+            <Muted>{t("auth.forgotPassword.successDescription")}</Muted>
+            <Button
+              label={t("auth.forgotPassword.backToLogin")}
+              onPress={() => router.replace("/(auth)/login")}
+              variant="secondary"
+            />
+          </>
         ) : (
           <>
             <Field
               autoCapitalize="none"
               keyboardType="email-address"
-              placeholder={t("auth.email")}
+              placeholder={t("auth.forgotPassword.emailPlaceholder")}
               value={email}
               onChangeText={setEmail}
             />
             <Button
-              label={busy ? t("common.loading") : t("auth.sendReset")}
+              label={
+                busy ? t("auth.forgotPassword.submitting") : t("auth.forgotPassword.submitButton")
+              }
               onPress={onSubmit}
               disabled={busy}
             />
+            <Button
+              label={t("auth.forgotPassword.backToLogin")}
+              onPress={() => router.back()}
+              variant="ghost"
+            />
           </>
         )}
-        <Button label={t("common.back")} onPress={() => router.back()} variant="ghost" />
       </Card>
-    </Screen>
+    </ScrollScreen>
   );
 }

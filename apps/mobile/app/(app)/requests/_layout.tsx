@@ -15,9 +15,15 @@ export default function RequestsLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: t("requests.title") }} />
-      <Stack.Screen name="[id]" options={{ title: t("requests.detail") }} />
-      <Stack.Screen name="create" options={{ title: t("requests.create") }} />
+      <Stack.Screen name="index" options={{ title: t("client.requests.title") }} />
+      <Stack.Screen name="[id]" options={{ title: t("client.requests.title") }} />
+      <Stack.Screen
+        name="create"
+        options={{
+          title: t("client.newRequest.title"),
+          headerBackTitle: t("client.requests.title"),
+        }}
+      />
     </Stack>
   );
 }

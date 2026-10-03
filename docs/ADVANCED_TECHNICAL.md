@@ -216,6 +216,7 @@ Client-only native apps (see `apps/mobile`) authenticate with a **Bearer JWT**, 
 | Inbox       | Poll `GET /api/rest/notification` — do not rely on SSE                                                                                                                                          |
 | Push        | Register via `POST /api/rest/notification/push-device` or `/api/push/subscribe`; fan-out from `createNotification` via Expo Push API ([`src/lib/push.ts`](src/lib/push.ts), `PushDevice` model) |
 | OpenAPI     | Bearer scheme `Authorization` documented in [`src/server/openapi.ts`](src/server/openapi.ts)                                                                                                    |
+| Services    | `GET /api/rest/services` (`request.getServiceTypes`) — do **not** use `/request/service-types` (collides with `/request/{id}`)                                                                  |
 
 Web cookie sessions remain unchanged. Tokens are NextAuth-compatible JWTs signed with `NEXTAUTH_SECRET` and invalidated when `passwordChangedAt` advances.
 

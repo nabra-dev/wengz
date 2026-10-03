@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { FlatList, RefreshControl, Text, View } from "react-native";
 import {
   getNotifications,
@@ -6,7 +7,17 @@ import {
   markNotificationRead,
 } from "../../src/lib/api";
 import { t } from "../../src/i18n";
-import { Button, Card, Loading, Muted, PageHeader, Screen, colors } from "../../src/components/ui";
+import {
+  Button,
+  Card,
+  Loading,
+  Muted,
+  PageHeader,
+  Screen,
+  colors,
+  listContentDefaults,
+  listFillStyle,
+} from "../../src/components/ui";
 import { fonts } from "../../src/theme/brand";
 
 export default function NotificationsScreen() {
@@ -28,24 +39,19 @@ export default function NotificationsScreen() {
   });
 
   if (q.isLoading) return <Loading />;
+  const items = q.data?.notifications ?? [];
+  const unread = items.filter((n) => !n.isRead).length;
 
   return (
     <Screen>
-      <PageHeader
-        title={t("notifications.title")}
-        right={
-          <Button
-            label={t("notifications.markAll")}
-            onPress={() => markAll.mutate()}
-            variant="ghost"
-            disabled={markAll.isPending}
-          />
-        }
-      />
       <FlatList
-        data={q.data?.notifications ?? []}
+        style={listFillStyle}
+        contentContainerStyle={listContentDefaults}
+        data={items}
         keyExtractor={(n) => String(n.id)}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical
         refreshControl={
           <RefreshControl
             refreshing={q.isFetching}
@@ -53,9 +59,37 @@ export default function NotificationsScreen() {
             tintColor={colors.yellow}
           />
         }
+        ListHeaderComponent={
+          <View>
+            <PageHeader
+              title={t("client.notifications.title")}
+              description={t("client.notifications.subtitle")}
+              right={
+                unread > 0 ? (
+                  <Button
+                    label={t("client.notifications.markAllAsRead")}
+                    onPress={() => markAll.mutate()}
+                    variant="ghost"
+                    disabled={markAll.isPending}
+                  />
+                ) : undefined
+              }
+            />
+            {unread > 0 ? (
+              <Muted>
+                {unread === 1
+                  ? t("client.notifications.unreadCount", { count: unread })
+                  : t("client.notifications.unreadCountPlural", { count: unread })}
+              </Muted>
+            ) : null}
+          </View>
+        }
         ListEmptyComponent={
           <Card>
-            <Muted>{t("notifications.empty")}</Muted>
+            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+              {t("client.notifications.noNotifications")}
+            </Text>
+            <Muted>{t("client.notifications.noNotificationsDesc")}</Muted>
           </Card>
         }
         renderItem={({ item }) => (
@@ -63,6 +97,9 @@ export default function NotificationsScreen() {
             highlight={!item.isRead}
             onPress={() => {
               if (!item.isRead) markOne.mutate(String(item.id));
+              const link = String(item.link || "");
+              const match = link.match(/\/requests\/([^/?#]+)/);
+              if (match?.[1]) router.push(`/(app)/requests/${match[1]}`);
             }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
@@ -77,15 +114,9 @@ export default function NotificationsScreen() {
                 {String(item.title)}
               </Text>
               {!item.isRead ? (
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: colors.yellow,
-                    marginTop: 5,
-                  }}
-                />
+                <Text style={{ color: colors.yellow, fontFamily: fonts.medium, fontSize: 11 }}>
+                  {t("client.notifications.new")}
+                </Text>
               ) : null}
             </View>
             <Muted style={{ marginTop: 6, marginBottom: 0 }}>{String(item.message)}</Muted>

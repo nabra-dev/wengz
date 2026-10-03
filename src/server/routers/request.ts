@@ -955,7 +955,8 @@ export const requestRouter = router({
     .meta({
       openapi: {
         method: "GET",
-        path: "/request/service-types",
+        // Must not be `/request/{something}` — OpenAPI matches `/request/{id}` first.
+        path: "/services",
         tags: ["request", "mobile"],
         summary: "List service types available to the current client",
         protect: true,

@@ -1,37 +1,112 @@
 import React from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  type RefreshControlProps,
+  type ScrollViewProps,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { BRAND, fonts, statusStyle } from "../theme/brand";
-import { i18n } from "../i18n";
+import { i18n, t } from "../i18n";
 
 const c = BRAND.colors;
+
+/** Bottom inset so content clears the tab bar / home indicator. */
+export const SCROLL_BOTTOM_PAD = 40;
+
+export const listFillStyle: ViewStyle = {
+  flex: 1,
+};
+
+export const listContentDefaults: ViewStyle = {
+  flexGrow: 1,
+  paddingBottom: SCROLL_BOTTOM_PAD,
+};
 
 export function Screen({
   children,
   style,
   padded = true,
+  /** Use `top` only on auth / edge-to-edge screens without a nav header. */
+  edges = ["left", "right"],
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
   padded?: boolean;
+  edges?: Edge[];
 }) {
   return (
-    <SafeAreaView
-      style={[styles.screen, padded && styles.padded, style]}
-      edges={["top", "left", "right"]}
-    >
+    <SafeAreaView style={[styles.screen, padded && styles.padded, style]} edges={edges}>
       {children}
     </SafeAreaView>
+  );
+}
+
+type ScrollScreenProps = {
+  children: React.ReactNode;
+  padded?: boolean;
+  edges?: Edge[];
+  style?: ViewStyle;
+  contentContainerStyle?: ViewStyle;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
+  keyboard?: boolean;
+  /** Extra space above the default bottom pad (e.g. sticky footers). */
+  bottomPad?: number;
+} & Pick<ScrollViewProps, "stickyHeaderIndices">;
+
+/** Full-height scrollable page — use on every form / content screen. */
+export function ScrollScreen({
+  children,
+  padded = true,
+  edges = ["left", "right"],
+  style,
+  contentContainerStyle,
+  refreshControl,
+  keyboard = true,
+  bottomPad = SCROLL_BOTTOM_PAD,
+  stickyHeaderIndices,
+}: ScrollScreenProps) {
+  const body = (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[{ flexGrow: 1, paddingBottom: bottomPad }, contentContainerStyle]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator={false}
+      alwaysBounceVertical
+      nestedScrollEnabled
+      bounces
+      refreshControl={refreshControl}
+      stickyHeaderIndices={stickyHeaderIndices}
+    >
+      {children}
+    </ScrollView>
+  );
+
+  return (
+    <Screen padded={padded} edges={edges} style={style}>
+      {keyboard ? (
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+        >
+          {body}
+        </KeyboardAvoidingView>
+      ) : (
+        body
+      )}
+    </Screen>
   );
 }
 
@@ -162,9 +237,10 @@ export function StatCard({
 
 export function StatusBadge({ status }: { status: string }) {
   const s = statusStyle(status);
+  const label = t(`common.requestStatus.${status}`, { defaultValue: status });
   return (
     <View style={[styles.badge, { backgroundColor: s.bg }]}>
-      <Text style={[styles.badgeText, { color: s.fg }]}>{s.label}</Text>
+      <Text style={[styles.badgeText, { color: s.fg }]}>{label}</Text>
     </View>
   );
 }
@@ -196,6 +272,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: c.background,
   },
+  flex: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
   padded: {
     paddingHorizontal: 16,
   },
@@ -203,21 +285,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 20,
-    marginTop: 8,
+    marginBottom: 24,
+    marginTop: 4,
   },
   pageTitle: {
     color: c.foreground,
     fontSize: 22,
     fontFamily: fonts.semiBold,
     letterSpacing: 0.3,
+    lineHeight: 28,
   },
   pageDesc: {
     color: c.mutedForeground,
     fontSize: 13,
-    marginTop: 4,
+    marginTop: 6,
     fontFamily: fonts.regular,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   title: {
     color: c.foreground,
@@ -280,8 +363,7 @@ const styles = StyleSheet.create({
   btnText: {
     fontFamily: fonts.semiBold,
     fontSize: 14,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
+    letterSpacing: 0.2,
   },
   btnTextOnPurple: {
     color: c.yellow,
@@ -291,9 +373,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: c.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: c.border,
   },
@@ -304,12 +386,13 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: "46%",
+    marginBottom: 0,
   },
   statLabel: {
     color: c.mutedForeground,
     fontSize: 12,
     fontFamily: fonts.medium,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   statValue: {
     color: c.foreground,
@@ -320,8 +403,9 @@ const styles = StyleSheet.create({
   statHint: {
     color: c.mutedForeground,
     fontSize: 11,
-    marginTop: 4,
+    marginTop: 6,
     fontFamily: fonts.regular,
+    lineHeight: 16,
   },
   badge: {
     alignSelf: "flex-start",
@@ -351,7 +435,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    marginBottom: 10,
-    marginTop: 8,
+    marginBottom: 6,
+    marginTop: 20,
   },
 });
