@@ -86,6 +86,7 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.subscription.title"),
+          animation: "fade",
         }}
       />
       <Tabs.Screen
@@ -93,6 +94,7 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.payment.title"),
+          animation: "fade",
         }}
       />
     </Tabs>

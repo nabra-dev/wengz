@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { createRequest, getActiveSubscription, getServiceTypes } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
 import { ServiceAttributesForm } from "../../../src/components/ServiceAttributesForm";
 import { AttachmentPicker } from "../../../src/components/AttachmentPicker";
+import { SelectDropdown } from "../../../src/components/SelectDropdown";
 import {
   Button,
   Card,
@@ -53,7 +53,6 @@ export default function CreateRequestScreen() {
   const qc = useQueryClient();
   const services = useQuery({ queryKey: ["service-types"], queryFn: getServiceTypes });
   const sub = useQuery({ queryKey: ["subscription"], queryFn: getActiveSubscription });
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [serviceTypeId, setServiceTypeId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -142,9 +141,26 @@ export default function CreateRequestScreen() {
       ? t("client.newRequest.actions.create", { cost: totalCost })
       : t("client.newRequest.actions.createCredits", { cost: totalCost });
 
-  const selectedName = selected
-    ? localized(selected.name, selected.nameI18n)
-    : t("client.newRequest.fields.serviceTypePlaceholder");
+  const serviceOptions = useMemo(
+    () =>
+      serviceList.map((s) => {
+        const name = localized(s.name, s.nameI18n);
+        const allowed = Boolean(s.isSupported);
+        const pkgHint =
+          s.supportingPackages?.[0] &&
+          localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
+        return {
+          value: s.id,
+          label: `${s.icon ? `${s.icon} ` : ""}${name} · ${s.creditCost ?? 1} ${t("client.newRequest.credits")}`,
+          subtitle:
+            !allowed && pkgHint
+              ? t("client.newRequest.supportedFromPackage", { name: pkgHint })
+              : undefined,
+          disabled: !allowed,
+        };
+      }),
+    [serviceList]
+  );
 
   const footerPad = 88 + Math.max(insets.bottom, 12);
 
@@ -210,88 +226,13 @@ export default function CreateRequestScreen() {
 
         <Card>
           <Label required>{t("client.newRequest.fields.serviceType")}</Label>
-          <Pressable
-            disabled={!hasCredits}
-            onPress={() => setPickerOpen((v) => !v)}
-            style={{
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 8,
-              paddingHorizontal: 14,
-              paddingVertical: 14,
-              marginBottom: 10,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              opacity: hasCredits ? 1 : 0.5,
-            }}
-          >
-            <Text
-              style={{
-                color: selected ? colors.foreground : colors.mutedForeground,
-                fontFamily: fonts.regular,
-                flex: 1,
-                paddingRight: 8,
-              }}
-              numberOfLines={2}
-            >
-              {selected
-                ? `${selected.icon ? `${selected.icon} ` : ""}${selectedName} · ${selected.creditCost ?? 1} ${t("client.newRequest.credits")}`
-                : selectedName}
-            </Text>
-            <Ionicons
-              name={pickerOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.mutedForeground}
-            />
-          </Pressable>
-
-          {pickerOpen ? (
-            <View style={{ marginBottom: 14 }}>
-              {serviceList.map((s) => {
-                const name = localized(s.name, s.nameI18n);
-                const allowed = Boolean(s.isSupported);
-                const active = serviceTypeId === s.id;
-                const pkgHint =
-                  s.supportingPackages?.[0] &&
-                  localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
-                return (
-                  <Pressable
-                    key={s.id}
-                    disabled={!allowed || !hasCredits}
-                    onPress={() => {
-                      setServiceTypeId(s.id);
-                      setPickerOpen(false);
-                    }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 8,
-                      marginBottom: 8,
-                      borderWidth: 1,
-                      borderColor: active ? colors.yellow : colors.border,
-                      backgroundColor: active ? "rgba(224,248,64,0.1)" : colors.card,
-                      opacity: allowed ? 1 : 0.45,
-                    }}
-                  >
-                    <Text style={{ color: colors.foreground, fontFamily: fonts.medium }}>
-                      {s.icon ? `${s.icon} ` : ""}
-                      {name}
-                      {"  "}
-                      <Text style={{ color: colors.mutedForeground }}>
-                        {s.creditCost ?? 1} {t("client.newRequest.credits")}
-                      </Text>
-                    </Text>
-                    {!allowed && pkgHint ? (
-                      <Muted style={{ marginBottom: 0, marginTop: 4 }}>
-                        {t("client.newRequest.supportedFromPackage", { name: pkgHint })}
-                      </Muted>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
+          <SelectDropdown
+            value={serviceTypeId ?? ""}
+            options={serviceOptions}
+            onChange={setServiceTypeId}
+            placeholder={t("client.newRequest.fields.serviceTypePlaceholder")}
+            disabled={!hasCredits || serviceList.length === 0}
+          />
 
           {selected ? (
             <View

@@ -3,6 +3,7 @@ import { Field, Label, Muted, colors } from "./ui";
 import { fonts } from "../theme/brand";
 import { t, i18n } from "../i18n";
 import { AttachmentPicker } from "./AttachmentPicker";
+import { SelectDropdown } from "./SelectDropdown";
 import { VoiceRecorder } from "./VoiceRecorder";
 import {
   localizedAttrText,
@@ -73,45 +74,49 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
               />
             )}
 
-            {(attr.type === "select" || attr.type === "multiselect") &&
-              options.map((opt) => {
-                const selected =
-                  attr.type === "multiselect"
-                    ? Array.isArray(current) && current.includes(opt)
-                    : current === opt;
-                return (
-                  <Pressable
-                    key={opt}
-                    disabled={disabled}
-                    onPress={() => {
-                      if (attr.type === "select") {
-                        onChange(upsert(responses, attr.question, opt));
-                        return;
-                      }
-                      const arr = Array.isArray(current) ? [...current] : [];
-                      const next = selected ? arr.filter((x) => x !== opt) : [...arr, opt];
-                      onChange(upsert(responses, attr.question, next));
-                    }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 8,
-                      marginBottom: 6,
-                      borderWidth: 1,
-                      borderColor: selected ? colors.yellow : colors.border,
-                      backgroundColor: selected ? "rgba(224,248,64,0.1)" : colors.card,
-                    }}
-                  >
-                    <Text
+            {attr.type === "select" ? (
+              <SelectDropdown
+                value={typeof current === "string" ? current : ""}
+                options={options.map((opt) => ({ value: opt, label: opt }))}
+                onChange={(v) => onChange(upsert(responses, attr.question, v))}
+                placeholder={placeholder || q}
+                disabled={disabled}
+              />
+            ) : null}
+
+            {attr.type === "multiselect"
+              ? options.map((opt) => {
+                  const selected = Array.isArray(current) && current.includes(opt);
+                  return (
+                    <Pressable
+                      key={opt}
+                      disabled={disabled}
+                      onPress={() => {
+                        const arr = Array.isArray(current) ? [...current] : [];
+                        const next = selected ? arr.filter((x) => x !== opt) : [...arr, opt];
+                        onChange(upsert(responses, attr.question, next));
+                      }}
                       style={{
-                        color: selected ? colors.yellow : colors.foreground,
-                        fontFamily: fonts.regular,
+                        padding: 12,
+                        borderRadius: 8,
+                        marginBottom: 6,
+                        borderWidth: 1,
+                        borderColor: selected ? colors.yellow : colors.border,
+                        backgroundColor: selected ? "rgba(224,248,64,0.1)" : colors.card,
                       }}
                     >
-                      {opt}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                      <Text
+                        style={{
+                          color: selected ? colors.yellow : colors.foreground,
+                          fontFamily: fonts.regular,
+                        }}
+                      >
+                        {opt}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              : null}
 
             {attr.type === "file" && (
               <AttachmentPicker

@@ -16,6 +16,7 @@ import { AuthProvider } from "../src/providers/auth";
 import { initLocale } from "../src/i18n";
 import { Loading } from "../src/components/ui";
 import { BRAND } from "../src/theme/brand";
+import { stackPushAnimation } from "../src/theme/navigation";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,8 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 headerShown: false,
+                animation: stackPushAnimation(),
+                animationDuration: 280,
                 contentStyle: { backgroundColor: BRAND.colors.background },
               }}
             />

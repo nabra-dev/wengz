@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
@@ -7,6 +7,8 @@ import { colors } from "./ui";
 export type SelectOption = {
   value: string;
   label: string;
+  subtitle?: string;
+  disabled?: boolean;
 };
 
 type Props = {
@@ -20,6 +22,8 @@ type Props = {
 };
 
 type Anchor = { x: number; y: number; width: number; height: number };
+
+const MENU_MAX_HEIGHT = 260;
 
 export function SelectDropdown({
   value,
@@ -42,13 +46,24 @@ export function SelectDropdown({
     });
   };
 
-  const menuWidth = compact ? 160 : Math.max(anchor?.width ?? 0, 160);
+  const windowH = Dimensions.get("window").height;
+  const windowW = Dimensions.get("window").width;
+  const menuWidth = compact
+    ? Math.min(180, windowW - 24)
+    : Math.min(Math.max(anchor?.width ?? 0, 200), windowW - 24);
+
+  let menuTop = (anchor?.y ?? 0) + (anchor?.height ?? 0) + 6;
+  let menuLeft = Math.max(12, Math.min(anchor?.x ?? 12, windowW - menuWidth - 12));
+  if (anchor && menuTop + MENU_MAX_HEIGHT > windowH - 16) {
+    menuTop = Math.max(16, anchor.y - MENU_MAX_HEIGHT - 6);
+  }
 
   return (
     <View
       style={{
         marginBottom: compact ? 0 : 12,
         minWidth: compact ? 96 : undefined,
+        zIndex: open ? 50 : 1,
       }}
     >
       <View ref={triggerRef} collapsable={false}>
@@ -76,7 +91,7 @@ export function SelectDropdown({
               ...typeScale.md,
               flexShrink: 1,
             }}
-            numberOfLines={1}
+            numberOfLines={compact ? 1 : 2}
           >
             {selected?.label ?? placeholder}
           </Text>
@@ -89,48 +104,60 @@ export function SelectDropdown({
       </View>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={styles.modalRoot}>
+        <View style={styles.modalRoot} pointerEvents="box-none">
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
           {anchor ? (
-            <View
-              style={[
-                styles.menu,
-                {
-                  top: anchor.y + anchor.height + 6,
-                  left: anchor.x,
-                  width: menuWidth,
-                },
-              ]}
-            >
-              {options.map((opt) => {
-                const active = opt.value === value;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => {
-                      onChange(opt.value);
-                      setOpen(false);
-                    }}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 12,
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                      backgroundColor: active ? "rgba(224,248,64,0.1)" : "transparent",
-                    }}
-                  >
-                    <Text
+            <View style={[styles.menu, { top: menuTop, left: menuLeft, width: menuWidth }]}>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                style={{ maxHeight: MENU_MAX_HEIGHT }}
+              >
+                {options.map((opt) => {
+                  const active = opt.value === value;
+                  const itemDisabled = Boolean(opt.disabled);
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      disabled={itemDisabled}
+                      onPress={() => {
+                        onChange(opt.value);
+                        setOpen(false);
+                      }}
                       style={{
-                        color: active ? colors.yellow : colors.foreground,
-                        fontFamily: active ? fonts.medium : fonts.regular,
-                        ...typeScale.md,
+                        paddingHorizontal: 12,
+                        paddingVertical: 12,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                        borderBottomColor: colors.border,
+                        backgroundColor: active ? "rgba(224,248,64,0.1)" : "transparent",
+                        opacity: itemDisabled ? 0.45 : 1,
                       }}
                     >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                      <Text
+                        style={{
+                          color: active ? colors.yellow : colors.foreground,
+                          fontFamily: active ? fonts.medium : fonts.regular,
+                          ...typeScale.md,
+                        }}
+                      >
+                        {opt.label}
+                      </Text>
+                      {opt.subtitle ? (
+                        <Text
+                          style={{
+                            color: colors.mutedForeground,
+                            fontFamily: fonts.regular,
+                            ...typeScale.sm,
+                            marginTop: 2,
+                          }}
+                        >
+                          {opt.subtitle}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
           ) : null}
         </View>
@@ -142,6 +169,7 @@ export function SelectDropdown({
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
+    zIndex: 9999,
   },
   menu: {
     position: "absolute",
@@ -150,12 +178,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.card,
     overflow: "hidden",
-    maxHeight: 220,
-    zIndex: 1000,
-    elevation: 16,
+    zIndex: 10000,
+    elevation: 24,
     shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
   },
 });

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { Audio } from "expo-av";
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+} from "expo-audio";
 import { Ionicons } from "@expo/vector-icons";
 import { t } from "../i18n";
 import { uploadFile } from "../lib/api";
@@ -18,7 +23,7 @@ type Props = {
 };
 
 function isAudioName(name: string) {
-  return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf)$/i.test(name);
+  return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(name);
 }
 
 export function VoiceRecorder({
@@ -31,7 +36,7 @@ export function VoiceRecorder({
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const nativeRec = useRef<Audio.Recording | null>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const webRec = useRef<MediaRecorder | null>(null);
   const webStream = useRef<MediaStream | null>(null);
   const webChunks = useRef<BlobPart[]>([]);
@@ -45,13 +50,11 @@ export function VoiceRecorder({
 
   async function cleanupRecording() {
     try {
-      if (nativeRec.current) {
-        const status = await nativeRec.current.getStatusAsync();
-        if (status.isRecording) await nativeRec.current.stopAndUnloadAsync();
-        nativeRec.current = null;
+      if (audioRecorder.isRecording) {
+        await audioRecorder.stop();
       }
     } catch {
-      nativeRec.current = null;
+      /* ignore */
     }
     if (webRec.current && webRec.current.state !== "inactive") {
       try {
@@ -89,31 +92,26 @@ export function VoiceRecorder({
   }
 
   async function startNative() {
-    const perm = await Audio.requestPermissionsAsync();
+    const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
       setError(t("ui.voiceRecorder.micDenied"));
       return;
     }
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
     });
-    const rec = new Audio.Recording();
-    await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-    await rec.startAsync();
-    nativeRec.current = rec;
+    await audioRecorder.prepareToRecordAsync();
+    audioRecorder.record();
     setRecording(true);
   }
 
   async function stopNative() {
-    const rec = nativeRec.current;
-    if (!rec) return;
     setUploading(true);
     try {
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-      nativeRec.current = null;
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      await setAudioModeAsync({ allowsRecording: false });
       if (!uri) {
         setError(t("ui.voiceRecorder.emptyRecording"));
         return;

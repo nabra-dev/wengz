@@ -51,9 +51,10 @@ module.exports = {
     "expo-secure-store",
     "expo-localization",
     [
-      "expo-av",
+      "expo-audio",
       {
         microphonePermission: "Record voice notes for service requests.",
+        recordAudioAndroid: true,
       },
     ],
     // Push is limited in Expo Go (SDK 53+); full push needs a dev/EAS build.
