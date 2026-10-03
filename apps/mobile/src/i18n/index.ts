@@ -1,5 +1,6 @@
 import { I18n } from "i18n-js";
-import { I18nManager } from "react-native";
+import { I18nManager, Platform } from "react-native";
+import { reloadAppAsync } from "expo";
 import { en } from "./messages/en";
 import { ar } from "./messages/ar";
 import { getStoredLocale, setStoredLocale } from "../lib/auth-store";
@@ -11,19 +12,41 @@ i18n.enableFallback = true;
 
 export type AppLocale = "en" | "ar";
 
+function syncRtl(rtl: boolean) {
+  if (Platform.OS === "web") return false;
+  I18nManager.allowRTL(true);
+  I18nManager.swapLeftAndRightInRTL(true);
+  if (I18nManager.isRTL === rtl) return false;
+  I18nManager.forceRTL(rtl);
+  return true;
+}
+
 export async function initLocale(): Promise<AppLocale> {
   const locale = await getStoredLocale();
-  await applyLocale(locale);
+  i18n.locale = locale;
+  await setStoredLocale(locale);
+  const rtlChanged = syncRtl(locale === "ar");
+  // Cold start with stored AR while native is still LTR — reload once so RTL sticks.
+  if (rtlChanged) {
+    await reloadAppAsync();
+  }
   return locale;
 }
 
-export async function applyLocale(locale: AppLocale): Promise<void> {
+/**
+ * Persist locale and sync native RTL. Reloads the app on native so Expo Router
+ * direction, tab titles, and layout mirrors apply (forceRTL needs a restart).
+ */
+export async function applyLocale(
+  locale: AppLocale,
+  options?: { reload?: boolean }
+): Promise<void> {
+  const shouldReload = options?.reload ?? true;
   i18n.locale = locale;
   await setStoredLocale(locale);
-  const rtl = locale === "ar";
-  if (I18nManager.isRTL !== rtl) {
-    I18nManager.allowRTL(rtl);
-    I18nManager.forceRTL(rtl);
+  syncRtl(locale === "ar");
+  if (shouldReload && Platform.OS !== "web") {
+    await reloadAppAsync();
   }
 }
 
@@ -39,7 +62,6 @@ function applyVars(
     const str = String(value);
     out = out.split(`{${key}}`).join(str);
     out = out.split(`%{${key}}`).join(str);
-    // ICU-ish plural stubs used in a few web keys — keep simple fallback
     out = out.replace(new RegExp(`\\{${key},[^}]+\\}`, "g"), str);
   }
   return out;
@@ -57,6 +79,5 @@ export function t(
     return key.split(".").pop() || key;
   }
 
-  result = applyVars(result, options);
-  return result;
+  return applyVars(result, options);
 }

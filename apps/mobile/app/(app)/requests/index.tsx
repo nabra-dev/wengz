@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { FlatList, RefreshControl, Text, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getRequests } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
@@ -15,6 +15,7 @@ import {
   colors,
   listContentDefaults,
   listFillStyle,
+  AppText,
 } from "../../../src/components/ui";
 import { fonts, typeScale } from "../../../src/theme/brand";
 
@@ -57,9 +58,11 @@ export default function RequestsScreen() {
         }
         ListEmptyComponent={
           <Card>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.requests.noRequests")}
-            </Text>
+            </AppText>
             <Muted>{t("client.requests.noRequestsDesc")}</Muted>
             <Button
               label={t("client.requests.createRequest")}
@@ -87,7 +90,7 @@ export default function RequestsScreen() {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text
+                  <AppText
                     style={{
                       color: colors.foreground,
                       fontFamily: fonts.medium,
@@ -97,7 +100,7 @@ export default function RequestsScreen() {
                     numberOfLines={2}
                   >
                     {String(item.title)}
-                  </Text>
+                  </AppText>
                   {serviceName ? <Muted style={{ marginBottom: 8 }}>{serviceName}</Muted> : null}
                   <View
                     style={{

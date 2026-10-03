@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { Link } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
@@ -13,6 +13,7 @@ import {
   Label,
   ScrollScreen,
   colors,
+  AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 
@@ -58,7 +59,7 @@ export default function LoginScreen() {
       <AuthBrand height={52} />
 
       <Card>
-        <Text
+        <AppText
           style={{
             color: colors.foreground,
             fontFamily: fonts.semiBold,
@@ -68,7 +69,7 @@ export default function LoginScreen() {
           }}
         >
           {t("auth.login.title")}
-        </Text>
+        </AppText>
 
         {error ? <ErrorText>{error}</ErrorText> : null}
 
@@ -90,7 +91,7 @@ export default function LoginScreen() {
         >
           <Label>{t("auth.login.passwordLabel")}</Label>
           <Link href="/(auth)/forgot-password">
-            <Text
+            <AppText
               style={{
                 color: colors.purple,
                 ...typeScale.sm,
@@ -99,7 +100,7 @@ export default function LoginScreen() {
               }}
             >
               {t("auth.login.forgotPassword")}
-            </Text>
+            </AppText>
           </Link>
         </View>
         <Field secureTextEntry value={password} onChangeText={setPassword} />

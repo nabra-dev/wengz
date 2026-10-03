@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { I18nManager, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
 import { BRAND } from "../theme/brand";
+import { t } from "../i18n";
 
 const c = BRAND.colors;
 const LOGO_HEIGHT = 32;
@@ -28,6 +29,7 @@ type NavHeaderProps = {
  */
 export function AppNavHeader({ navigation, back }: NavHeaderProps) {
   const showBack = back != null;
+  const rtl = I18nManager.isRTL;
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
@@ -39,9 +41,14 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
               hitSlop={10}
               style={styles.backBtn}
               accessibilityRole="button"
-              accessibilityLabel="Back"
+              accessibilityLabel={t("common.back", { defaultValue: "Back" })}
             >
-              <Ionicons name="chevron-back" size={26} color={c.yellow} />
+              {/* Glyphs don’t mirror with RTL — flip the chevron explicitly. */}
+              <Ionicons
+                name={rtl ? "chevron-forward" : "chevron-back"}
+                size={26}
+                color={c.yellow}
+              />
             </Pressable>
           ) : null}
         </View>

@@ -2,11 +2,15 @@ import { Stack } from "expo-router";
 import { AppNavHeader } from "../../../src/components/AppHeader";
 import { brandModalStackOptions, brandStackOptions } from "../../../src/theme/navigation";
 import { t } from "../../../src/i18n";
+import { useLocale } from "../../../src/providers/locale";
 import { BRAND } from "../../../src/theme/brand";
 
 export default function RequestsLayout() {
+  const { locale } = useLocale();
+
   return (
     <Stack
+      key={locale}
       screenOptions={{
         ...brandStackOptions,
         header: (props) => <AppNavHeader {...props} />,

@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale, BRAND } from "../theme/brand";
+import { AppText } from "./typography";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -33,17 +34,18 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
           color={color}
         />
       </View>
-      <Text
+      <AppText
         numberOfLines={1}
         style={{
           marginTop: 3,
           color,
           fontFamily: focused ? fonts.semiBold : fonts.medium,
           ...typeScale.sm,
+          textAlign: "center",
         }}
       >
         {label}
-      </Text>
+      </AppText>
       {focused ? (
         <View
           style={{

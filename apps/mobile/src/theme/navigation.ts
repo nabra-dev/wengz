@@ -47,9 +47,11 @@ export const brandTabBarOptions = {
   headerTintColor: c.yellow,
   headerTitleAlign: "center" as const,
   headerStatusBarHeight: 0,
-  headerTitleStyle: {
-    fontFamily: fonts.semiBold,
-    fontSize: typeScale.md.fontSize,
+  get headerTitleStyle() {
+    return {
+      fontFamily: fonts.semiBold,
+      fontSize: typeScale.md.fontSize,
+    };
   },
   sceneStyle: {
     backgroundColor: c.background,
@@ -72,10 +74,12 @@ export const brandTabBarOptions = {
   tabBarItemStyle: {
     paddingVertical: 2,
   },
-  tabBarLabelStyle: {
-    fontFamily: fonts.medium,
-    fontSize: typeScale.sm.fontSize,
-    marginTop: 4,
+  get tabBarLabelStyle() {
+    return {
+      fontFamily: fonts.medium,
+      fontSize: typeScale.sm.fontSize,
+      marginTop: 4,
+    };
   },
   tabBarHideOnKeyboard: true,
 };

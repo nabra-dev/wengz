@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
 import {
   cancelSubscription,
   getActiveSubscription,
@@ -20,6 +20,7 @@ import {
   colors,
   listContentDefaults,
   listFillStyle,
+  AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 
@@ -81,11 +82,13 @@ export default function SubscribeScreen() {
 
             {current ? (
               <Card highlight>
-                <Text style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+                <AppText
+                  style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 6 }}
+                >
                   {t("client.subscription.currentSubscription.title", {
                     name: currentName || "—",
                   })}
-                </Text>
+                </AppText>
                 <Muted>{t("client.subscription.currentSubscription.description")}</Muted>
                 <Muted>
                   {t("client.subscription.currentSubscription.creditsRemaining")}:{" "}
@@ -104,11 +107,11 @@ export default function SubscribeScreen() {
               </Card>
             ) : (
               <Card>
-                <Text
+                <AppText
                   style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
                 >
                   {t("client.subscription.noSubscription.title")}
-                </Text>
+                </AppText>
                 <Muted>{t("client.subscription.noSubscription.description")}</Muted>
               </Card>
             )}
@@ -129,7 +132,7 @@ export default function SubscribeScreen() {
           return (
             <Card highlight={!isCurrent}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-                <Text
+                <AppText
                   style={{
                     color: colors.foreground,
                     fontFamily: fonts.semiBold,
@@ -138,11 +141,11 @@ export default function SubscribeScreen() {
                   }}
                 >
                   {name}
-                </Text>
+                </AppText>
                 {isCurrent ? (
-                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium }}>
+                  <AppText style={{ color: colors.yellow, fontFamily: fonts.medium }}>
                     {t("client.subscription.plans.current")}
-                  </Text>
+                  </AppText>
                 ) : null}
               </View>
               <Muted>

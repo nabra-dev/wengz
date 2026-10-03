@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import {
   RecordingPresets,
@@ -13,6 +13,7 @@ import { uploadFile } from "../lib/api";
 import { fileNameFromUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
+import { AppText } from "./typography";
 
 type Props = {
   value: string[];
@@ -261,7 +262,7 @@ export function VoiceRecorder({
             size={18}
             color={recording ? colors.destructive : colors.foreground}
           />
-          <Text
+          <AppText
             style={{
               color: recording ? colors.destructive : colors.foreground,
               fontFamily: fonts.medium,
@@ -269,7 +270,7 @@ export function VoiceRecorder({
             }}
           >
             {recording ? t("ui.voiceRecorder.stop") : t("ui.voiceRecorder.record")}
-          </Text>
+          </AppText>
         </Pressable>
 
         <Pressable
@@ -289,25 +290,27 @@ export function VoiceRecorder({
           }}
         >
           <Ionicons name="cloud-upload-outline" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
+          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
             {t("ui.voiceRecorder.uploadAudio")}
-          </Text>
+          </AppText>
         </Pressable>
 
         {uploading ? <ActivityIndicator color={colors.yellow} /> : null}
       </View>
 
       {recording ? (
-        <Text style={{ color: colors.destructive, ...typeScale.sm }}>
+        <AppText style={{ color: colors.destructive, ...typeScale.sm }}>
           {t("requests.messages.recordingInProgress")}
-        </Text>
+        </AppText>
       ) : null}
 
-      <Text style={{ color: colors.mutedForeground, ...typeScale.xs }}>
+      <AppText style={{ color: colors.mutedForeground, ...typeScale.xs }}>
         {t("ui.voiceRecorder.hint", { maxSize: maxSizeMB, maxFiles })}
-      </Text>
+      </AppText>
 
-      {error ? <Text style={{ color: colors.destructive, ...typeScale.sm }}>{error}</Text> : null}
+      {error ? (
+        <AppText style={{ color: colors.destructive, ...typeScale.sm }}>{error}</AppText>
+      ) : null}
 
       {value.map((url, index) => (
         <View
@@ -324,7 +327,7 @@ export function VoiceRecorder({
           }}
         >
           <Ionicons name="musical-notes-outline" size={20} color={colors.yellow} />
-          <Text
+          <AppText
             numberOfLines={1}
             style={{
               flex: 1,
@@ -334,14 +337,14 @@ export function VoiceRecorder({
             }}
           >
             {fileNameFromUrl(url)}
-          </Text>
+          </AppText>
           {!disabled && !recording ? (
             <Pressable onPress={() => removeAt(index)} hitSlop={8}>
-              <Text
+              <AppText
                 style={{ color: colors.destructive, fontFamily: fonts.medium, ...typeScale.sm }}
               >
                 {t("client.request.attachments.remove")}
-              </Text>
+              </AppText>
             </Pressable>
           ) : null}
         </View>

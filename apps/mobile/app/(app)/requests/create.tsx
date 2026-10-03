@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createRequest, getActiveSubscription, getServiceTypes } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
@@ -20,6 +20,7 @@ import {
   ScrollScreen,
   colors,
   SCROLL_BOTTOM_PAD,
+  AppText,
 } from "../../../src/components/ui";
 import { fonts } from "../../../src/theme/brand";
 import {
@@ -171,9 +172,11 @@ export default function CreateRequestScreen() {
 
         {!hasSub ? (
           <Card highlight>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.newRequest.noSubscription.title")}
-            </Text>
+            </AppText>
             <Muted>{t("client.newRequest.noSubscription.description")}</Muted>
             <Button
               label={t("client.newRequest.noSubscription.viewPackages")}
@@ -185,9 +188,11 @@ export default function CreateRequestScreen() {
 
         {hasSub && !canAfford ? (
           <Card highlight>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.newRequest.insufficientCredits.title")}
-            </Text>
+            </AppText>
             <Muted>
               {remainingCredits === 0
                 ? t("client.newRequest.insufficientCredits.zeroCredits")
@@ -208,9 +213,11 @@ export default function CreateRequestScreen() {
 
         {hasSub && serviceList.length === 0 && !services.isError ? (
           <Card highlight>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.newRequest.noServices.title")}
-            </Text>
+            </AppText>
             <Muted>{t("client.newRequest.noServices.description", { name: packageName })}</Muted>
             <Button
               label={t("client.newRequest.noServices.upgradePackage")}

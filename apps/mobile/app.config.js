@@ -49,7 +49,16 @@ module.exports = {
   plugins: [
     "expo-router",
     "expo-secure-store",
-    "expo-localization",
+    [
+      "expo-localization",
+      {
+        supportsRTL: true,
+        supportedLocales: {
+          ios: ["en", "ar"],
+          android: ["en", "ar"],
+        },
+      },
+    ],
     [
       "expo-audio",
       {
@@ -70,6 +79,7 @@ module.exports = {
   },
   extra: {
     router: {},
+    supportsRTL: true,
     apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.27:3001",
     // Set after `eas init` for push/EAS builds:
     // eas: { projectId: process.env.EAS_PROJECT_ID },

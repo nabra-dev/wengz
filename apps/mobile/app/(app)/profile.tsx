@@ -3,7 +3,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { View } from "react-native";
 import { changePassword, getProfile, updateProfile } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
-import { applyLocale, t, type AppLocale } from "../../src/i18n";
+import { useLocale } from "../../src/providers/locale";
+import { i18n, t, type AppLocale } from "../../src/i18n";
 import {
   Button,
   Card,
@@ -46,6 +47,7 @@ function splitPhone(raw: string | null | undefined): { code: string; number: str
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
+  const { setLocale } = useLocale();
   const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const [tab, setTab] = useState<Tab>("profile");
   const [name, setName] = useState("");
@@ -114,9 +116,8 @@ export default function ProfileScreen() {
   });
 
   async function toggleLocale() {
-    const { i18n } = await import("../../src/i18n");
     const locale: AppLocale = i18n.locale === "ar" ? "en" : "ar";
-    await applyLocale(locale);
+    await setLocale(locale);
     setInfo(locale.toUpperCase());
   }
 

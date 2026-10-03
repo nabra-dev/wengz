@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { RefreshControl, Text, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { getActiveSubscription, getRequests, getUsageStats } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { t, i18n } from "../../src/i18n";
@@ -15,6 +15,7 @@ import {
   StatCard,
   StatusBadge,
   colors,
+  AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 
@@ -65,9 +66,11 @@ export default function HomeScreen() {
 
       {!sub.data ? (
         <Card highlight style={{ marginBottom: 14 }}>
-          <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+          <AppText
+            style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+          >
             {t("client.dashboard.noSubscription.title")}
-          </Text>
+          </AppText>
           <Muted>{t("client.dashboard.noSubscription.description")}</Muted>
           <Button
             label={t("client.dashboard.noSubscription.viewPlans")}
@@ -117,7 +120,7 @@ export default function HomeScreen() {
         <>
           {(requests.data?.requests ?? []).map((r) => (
             <Card key={String(r.id)} onPress={() => router.push(`/(app)/requests/${r.id}`)}>
-              <Text
+              <AppText
                 style={{
                   color: colors.foreground,
                   fontFamily: fonts.medium,
@@ -126,7 +129,7 @@ export default function HomeScreen() {
                 }}
               >
                 {String(r.title)}
-              </Text>
+              </AppText>
               <StatusBadge status={String(r.status)} />
             </Card>
           ))}

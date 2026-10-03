@@ -1,5 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
+import { useLocale } from "../../src/providers/locale";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
 import { AppNavHeader } from "../../src/components/AppHeader";
@@ -8,11 +9,13 @@ import { brandTabBarOptions } from "../../src/theme/navigation";
 
 export default function AppLayout() {
   const { ready, token } = useAuth();
+  const { locale } = useLocale();
   if (!ready) return <Loading />;
   if (!token) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
+      key={locale}
       screenOptions={{
         ...brandTabBarOptions,
         header: (props) => <AppNavHeader {...props} />,
@@ -26,7 +29,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabBarItem
               label={t("tabs.home")}
-              color={color}
+              color={String(color)}
               focused={focused}
               activeIcon="home"
               inactiveIcon="home-outline"
@@ -38,12 +41,11 @@ export default function AppLayout() {
         name="requests"
         options={{
           title: t("tabs.requests"),
-          // Stack owns the header so we don't get a white status-bar strip from nesting.
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabBarItem
               label={t("tabs.requests")}
-              color={color}
+              color={String(color)}
               focused={focused}
               activeIcon="list"
               inactiveIcon="list-outline"
@@ -58,7 +60,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabBarItem
               label={t("tabs.notifications")}
-              color={color}
+              color={String(color)}
               focused={focused}
               activeIcon="notifications"
               inactiveIcon="notifications-outline"
@@ -73,7 +75,7 @@ export default function AppLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabBarItem
               label={t("tabs.profile")}
-              color={color}
+              color={String(color)}
               focused={focused}
               activeIcon="person"
               inactiveIcon="person-outline"

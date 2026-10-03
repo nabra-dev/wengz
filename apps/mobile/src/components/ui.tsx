@@ -6,8 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   type RefreshControlProps,
   type ScrollViewProps,
@@ -17,11 +15,13 @@ import {
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
-import { i18n, t } from "../i18n";
+import { t } from "../i18n";
+import { AppText, AppTextInput } from "./typography";
 
 const c = BRAND.colors;
 
 export { typeScale };
+export { AppText, AppTextInput } from "./typography";
 
 /** Bottom inset so content clears the tab bar / home indicator. */
 export const SCROLL_BOTTOM_PAD = 40;
@@ -124,8 +124,10 @@ export function PageHeader({
   return (
     <View style={styles.pageHeader}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.pageTitle}>{title}</Text>
-        {description ? <Text style={styles.pageDesc}>{description}</Text> : null}
+        <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
+        {description ? (
+          <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
+        ) : null}
       </View>
       {right}
     </View>
@@ -133,25 +135,27 @@ export function PageHeader({
 }
 
 export function Title({ children, style }: { children: React.ReactNode; style?: TextStyle }) {
-  return <Text style={[styles.title, style]}>{children}</Text>;
+  return (
+    <AppText style={[styles.title, { fontFamily: fonts.semiBold }, style]}>{children}</AppText>
+  );
 }
 
 export function Muted({ children, style }: { children: React.ReactNode; style?: TextStyle }) {
-  return <Text style={[styles.muted, style]}>{children}</Text>;
+  return <AppText style={[styles.muted, { fontFamily: fonts.regular }, style]}>{children}</AppText>;
 }
 
 export function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <Text style={styles.label}>
+    <AppText style={[styles.label, { fontFamily: fonts.medium }]}>
       {children}
-      {required ? <Text style={{ color: c.destructive }}> *</Text> : null}
-    </Text>
+      {required ? <AppText style={{ color: c.destructive }}> *</AppText> : null}
+    </AppText>
   );
 }
 
 export function Field(props: TextInputProps) {
   return (
-    <TextInput
+    <AppTextInput
       placeholderTextColor={c.mutedForeground}
       {...props}
       style={[styles.input, props.multiline && styles.inputMultiline, props.style]}
@@ -183,9 +187,10 @@ export function Button({
         (disabled || pressed) && { opacity: 0.75 },
       ]}
     >
-      <Text
+      <AppText
         style={[
           styles.btnText,
+          { fontFamily: fonts.semiBold, textAlign: "center" },
           variant === "primary" && styles.btnTextOnPurple,
           variant === "secondary" && styles.btnTextOnYellow,
           (variant === "ghost" || variant === "danger") && { color: c.foreground },
@@ -193,7 +198,7 @@ export function Button({
         ]}
       >
         {label}
-      </Text>
+      </AppText>
     </Pressable>
   );
 }
@@ -235,9 +240,11 @@ export function StatCard({
 }) {
   return (
     <Card highlight={highlight} style={styles.statCard}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-      {hint ? <Text style={styles.statHint}>{hint}</Text> : null}
+      <AppText style={[styles.statLabel, { fontFamily: fonts.medium }]}>{label}</AppText>
+      <AppText style={[styles.statValue, { fontFamily: fonts.bold }]}>{value}</AppText>
+      {hint ? (
+        <AppText style={[styles.statHint, { fontFamily: fonts.regular }]}>{hint}</AppText>
+      ) : null}
     </Card>
   );
 }
@@ -247,7 +254,9 @@ export function StatusBadge({ status }: { status: string }) {
   const label = t(`common.requestStatus.${status}`, { defaultValue: status });
   return (
     <View style={[styles.badge, { backgroundColor: s.bg }]}>
-      <Text style={[styles.badgeText, { color: s.fg }]}>{label}</Text>
+      <AppText style={[styles.badgeText, { color: s.fg, fontFamily: fonts.medium }]}>
+        {label}
+      </AppText>
     </View>
   );
 }
@@ -272,9 +281,15 @@ export function SegmentedTabs<T extends string>({
             onPress={() => onChange(opt.key)}
             style={[styles.segmentItem, active && styles.segmentItemActive]}
           >
-            <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>
+            <AppText
+              style={[
+                styles.segmentLabel,
+                { fontFamily: fonts.medium, textAlign: "center" },
+                active && styles.segmentLabelActive,
+              ]}
+            >
               {opt.label}
-            </Text>
+            </AppText>
           </Pressable>
         );
       })}
@@ -291,15 +306,15 @@ export function Loading() {
 }
 
 export function ErrorText({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.error}>{children}</Text>;
+  return <AppText style={[styles.error, { fontFamily: fonts.regular }]}>{children}</AppText>;
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
+  return <AppText style={[styles.sectionTitle, { fontFamily: fonts.medium }]}>{children}</AppText>;
 }
 
 export function useUiFontFamily() {
-  return i18n.locale === "ar" ? fonts.cairo : fonts.regular;
+  return fonts.regular;
 }
 
 export { c as colors };
@@ -328,30 +343,25 @@ const styles = StyleSheet.create({
   pageTitle: {
     color: c.foreground,
     ...typeScale.xl,
-    fontFamily: fonts.semiBold,
   },
   pageDesc: {
     color: c.mutedForeground,
     ...typeScale.sm,
     marginTop: 4,
-    fontFamily: fonts.regular,
   },
   title: {
     color: c.foreground,
     ...typeScale.xl,
-    fontFamily: fonts.semiBold,
     marginBottom: 6,
   },
   muted: {
     color: c.mutedForeground,
     ...typeScale.sm,
-    fontFamily: fonts.regular,
     marginBottom: 8,
   },
   label: {
     color: c.foreground,
     ...typeScale.sm,
-    fontFamily: fonts.medium,
     marginBottom: 6,
   },
   input: {
@@ -364,7 +374,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
     ...typeScale.md,
-    fontFamily: fonts.regular,
   },
   inputMultiline: {
     minHeight: 110,
@@ -391,7 +400,6 @@ const styles = StyleSheet.create({
     backgroundColor: c.destructive,
   },
   btnText: {
-    fontFamily: fonts.semiBold,
     ...typeScale.md,
   },
   btnTextOnPurple: {
@@ -420,20 +428,17 @@ const styles = StyleSheet.create({
   statLabel: {
     color: c.mutedForeground,
     ...typeScale.sm,
-    fontFamily: fonts.medium,
     marginBottom: 8,
   },
   statValue: {
     color: c.foreground,
     ...typeScale.display,
-    fontFamily: fonts.bold,
     fontVariant: ["tabular-nums"],
   },
   statHint: {
     color: c.mutedForeground,
     ...typeScale.xs,
     marginTop: 4,
-    fontFamily: fonts.regular,
   },
   badge: {
     alignSelf: "flex-start",
@@ -443,7 +448,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     ...typeScale.xs,
-    fontFamily: fonts.medium,
   },
   segmentRow: {
     flexDirection: "row",
@@ -466,7 +470,6 @@ const styles = StyleSheet.create({
   },
   segmentLabel: {
     color: c.foreground,
-    fontFamily: fonts.medium,
     ...typeScale.sm,
   },
   segmentLabelActive: {
@@ -481,13 +484,11 @@ const styles = StyleSheet.create({
   error: {
     color: c.destructive,
     marginBottom: 10,
-    fontFamily: fonts.regular,
     ...typeScale.sm,
   },
   sectionTitle: {
     color: c.mutedForeground,
     ...typeScale.sm,
-    fontFamily: fonts.medium,
     marginBottom: 8,
     marginTop: 16,
   },

@@ -1,8 +1,17 @@
 import { useRef, useState } from "react";
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Dimensions,
+  I18nManager,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
+import { AppText } from "./typography";
 
 export type SelectOption = {
   value: string;
@@ -48,14 +57,20 @@ export function SelectDropdown({
 
   const windowH = Dimensions.get("window").height;
   const windowW = Dimensions.get("window").width;
+  const rtl = I18nManager.isRTL;
   const menuWidth = compact
     ? Math.min(180, windowW - 24)
     : Math.min(Math.max(anchor?.width ?? 0, 200), windowW - 24);
 
   let menuTop = (anchor?.y ?? 0) + (anchor?.height ?? 0) + 6;
-  let menuLeft = Math.max(12, Math.min(anchor?.x ?? 12, windowW - menuWidth - 12));
-  if (anchor && menuTop + MENU_MAX_HEIGHT > windowH - 16) {
-    menuTop = Math.max(16, anchor.y - MENU_MAX_HEIGHT - 6);
+  let menuLeft = 12;
+  if (anchor) {
+    menuLeft = rtl
+      ? Math.max(12, Math.min(anchor.x + anchor.width - menuWidth, windowW - menuWidth - 12))
+      : Math.max(12, Math.min(anchor.x, windowW - menuWidth - 12));
+    if (menuTop + MENU_MAX_HEIGHT > windowH - 16) {
+      menuTop = Math.max(16, anchor.y - MENU_MAX_HEIGHT - 6);
+    }
   }
 
   return (
@@ -84,7 +99,7 @@ export function SelectDropdown({
             opacity: disabled ? 0.5 : 1,
           }}
         >
-          <Text
+          <AppText
             style={{
               color: selected ? colors.foreground : colors.mutedForeground,
               fontFamily: fonts.regular,
@@ -94,7 +109,7 @@ export function SelectDropdown({
             numberOfLines={compact ? 1 : 2}
           >
             {selected?.label ?? placeholder}
-          </Text>
+          </AppText>
           <Ionicons
             name={open ? "chevron-up" : "chevron-down"}
             size={16}
@@ -133,7 +148,7 @@ export function SelectDropdown({
                         opacity: itemDisabled ? 0.45 : 1,
                       }}
                     >
-                      <Text
+                      <AppText
                         style={{
                           color: active ? colors.yellow : colors.foreground,
                           fontFamily: active ? fonts.medium : fonts.regular,
@@ -141,9 +156,9 @@ export function SelectDropdown({
                         }}
                       >
                         {opt.label}
-                      </Text>
+                      </AppText>
                       {opt.subtitle ? (
-                        <Text
+                        <AppText
                           style={{
                             color: colors.mutedForeground,
                             fontFamily: fonts.regular,
@@ -152,7 +167,7 @@ export function SelectDropdown({
                           }}
                         >
                           {opt.subtitle}
-                        </Text>
+                        </AppText>
                       ) : null}
                     </Pressable>
                   );

@@ -1,0 +1,91 @@
+import {
+  Text as RNText,
+  TextInput as RNTextInput,
+  type StyleProp,
+  type TextProps,
+  type TextInputProps,
+  type TextStyle,
+} from "react-native";
+import { i18n } from "../i18n";
+import { fonts } from "../theme/brand";
+
+export function isRtlLocale(): boolean {
+  return i18n.locale === "ar";
+}
+
+/** Start-aligned text — physical right in AR, left in EN (works on web + native). */
+export function rtlTextAlign(): "left" | "right" {
+  return isRtlLocale() ? "right" : "left";
+}
+
+export function rtlWritingDirection(): "rtl" | "ltr" {
+  return isRtlLocale() ? "rtl" : "ltr";
+}
+
+/** Base text style every string should inherit in AR. */
+export function rtlTextBase(extra?: StyleProp<TextStyle>): StyleProp<TextStyle> {
+  return [
+    {
+      fontFamily: fonts.regular,
+      textAlign: rtlTextAlign(),
+      writingDirection: rtlWritingDirection(),
+    },
+    extra,
+  ];
+}
+
+type WebTextExtras = {
+  dir?: "rtl" | "ltr";
+  lang?: string;
+};
+
+/**
+ * App-wide Text. Forces `dir` (never browser `auto`) so Arabic UI stays RTL
+ * even when the string is Latin/numeric.
+ */
+export function AppText({ style, ...rest }: TextProps) {
+  const rtl = isRtlLocale();
+  const webProps: WebTextExtras = {
+    dir: rtl ? "rtl" : "ltr",
+    lang: i18n.locale === "ar" ? "ar" : "en",
+  };
+
+  return (
+    <RNText
+      {...rest}
+      {...webProps}
+      style={[
+        {
+          fontFamily: fonts.regular,
+          textAlign: rtlTextAlign(),
+          writingDirection: rtlWritingDirection(),
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+/** App-wide TextInput with the same RTL rules. */
+export function AppTextInput({ style, ...rest }: TextInputProps) {
+  const rtl = isRtlLocale();
+  const webProps: WebTextExtras = {
+    dir: rtl ? "rtl" : "ltr",
+    lang: i18n.locale === "ar" ? "ar" : "en",
+  };
+
+  return (
+    <RNTextInput
+      {...rest}
+      {...webProps}
+      style={[
+        {
+          fontFamily: fonts.regular,
+          textAlign: rtlTextAlign(),
+          writingDirection: rtlWritingDirection(),
+        },
+        style,
+      ]}
+    />
+  );
+}

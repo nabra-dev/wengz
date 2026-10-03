@@ -1,3 +1,5 @@
+import { i18n } from "../i18n";
+
 /** Mirrors `src/lib/brand.ts` + `globals.css` dark tokens. */
 export const BRAND = {
   name: "Wengz",
@@ -17,17 +19,50 @@ export const BRAND = {
   },
 } as const;
 
-export const fonts = {
+type FontRoles = {
+  regular: string;
+  medium: string;
+  semiBold: string;
+  bold: string;
+};
+
+/** Latin display face — brand wordmark / EN UI. */
+export const latinFonts: FontRoles = {
   regular: "Unbounded_400Regular",
   medium: "Unbounded_500Medium",
   semiBold: "Unbounded_600SemiBold",
   bold: "Unbounded_700Bold",
-  cairo: "Cairo_400Regular",
-  cairoBold: "Cairo_700Bold",
-} as const;
+};
 
-/** Shared type scale — prefer these over one-off fontSize values. */
-export const typeScale = {
+/** Arabic UI face — Unbounded has no Arabic glyphs. */
+export const arabicFonts: FontRoles = {
+  regular: "Cairo_400Regular",
+  medium: "Cairo_500Medium",
+  semiBold: "Cairo_600SemiBold",
+  bold: "Cairo_700Bold",
+};
+
+function activeFonts(): FontRoles {
+  return i18n.locale === "ar" ? arabicFonts : latinFonts;
+}
+
+/**
+ * Locale-aware font roles. Always read at render time (not inside StyleSheet.create),
+ * so Arabic switches to Cairo instead of falling back from Unbounded.
+ */
+export const fonts: FontRoles & { cairo: string; cairoBold: string } = new Proxy(
+  {} as FontRoles & { cairo: string; cairoBold: string },
+  {
+    get(_target, prop: string) {
+      if (prop === "cairo") return arabicFonts.regular;
+      if (prop === "cairoBold") return arabicFonts.bold;
+      const role = activeFonts()[prop as keyof FontRoles];
+      return role ?? activeFonts().regular;
+    },
+  }
+);
+
+const typeScaleEn = {
   xs: { fontSize: 10, lineHeight: 14 },
   sm: { fontSize: 12, lineHeight: 16 },
   md: { fontSize: 13, lineHeight: 18 },
@@ -35,6 +70,26 @@ export const typeScale = {
   xl: { fontSize: 17, lineHeight: 22 },
   display: { fontSize: 22, lineHeight: 26 },
 } as const;
+
+/** Slightly taller metrics for Arabic (Cairo). */
+const typeScaleAr = {
+  xs: { fontSize: 11, lineHeight: 16 },
+  sm: { fontSize: 13, lineHeight: 20 },
+  md: { fontSize: 14, lineHeight: 22 },
+  lg: { fontSize: 16, lineHeight: 24 },
+  xl: { fontSize: 18, lineHeight: 26 },
+  display: { fontSize: 22, lineHeight: 30 },
+} as const;
+
+export type TypeScale = typeof typeScaleEn;
+
+/** Prefer this at render time so AR gets Cairo-friendly metrics. */
+export function getTypeScale(): TypeScale {
+  return (i18n.locale === "ar" ? typeScaleAr : typeScaleEn) as TypeScale;
+}
+
+/** @deprecated Prefer getTypeScale() — kept for EN defaults / static spreads. */
+export const typeScale = typeScaleEn;
 
 export function statusStyle(status: string): { bg: string; fg: string } {
   const map: Record<string, { bg: string; fg: string }> = {

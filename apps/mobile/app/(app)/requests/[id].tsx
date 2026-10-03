@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   addComment,
@@ -30,6 +30,7 @@ import {
   colors,
   listContentDefaults,
   listFillStyle,
+  AppText,
 } from "../../../src/components/ui";
 import { fonts, typeScale } from "../../../src/theme/brand";
 import type { AttributeResponse, ServiceAttribute } from "../../../src/types/service-attributes";
@@ -94,12 +95,12 @@ function FileChip({ url }: { url: string }) {
       }}
     >
       <Ionicons name="document-outline" size={24} color={colors.mutedForeground} />
-      <Text
+      <AppText
         numberOfLines={2}
         style={{ ...typeScale.xs, color: colors.mutedForeground, textAlign: "center" }}
       >
         {fileNameFromUrl(url)}
-      </Text>
+      </AppText>
     </View>
   );
 }
@@ -254,11 +255,11 @@ export default function RequestDetailScreen() {
 
         {attributeResponses.length > 0 ? (
           <Card>
-            <Text
+            <AppText
               style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 10 }}
             >
               {t("client.requestDetail.questionsTitle")}
-            </Text>
+            </AppText>
             {attributeResponses.map((resp, index) => {
               const attr = request.serviceType?.attributes?.find(
                 (a) => a.question === resp.question
@@ -282,7 +283,7 @@ export default function RequestDetailScreen() {
                     borderBottomColor: colors.border,
                   }}
                 >
-                  <Text
+                  <AppText
                     style={{
                       color: colors.mutedForeground,
                       fontFamily: fonts.medium,
@@ -291,9 +292,9 @@ export default function RequestDetailScreen() {
                     }}
                   >
                     {question}
-                  </Text>
+                  </AppText>
                   {textAnswer ? (
-                    <Text
+                    <AppText
                       style={{
                         color: colors.foreground,
                         fontFamily: fonts.regular,
@@ -301,7 +302,7 @@ export default function RequestDetailScreen() {
                       }}
                     >
                       {textAnswer}
-                    </Text>
+                    </AppText>
                   ) : null}
                   {urls.length > 0 ? (
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
@@ -318,9 +319,11 @@ export default function RequestDetailScreen() {
 
         {deliverables.length > 0 ? (
           <Card highlight>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}
+            >
               {t("client.newRequest.deliverables.title")}
-            </Text>
+            </AppText>
             {deliverables.map((d, idx) => (
               <View
                 key={d.id}
@@ -334,9 +337,11 @@ export default function RequestDetailScreen() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}
                 >
-                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.sm }}>
+                  <AppText
+                    style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.sm }}
+                  >
                     {request.provider?.name || t("requests.card.provider")}
-                  </Text>
+                  </AppText>
                   <View
                     style={{
                       backgroundColor: "rgba(224,248,64,0.15)",
@@ -345,15 +350,15 @@ export default function RequestDetailScreen() {
                       borderRadius: 6,
                     }}
                   >
-                    <Text
+                    <AppText
                       style={{ color: colors.yellow, ...typeScale.xs, fontFamily: fonts.medium }}
                     >
                       {t("client.newRequest.deliverables.badge")}
-                    </Text>
+                    </AppText>
                   </View>
                 </View>
                 {d.content?.trim() ? (
-                  <Text
+                  <AppText
                     style={{
                       color: colors.foreground,
                       fontFamily: fonts.regular,
@@ -362,7 +367,7 @@ export default function RequestDetailScreen() {
                     }}
                   >
                     {d.content}
-                  </Text>
+                  </AppText>
                 ) : null}
                 {d.files?.length ? (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -378,9 +383,11 @@ export default function RequestDetailScreen() {
 
         {request.status === "DELIVERED" ? (
           <Card highlight>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.requestDetail.deliverableReady.title")}
-            </Text>
+            </AppText>
             <Muted>{t("client.requestDetail.deliverableReady.description")}</Muted>
             <Label>{t("client.requestDetail.requestRevision.title")}</Label>
             <Muted>
@@ -428,9 +435,11 @@ export default function RequestDetailScreen() {
 
         {request.status === "COMPLETED" && !request.rating ? (
           <Card>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.requestDetail.rateService.title")}
-            </Text>
+            </AppText>
             <Muted>{t("client.requestDetail.rateService.description")}</Muted>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
               {[1, 2, 3, 4, 5].map((n) => (
@@ -446,14 +455,14 @@ export default function RequestDetailScreen() {
                     backgroundColor: rating >= n ? colors.yellow : colors.muted,
                   }}
                 >
-                  <Text
+                  <AppText
                     style={{
                       color: rating >= n ? "#2A0A55" : colors.foreground,
                       fontFamily: fonts.bold,
                     }}
                   >
                     {n}
-                  </Text>
+                  </AppText>
                 </Pressable>
               ))}
             </View>
@@ -477,9 +486,9 @@ export default function RequestDetailScreen() {
 
         {request.rating ? (
           <Card>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
+            <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
               {t("client.requestDetail.yourRating.title")}: {request.rating.rating}/5
-            </Text>
+            </AppText>
             {request.rating.reviewText ? <Muted>{request.rating.reviewText}</Muted> : null}
           </Card>
         ) : null}
@@ -527,7 +536,7 @@ export default function RequestDetailScreen() {
                   marginBottom: 8,
                 }}
               >
-                <Text
+                <AppText
                   style={{
                     color: colors.yellow,
                     ...typeScale.xs,
@@ -536,13 +545,13 @@ export default function RequestDetailScreen() {
                   }}
                 >
                   {item.user?.name ?? "User"}
-                </Text>
+                </AppText>
                 {item.content?.trim() ? (
-                  <Text
+                  <AppText
                     style={{ color: colors.foreground, fontFamily: fonts.regular, lineHeight: 20 }}
                   >
                     {item.content}
-                  </Text>
+                  </AppText>
                 ) : null}
                 {item.files?.length ? <MediaThumbGrid urls={item.files} /> : null}
               </View>

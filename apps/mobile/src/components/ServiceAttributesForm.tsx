@@ -1,10 +1,11 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Field, Label, Muted, colors } from "./ui";
 import { fonts } from "../theme/brand";
 import { t, i18n } from "../i18n";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SelectDropdown } from "./SelectDropdown";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { AppText } from "./typography";
 import {
   localizedAttrText,
   type AttributeResponse,
@@ -105,14 +106,14 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
                         backgroundColor: selected ? "rgba(224,248,64,0.1)" : colors.card,
                       }}
                     >
-                      <Text
+                      <AppText
                         style={{
                           color: selected ? colors.yellow : colors.foreground,
                           fontFamily: fonts.regular,
                         }}
                       >
                         {opt}
-                      </Text>
+                      </AppText>
                     </Pressable>
                   );
                 })

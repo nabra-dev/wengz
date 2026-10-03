@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { FlatList, RefreshControl, Text, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -17,6 +17,7 @@ import {
   colors,
   listContentDefaults,
   listFillStyle,
+  AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 
@@ -78,9 +79,11 @@ export default function NotificationsScreen() {
         }
         ListEmptyComponent={
           <Card>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
               {t("client.notifications.noNotifications")}
-            </Text>
+            </AppText>
             <Muted>{t("client.notifications.noNotificationsDesc")}</Muted>
           </Card>
         }
@@ -95,7 +98,7 @@ export default function NotificationsScreen() {
             }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-              <Text
+              <AppText
                 style={{
                   flex: 1,
                   color: colors.foreground,
@@ -104,11 +107,13 @@ export default function NotificationsScreen() {
                 }}
               >
                 {String(item.title)}
-              </Text>
+              </AppText>
               {!item.isRead ? (
-                <Text style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.xs }}>
+                <AppText
+                  style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.xs }}
+                >
                   {t("client.notifications.new")}
-                </Text>
+                </AppText>
               ) : null}
             </View>
             <Muted style={{ marginTop: 6, marginBottom: 0 }}>{String(item.message)}</Muted>

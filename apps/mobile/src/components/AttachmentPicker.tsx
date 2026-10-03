@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { isLikelyImageUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { colors } from "./ui";
+import { AppText } from "./typography";
 
 type Pending = {
   id: string;
@@ -153,9 +154,9 @@ export function AttachmentPicker({
   return (
     <View style={{ gap: 10 }}>
       {label ? (
-        <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
+        <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
           {label}
-        </Text>
+        </AppText>
       ) : null}
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -176,9 +177,9 @@ export function AttachmentPicker({
           }}
         >
           <Ionicons name="image-outline" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
+          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
             {t("client.request.attachments.addImages")}
-          </Text>
+          </AppText>
         </Pressable>
         <Pressable
           onPress={() => void pickFiles()}
@@ -197,15 +198,19 @@ export function AttachmentPicker({
           }}
         >
           <Ionicons name="document-attach-outline" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
+          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
             {t("client.request.attachments.addFiles")}
-          </Text>
+          </AppText>
         </Pressable>
         {busy ? <ActivityIndicator color={colors.yellow} style={{ marginLeft: 4 }} /> : null}
       </View>
 
-      {hint ? <Text style={{ color: colors.mutedForeground, ...typeScale.sm }}>{hint}</Text> : null}
-      {error ? <Text style={{ color: colors.destructive, ...typeScale.sm }}>{error}</Text> : null}
+      {hint ? (
+        <AppText style={{ color: colors.mutedForeground, ...typeScale.sm }}>{hint}</AppText>
+      ) : null}
+      {error ? (
+        <AppText style={{ color: colors.destructive, ...typeScale.sm }}>{error}</AppText>
+      ) : null}
 
       {(current.length > 0 || pending.length > 0) && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
@@ -236,9 +241,12 @@ export function AttachmentPicker({
                 </View>
               )}
               <View style={{ padding: 6, gap: 4 }}>
-                <Text numberOfLines={1} style={{ ...typeScale.xs, color: colors.mutedForeground }}>
+                <AppText
+                  numberOfLines={1}
+                  style={{ ...typeScale.xs, color: colors.mutedForeground }}
+                >
                   {p.name}
-                </Text>
+                </AppText>
                 <ActivityIndicator size="small" color={colors.yellow} />
               </View>
             </View>
@@ -280,15 +288,15 @@ export function AttachmentPicker({
                   </View>
                 )}
                 <View style={{ padding: 6, gap: 4 }}>
-                  <Text
+                  <AppText
                     numberOfLines={1}
                     style={{ ...typeScale.xs, color: colors.mutedForeground }}
                   >
                     {fileName(url)}
-                  </Text>
+                  </AppText>
                   {!disabled ? (
                     <Pressable onPress={() => removeAt(index)} hitSlop={8}>
-                      <Text
+                      <AppText
                         style={{
                           ...typeScale.sm,
                           color: colors.destructive,
@@ -296,7 +304,7 @@ export function AttachmentPicker({
                         }}
                       >
                         {t("client.request.attachments.remove")}
-                      </Text>
+                      </AppText>
                     </Pressable>
                   ) : null}
                 </View>

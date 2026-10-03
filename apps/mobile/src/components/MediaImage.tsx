@@ -4,7 +4,6 @@ import {
   Image,
   Modal,
   Pressable,
-  Text,
   View,
   type ImageStyle,
   type StyleProp,
@@ -15,6 +14,7 @@ import { isLikelyImageUrl, resolveMediaUrl } from "../lib/media";
 import { fonts } from "../theme/brand";
 import { colors } from "./ui";
 import { t } from "../i18n";
+import { AppText } from "./typography";
 
 type Props = {
   uri: string;
@@ -154,7 +154,9 @@ export function MediaImage({
               backgroundColor: colors.yellow,
             }}
           >
-            <Text style={{ color: "#2A0A55", fontFamily: fonts.semiBold }}>{t("common.back")}</Text>
+            <AppText style={{ color: "#2A0A55", fontFamily: fonts.semiBold }}>
+              {t("common.back")}
+            </AppText>
           </Pressable>
         </Pressable>
       </Modal>

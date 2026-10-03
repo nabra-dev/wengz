@@ -1,7 +1,8 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { BrandLogo } from "./BrandLogo";
-import { BRAND, fonts, typeScale } from "../theme/brand";
+import { BRAND, latinFonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
+import { AppText } from "./typography";
 
 /** Shared auth / marketing identity block — logo + brand name. */
 export function AuthBrand({
@@ -15,16 +16,17 @@ export function AuthBrand({
     <View style={{ alignItems: "center", marginBottom: 28 }}>
       <BrandLogo height={height} tone="yellow" />
       {showName ? (
-        <Text
+        <AppText
           style={{
             marginTop: 12,
             color: colors.foreground,
-            fontFamily: fonts.semiBold,
+            // Always Unbounded for the Latin wordmark, even in AR UI.
+            fontFamily: latinFonts.semiBold,
             ...typeScale.md,
           }}
         >
           {BRAND.name}
-        </Text>
+        </AppText>
       ) : null}
     </View>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import {
   cancelSubscription,
   getPaymentInfo,
@@ -21,6 +21,7 @@ import {
   PageHeader,
   ScrollScreen,
   colors,
+  AppText,
 } from "../../src/components/ui";
 import { fonts } from "../../src/theme/brand";
 
@@ -113,9 +114,11 @@ export default function PaymentScreen() {
       <ScrollScreen keyboard={false}>
         <PageHeader title={t("client.payment.title")} />
         <Card>
-          <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+          <AppText
+            style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+          >
             {t("client.payment.noPendingPayment.title")}
-          </Text>
+          </AppText>
           <Muted>{t("client.payment.noPendingPayment.description")}</Muted>
           <Button
             label={t("client.payment.noPendingPayment.viewSubscriptions")}
@@ -133,11 +136,11 @@ export default function PaymentScreen() {
       <ScrollScreen keyboard={false}>
         <PageHeader title={t("client.payment.statusTitle")} />
         <Card highlight>
-          <Text style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 8 }}>
+          <AppText style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 8 }}>
             {t(
               `client.payment.status.${status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending"}`
             )}
-          </Text>
+          </AppText>
           <Muted>
             {t(
               `client.payment.status.${status === "approved" ? "approvedDesc" : status === "rejected" ? "rejectedDesc" : "pendingDesc"}`
@@ -188,10 +191,10 @@ export default function PaymentScreen() {
               opacity: available ? 1 : 0.45,
             }}
           >
-            <Text style={{ color: colors.foreground, fontFamily: fonts.medium }}>
+            <AppText style={{ color: colors.foreground, fontFamily: fonts.medium }}>
               {t(`client.payment.methods.items.${m.id}.name`)}
               {m.comingSoon ? ` · ${t("client.payment.methods.comingSoon")}` : ""}
-            </Text>
+            </AppText>
             <Muted style={{ marginBottom: 0 }}>
               {t(`client.payment.methods.items.${m.id}.hint`)}
             </Muted>
@@ -207,17 +210,19 @@ export default function PaymentScreen() {
         </Muted>
         {method === "instapay" ? (
           <>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
+            <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
               {t("client.payment.bankDetails.instapayTitle")}
-            </Text>
+            </AppText>
             <Muted>{bank?.instapayLink || t("client.payment.methods.unavailable")}</Muted>
             <Muted>{t("client.payment.bankDetails.instapayNote")}</Muted>
           </>
         ) : (
           <>
-            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}
+            >
               {t("client.payment.bankDetails.title")}
-            </Text>
+            </AppText>
             <Muted>
               {t("client.payment.bankDetails.bankName")}: {bank?.bankName}
             </Muted>
@@ -250,9 +255,11 @@ export default function PaymentScreen() {
         </Card>
       ) : (
         <Card>
-          <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+          <AppText
+            style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+          >
             {t("client.payment.uploadProof.title")}
-          </Text>
+          </AppText>
           <Muted>{t("client.payment.uploadProof.description")}</Muted>
 
           <AttachmentPicker
