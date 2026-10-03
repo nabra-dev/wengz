@@ -212,14 +212,14 @@ export const userRouter = router({
       if (user?.role !== "PROVIDER") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only providers can update provider profiles",
+          message: "Only creators can update creator profiles",
         });
       }
 
       if (!user.providerProfile) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider profile not found",
+          message: "Creator profile not found",
         });
       }
 
@@ -235,7 +235,7 @@ export const userRouter = router({
 
       return {
         success: true,
-        message: "Provider profile updated successfully",
+        message: "Creator profile updated successfully",
         profile: updatedProfile,
       };
     }),

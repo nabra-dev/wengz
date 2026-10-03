@@ -15,10 +15,7 @@ const BodySchema = z.object({
   locale: z.enum(["en", "ar"]).optional().default("en"),
 });
 
-const KNOWLEDGE_FILES = [
-  "docs/WENGZ_KNOWLEDGE.md",
-  "docs/WENGZ_INTENT_PLAYBOOKS.md",
-] as const;
+const KNOWLEDGE_FILES = ["docs/WENGZ_KNOWLEDGE.md", "docs/WENGZ_INTENT_PLAYBOOKS.md"] as const;
 
 async function loadKnowledgeBase() {
   try {
@@ -84,7 +81,7 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
       : "For English, mirror the English playbook voice (direct, warm, marketing-casual).",
     "When a playbook applies: do NOT use the mandatory fixed opening line from the default format below. Still end with at least one markdown link to registration.",
     "Never output the literal placeholder [LINK]; replace it with a markdown link using an inviting label in the response language.",
-    `All registration links MUST use this exact locale prefix: /${locale}/auth/register — use markdown: [label](${registerUrl}) for the main CTA. Add [label](${providerUrl}) when the user is clearly asking about joining as a provider.`,
+    `All registration links MUST use this exact locale prefix: /${locale}/auth/register — use markdown: [label](${registerUrl}) for the main CTA. Add [label](${providerUrl}) when the user is clearly asking about joining as a creator (provider role).`,
     "If no playbook fits, use the default response format rules below.",
   ].join(" ");
 
@@ -98,7 +95,7 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
           "4) Never use refusal phrasing like 'لا أستطيع' or 'لا يمكنني المساعدة' for normal business/creative requests.",
           "5) If details are incomplete, ask the user to register/login and submit full request details so the team can serve accurately.",
           `3) End with a registration CTA line that includes a markdown link: [للتجربة والتسجيل](${registerUrl}).`,
-          `4) If the user asks about becoming a provider, also include a markdown link: [تسجيل المبدعين](${providerUrl}).`,
+          `4) If the user asks about becoming a creator/مبدع, also include a markdown link: [تسجيل المبدعين](${providerUrl}).`,
           "5) CTA tone should feel energetic and inviting (example: let's try me now).",
         ].join(" ")
       : [
@@ -109,7 +106,7 @@ function buildSystemPrompt(locale: "en" | "ar", knowledgeBase: string, origin: s
           "4) Never use refusal phrasing like 'I can't assist' for normal business/creative requests.",
           "5) If details are incomplete, ask the user to register/login and submit full request details so the team can serve accurately.",
           `3) End with a registration CTA line that includes a markdown link: [Let's register and try me](${registerUrl}).`,
-          `4) If the user asks about becoming a provider, also include a markdown link: [Provider registration](${providerUrl}).`,
+          `4) If the user asks about becoming a creator, also include a markdown link: [Creator registration](${providerUrl}).`,
           "5) CTA tone should feel energetic and inviting (example: let's try me now).",
         ].join(" ");
 
@@ -141,7 +138,7 @@ function ensureFormLinks(reply: string, origin: string, locale: "en" | "ar") {
   const registerUrl = registerPageUrl(origin, locale);
   const providerUrl = providerFormUrl(origin, locale);
   const registerText = locale === "ar" ? "للتجربة والتسجيل" : "Let's register and try me";
-  const providerText = locale === "ar" ? "تسجيل المبدعين" : "Provider registration";
+  const providerText = locale === "ar" ? "تسجيل المبدعين" : "Creator registration";
 
   const registerMd = `[${registerText}](${registerUrl})`;
   const providerMd = `[${providerText}](${providerUrl})`;

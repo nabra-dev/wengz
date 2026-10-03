@@ -40,7 +40,7 @@
       "SUPER_ADMIN": "Super Admin",
       "PROJECT_MANAGER": "Project Manager",
       "FINANCE_MANAGER": "Finance Manager",
-      "PROVIDER": "Provider",
+      "PROVIDER": "Creator",
       "CLIENT": "Client"
     },
     "priority": {
@@ -71,7 +71,7 @@
       "gallery": "Gallery",
       "videos": "Videos",
       "pricing": "Plans",
-      "providerForm": "Provider form"
+      "providerForm": "Creator form"
     },
     "notices": {
       "maintenance": "Maintenance mode is enabled. Login is temporarily unavailable.",
@@ -189,7 +189,7 @@
       "subheading": "You’re the human expertise behind the AI—share your portfolio and we’ll take a look.",
       "eyebrow": "For creators",
       "provider": {
-        "title": "I’m a provider",
+        "title": "I’m a creator",
         "description": "Tell us your craft and share your work—we’ll match you with the right requests.",
         "cta": "Join as a creator"
       },
@@ -217,7 +217,7 @@
       },
       "quality": {
         "title": "Human-backed quality",
-        "description": "Experienced providers pick the best AI and review the result before it reaches you."
+        "description": "Experienced creators pick the best AI and review the result before it reaches you."
       },
       "speed": {
         "title": "Practical turnaround",
@@ -279,7 +279,7 @@
       "primaryShort": "Try free",
       "startTrial": "Start your free trial",
       "asClient": "As a client",
-      "asProvider": "As a provider",
+      "asProvider": "As a creator",
       "viewPlans": "Explore plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
@@ -555,16 +555,16 @@
       "title": "Settings",
       "subtitle": "Configure platform-wide options",
       "finance": {
-        "title": "Provider settlement",
-        "description": "Global USD credit price, commission, and withdrawal rules for provider payouts (not package subscriptions).",
+        "title": "Creator settlement",
+        "description": "Global USD credit price, commission, and withdrawal rules for creator payouts (not package subscriptions).",
         "creditPriceUsd": "Credit price (USD)",
         "creditPriceUsdHint": "USD value of one credit when settling completed requests.",
         "commissionPercent": "Platform commission (%)",
-        "commissionPercentHint": "Percent taken from gross settlement before crediting the provider.",
+        "commissionPercentHint": "Percent taken from gross settlement before crediting the creator.",
         "minWithdrawalUsd": "Minimum withdrawal (USD)",
-        "minWithdrawalUsdHint": "Providers cannot request less than this amount.",
+        "minWithdrawalUsdHint": "Creators cannot request less than this amount.",
         "withdrawalFeeUsd": "Withdrawal fee (USD)",
-        "withdrawalFeeUsdHint": "Fixed fee subtracted from each provider withdrawal. Admin should pay out amount minus fee.",
+        "withdrawalFeeUsdHint": "Fixed fee subtracted from each creator withdrawal. Admin should pay out amount minus fee.",
         "save": "Save finance settings",
         "saving": "Saving...",
         "saved": "Finance settings saved"
@@ -616,7 +616,7 @@
         "totalRevenue": "Total Revenue",
         "averageRating": "Average Rating",
         "clients": "clients",
-        "providers": "providers",
+        "providers": "creators",
         "active": "active",
         "completed": "completed",
         "activeSubscriptions": "active subscriptions",
@@ -632,7 +632,7 @@
         "requestsByServiceDesc": "Service type popularity",
         "subscriptionsByPackage": "Subscriptions by Package",
         "subscriptionsByPackageDesc": "Active subscriptions distribution",
-        "topProviders": "Top Providers",
+        "topProviders": "Top Creators",
         "topProvidersDesc": "By completed requests",
         "recentSubscriptions": "Recent Subscriptions",
         "recentSubscriptionsDesc": "Latest subscription activity",
@@ -671,7 +671,7 @@
         "role": "Filter by Role",
         "allRoles": "All Roles",
         "client": "Clients",
-        "provider": "Providers",
+        "provider": "Creators",
         "projectManager": "Project Managers",
         "financeManager": "Finance Managers",
         "admin": "Super Admins",
@@ -684,7 +684,7 @@
       "tabs": {
         "allUsers": "All Users",
         "clients": "Clients",
-        "providers": "Providers"
+        "providers": "Creators"
       },
       "createUser": "Create User",
       "actions": {
@@ -716,7 +716,7 @@
         "edit": {
           "title": "Edit User",
           "description": "Update user information and role",
-          "roleHint": "Clients with requests cannot become providers. Providers with requests cannot become clients. Super admin is not editable."
+          "roleHint": "Clients with requests cannot become creators. Creators with requests cannot become clients. Super admin is not editable."
         },
         "fields": {
           "name": "Full Name",
@@ -727,7 +727,7 @@
           "hidePassword": "Hide password",
           "role": "User Role",
           "services": "Supported Services",
-          "selectServices": "Select the services this provider can handle"
+          "selectServices": "Select the services this creator can handle"
         },
         "buttons": {
           "creating": "Creating...",
@@ -804,7 +804,7 @@
       },
       "actions": {
         "view": "View Details",
-        "assignProvider": "Assign Provider",
+        "assignProvider": "Assign Creator",
         "delete": "Delete Request",
         "createRequest": "Create Request"
       },
@@ -812,22 +812,22 @@
         "delete": "Delete \"{title}\"? This action cannot be undone."
       },
       "assignDialog": {
-        "title": "Assign Provider",
-        "description": "Select a provider to assign to this request",
-        "search": "Search providers...",
+        "title": "Assign Creator",
+        "description": "Select a creator to assign to this request",
+        "search": "Search creators...",
         "rating": "Rating",
         "completed": "Completed",
         "active": "Active",
-        "noProviders": "No providers available for this service type",
+        "noProviders": "No creators available for this service type",
         "moreSkills": "more skills",
         "buttons": {
           "assigning": "Assigning...",
-          "assign": "Assign Provider",
+          "assign": "Assign Creator",
           "cancel": "Cancel"
         },
         "toast": {
-          "assigned": "Provider assigned successfully",
-          "error": "Failed to assign provider"
+          "assigned": "Creator assigned successfully",
+          "error": "Failed to assign creator"
         }
       },
       "new": {
@@ -843,10 +843,10 @@
           "clientCredits": "{count} credits available · {package}",
           "creditsAvailable": "{count} credits",
           "noSubscription": "No active subscription",
-          "provider": "Provider (optional)",
-          "providerPlaceholder": "Assign a provider now, or leave unassigned",
+          "provider": "Creator (optional)",
+          "providerPlaceholder": "Assign a creator now, or leave unassigned",
           "providerNone": "Leave unassigned",
-          "providerHint": "If assigned, the request stays pending until the provider starts work.",
+          "providerHint": "If assigned, the request stays pending until the creator starts work.",
           "activeJobs": "active jobs"
         },
         "noSubscription": {
@@ -876,9 +876,9 @@
         "notFoundDesc": "The request you're looking for doesn't exist or has been deleted.",
         "backToRequests": "Back to All Requests",
         "messagesTitle": "Messages",
-        "messagesDesc": "Communicate with the client and provider",
+        "messagesDesc": "Communicate with the client and creator",
         "messagesPlaceholder": "Type your message...",
-        "messagingAfterClaim": "Messaging is available after a provider claims or is assigned to this request."
+        "messagingAfterClaim": "Messaging is available after a creator claims or is assigned to this request."
       }
     },
     "profile": {
@@ -1007,7 +1007,7 @@
         "resetFreeRevisionsOnPaid": "Reset free revisions on paid",
         "resetFreeRevisionsOnPaidHint": "Reset free revision count after a paid revision",
         "maxDeliveryMinutes": "Max Delivery (minutes)",
-        "maxDeliveryMinutesHint": "Maximum estimated delivery time providers can set when starting work"
+        "maxDeliveryMinutesHint": "Maximum estimated delivery time creators can set when starting work"
       },
       "info": {
         "questions": "question",
@@ -1052,20 +1052,20 @@
       }
     },
     "finance": {
-      "title": "Provider Wallets",
-      "subtitle": "Track settlement value, platform commission, provider wallets, and manual payouts (USD)",
+      "title": "Creator Wallets",
+      "subtitle": "Track settlement value, platform commission, creator wallets, and manual payouts (USD)",
       "summary": {
-        "providerCredits": "Provider Credits",
-        "providerAmount": "Provider net",
-        "providerCreditsDesc": "Net amount credited to providers after commission",
+        "providerCredits": "Creator Credits",
+        "providerAmount": "Creator net",
+        "providerCreditsDesc": "Net amount credited to creators after commission",
         "walletBalance": "Wallet Balance",
-        "walletBalanceDesc": "Current available provider wallet balances",
+        "walletBalanceDesc": "Current available creator wallet balances",
         "held": "On hold",
         "heldDesc": "Approved earnings still in the 7-day release window",
         "settledRequests": "Settled Requests",
-        "settledRequestsDesc": "Completed requests credited to providers",
+        "settledRequestsDesc": "Completed requests credited to creators",
         "paidOut": "Paid Out",
-        "paidOutDesc": "Total amount already paid to providers",
+        "paidOutDesc": "Total amount already paid to creators",
         "creditDetail": "{credits} credits",
         "grossAmount": "Gross settlement",
         "grossAmountDesc": "Total request settlement value before commission",
@@ -1074,9 +1074,9 @@
         "settingsHint": "Current settings: {price} per credit · {percent}% commission"
       },
       "wallets": {
-        "title": "Provider Wallets",
-        "description": "All providers and their current credit wallet status",
-        "provider": "Provider",
+        "title": "Creator Wallets",
+        "description": "All creators and their current credit wallet status",
+        "provider": "Creator",
         "balance": "Balance",
         "paid": "Paid",
         "requests": "Requests",
@@ -1091,19 +1091,19 @@
       },
       "ledger": {
         "title": "Finance Ledger",
-        "description": "Request-level earnings credited to provider wallets",
+        "description": "Request-level earnings credited to creator wallets",
         "filteredBy": "Showing ledger entries for {provider}",
         "unsettled": "{count} completed request(s) without ledger",
         "settleNow": "Settle now",
         "settling": "Settling...",
         "settleSuccess": "Settled {settled} request(s). Skipped {skipped}.",
-        "provider": "Provider",
+        "provider": "Creator",
         "request": "Request",
         "service": "Service",
         "total": "Total",
         "creditPrice": "Credit Price",
-        "providerCredits": "Provider",
-        "providerAmount": "Provider USD",
+        "providerCredits": "Creator",
+        "providerAmount": "Creator USD",
         "status": "Status",
         "availableAt": "Available on",
         "settledAt": "Settled",
@@ -1123,9 +1123,9 @@
       },
       "withdrawals": {
         "title": "Withdrawal requests",
-        "description": "Review provider withdrawal requests. Approve after you send the money, or reject with a reason.",
+        "description": "Review creator withdrawal requests. Approve after you send the money, or reject with a reason.",
         "empty": "No withdrawal requests yet.",
-        "provider": "Provider",
+        "provider": "Creator",
         "amount": "Amount",
         "fee": "Fee",
         "net": "Net payout",
@@ -1133,7 +1133,7 @@
         "destination": "Destination",
         "status": "Status",
         "source": "Source",
-        "providerNote": "Provider note",
+        "providerNote": "Creator note",
         "adminReason": "Reason",
         "proof": "Proof",
         "viewProof": "View image",
@@ -1142,7 +1142,7 @@
         "review": "Review",
         "filterAll": "All",
         "filterPending": "Pending",
-        "sourceProvider": "Provider request",
+        "sourceProvider": "Creator request",
         "sourceAdmin": "Admin payout"
       },
       "review": {
@@ -1158,13 +1158,13 @@
       },
       "payout": {
         "title": "Send payout",
-        "description": "Record a manual transfer to this provider. Funds leave the available balance immediately.",
+        "description": "Record a manual transfer to this creator. Funds leave the available balance immediately.",
         "send": "Send payout",
         "amount": "Amount (USD)",
         "reason": "Reason / transfer reference",
         "reasonPlaceholder": "e.g. Bank transfer ref 45821",
-        "noDetails": "This provider has not added a bank account or e-wallet number.",
-        "noBalance": "This provider has no available balance.",
+        "noDetails": "This creator has not added a bank account or e-wallet number.",
+        "noBalance": "This creator has no available balance.",
         "submitting": "Saving...",
         "confirm": "Confirm payout"
       },
@@ -1185,11 +1185,11 @@
       },
       "disputes": {
         "title": "Finance disputes",
-        "description": "Issues opened by providers against ledger settlements or withdrawals.",
+        "description": "Issues opened by creators against ledger settlements or withdrawals.",
         "empty": "No disputes yet.",
-        "provider": "Provider",
+        "provider": "Creator",
         "target": "Transaction",
-        "reason": "Provider reason",
+        "reason": "Creator reason",
         "status": "Status",
         "adminNote": "Admin note",
         "requestedAt": "Opened",
@@ -1200,7 +1200,7 @@
         "ledgerTarget": "Ledger · {title} · {amount}",
         "withdrawalTarget": "Withdrawal · {amount}",
         "reviewTitle": "Review dispute",
-        "reviewDescription": "Mark under review, resolve, or reject with a note for the provider.",
+        "reviewDescription": "Mark under review, resolve, or reject with a note for the creator.",
         "note": "Admin note",
         "notePlaceholder": "Explain the outcome or next steps…",
         "markUnderReview": "Under review",
@@ -1558,10 +1558,10 @@
     },
     "sidebar": {
       "client": "Client",
-      "provider": "Provider",
+      "provider": "Creator",
       "brandProviderName": "Wengz",
       "brandClientName": "Client",
-      "waitingForProvider": "Waiting for provider",
+      "waitingForProvider": "Waiting for creator",
       "details": "Details",
       "serviceType": "Service Type",
       "created": "Created",
@@ -1608,10 +1608,10 @@
       "messageFailed": "Failed to send message",
       "requestCompleted": "This request has been completed. Comments are no longer available.",
       "systemMessages": {
-        "requestCreated": "Request created. Waiting for a provider to accept.",
+        "requestCreated": "Request created. Waiting for a creator to accept.",
         "requestAccepted": "Request accepted.",
         "requestAcceptedWithDelivery": "Request accepted. Estimated delivery: {deliveryDate}",
-        "providerStartedWork": "Provider has started working on this request. Estimated delivery: {deliveryTime}.",
+        "providerStartedWork": "Creator has started working on this request. Estimated delivery: {deliveryTime}.",
         "requestApprovedCompleted": "Request approved and completed.",
         "revisionRequestedFree": "Revision requested ({used}/{max} free revisions used).",
         "revisionRequestedPaid": "Paid revision requested ({cost} {creditUnit} used).{resetNote}",
@@ -1640,7 +1640,7 @@
       "needsManualApproval": "Needs manual approval",
       "unread": "New / unread",
       "client": "Client",
-      "provider": "Provider",
+      "provider": "Creator",
       "messages": "{count, plural, one {# message} other {# messages}}"
     },
     "empty": {
@@ -1698,7 +1698,7 @@
         "emailWarning": "Changing your email will affect your login credentials",
         "currentPhoto": "Current photo",
         "maxFileSize": "Max 5MB, JPG/PNG/GIF/WEBP",
-        "phone": "Add a phone number so providers can reach you"
+        "phone": "Add a phone number so creators can reach you"
       },
       "successMessage": "Profile updated successfully",
       "errorMessage": "Failed to update profile",
@@ -1971,7 +1971,7 @@
       },
       "rateService": {
         "title": "Rate This Service",
-        "description": "Share your experience with this provider",
+        "description": "Share your experience with this creator",
         "reviewPlaceholder": "Write a review (optional)...",
         "charactersCount": "{count} characters",
         "submit": "Submit Rating",
@@ -1985,26 +1985,26 @@
         "approved": "Request Approved!",
         "approvedDesc": "The deliverable has been approved. Great work!",
         "revisionRequested": "Revision Requested",
-        "revisionRequestedDesc": "The provider has been notified about your revision request.",
+        "revisionRequestedDesc": "The creator has been notified about your revision request.",
         "ratingSubmitted": "Rating Submitted",
         "ratingSubmittedDesc": "Thank you for your feedback!",
         "invalidFeedback": "Invalid Feedback",
         "invalidFeedbackDesc": "Please describe the changes needed."
       },
       "messagesTitle": "Messages",
-      "messagesDescription": "Communicate with your provider",
+      "messagesDescription": "Communicate with your creator",
       "messagesPlaceholder": "Type your message...",
       "messagingAfterClaim": "Messaging opens once a creator claims your request. You’ll see the full thread here."
     },
     "newRequest": {
       "title": "Create New Request",
-      "subtitle": "Describe what you need and we'll match you with a provider",
+      "subtitle": "Describe what you need and we'll match you with a creator",
       "requestDetails": "Request Details",
       "costInfo": "Base cost: {baseCost} {credit} + Priority cost ({priorityCost} {credit}) = {totalCost} {credit}. You have {available} credits available.",
       "costInfoWithAttributes": "Base cost: {baseCost} {credit} + Attributes ({attributeCost} {credit}) + Priority ({priorityCost} {credit}) = {totalCost} {credit}. You have {available} credits available.",
       "costInfoNoPriority": "Base cost: {baseCost} {credit}. You have {available} credits available.",
       "deliverables": {
-        "title": "Provider Deliverables",
+        "title": "Creator Deliverables",
         "badge": "Deliverable",
         "filesLabel": "{count, plural, one {1 file} other {# files}}"
       },
@@ -2202,7 +2202,7 @@
   "provider": {
     "dashboard": {
       "welcome": "Welcome back, {name}!",
-      "overview": "Here's your provider dashboard overview",
+      "overview": "Here's your creator dashboard overview",
       "stats": {
         "activeJobs": "Active Jobs",
         "inProgress": "In progress",
@@ -2211,7 +2211,7 @@
         "averageRating": "Average Rating",
         "reviews": "{count} reviews",
         "availableJobs": "Available Jobs",
-        "waitingForProvider": "Waiting for provider"
+        "waitingForProvider": "Waiting for creator"
       },
       "myActiveJobs": {
         "title": "My Active Jobs",
@@ -2389,14 +2389,14 @@
     },
     "profile": {
       "title": "Profile Settings",
-      "subtitle": "Manage your account and provider profile settings",
+      "subtitle": "Manage your account and creator profile settings",
       "tabs": {
         "profile": "Profile",
-        "provider": "Provider",
+        "provider": "Creator",
         "security": "Security"
       },
       "providerInfo": {
-        "title": "Provider Information",
+        "title": "Creator Information",
         "description": "Update your professional details visible to clients",
         "bio": "Professional Bio",
         "bioPlaceholder": "Tell clients about yourself and your experience...",
@@ -2410,7 +2410,7 @@
         "reset": "Reset",
         "saveChanges": "Save Changes",
         "saving": "Saving...",
-        "notAvailable": "Provider profile not available",
+        "notAvailable": "Creator profile not available",
         "sessionExpired": "Your session no longer matches an existing user. Please sign in again."
       }
     },
@@ -2589,7 +2589,7 @@
       }
     },
     "providerClaimed": {
-      "title": "Provider claimed your request",
+      "title": "Creator claimed your request",
       "message": "{providerName} claimed \"{requestTitle}\". They will start work and share an estimated delivery time next."
     },
     "approvalReminder": {
@@ -2599,7 +2599,7 @@
       "emailBody": {
         "heading": "Deliverable waiting for approval",
         "intro": "Your request <strong>{requestTitle}</strong> was delivered and is still waiting for your review.",
-        "message": "Please approve the work or request a revision so your provider can continue.",
+        "message": "Please approve the work or request a revision so your creator can continue.",
         "viewButton": "Review Request"
       }
     },
@@ -2655,9 +2655,9 @@
           "step1Title": "1. Choose a Package",
           "step1Desc": "Select a subscription package that fits your needs",
           "step2Title": "2. Create Your First Request",
-          "step2Desc": "Submit a service request and let our providers help you",
+          "step2Desc": "Submit a service request and let our creators help you",
           "step3Title": "3. Track Progress",
-          "step3Desc": "Monitor your requests and communicate with providers in real-time"
+          "step3Desc": "Monitor your requests and communicate with creators in real-time"
         },
         "provider": {
           "step1Title": "1. Complete Your Profile",
@@ -2735,7 +2735,7 @@
     },
     "requestAccepted": {
       "title": "Request Accepted",
-      "message": "Your request \"{requestTitle}\" has been accepted by a provider."
+      "message": "Your request \"{requestTitle}\" has been accepted by a creator."
     },
     "deliverableReady": {
       "title": "Deliverable Ready",

@@ -97,7 +97,7 @@ describe("getRoleChangeBlockReason", () => {
         clientRequestCount: 0,
         providerRequestCount: 1,
       })
-    ).toMatch(/providers with existing requests/i);
+    ).toMatch(/creators with existing requests/i);
   });
 
   it("allows staff role swaps without request conflicts", () => {

@@ -82,11 +82,11 @@ export function getRoleChangeBlockReason(params: {
   }
 
   if (currentRole === ROLES.CLIENT && newRole === ROLES.PROVIDER && clientRequestCount > 0) {
-    return "Clients with existing requests cannot be changed to providers";
+    return "Clients with existing requests cannot be changed to creators";
   }
 
   if (currentRole === ROLES.PROVIDER && newRole === ROLES.CLIENT && providerRequestCount > 0) {
-    return "Providers with existing requests cannot be changed to clients";
+    return "Creators with existing requests cannot be changed to clients";
   }
 
   return null;

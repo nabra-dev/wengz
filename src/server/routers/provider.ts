@@ -57,7 +57,7 @@ export const providerRouter = router({
       if (!profile) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider profile not found",
+          message: "Creator profile not found",
         });
       }
 
@@ -915,7 +915,7 @@ export const providerRouter = router({
       if (!profile) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider profile not found",
+          message: "Creator profile not found",
         });
       }
 
@@ -1014,7 +1014,7 @@ export const providerRouter = router({
 
       logActivityAsync({
         action: "wallet.dispute_open",
-        message: "Provider opened a finance dispute",
+        message: "Creator opened a finance dispute",
         actorId: userId,
         actorRole: "PROVIDER",
         entityType: "ProviderFinanceDispute",

@@ -186,7 +186,7 @@ const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
   if (freshUser.role !== "PROVIDER" && freshUser.role !== "SUPER_ADMIN") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You must be a provider to access this resource",
+      message: "You must be a creator to access this resource",
     });
   }
   return next({

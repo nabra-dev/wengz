@@ -160,7 +160,7 @@ export async function handleRevisionRequest(
       isFree: true,
       creditCost: 0,
       newRevisionCount: result.currentRevisionCount,
-      message: `Free revision requested (${result.currentRevisionCount}/${maxFreeRevisions} used). Provider will be notified.`,
+      message: `Free revision requested (${result.currentRevisionCount}/${maxFreeRevisions} used). Creator will be notified.`,
     };
   }
 
@@ -198,67 +198,69 @@ export async function handleRevisionRequest(
     }
   );
 
-  const paidResult = await db.$transaction(async (tx) => {
-    const deductResult = await deductCredits(
-      userId,
-      paidRevisionCost,
-      `Paid revision for request: ${request.title}`,
-      tx
-    );
-
-    if (!deductResult.success) {
-      return { ok: false as const, message: deductResult.message || "Failed to deduct credits." };
-    }
-
-    const newRevisionCount = resetFreeRevisionsOnPaid ? 0 : currentCount;
-    const cas = await tx.request.updateMany({
-      where: {
-        id: requestId,
-        deletedAt: null,
-        status: "DELIVERED",
-        currentRevisionCount: { gte: maxFreeRevisions },
-      },
-      data: {
-        currentRevisionCount: newRevisionCount,
-        totalRevisions: { increment: 1 },
-        status: "REVISION_REQUESTED",
-        isRevision: true,
-        revisionType: "paid",
-        creditCost: { increment: paidRevisionCost },
-        needsManualApproval: false,
-        approvalReminderSentAt: null,
-      },
-    });
-
-    if (cas.count === 0) {
-      // Throw to roll back the credit deduction
-      throw new Error("REVISION_STATUS_CHANGED");
-    }
-
-    await tx.requestComment.create({
-      data: {
-        requestId,
+  const paidResult = await db
+    .$transaction(async (tx) => {
+      const deductResult = await deductCredits(
         userId,
-        content: paidRevisionComment,
-        type: "SYSTEM",
-      },
-    });
+        paidRevisionCost,
+        `Paid revision for request: ${request.title}`,
+        tx
+      );
 
-    const updated = await tx.request.findUnique({ where: { id: requestId } });
-    return {
-      ok: true as const,
-      newBalance: deductResult.newBalance,
-      newRevisionCount: updated?.currentRevisionCount ?? newRevisionCount,
-    };
-  }).catch((err: unknown) => {
-    if (err instanceof Error && err.message === "REVISION_STATUS_CHANGED") {
+      if (!deductResult.success) {
+        return { ok: false as const, message: deductResult.message || "Failed to deduct credits." };
+      }
+
+      const newRevisionCount = resetFreeRevisionsOnPaid ? 0 : currentCount;
+      const cas = await tx.request.updateMany({
+        where: {
+          id: requestId,
+          deletedAt: null,
+          status: "DELIVERED",
+          currentRevisionCount: { gte: maxFreeRevisions },
+        },
+        data: {
+          currentRevisionCount: newRevisionCount,
+          totalRevisions: { increment: 1 },
+          status: "REVISION_REQUESTED",
+          isRevision: true,
+          revisionType: "paid",
+          creditCost: { increment: paidRevisionCost },
+          needsManualApproval: false,
+          approvalReminderSentAt: null,
+        },
+      });
+
+      if (cas.count === 0) {
+        // Throw to roll back the credit deduction
+        throw new Error("REVISION_STATUS_CHANGED");
+      }
+
+      await tx.requestComment.create({
+        data: {
+          requestId,
+          userId,
+          content: paidRevisionComment,
+          type: "SYSTEM",
+        },
+      });
+
+      const updated = await tx.request.findUnique({ where: { id: requestId } });
       return {
-        ok: false as const,
-        message: "Unable to request revision. The request may have changed — please refresh.",
+        ok: true as const,
+        newBalance: deductResult.newBalance,
+        newRevisionCount: updated?.currentRevisionCount ?? newRevisionCount,
       };
-    }
-    throw err;
-  });
+    })
+    .catch((err: unknown) => {
+      if (err instanceof Error && err.message === "REVISION_STATUS_CHANGED") {
+        return {
+          ok: false as const,
+          message: "Unable to request revision. The request may have changed — please refresh.",
+        };
+      }
+      throw err;
+    });
 
   if (!paidResult.ok) {
     return {

@@ -356,7 +356,7 @@ export const requestRouter = router({
       if (role !== "PROVIDER" && !canManageRequests(role)) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only providers can accept requests",
+          message: "Only creators can accept requests",
         });
       }
 
@@ -820,7 +820,7 @@ export const requestRouter = router({
       if (!request.providerId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Messaging is available after a provider claims this request",
+          message: "Messaging is available after a creator claims this request",
         });
       }
 
@@ -953,7 +953,7 @@ export const requestRouter = router({
       if (!request.providerId) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "No provider assigned to this request",
+          message: "No creator assigned to this request",
         });
       }
 

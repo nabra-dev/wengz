@@ -96,7 +96,7 @@ export async function settleCompletedRequest(tx: TransactionClient, requestId: s
   if (!request.providerId) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "Cannot settle provider finance without an assigned provider",
+      message: "Cannot settle creator finance without an assigned creator",
     });
   }
 
@@ -207,7 +207,7 @@ export async function releaseDueHeldEarnings(
       if (!wallet) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider wallet not found",
+          message: "Creator wallet not found",
         });
       }
 
@@ -382,7 +382,7 @@ async function loadWalletForUpdate(tx: TransactionClient, providerId: string) {
   if (!wallet) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "Provider wallet not found",
+      message: "Creator wallet not found",
     });
   }
 
@@ -411,7 +411,7 @@ export async function requestProviderWithdrawal(
   if (!profile) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "Provider profile not found",
+      message: "Creator profile not found",
     });
   }
 
@@ -594,7 +594,7 @@ export async function sendProviderPayout(
   if (!profile) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "Provider profile not found",
+      message: "Creator profile not found",
     });
   }
 

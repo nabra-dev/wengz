@@ -282,14 +282,14 @@ async function assertValidProvider(
   if (!provider) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "Provider not found, inactive, or not approved",
+      message: "Creator not found, inactive, or not approved",
     });
   }
 
   if (!provider.providerProfile?.isActive) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Provider profile is inactive",
+      message: "Creator profile is inactive",
     });
   }
 
@@ -299,7 +299,7 @@ async function assertValidProvider(
   if (!supportsService) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Provider does not support this service type",
+      message: "Creator does not support this service type",
     });
   }
 

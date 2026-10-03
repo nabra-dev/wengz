@@ -77,7 +77,7 @@ export function EditProviderProfileForm() {
       toast.success(result.message);
       refetch();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to update provider profile");
+      toast.error(error instanceof Error ? error.message : "Failed to update creator profile");
     }
   };
 

@@ -1278,7 +1278,7 @@ export const adminRouter = router({
 
       logActivityAsync({
         action: "wallet.payout",
-        message: `Admin payout ${withdrawal.amountUsd} USD to provider`,
+        message: `Admin payout ${withdrawal.amountUsd} USD to creator`,
         actorId: ctx.session.user.id,
         actorRole: ctx.session.user.role,
         entityType: "WithdrawalRequest",
@@ -2697,7 +2697,7 @@ export const adminRouter = router({
       if (provider?.role !== "PROVIDER") {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider not found",
+          message: "Creator not found",
         });
       }
 
@@ -2760,7 +2760,7 @@ export const adminRouter = router({
       if (!request.providerId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Request is not assigned to any provider",
+          message: "Request is not assigned to any creator",
         });
       }
 
@@ -2885,7 +2885,7 @@ export const adminRouter = router({
       if (!user || user.role !== "PROVIDER") {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider not found",
+          message: "Creator not found",
         });
       }
 
@@ -2927,7 +2927,7 @@ export const adminRouter = router({
       if (user?.role !== "PROVIDER") {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Provider not found",
+          message: "Creator not found",
         });
       }
 
