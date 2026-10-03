@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, FileText, Loader2, Sparkles, X } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,12 @@ import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { trpc } from "@/lib/trpc/client";
 import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import {
+  isAllowedProviderCvMime,
+  PROVIDER_CV_ACCEPT_ATTR,
+  PROVIDER_CV_MAX_BYTES,
+  PROVIDER_CV_MAX_MB,
+} from "@/lib/upload-limits";
 
 const fieldClass =
   "h-12 rounded-xl border-border/70 bg-background/70 shadow-sm transition-all placeholder:text-muted-foreground/60 focus-visible:border-[#690DD4]/50 focus-visible:ring-2 focus-visible:ring-[#690DD4]/25";
@@ -44,6 +50,9 @@ export function ContactFormPage() {
   const [selectedServices, setSelectedServices] = useState<Set<string>>(() => new Set());
   const [countryCode, setCountryCode] = useState("+20");
   const [phoneInput, setPhoneInput] = useState("");
+  const [cvFile, setCvFile] = useState<{ url: string; filename: string } | null>(null);
+  const [cvUploading, setCvUploading] = useState(false);
+  const cvInputRef = useRef<HTMLInputElement>(null);
   const submitLockRef = useRef(false);
 
   const { data: catalogServices, isLoading: servicesLoading } =
@@ -59,6 +68,44 @@ export function ContactFormPage() {
       else next.add(id);
       return next;
     });
+  }
+
+  async function uploadCv(file: File) {
+    if (!isAllowedProviderCvMime(file.type, file.name)) {
+      toast.error(t("forms.toast.errorTitle"), {
+        description: t("forms.provider.cvInvalidType"),
+      });
+      return;
+    }
+    if (file.size <= 0 || file.size > PROVIDER_CV_MAX_BYTES) {
+      toast.error(t("forms.toast.errorTitle"), {
+        description: t("forms.provider.cvTooLarge", { maxSize: PROVIDER_CV_MAX_MB }),
+      });
+      return;
+    }
+
+    setCvUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/upload/provider-cv", { method: "POST", body });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+        filename?: string;
+      };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || t("forms.provider.cvUploadFailed"));
+      }
+      setCvFile({ url: data.url, filename: data.filename || file.name });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("forms.provider.cvUploadFailed");
+      toast.error(t("forms.toast.errorTitle"), { description: msg });
+      setCvFile(null);
+    } finally {
+      setCvUploading(false);
+      if (cvInputRef.current) cvInputRef.current.value = "";
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -122,6 +169,13 @@ export function ContactFormPage() {
         return;
       }
 
+      if (!cvFile?.url) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description: t("forms.provider.cvRequired"),
+        });
+        return;
+      }
+
       const result = await registerProvider.mutateAsync({
         name,
         email,
@@ -130,6 +184,7 @@ export function ContactFormPage() {
         phone: `${countryCode} ${phoneInput}`,
         website,
         message,
+        cvUrl: cvFile.url,
         serviceIds,
       });
 
@@ -137,6 +192,7 @@ export function ContactFormPage() {
       setSelectedServices(new Set());
       setPhoneInput("");
       setCountryCode("+20");
+      setCvFile(null);
       toast.success(
         result.reapplied ? t("forms.toast.reapplyTitle") : t("forms.toast.pendingTitle"),
         {
@@ -157,7 +213,7 @@ export function ContactFormPage() {
     }
   }
 
-  const busy = loading || registerProvider.isPending;
+  const busy = loading || registerProvider.isPending || cvUploading;
   const services = (catalogServices as PublicService[] | undefined) ?? [];
 
   return (
@@ -342,6 +398,69 @@ export function ContactFormPage() {
                       disabled={busy}
                     />
                   </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="cv" className="text-sm font-medium">
+                      {t("forms.provider.cvLabel")}
+                      <span className="ms-1 text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t("forms.provider.cvHint", { maxSize: PROVIDER_CV_MAX_MB })}
+                    </p>
+                    <input
+                      ref={cvInputRef}
+                      id="cv"
+                      name="cv"
+                      type="file"
+                      accept={PROVIDER_CV_ACCEPT_ATTR}
+                      className="sr-only"
+                      disabled={busy || cvUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void uploadCv(file);
+                      }}
+                    />
+                    {cvFile ? (
+                      <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/70 px-3.5 py-3">
+                        <FileText className="h-5 w-5 shrink-0 text-[#690DD4]" />
+                        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                          {cvFile.filename}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          disabled={busy || cvUploading}
+                          onClick={() => setCvFile(null)}
+                          aria-label={t("forms.provider.cvRemove")}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-12 w-full justify-start rounded-xl border-dashed"
+                        disabled={busy || cvUploading}
+                        onClick={() => cvInputRef.current?.click()}
+                      >
+                        {cvUploading ? (
+                          <>
+                            <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                            {t("forms.provider.cvUploading")}
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="me-2 h-4 w-4" />
+                            {t("forms.provider.cvChoose")}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -421,7 +540,7 @@ export function ContactFormPage() {
                 <div className="border-t border-border/60 pt-5">
                   <Button
                     type="submit"
-                    disabled={busy || servicesLoading || services.length === 0}
+                    disabled={busy || servicesLoading || services.length === 0 || !cvFile}
                     size="lg"
                     className="h-12 w-full rounded-xl bg-[#690DD4] text-base font-semibold text-[#E0F840] shadow-[0_10px_32px_rgba(105,13,212,0.32)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.4)] sm:h-11"
                   >

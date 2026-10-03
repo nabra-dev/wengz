@@ -157,6 +157,10 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
   if (!userId) return false;
   if (isSuperAdmin(role)) return true;
   if (key.startsWith(`uploads/${userId}/`)) return true;
+  // Creator application CVs — project managers reviewing applications.
+  if (key.startsWith("uploads/applications/") && canManageRequests(role)) {
+    return true;
+  }
 
   const cached = getCachedAcl(userId, key);
   if (cached !== null) return cached;

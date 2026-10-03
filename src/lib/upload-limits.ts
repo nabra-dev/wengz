@@ -42,6 +42,18 @@ export const ALLOWED_UPLOAD_MIME_TYPES = new Set([
 
 export const UPLOAD_ACCEPT_ATTR = "image/*,.pdf,.zip,audio/*,video/*";
 
+/** Public creator-application CV uploads (PDF / Word). */
+export const PROVIDER_CV_MAX_MB = 10;
+export const PROVIDER_CV_MAX_BYTES = PROVIDER_CV_MAX_MB * 1024 * 1024;
+export const PROVIDER_CV_ACCEPT_ATTR =
+  ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+export const ALLOWED_PROVIDER_CV_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
 /** Strip `;codecs=…` / parameters — mobile MediaRecorder often sends these. */
 export function normalizeUploadMime(type: string): string {
   if (typeof type !== "string") return "";
@@ -110,7 +122,26 @@ export function contentTypeFromFilename(filenameOrKey: string, fallback?: string
       return "image/webp";
     case "pdf":
       return "application/pdf";
+    case "doc":
+      return "application/msword";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     default:
       return normalizedFallback || "application/octet-stream";
   }
+}
+
+export function resolveProviderCvMime(type: string, filename?: string): string {
+  const normalized = normalizeUploadMime(type);
+  if (normalized && ALLOWED_PROVIDER_CV_MIME_TYPES.has(normalized)) return normalized;
+  if (filename) {
+    const inferred = contentTypeFromFilename(filename);
+    if (ALLOWED_PROVIDER_CV_MIME_TYPES.has(inferred)) return inferred;
+  }
+  return normalized;
+}
+
+export function isAllowedProviderCvMime(type: string, filename?: string): boolean {
+  const resolved = resolveProviderCvMime(type, filename);
+  return Boolean(resolved) && ALLOWED_PROVIDER_CV_MIME_TYPES.has(resolved);
 }

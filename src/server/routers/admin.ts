@@ -1690,6 +1690,7 @@ export const adminRouter = router({
                 id: true,
                 bio: true,
                 portfolio: true,
+                cvUrl: true,
                 skillsTags: true,
                 supportedServices: {
                   select: { id: true, name: true, nameI18n: true },

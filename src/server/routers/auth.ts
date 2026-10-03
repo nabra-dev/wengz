@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 import { issuePasswordResetEmail } from "@/lib/issue-password-reset";
 import { finalizePasswordReset, findValidPasswordResetToken } from "@/lib/password-reset";
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
+import { isAllowedProviderCvUrl } from "@/lib/upload-url";
 import { sendEmail, getOpsNotifyEmailHtml } from "@/lib/notifications/email";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
@@ -236,6 +237,10 @@ export const authRouter = router({
           phone: requiredPhoneSchema,
           website: z.string().optional().default(""),
           message: z.string().optional().default(""),
+          cvUrl: z
+            .string()
+            .min(1, "CV is required")
+            .refine(isAllowedProviderCvUrl, "Upload a valid CV (PDF or Word)"),
           serviceIds: z.array(z.string().min(1)).min(1, "Select at least one service"),
         })
         .refine((data) => data.password === data.confirmPassword, {
@@ -341,6 +346,7 @@ export const authRouter = router({
                   update: {
                     bio,
                     portfolio: input.website.trim() || null,
+                    cvUrl: input.cvUrl,
                     skillsTags: [],
                     isActive: true,
                     supportedServices: {
@@ -352,6 +358,7 @@ export const authRouter = router({
                   create: {
                     bio,
                     portfolio: input.website.trim() || null,
+                    cvUrl: input.cvUrl,
                     skillsTags: [],
                     isActive: true,
                     supportedServices: {
@@ -379,6 +386,7 @@ export const authRouter = router({
             { label: "Email", value: user.email },
             { label: "Phone", value: input.phone },
             { label: "Website", value: input.website.trim() || "—" },
+            { label: "CV", value: input.cvUrl },
             { label: "Services", value: serviceLabels || "—" },
           ],
           messageBody: messageBody || "—",
@@ -431,6 +439,7 @@ export const authRouter = router({
             create: {
               bio,
               portfolio: input.website.trim() || null,
+              cvUrl: input.cvUrl,
               skillsTags: [],
               isActive: true,
               supportedServices: {
@@ -459,6 +468,7 @@ export const authRouter = router({
           { label: "Email", value: user.email },
           { label: "Phone", value: input.phone },
           { label: "Website", value: input.website.trim() || "—" },
+          { label: "CV", value: input.cvUrl },
           { label: "Services", value: serviceLabels || "—" },
         ],
         messageBody: messageBody || "—",

@@ -25,6 +25,13 @@ export function buildFinalObjectKey(userId: string, originalName: string): strin
   return `uploads/${userId}/${timestamp}-${sanitized}`;
 }
 
+/** Anonymous creator-application CV uploads (not tied to a user yet). */
+export function buildApplicationCvObjectKey(originalName: string): string {
+  const timestamp = Date.now();
+  const sanitized = sanitizeUploadFileName(originalName);
+  return `uploads/applications/${randomUUID()}/${timestamp}-${sanitized}`;
+}
+
 export function absoluteFromKey(key: string): string | null {
   const root = path.resolve(STORAGE_ROOT);
   const filePath = path.resolve(root, key);

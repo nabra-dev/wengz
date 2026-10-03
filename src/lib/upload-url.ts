@@ -37,3 +37,21 @@ export function assertAllowedUploadUrls(urls: string[] | undefined, userId: stri
     }
   }
 }
+
+/** Creator-application CVs uploaded via the public provider-cv endpoint. */
+export function isAllowedProviderCvUrl(url: string): boolean {
+  if (typeof url !== "string" || !url.trim()) return false;
+
+  const trimmed = url.trim();
+  let pathname = trimmed;
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      pathname = new URL(trimmed).pathname;
+    } catch {
+      return false;
+    }
+  }
+
+  if (pathname.includes("..") || pathname.includes("//")) return false;
+  return /^\/api\/files\/uploads\/applications\/[a-zA-Z0-9-]+\/[^/]+$/.test(pathname);
+}

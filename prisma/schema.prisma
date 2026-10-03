@@ -119,6 +119,8 @@ model ProviderProfile {
   userId            String        @unique
   bio               String?
   portfolio         String?
+  /// Application CV / resume file URL (`/api/files/uploads/applications/...`).
+  cvUrl             String?
   skillsTags        String[]      @default([])
   isActive          Boolean       @default(true)
   payoutMethod      PayoutMethod?

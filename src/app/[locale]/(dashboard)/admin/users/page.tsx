@@ -72,6 +72,7 @@ type UserData = {
     id: string;
     bio?: string | null;
     portfolio?: string | null;
+    cvUrl?: string | null;
     skillsTags?: string[];
     supportedServices: ServiceType[];
   } | null;
@@ -292,6 +293,18 @@ function UserListItem({
               {user.providerProfile?.portfolio && (
                 <p className="text-xs text-muted-foreground truncate max-w-md">
                   {t("table.portfolio")}: {user.providerProfile.portfolio}
+                </p>
+              )}
+              {user.providerProfile?.cvUrl && (
+                <p className="text-xs">
+                  <a
+                    href={user.providerProfile.cvUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[#690DD4] underline-offset-2 hover:underline"
+                  >
+                    {t("table.viewCv")}
+                  </a>
                 </p>
               )}
               {user.providerProfile?.bio && (
