@@ -16,6 +16,7 @@ import {
   notifyProviderFinanceDisputeReviewed,
   notifyProviderUnassigned,
   notifyRequestCancelled,
+  notifyRequestRestored,
   notifyAccountActivationChanged,
   sendWelcomeEmail,
   sendAccountApprovedEmail,
@@ -3137,12 +3138,14 @@ export const adminRouter = router({
         await assignFreeClientSubscription(ctx.db, user.id);
       }
 
+      // In-app welcome + a single approval email (avoid double inbox noise).
       sendWelcomeEmail({
         userId: user.id,
         userName: user.name || "User",
         userEmail: user.email,
         userRole: user.role,
         locale: ctx.locale,
+        email: false,
       }).catch(() => undefined);
 
       sendAccountApprovedEmail({
@@ -3311,6 +3314,24 @@ export const adminRouter = router({
           deletedAt: null,
         },
       });
+
+      const restoreRecipients: Array<{ userId: string; role: "PROVIDER" | "CLIENT" }> = [
+        { userId: request.clientId, role: "CLIENT" },
+      ];
+      if (request.providerId) {
+        restoreRecipients.push({ userId: request.providerId, role: "PROVIDER" });
+      }
+      await Promise.all(
+        restoreRecipients.map((recipient) =>
+          notifyRequestRestored({
+            userId: recipient.userId,
+            requestId: input.requestId,
+            requestTitle: request.title,
+            role: recipient.role,
+            locale: ctx.locale,
+          })
+        )
+      );
 
       logRequestActivity({
         action: "request.restore",

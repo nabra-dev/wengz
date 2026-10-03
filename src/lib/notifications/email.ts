@@ -791,6 +791,105 @@ export async function getAccountReactivatedEmailTemplate(params: {
   });
 }
 
+export async function getRequestCreatedByAdminEmailTemplate(
+  requestTitle: string,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.requestCreatedByAdmin.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.requestCreatedByAdmin.emailBody.heading",
+    introKey: "notifications.requestCreatedByAdmin.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.requestCreatedByAdmin.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/requests`,
+  });
+}
+
+export async function getRequestRestoredEmailTemplate(
+  requestTitle: string,
+  locale: string = "en",
+  role: "PROVIDER" | "CLIENT" = "PROVIDER"
+) {
+  const href =
+    role === "CLIENT" ? `${appBaseUrl()}/client/requests` : `${appBaseUrl()}/provider/requests`;
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.requestRestored.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.requestRestored.emailBody.heading",
+    introKey: "notifications.requestRestored.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.requestRestored.emailBody.viewButton",
+    href,
+    calloutVariant: "success",
+  });
+}
+
+export async function getAdminWithdrawalRequestedEmailTemplate(params: {
+  providerNameOrEmail: string;
+  amount: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.withdrawalRequested.emailSubject",
+    subjectParams: { amount: params.amount },
+    headingKey: "notifications.withdrawalRequested.emailBody.heading",
+    introKey: "notifications.withdrawalRequested.emailBody.intro",
+    introParams: {
+      providerNameOrEmail: params.providerNameOrEmail,
+      amount: params.amount,
+    },
+    buttonKey: "notifications.withdrawalRequested.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/finance`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getAdminFinanceDisputeOpenedEmailTemplate(params: {
+  providerNameOrEmail: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.financeDisputeOpened.emailSubject",
+    headingKey: "notifications.financeDisputeOpened.emailBody.heading",
+    introKey: "notifications.financeDisputeOpened.emailBody.intro",
+    introParams: { providerNameOrEmail: params.providerNameOrEmail },
+    buttonKey: "notifications.financeDisputeOpened.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/finance`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getAdminPaymentVerificationEmailTemplate(params: {
+  clientNameOrEmail: string;
+  amount: string;
+  currency: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.paymentVerification.emailSubject",
+    subjectParams: { amount: params.amount, currency: params.currency },
+    headingKey: "notifications.paymentVerification.emailBody.heading",
+    introKey: "notifications.paymentVerification.emailBody.intro",
+    introParams: {
+      clientNameOrEmail: params.clientNameOrEmail,
+      amount: params.amount,
+      currency: params.currency,
+    },
+    buttonKey: "notifications.paymentVerification.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/payments`,
+    calloutVariant: "warning",
+  });
+}
+
 /** Ops / internal notify — English layout, no user-facing i18n. */
 export async function getOpsNotifyEmailHtml(params: {
   title: string;

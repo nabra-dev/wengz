@@ -11,7 +11,6 @@ import {
   PROVIDER_AT_CAPACITY_MESSAGE,
 } from "@/lib/provider-workload";
 import {
-  createNotification,
   getLocalizedRequestStatusLabel,
   notifyClientRequestAccepted,
   notifyNewMessage,
@@ -570,29 +569,12 @@ export const requestRouter = router({
         },
       });
 
-      // Notify client
-      const statusNotificationKey =
-        input.status === "DELIVERED"
-          ? "notifications.deliverableReady"
-          : "notifications.requestStatusUpdate";
-      const statusTitle = await getTranslation(ctx.locale, `${statusNotificationKey}.title`);
-      const statusMessage = await getTranslation(ctx.locale, `${statusNotificationKey}.message`, {
-        requestTitle: request.title,
-      });
-
-      await createNotification({
+      await notifyStatusChange({
+        requestId: input.requestId,
         userId: request.clientId,
-        title: statusTitle,
-        message: statusMessage,
-        type: "status_change",
-        link: `/client/requests/${request.id}`,
-        sendEmail: false,
+        oldStatus: request.status,
+        newStatus: input.status,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: `${statusNotificationKey}.title`,
-          messageKey: `${statusNotificationKey}.message`,
-          messageParams: { requestTitle: request.title },
-        },
       });
 
       logRequestActivity({

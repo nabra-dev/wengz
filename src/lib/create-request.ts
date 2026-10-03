@@ -9,7 +9,7 @@ import {
 } from "@/lib/attribute-validation";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
-  createNotification,
+  notifyClientRequestCreatedByAdmin,
   notifyNewRequestAvailable,
   notifyProviderAssignment,
 } from "@/lib/notifications";
@@ -453,32 +453,18 @@ export async function createServiceRequest(
       requestId: request.id,
       providerId: provider.id,
       providerName: provider.name || provider.email,
+      locale,
     });
   } else {
     await notifyMatchingProviders(db, serviceTypeId, serviceType.name, title, request.id, locale);
   }
 
   if (createdByStaff) {
-    const notifTitle = await getTranslation(locale, "notifications.requestCreatedByAdmin.title");
-    const notifMessage = await getTranslation(
-      locale,
-      "notifications.requestCreatedByAdmin.message",
-      { requestTitle: title }
-    );
-    await createNotification({
-      userId: clientId,
-      title: notifTitle,
-      message: notifMessage,
-      type: "general",
-      link: `/client/requests/${request.id}`,
+    await notifyClientRequestCreatedByAdmin({
+      clientId,
       requestId: request.id,
-      sendEmail: false,
+      requestTitle: title,
       locale,
-      sseI18n: {
-        titleKey: "notifications.requestCreatedByAdmin.title",
-        messageKey: "notifications.requestCreatedByAdmin.message",
-        messageParams: { requestTitle: title },
-      },
     });
   }
 

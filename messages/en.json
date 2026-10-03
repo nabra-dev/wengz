@@ -2754,7 +2754,13 @@
     },
     "paymentVerification": {
       "title": "New Payment Verification Required",
-      "message": "{clientNameOrEmail} submitted a payment proof: {amount} {currency}."
+      "message": "{clientNameOrEmail} submitted a payment proof: {amount} {currency}.",
+      "emailSubject": "Payment proof to review: {amount} {currency}",
+      "emailBody": {
+        "heading": "Payment verification required",
+        "intro": "<strong>{clientNameOrEmail}</strong> submitted a payment proof for <strong>{amount} {currency}</strong>.",
+        "viewButton": "Review Payments"
+      }
     },
     "contactMessage": {
       "title": "New contact message",
@@ -2784,7 +2790,23 @@
     },
     "requestCreatedByAdmin": {
       "title": "New request created for you",
-      "message": "A request \"{requestTitle}\" was created on your behalf. Credits were deducted from your subscription."
+      "message": "A request \"{requestTitle}\" was created on your behalf. Credits were deducted from your subscription.",
+      "emailSubject": "New request created for you: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Request created for you",
+        "intro": "A request <strong>{requestTitle}</strong> was created on your behalf. Credits were deducted from your subscription.",
+        "viewButton": "View Request"
+      }
+    },
+    "requestRestored": {
+      "title": "Request restored",
+      "message": "The request \"{requestTitle}\" has been restored and is active again.",
+      "emailSubject": "Request restored: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Request restored",
+        "intro": "The request <strong>{requestTitle}</strong> has been restored and is active again.",
+        "viewButton": "View Request"
+      }
     },
     "requestAccepted": {
       "title": "Request Accepted",
@@ -2824,7 +2846,13 @@
     },
     "withdrawalRequested": {
       "title": "New withdrawal request",
-      "message": "{providerNameOrEmail} requested a withdrawal of {amount} USD."
+      "message": "{providerNameOrEmail} requested a withdrawal of {amount} USD.",
+      "emailSubject": "Withdrawal request: {amount} USD",
+      "emailBody": {
+        "heading": "New withdrawal request",
+        "intro": "<strong>{providerNameOrEmail}</strong> requested a withdrawal of <strong>{amount} USD</strong>.",
+        "viewButton": "Review Finance"
+      }
     },
     "withdrawalApproved": {
       "title": "Withdrawal paid",
@@ -2850,7 +2878,13 @@
     },
     "financeDisputeOpened": {
       "title": "New finance dispute",
-      "message": "{providerNameOrEmail} opened a dispute on a wallet transaction."
+      "message": "{providerNameOrEmail} opened a dispute on a wallet transaction.",
+      "emailSubject": "New finance dispute opened",
+      "emailBody": {
+        "heading": "New finance dispute",
+        "intro": "<strong>{providerNameOrEmail}</strong> opened a dispute on a wallet transaction.",
+        "viewButton": "Review Finance"
+      }
     },
     "financeDisputeReviewed": {
       "title": "Dispute update",

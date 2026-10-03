@@ -23,6 +23,11 @@ import {
   getEarningsHoldReleasedEmailTemplate,
   getAccountDeactivatedEmailTemplate,
   getAccountReactivatedEmailTemplate,
+  getRequestCreatedByAdminEmailTemplate,
+  getRequestRestoredEmailTemplate,
+  getAdminWithdrawalRequestedEmailTemplate,
+  getAdminFinanceDisputeOpenedEmailTemplate,
+  getAdminPaymentVerificationEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -206,8 +211,13 @@ export async function notifyAdminsNewPendingPayment(params: {
     currency,
   });
   const link = "/admin/payments";
+  const emailTemplate = await getAdminPaymentVerificationEmailTemplate({
+    clientNameOrEmail,
+    amount: formattedAmount,
+    currency,
+    locale,
+  });
 
-  // Notify each admin (DB + SSE). Email optional.
   await Promise.all(
     admins.map(async (admin) =>
       createNotification({
@@ -216,8 +226,8 @@ export async function notifyAdminsNewPendingPayment(params: {
         message,
         type: "general",
         link,
-        sendEmail: false,
         locale,
+        emailTemplate,
         sseI18n: {
           titleKey: "notifications.paymentVerification.title",
           messageKey: "notifications.paymentVerification.message",
@@ -252,6 +262,11 @@ export async function notifyAdminsNewWithdrawal(params: {
     providerNameOrEmail,
     amount: formattedAmount,
   });
+  const emailTemplate = await getAdminWithdrawalRequestedEmailTemplate({
+    providerNameOrEmail,
+    amount: formattedAmount,
+    locale,
+  });
 
   await Promise.all(
     admins.map(async (admin) =>
@@ -261,8 +276,8 @@ export async function notifyAdminsNewWithdrawal(params: {
         message,
         type: "general",
         link: "/admin/finance",
-        sendEmail: false,
         locale,
+        emailTemplate,
         sseI18n: {
           titleKey: "notifications.withdrawalRequested.title",
           messageKey: "notifications.withdrawalRequested.message",
@@ -333,6 +348,10 @@ export async function notifyAdminsFinanceDisputeOpened(params: {
   const message = await getTranslation(locale, "notifications.financeDisputeOpened.message", {
     providerNameOrEmail,
   });
+  const emailTemplate = await getAdminFinanceDisputeOpenedEmailTemplate({
+    providerNameOrEmail,
+    locale,
+  });
 
   await Promise.all(
     admins.map(async (admin) =>
@@ -342,8 +361,8 @@ export async function notifyAdminsFinanceDisputeOpened(params: {
         message,
         type: "general",
         link: "/admin/finance",
-        sendEmail: false,
         locale,
+        emailTemplate,
         sseI18n: {
           titleKey: "notifications.financeDisputeOpened.title",
           messageKey: "notifications.financeDisputeOpened.message",
@@ -831,6 +850,71 @@ export async function notifyProviderEarningsHoldReleased(params: {
   });
 }
 
+export async function notifyClientRequestCreatedByAdmin(params: {
+  clientId: string;
+  requestId: string;
+  requestTitle: string;
+  locale?: string;
+}) {
+  const { clientId, requestId, requestTitle, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.requestCreatedByAdmin.title");
+  const message = await getTranslation(locale, "notifications.requestCreatedByAdmin.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getRequestCreatedByAdminEmailTemplate(requestTitle, locale);
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "general",
+    link: `/client/requests/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.requestCreatedByAdmin.title",
+      messageKey: "notifications.requestCreatedByAdmin.message",
+      messageParams: { requestTitle },
+    },
+  });
+}
+
+export async function notifyRequestRestored(params: {
+  userId: string;
+  requestId: string;
+  requestTitle: string;
+  role: "PROVIDER" | "CLIENT";
+  locale?: string;
+}) {
+  const { userId, requestId, requestTitle, role, locale = "en" } = params;
+  const link =
+    role === "CLIENT" ? `/client/requests/${requestId}` : `/provider/requests/${requestId}`;
+
+  const title = await getTranslation(locale, "notifications.requestRestored.title");
+  const message = await getTranslation(locale, "notifications.requestRestored.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getRequestRestoredEmailTemplate(requestTitle, locale, role);
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "status_change",
+    link,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.requestRestored.title",
+      messageKey: "notifications.requestRestored.message",
+      messageParams: { requestTitle },
+    },
+  });
+}
+
 export async function notifyAccountActivationChanged(params: {
   userId: string;
   userName: string;
@@ -991,8 +1075,10 @@ export async function sendWelcomeEmail(params: {
   userEmail: string;
   userRole: string;
   locale?: string;
+  /** When false, only the in-app welcome is created (avoids duplicate approve emails). */
+  email?: boolean;
 }) {
-  const { userId, userName, userEmail, userRole, locale = "en" } = params;
+  const { userId, userName, userEmail, userRole, locale = "en", email = true } = params;
 
   const title = await getTranslation(locale, "notifications.welcome.title", { userName });
   const message = await getTranslation(locale, "notifications.welcome.message", { userName });
@@ -1001,11 +1087,13 @@ export async function sendWelcomeEmail(params: {
 
   try {
     // Don't block registration on SMTP; in-app welcome still lands immediately.
-    void sendEmail({
-      to: userEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-    });
+    if (email) {
+      void sendEmail({
+        to: userEmail,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html,
+      });
+    }
 
     await createNotification({
       userId,

@@ -2746,7 +2746,13 @@
     },
     "paymentVerification": {
       "title": "مطلوب التحقق من دفعة جديدة",
-      "message": "{clientNameOrEmail} قدم إثبات دفع: {amount} {currency}."
+      "message": "{clientNameOrEmail} قدم إثبات دفع: {amount} {currency}.",
+      "emailSubject": "إثبات دفع للمراجعة: {amount} {currency}",
+      "emailBody": {
+        "heading": "مطلوب التحقق من دفعة",
+        "intro": "قدّم <strong>{clientNameOrEmail}</strong> إثبات دفع بمبلغ <strong>{amount} {currency}</strong>.",
+        "viewButton": "مراجعة المدفوعات"
+      }
     },
     "contactMessage": {
       "title": "رسالة تواصل جديدة",
@@ -2776,7 +2782,23 @@
     },
     "requestCreatedByAdmin": {
       "title": "تم إنشاء طلب نيابةً عنك",
-      "message": "تم إنشاء الطلب \"{requestTitle}\" نيابةً عنك. تم خصم الكريدت من اشتراكك."
+      "message": "تم إنشاء الطلب \"{requestTitle}\" نيابةً عنك. تم خصم الكريدت من اشتراكك.",
+      "emailSubject": "تم إنشاء طلب نيابةً عنك: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تم إنشاء طلب نيابةً عنك",
+        "intro": "تم إنشاء الطلب <strong>{requestTitle}</strong> نيابةً عنك. تم خصم الكريدت من اشتراكك.",
+        "viewButton": "عرض الطلب"
+      }
+    },
+    "requestRestored": {
+      "title": "تمت استعادة الطلب",
+      "message": "تمت استعادة الطلب \"{requestTitle}\" وأصبح نشطاً مجدداً.",
+      "emailSubject": "تمت استعادة الطلب: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تمت استعادة الطلب",
+        "intro": "تمت استعادة الطلب <strong>{requestTitle}</strong> وأصبح نشطاً مجدداً.",
+        "viewButton": "عرض الطلب"
+      }
     },
     "requestAccepted": {
       "title": "تم قبول الطلب",
@@ -2816,7 +2838,13 @@
     },
     "withdrawalRequested": {
       "title": "طلب سحب جديد",
-      "message": "{providerNameOrEmail} طلب سحب {amount} دولار."
+      "message": "{providerNameOrEmail} طلب سحب {amount} دولار.",
+      "emailSubject": "طلب سحب: {amount} دولار",
+      "emailBody": {
+        "heading": "طلب سحب جديد",
+        "intro": "طلب <strong>{providerNameOrEmail}</strong> سحب مبلغ <strong>{amount} دولار</strong>.",
+        "viewButton": "مراجعة المالية"
+      }
     },
     "withdrawalApproved": {
       "title": "تم دفع السحب",
@@ -2842,7 +2870,13 @@
     },
     "financeDisputeOpened": {
       "title": "نزاع مالي جديد",
-      "message": "فتح {providerNameOrEmail} نزاعًا على معاملة في المحفظة."
+      "message": "فتح {providerNameOrEmail} نزاعًا على معاملة في المحفظة.",
+      "emailSubject": "تم فتح نزاع مالي جديد",
+      "emailBody": {
+        "heading": "نزاع مالي جديد",
+        "intro": "فتح <strong>{providerNameOrEmail}</strong> نزاعًا على معاملة في المحفظة.",
+        "viewButton": "مراجعة المالية"
+      }
     },
     "financeDisputeReviewed": {
       "title": "تحديث النزاع",
