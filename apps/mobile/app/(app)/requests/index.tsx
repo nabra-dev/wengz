@@ -18,6 +18,7 @@ import {
   AppText,
 } from "../../../src/components/ui";
 import { fonts, typeScale } from "../../../src/theme/brand";
+import { alignStart, forwardChevron, row } from "../../../src/rtl";
 
 export default function RequestsScreen() {
   const q = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(50) });
@@ -83,14 +84,15 @@ export default function RequestsScreen() {
             <Card onPress={() => router.push(`/(app)/requests/${item.id}`)}>
               <View
                 style={{
-                  flexDirection: "row",
+                  ...row(),
                   alignItems: "flex-start",
                   justifyContent: "space-between",
                   gap: 10,
                 }}
               >
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0, alignItems: alignStart() }}>
                   <AppText
+                    compact
                     style={{
                       color: colors.foreground,
                       fontFamily: fonts.medium,
@@ -102,14 +104,7 @@ export default function RequestsScreen() {
                     {String(item.title)}
                   </AppText>
                   {serviceName ? <Muted style={{ marginBottom: 8 }}>{serviceName}</Muted> : null}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      gap: 8,
-                      alignItems: "center",
-                    }}
-                  >
+                  <View style={{ ...row(), flexWrap: "wrap", gap: 8, alignItems: "center" }}>
                     <StatusBadge status={String(item.status)} />
                     {item.needsManualApproval ? (
                       <Muted style={{ marginBottom: 0 }}>
@@ -119,7 +114,7 @@ export default function RequestsScreen() {
                   </View>
                 </View>
                 <Ionicons
-                  name={i18n.locale === "ar" ? "chevron-back" : "chevron-forward"}
+                  name={forwardChevron()}
                   size={18}
                   color={colors.mutedForeground}
                   style={{ marginTop: 4 }}

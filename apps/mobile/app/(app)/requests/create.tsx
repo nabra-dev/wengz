@@ -116,7 +116,8 @@ export default function CreateRequestScreen() {
           localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
         return {
           value: s.id,
-          label: `${s.icon ? `${s.icon} ` : ""}${name} · ${s.creditCost ?? 1} ${t("client.newRequest.credits")}`,
+          icon: s.icon?.trim() || undefined,
+          label: `${name} · ${s.creditCost ?? 1} ${t("client.newRequest.credits")}`,
           subtitle:
             !allowed && pkgHint
               ? t("client.newRequest.supportedFromPackage", { name: pkgHint })

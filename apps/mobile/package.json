@@ -5,9 +5,11 @@
   "private": true,
   "scripts": {
     "start": "expo start --port 8083",
+    "start:clear": "expo start --clear --port 8083",
     "android": "expo start --android --port 8083",
     "ios": "expo start --ios --port 8083",
-    "web": "expo start --web",
+    "ios:sim": "expo start --ios --port 8083 --localhost",
+    "web": "expo start --web --port 8083",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "eas:build": "eas build --platform all",

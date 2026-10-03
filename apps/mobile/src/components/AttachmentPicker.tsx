@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { useState, type ComponentProps } from "react";
+import { ActivityIndicator, Pressable, View, type ViewStyle } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,10 @@ import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
 import { colors } from "./ui";
+import { row } from "../rtl";
+import { debugOutlineStyle } from "../debug/outline";
+import { useDebugOutlineFlags } from "../debug/outline-state";
+import { OverflowProbe } from "../debug/OverflowProbe";
 import { AppText } from "./typography";
 
 function isAudioUrl(url: string) {
@@ -46,6 +50,58 @@ function fileName(uri: string) {
   }
 }
 
+function ActionChip({
+  icon,
+  label,
+  onPress,
+  disabled,
+  style,
+}: {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+  disabled: boolean;
+  style?: ViewStyle;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[
+        {
+          flex: 1,
+          minWidth: 0,
+          ...row(),
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 10,
+          paddingVertical: 10,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.card,
+          opacity: disabled ? 0.5 : 1,
+        },
+        style,
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={colors.foreground} style={{ marginEnd: 6 }} />
+      <AppText
+        align="center"
+        numberOfLines={1}
+        style={{
+          flexShrink: 1,
+          color: colors.foreground,
+          fontFamily: fonts.medium,
+          ...typeScale.sm,
+        }}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
 export function AttachmentPicker({
   value,
   urls,
@@ -63,6 +119,7 @@ export function AttachmentPicker({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending[]>([]);
+  const { outlines } = useDebugOutlineFlags();
 
   const remaining = Math.max(0, limit - current.length - pending.length);
   const blocked = disabled || busy || remaining <= 0;
@@ -157,141 +214,78 @@ export function AttachmentPicker({
   }
 
   return (
-    <View style={{ gap: 10 }}>
-      {label ? (
-        <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
-          {label}
-        </AppText>
-      ) : null}
-
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        <Pressable
-          onPress={() => void pickImages()}
-          disabled={blocked}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card,
-            opacity: blocked ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="image-outline" size={18} color={colors.foreground} />
-          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
-            {t("client.request.attachments.addImages")}
+    <OverflowProbe name="AttachmentPicker" style={{ alignSelf: "stretch" }}>
+      <View
+        style={[
+          { gap: 10, alignSelf: "stretch" },
+          debugOutlineStyle(outlines, "rgba(0,255,160,0.9)"),
+        ]}
+      >
+        {label ? (
+          <AppText
+            style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}
+          >
+            {label}
           </AppText>
-        </Pressable>
-        <Pressable
-          onPress={() => void pickFiles()}
-          disabled={blocked}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.card,
-            opacity: blocked ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="document-attach-outline" size={18} color={colors.foreground} />
-          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
-            {t("client.request.attachments.addFiles")}
-          </AppText>
-        </Pressable>
-        {busy ? <ActivityIndicator color={colors.yellow} style={{ marginStart: 4 }} /> : null}
-      </View>
+        ) : null}
 
-      {hint ? (
-        <AppText style={{ color: colors.mutedForeground, ...typeScale.sm }}>{hint}</AppText>
-      ) : null}
-      {error ? (
-        <AppText style={{ color: colors.destructive, ...typeScale.sm }}>{error}</AppText>
-      ) : null}
+        {/*
+          Do not combine width:'100%' + gap + flex:1 children — Yoga overflows the parent.
+          Use margin between chips instead.
+        */}
+        <View style={{ ...row(), alignItems: "stretch", alignSelf: "stretch" }}>
+          <ActionChip
+            icon="image-outline"
+            label={t("client.request.attachments.addImages")}
+            onPress={() => void pickImages()}
+            disabled={blocked}
+            style={{ marginEnd: 8 }}
+          />
+          <ActionChip
+            icon="document-attach-outline"
+            label={t("client.request.attachments.addFiles")}
+            onPress={() => void pickFiles()}
+            disabled={blocked}
+          />
+          {busy ? <ActivityIndicator color={colors.yellow} style={{ marginStart: 8 }} /> : null}
+        </View>
 
-      {(current.length > 0 || pending.length > 0) && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {pending.map((p) => (
-            <View
-              key={p.id}
-              style={{
-                width: 96,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.muted,
-                overflow: "hidden",
-                opacity: 0.85,
-              }}
-            >
-              {p.isImage ? (
-                <MediaImage
-                  uri={p.localUri}
-                  previewUri={p.localUri}
-                  style={{ width: 96, height: 96 }}
-                />
-              ) : (
-                <View
-                  style={{ width: 96, height: 96, alignItems: "center", justifyContent: "center" }}
-                >
-                  <Ionicons name="document-outline" size={28} color={colors.mutedForeground} />
-                </View>
-              )}
-              <View style={{ padding: 6, gap: 4 }}>
-                <AppText
-                  numberOfLines={1}
-                  style={{ ...typeScale.xs, color: colors.mutedForeground }}
-                >
-                  {p.name}
-                </AppText>
-                <ActivityIndicator size="small" color={colors.yellow} />
-              </View>
-            </View>
-          ))}
+        {hint ? (
+          <AppText style={{ color: colors.mutedForeground, ...typeScale.sm }}>{hint}</AppText>
+        ) : null}
+        {error ? (
+          <AppText style={{ color: colors.destructive, ...typeScale.sm }}>{error}</AppText>
+        ) : null}
 
-          {current.map((url, index) => {
-            const preview = localPreviews[url];
-            const image = Boolean(preview) || isLikelyImageUrl(url);
-            const audio = isAudioUrl(url);
-
-            if (audio) {
-              return (
-                <View key={`${url}-${index}`} style={{ width: "100%" }}>
-                  <VoiceNotePreview
-                    url={url}
-                    variant="card"
-                    disabled={disabled}
-                    onRemove={disabled ? undefined : () => removeAt(index)}
-                  />
-                </View>
-              );
-            }
-
-            return (
+        {(current.length > 0 || pending.length > 0) && (
+          <View
+            style={{
+              ...row(),
+              flexWrap: "wrap",
+              alignSelf: "stretch",
+              justifyContent: "flex-start",
+              // gap avoided — Yoga overflows stretch parents that also use gap
+            }}
+          >
+            {pending.map((p) => (
               <View
-                key={`${url}-${index}`}
+                key={p.id}
                 style={{
                   width: 96,
+                  marginBottom: 10,
+                  marginEnd: 10,
                   borderRadius: 10,
                   borderWidth: 1,
                   borderColor: colors.border,
-                  backgroundColor: colors.card,
+                  backgroundColor: colors.muted,
                   overflow: "hidden",
+                  opacity: 0.85,
                 }}
               >
-                {image ? (
+                {p.isImage ? (
                   <MediaImage
-                    uri={url}
-                    previewUri={preview}
-                    zoomable
+                    uri={p.localUri}
+                    previewUri={p.localUri}
                     style={{ width: 96, height: 96 }}
                   />
                 ) : (
@@ -301,7 +295,6 @@ export function AttachmentPicker({
                       height: 96,
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: colors.muted,
                     }}
                   >
                     <Ionicons name="document-outline" size={28} color={colors.mutedForeground} />
@@ -309,30 +302,98 @@ export function AttachmentPicker({
                 )}
                 <View style={{ padding: 6, gap: 4 }}>
                   <AppText
+                    compact
                     numberOfLines={1}
                     style={{ ...typeScale.xs, color: colors.mutedForeground }}
                   >
-                    {fileName(url)}
+                    {p.name}
                   </AppText>
-                  {!disabled ? (
-                    <Pressable onPress={() => removeAt(index)} hitSlop={8}>
-                      <AppText
-                        style={{
-                          ...typeScale.sm,
-                          color: colors.destructive,
-                          fontFamily: fonts.medium,
-                        }}
-                      >
-                        {t("client.request.attachments.remove")}
-                      </AppText>
-                    </Pressable>
-                  ) : null}
+                  <ActivityIndicator size="small" color={colors.yellow} />
                 </View>
               </View>
-            );
-          })}
-        </View>
-      )}
-    </View>
+            ))}
+
+            {current.map((url, index) => {
+              const preview = localPreviews[url];
+              const image = Boolean(preview) || isLikelyImageUrl(url);
+              const audio = isAudioUrl(url);
+
+              if (audio) {
+                return (
+                  <View key={`${url}-${index}`} style={{ width: "100%", marginBottom: 10 }}>
+                    <VoiceNotePreview
+                      url={url}
+                      variant="card"
+                      disabled={disabled}
+                      onRemove={disabled ? undefined : () => removeAt(index)}
+                    />
+                  </View>
+                );
+              }
+
+              return (
+                <View
+                  key={`${url}-${index}`}
+                  style={{
+                    width: 96,
+                    marginBottom: 10,
+                    marginEnd: 10,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                    overflow: "hidden",
+                  }}
+                >
+                  {image ? (
+                    <MediaImage
+                      uri={url}
+                      previewUri={preview}
+                      zoomable
+                      style={{ width: 96, height: 96 }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 96,
+                        height: 96,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: colors.muted,
+                      }}
+                    >
+                      <Ionicons name="document-outline" size={28} color={colors.mutedForeground} />
+                    </View>
+                  )}
+                  <View style={{ padding: 6, gap: 4 }}>
+                    <AppText
+                      compact
+                      numberOfLines={1}
+                      style={{ ...typeScale.xs, color: colors.mutedForeground }}
+                    >
+                      {fileName(url)}
+                    </AppText>
+                    {!disabled ? (
+                      <Pressable onPress={() => removeAt(index)} hitSlop={8}>
+                        <AppText
+                          compact
+                          style={{
+                            ...typeScale.sm,
+                            color: colors.destructive,
+                            fontFamily: fonts.medium,
+                          }}
+                        >
+                          {t("client.request.attachments.remove")}
+                        </AppText>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    </OverflowProbe>
   );
 }

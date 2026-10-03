@@ -1,13 +1,16 @@
 import { Platform } from "react-native";
 import { BRAND, fonts, typeScale } from "./brand";
-import { isRtlLocale } from "../components/typography";
+import { manualMirror } from "../rtl";
 
 const c = BRAND.colors;
 
-/** Horizontal push — iOS default; Android uses iOS-like slide and respects RTL. */
+/**
+ * Horizontal push — iOS default and native RTL mirror the slide themselves,
+ * so only manual-mirror mode has to flip it.
+ */
 export function stackPushAnimation() {
   if (Platform.OS === "ios") return "default" as const;
-  return isRtlLocale() ? ("ios_from_left" as const) : ("ios_from_right" as const);
+  return manualMirror() ? ("ios_from_left" as const) : ("ios_from_right" as const);
 }
 
 /** Shared stack options — header chrome comes from `AppNavHeader`. */

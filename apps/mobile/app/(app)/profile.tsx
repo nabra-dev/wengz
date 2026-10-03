@@ -18,6 +18,8 @@ import {
   SegmentedTabs,
 } from "../../src/components/ui";
 import { SelectDropdown } from "../../src/components/SelectDropdown";
+import { row } from "../../src/rtl";
+import { useDebugUi } from "../../src/debug/DebugProvider";
 
 type Tab = "profile" | "security";
 
@@ -157,7 +159,8 @@ export default function ProfileScreen() {
           />
           <Label>{t("profile.editProfile.labels.phone")}</Label>
           <View
-            style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 12 }}
+            // Dial code sits on the start edge; `row()` mirrors it in Arabic.
+            style={{ ...row(), alignItems: "flex-start", marginBottom: 12 }}
           >
             <SelectDropdown
               compact
@@ -165,7 +168,7 @@ export default function ProfileScreen() {
               options={COUNTRY_OPTIONS}
               onChange={setCountryCode}
             />
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0, marginStart: 8 }}>
               <Field
                 keyboardType="phone-pad"
                 value={phone}
@@ -257,6 +260,37 @@ export default function ProfileScreen() {
 
       <Button label={t("common.language")} onPress={() => void toggleLocale()} variant="ghost" />
       <Button label={t("common.logout")} onPress={() => void signOut()} variant="danger" />
+
+      {__DEV__ ? <DevDebugCard /> : null}
     </ScrollScreen>
+  );
+}
+
+function DevDebugCard() {
+  const { flags, toggleFlag, dumpDiagnostics } = useDebugUi();
+  return (
+    <Card>
+      <Muted style={{ marginBottom: 8 }}>DEV — mobile debug</Muted>
+      <Button
+        label={`${flags.hud ? "Hide" : "Show"} debug HUD`}
+        onPress={() => toggleFlag("hud")}
+        variant="ghost"
+      />
+      <Button
+        label={`${flags.outlines ? "Disable" : "Enable"} layout outlines`}
+        onPress={() => toggleFlag("outlines")}
+        variant="ghost"
+      />
+      <Button
+        label={`${flags.overflowWarn ? "Disable" : "Enable"} overflow logs`}
+        onPress={() => toggleFlag("overflowWarn")}
+        variant="ghost"
+      />
+      <Button
+        label="Dump diagnostics → Metro"
+        onPress={() => dumpDiagnostics()}
+        variant="secondary"
+      />
+    </Card>
   );
 }

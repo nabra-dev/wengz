@@ -18,6 +18,7 @@ import {
   AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
+import { alignStart, row } from "../../src/rtl";
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -80,7 +81,14 @@ export default function HomeScreen() {
         </Card>
       ) : null}
 
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+      <View
+        style={{
+          ...row(),
+          flexWrap: "wrap",
+          gap: 12,
+          marginBottom: 8,
+        }}
+      >
         <StatCard
           label={t("client.dashboard.stats.creditsAvailable")}
           value={credits}
@@ -120,17 +128,30 @@ export default function HomeScreen() {
         <>
           {(requests.data?.requests ?? []).map((r) => (
             <Card key={String(r.id)} onPress={() => router.push(`/(app)/requests/${r.id}`)}>
-              <AppText
+              <View
                 style={{
-                  color: colors.foreground,
-                  fontFamily: fonts.medium,
-                  ...typeScale.md,
-                  marginBottom: 8,
+                  ...row(),
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  width: "100%",
                 }}
               >
-                {String(r.title)}
-              </AppText>
-              <StatusBadge status={String(r.status)} />
+                <View style={{ flex: 1, minWidth: 0, alignItems: alignStart() }}>
+                  <AppText
+                    compact
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: fonts.medium,
+                      ...typeScale.md,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {String(r.title)}
+                  </AppText>
+                </View>
+                <StatusBadge status={String(r.status)} />
+              </View>
             </Card>
           ))}
           <Button

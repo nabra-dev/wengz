@@ -4,106 +4,70 @@ import {
   type StyleProp,
   type TextProps,
   type TextInputProps,
-  type TextStyle,
   type ViewStyle,
 } from "react-native";
 import { i18n } from "../i18n";
 import { fonts } from "../theme/brand";
+import { isRtl, manualMirror, startTextAlign } from "../rtl";
 
 export function isRtlLocale(): boolean {
-  return i18n.locale === "ar";
+  return isRtl() || i18n.locale === "ar";
 }
 
+/** @deprecated Mirroring is owned by `src/rtl`; never set the `direction` style. */
 export function localeDirection(): "rtl" | "ltr" {
   return isRtlLocale() ? "rtl" : "ltr";
 }
 
-/** Apply on containers that should mirror with Arabic (inherits to children). */
-export function rtlContainerStyle(extra?: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
-  return [{ direction: localeDirection() }, extra];
-}
-
-/** Start-aligned text — physical right in AR, left in EN. */
+/** @deprecated Use `startTextAlign()` from `src/rtl`. */
 export function rtlTextAlign(): "left" | "right" {
-  return isRtlLocale() ? "right" : "left";
+  return manualMirror() ? "right" : "left";
 }
 
-export function rtlWritingDirection(): "rtl" | "ltr" {
-  return isRtlLocale() ? "rtl" : "ltr";
+export function rtlContainerStyle(extra?: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  return extra;
 }
 
-/** Base text style every string should inherit in AR. */
-export function rtlTextBase(extra?: StyleProp<TextStyle>): StyleProp<TextStyle> {
-  return [
-    {
-      fontFamily: fonts.regular,
-      textAlign: rtlTextAlign(),
-      writingDirection: rtlWritingDirection(),
-    },
-    extra,
-  ];
-}
-
-type WebTextExtras = {
-  dir?: "rtl" | "ltr";
-  lang?: string;
-};
+type WebTextExtras = { dir?: "auto"; lang?: string };
 
 type AppTextProps = TextProps & {
-  /** Override alignment; default is start (right in AR). Use "center" for tabs/buttons. */
+  /** Default `start` follows the reading direction. */
   align?: "start" | "center" | "left" | "right";
+  /** @deprecated No longer needed — text never wraps itself in a View. */
+  compact?: boolean;
 };
 
 /**
- * App-wide Text. Forces `dir` (never browser `auto`) so Arabic UI stays RTL
- * even when the string is Latin/numeric.
+ * App-wide Text.
+ *
+ * Under native RTL we leave `textAlign` unset so iOS uses natural alignment
+ * (right for Arabic). Only manual-mirror mode sets a physical value. No
+ * wrapper views, so flex rows keep working.
  */
-export function AppText({ style, align = "start", ...rest }: AppTextProps) {
-  const rtl = isRtlLocale();
-  const textAlign =
-    align === "center" ? "center" : align === "left" || align === "right" ? align : rtlTextAlign();
+export function AppText({ style, align = "start", compact: _compact, ...rest }: AppTextProps) {
+  const webProps: WebTextExtras = { dir: "auto", lang: isRtlLocale() ? "ar" : "en" };
 
-  const webProps: WebTextExtras = {
-    dir: rtl ? "rtl" : "ltr",
-    lang: i18n.locale === "ar" ? "ar" : "en",
-  };
+  const textAlign = align === "center" ? "center" : align === "start" ? startTextAlign() : align;
 
   return (
     <RNText
       {...rest}
       {...webProps}
-      style={[
-        {
-          fontFamily: fonts.regular,
-          textAlign,
-          writingDirection: rtlWritingDirection(),
-        },
-        style,
-      ]}
+      style={[{ fontFamily: fonts.regular }, style, textAlign ? { textAlign } : null]}
     />
   );
 }
 
-/** App-wide TextInput with the same RTL rules. */
+/** App-wide TextInput with the same alignment rules. */
 export function AppTextInput({ style, ...rest }: TextInputProps) {
-  const rtl = isRtlLocale();
-  const webProps: WebTextExtras = {
-    dir: rtl ? "rtl" : "ltr",
-    lang: i18n.locale === "ar" ? "ar" : "en",
-  };
+  const webProps: WebTextExtras = { dir: "auto", lang: isRtlLocale() ? "ar" : "en" };
+  const textAlign = startTextAlign();
 
   return (
     <RNTextInput
       {...rest}
       {...webProps}
-      style={[
-        {
-          fontFamily: fonts.regular,
-          textAlign: rtlTextAlign(),
-          writingDirection: rtlWritingDirection(),
-        },
-        style,
-      ]}
+      style={[{ fontFamily: fonts.regular }, style, textAlign ? { textAlign } : null]}
     />
   );
 }

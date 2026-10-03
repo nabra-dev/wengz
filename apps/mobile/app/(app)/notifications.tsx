@@ -20,6 +20,7 @@ import {
   AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
+import { row } from "../../src/rtl";
 
 export default function NotificationsScreen() {
   const qc = useQueryClient();
@@ -97,10 +98,18 @@ export default function NotificationsScreen() {
               if (match?.[1]) router.push(`/(app)/requests/${match[1]}`);
             }}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+            <View
+              style={{
+                ...row(),
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
               <AppText
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   color: colors.foreground,
                   fontFamily: item.isRead ? fonts.regular : fonts.semiBold,
                   ...typeScale.md,
@@ -110,7 +119,12 @@ export default function NotificationsScreen() {
               </AppText>
               {!item.isRead ? (
                 <AppText
-                  style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.xs }}
+                  style={{
+                    color: colors.yellow,
+                    fontFamily: fonts.medium,
+                    ...typeScale.xs,
+                    flexShrink: 0,
+                  }}
                 >
                   {t("client.notifications.new")}
                 </AppText>

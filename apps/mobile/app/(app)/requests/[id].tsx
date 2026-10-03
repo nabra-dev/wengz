@@ -14,6 +14,7 @@ import { t, i18n } from "../../../src/i18n";
 import { MediaImage } from "../../../src/components/MediaImage";
 import { RequestChat, type ChatComment } from "../../../src/components/RequestChat";
 import { VoiceNotePreview } from "../../../src/components/VoiceNotePreview";
+import { physicalRow } from "../../../src/rtl";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
 import {
   Button,
@@ -99,8 +100,10 @@ function FileChip({ url }: { url: string }) {
     >
       <Ionicons name="document-outline" size={24} color={colors.mutedForeground} />
       <AppText
+        compact
+        align="center"
         numberOfLines={2}
-        style={{ ...typeScale.xs, color: colors.mutedForeground, textAlign: "center" }}
+        style={{ ...typeScale.xs, color: colors.mutedForeground }}
       >
         {fileNameFromUrl(url)}
       </AppText>
@@ -440,13 +443,8 @@ export default function RequestDetailScreen() {
             </AppText>
             <Muted>{t("client.requestDetail.rateService.description")}</Muted>
             <View
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                marginBottom: 10,
-                // Keep 1→5 left-to-right even in Arabic.
-                direction: "ltr",
-              }}
+              // Keep 1→5 left-to-right even in Arabic.
+              style={{ ...physicalRow(), gap: 8, marginBottom: 10 }}
             >
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable

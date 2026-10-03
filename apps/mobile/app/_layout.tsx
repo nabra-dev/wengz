@@ -19,6 +19,7 @@ import {
 import { AuthProvider } from "../src/providers/auth";
 import { AppLocaleProvider, useLocale } from "../src/providers/locale";
 import { Loading } from "../src/components/ui";
+import { DebugUiProvider } from "../src/debug/DebugProvider";
 import { BRAND } from "../src/theme/brand";
 import { stackPushAnimation } from "../src/theme/navigation";
 
@@ -71,7 +72,9 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
         <QueryClientProvider client={queryClient}>
           <AppLocaleProvider>
-            <RootNavigator />
+            <DebugUiProvider>
+              <RootNavigator />
+            </DebugUiProvider>
           </AppLocaleProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>

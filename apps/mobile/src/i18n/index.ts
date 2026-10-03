@@ -1,9 +1,9 @@
 import { I18n } from "i18n-js";
-import { I18nManager, Platform } from "react-native";
 import { reloadAppAsync } from "expo";
 import { en } from "./messages/en";
 import { ar } from "./messages/ar";
 import { getStoredLocale, setStoredLocale } from "../lib/auth-store";
+import { syncRtlForLocale } from "../rtl";
 
 export const i18n = new I18n({ en, ar });
 i18n.defaultLocale = "en";
@@ -12,48 +12,30 @@ i18n.enableFallback = true;
 
 export type AppLocale = "en" | "ar";
 
-function syncRtl(rtl: boolean): void {
-  if (Platform.OS === "web") return;
-  try {
-    I18nManager.allowRTL(true);
-    I18nManager.swapLeftAndRightInRTL(true);
-    if (I18nManager.isRTL !== rtl) {
-      I18nManager.forceRTL(rtl);
-    }
-  } catch {
-    /* Expo Go / unsupported — UI RTL still works via AppText + RouterLocaleProvider */
-  }
-}
-
 /**
- * Cold start: apply stored locale + best-effort RTL.
- * Never reload here — Expo Go often ignores `forceRTL` across reloads, which
- * previously called `reloadAppAsync` forever on the splash screen.
+ * Cold start: apply the stored locale, then let `syncRtlForLocale` decide
+ * whether the platform needs one reload to pick up native RTL. The attempt is
+ * recorded per locale, so a runtime that ignores `forceRTL` falls back to
+ * manual mirroring instead of reloading forever.
  */
-export async function initLocale(): Promise<AppLocale> {
+export async function initLocale(): Promise<{ locale: AppLocale; reloading: boolean }> {
   const locale = await getStoredLocale();
   i18n.locale = locale;
-  syncRtl(locale === "ar");
-  return locale;
+  const { needsReload } = await syncRtlForLocale(locale);
+
+  if (needsReload) {
+    void reloadAppAsync();
+    return { locale, reloading: true };
+  }
+  return { locale, reloading: false };
 }
 
-/**
- * Persist locale and sync native RTL. Reloads once on native only when the
- * user actually changes language (not on every cold start).
- */
-export async function applyLocale(
-  locale: AppLocale,
-  options?: { reload?: boolean }
-): Promise<void> {
-  const shouldReload = options?.reload ?? true;
-  const prev = await getStoredLocale();
+/** Persist locale, align native RTL, and reload so the whole tree re-mirrors. */
+export async function applyLocale(locale: AppLocale): Promise<void> {
   i18n.locale = locale;
   await setStoredLocale(locale);
-  syncRtl(locale === "ar");
-
-  if (shouldReload && Platform.OS !== "web" && prev !== locale) {
-    await reloadAppAsync();
-  }
+  await syncRtlForLocale(locale);
+  await reloadAppAsync();
 }
 
 /** Interpolate next-intl `{var}` and i18n-js `%{var}` after lookup. */

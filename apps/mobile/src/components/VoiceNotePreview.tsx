@@ -7,6 +7,7 @@ import { getAccessToken } from "../lib/auth-store";
 import { resolveMediaUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { AppText } from "./typography";
+import { physicalRow } from "../rtl";
 import { colors } from "./ui";
 
 async function loadAuthedMediaUri(remoteUrl: string): Promise<string> {
@@ -237,14 +238,12 @@ export function VoiceNotePreview({
     return (
       <View
         style={{
-          flexDirection: "row",
+          ...physicalRow(),
           alignItems: "center",
           gap: 8,
           minWidth: 200,
           paddingVertical: 6,
           paddingHorizontal: 4,
-          // Media controls stay LTR (play on the left of the bar).
-          direction: "ltr",
         }}
       >
         {body}
@@ -254,8 +253,9 @@ export function VoiceNotePreview({
 
   return (
     <View
+      // Media controls stay physically LTR (play on the left of the bar).
       style={{
-        flexDirection: "row",
+        ...physicalRow(),
         alignItems: "center",
         gap: 8,
         padding: 12,
@@ -263,7 +263,6 @@ export function VoiceNotePreview({
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.muted,
-        direction: "ltr",
       }}
     >
       {body}

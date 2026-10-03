@@ -87,11 +87,15 @@ export default function LoginScreen() {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 8,
           }}
         >
-          <Label>{t("auth.login.passwordLabel")}</Label>
+          <View style={{ flex: 1 }}>
+            <Label>{t("auth.login.passwordLabel")}</Label>
+          </View>
           <Link href="/(auth)/forgot-password">
             <AppText
+              compact
               style={{
                 color: colors.purple,
                 ...typeScale.sm,

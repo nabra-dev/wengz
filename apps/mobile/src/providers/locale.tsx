@@ -1,17 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Platform, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 import { applyLocale, initLocale, type AppLocale, i18n } from "../i18n";
 import { Loading } from "../components/ui";
+import { LocaleContext, type LocaleContextValue, type LocaleDirection } from "./locale-context";
 
-export type LocaleDirection = "ltr" | "rtl";
-
-type LocaleContextValue = {
-  locale: AppLocale;
-  direction: LocaleDirection;
-  setLocale: (locale: AppLocale) => Promise<void>;
-};
-
-const LocaleContext = createContext<LocaleContextValue | null>(null);
+export type { LocaleDirection, LocaleContextValue };
+export { LocaleContext };
 
 function syncDocumentDirection(locale: AppLocale, direction: LocaleDirection) {
   if (Platform.OS !== "web" || typeof document === "undefined") return;
@@ -25,9 +19,10 @@ export function AppLocaleProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    void initLocale().then((next) => {
+    void initLocale().then(({ locale: next, reloading }) => {
       setLocaleState(next);
-      setReady(true);
+      // Keep the splash up while the app reloads into native RTL.
+      if (!reloading) setReady(true);
     });
   }, []);
 
@@ -39,40 +34,27 @@ export function AppLocaleProvider({ children }: { children: React.ReactNode }) {
   }, [ready, locale, direction]);
 
   const setLocale = useCallback(async (next: AppLocale) => {
-    const nextDir: LocaleDirection = next === "ar" ? "rtl" : "ltr";
-    syncDocumentDirection(next, nextDir);
-    await applyLocale(next, { reload: true });
+    syncDocumentDirection(next, next === "ar" ? "rtl" : "ltr");
     setLocaleState(next);
+    await applyLocale(next);
   }, []);
 
   const value = useMemo(() => ({ locale, direction, setLocale }), [locale, direction, setLocale]);
 
   if (!ready) return <Loading />;
 
-  return (
-    <LocaleContext.Provider value={value}>
-      {/*
-        Single RTL source of truth for layout:
-        - Web: `dir` attribute
-        - Native: RN `direction` (Expo Go often ignores I18nManager.forceRTL)
-        Do not also row-reverse or read I18nManager.isRTL in UI.
-      */}
-      <View
-        key={locale}
-        style={{ flex: 1, direction }}
-        {...({ dir: direction, lang: locale } as object)}
-      >
-        {children}
-      </View>
-    </LocaleContext.Provider>
-  );
+  /*
+    No `direction` style wrapper here on purpose. Mirroring is owned by
+    `src/rtl` (native I18nManager, or explicit row-reverse in manual mode).
+  */
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
 /** @deprecated Use AppLocaleProvider */
 export const LocaleProvider = AppLocaleProvider;
 
 export function useLocale(): LocaleContextValue {
-  const ctx = useContext(LocaleContext);
+  const ctx = React.useContext(LocaleContext);
   if (!ctx) {
     throw new Error("useLocale must be used within AppLocaleProvider");
   }

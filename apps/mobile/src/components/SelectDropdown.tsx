@@ -2,12 +2,19 @@ import { useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
+import { useLocale } from "../providers/locale";
+import { debugOutlineStyle } from "../debug/outline";
+import { useDebugOutlineFlags } from "../debug/outline-state";
+import { OverflowProbe } from "../debug/OverflowProbe";
+import { alignStart, row } from "../rtl";
 import { colors } from "./ui";
-import { AppText, isRtlLocale, localeDirection } from "./typography";
+import { AppText } from "./typography";
 
 export type SelectOption = {
   value: string;
   label: string;
+  /** Optional leading glyph (emoji / symbol). */
+  icon?: string;
   subtitle?: string;
   disabled?: boolean;
 };
@@ -38,7 +45,9 @@ export function SelectDropdown({
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const triggerRef = useRef<View>(null);
   const selected = options.find((o) => o.value === value);
-  const rtl = isRtlLocale();
+  const { locale } = useLocale();
+  const rtl = locale === "ar";
+  const { outlines } = useDebugOutlineFlags();
 
   const openMenu = () => {
     if (disabled) return;
@@ -57,6 +66,8 @@ export function SelectDropdown({
   let menuTop = (anchor?.y ?? 0) + (anchor?.height ?? 0) + 6;
   let menuLeft = 12;
   if (anchor) {
+    // measureInWindow is always physical, so pin the menu to the trigger edge
+    // that matches the reading direction.
     menuLeft = rtl
       ? Math.max(12, Math.min(anchor.x + anchor.width - menuWidth, windowW - menuWidth - 12))
       : Math.max(12, Math.min(anchor.x, windowW - menuWidth - 12));
@@ -65,113 +76,140 @@ export function SelectDropdown({
     }
   }
 
+  const widthStyle = {
+    alignSelf: compact ? ("flex-start" as const) : ("stretch" as const),
+    width: compact ? undefined : ("100%" as const),
+  };
+
   return (
-    <View
+    <OverflowProbe
+      name="SelectDropdown"
       style={{
-        marginBottom: compact ? 0 : 12,
+        ...widthStyle,
         minWidth: compact ? 96 : undefined,
+        marginBottom: compact ? 0 : 12,
         zIndex: open ? 50 : 1,
-        direction: localeDirection(),
       }}
     >
-      <View ref={triggerRef} collapsable={false}>
-        <Pressable
-          disabled={disabled}
-          onPress={() => (open ? setOpen(false) : openMenu())}
-          style={{
-            backgroundColor: colors.background,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            opacity: disabled ? 0.5 : 1,
-          }}
-        >
-          <AppText
+      <View style={[widthStyle, debugOutlineStyle(outlines, "rgba(180,100,255,0.95)")]}>
+        <View ref={triggerRef} collapsable={false} style={widthStyle}>
+          <Pressable
+            disabled={disabled}
+            onPress={() => (open ? setOpen(false) : openMenu())}
             style={{
-              color: selected ? colors.foreground : colors.mutedForeground,
-              fontFamily: fonts.regular,
-              ...typeScale.md,
-              flexShrink: 1,
-              flex: 1,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+              // Source order is start → end; `row()` mirrors it when needed.
+              ...row(),
+              alignItems: "center",
+              ...widthStyle,
+              minHeight: 48,
+              opacity: disabled ? 0.5 : 1,
             }}
-            numberOfLines={compact ? 1 : 2}
           >
-            {selected?.label ?? placeholder}
-          </AppText>
-          <Ionicons
-            name={open ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={colors.mutedForeground}
-          />
-        </Pressable>
-      </View>
+            {selected?.icon ? (
+              <AppText style={{ ...typeScale.md, marginEnd: 8 }}>{selected.icon}</AppText>
+            ) : null}
+            <AppText
+              style={{
+                flex: 1,
+                minWidth: 0,
+                marginEnd: 8,
+                color: selected ? colors.foreground : colors.mutedForeground,
+                fontFamily: fonts.regular,
+                ...typeScale.md,
+              }}
+              numberOfLines={compact ? 1 : 2}
+            >
+              {selected?.label ?? placeholder}
+            </AppText>
+            <Ionicons
+              name={open ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.mutedForeground}
+            />
+          </Pressable>
+        </View>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={[styles.modalRoot, { direction: localeDirection() }]} pointerEvents="box-none">
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
-          {anchor ? (
-            <View style={[styles.menu, { top: menuTop, left: menuLeft, width: menuWidth }]}>
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-                style={{ maxHeight: MENU_MAX_HEIGHT }}
-              >
-                {options.map((opt) => {
-                  const active = opt.value === value;
-                  const itemDisabled = Boolean(opt.disabled);
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      disabled={itemDisabled}
-                      onPress={() => {
-                        onChange(opt.value);
-                        setOpen(false);
-                      }}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 12,
-                        borderBottomWidth: StyleSheet.hairlineWidth,
-                        borderBottomColor: colors.border,
-                        backgroundColor: active ? "rgba(224,248,64,0.1)" : "transparent",
-                        opacity: itemDisabled ? 0.45 : 1,
-                      }}
-                    >
-                      <AppText
+        <Modal
+          visible={open}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setOpen(false)}
+        >
+          <View style={styles.modalRoot} pointerEvents="box-none">
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+            {anchor ? (
+              <View style={[styles.menu, { top: menuTop, left: menuLeft, width: menuWidth }]}>
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                  style={{ maxHeight: MENU_MAX_HEIGHT }}
+                >
+                  {options.map((opt) => {
+                    const active = opt.value === value;
+                    const itemDisabled = Boolean(opt.disabled);
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        disabled={itemDisabled}
+                        onPress={() => {
+                          onChange(opt.value);
+                          setOpen(false);
+                        }}
                         style={{
-                          color: active ? colors.yellow : colors.foreground,
-                          fontFamily: active ? fonts.medium : fonts.regular,
-                          ...typeScale.md,
+                          paddingHorizontal: 12,
+                          paddingVertical: 12,
+                          borderBottomWidth: StyleSheet.hairlineWidth,
+                          borderBottomColor: colors.border,
+                          backgroundColor: active ? "rgba(224,248,64,0.1)" : "transparent",
+                          opacity: itemDisabled ? 0.45 : 1,
+                          ...row(),
+                          alignItems: "center",
                         }}
                       >
-                        {opt.label}
-                      </AppText>
-                      {opt.subtitle ? (
-                        <AppText
-                          style={{
-                            color: colors.mutedForeground,
-                            fontFamily: fonts.regular,
-                            ...typeScale.sm,
-                            marginTop: 2,
-                          }}
-                        >
-                          {opt.subtitle}
-                        </AppText>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : null}
-        </View>
-      </Modal>
-    </View>
+                        {opt.icon ? (
+                          <AppText style={{ ...typeScale.md, marginEnd: 8 }}>{opt.icon}</AppText>
+                        ) : null}
+                        <View style={{ flex: 1, minWidth: 0, alignItems: alignStart() }}>
+                          <AppText
+                            style={{
+                              width: "100%",
+                              color: active ? colors.yellow : colors.foreground,
+                              fontFamily: active ? fonts.medium : fonts.regular,
+                              ...typeScale.md,
+                            }}
+                          >
+                            {opt.label}
+                          </AppText>
+                          {opt.subtitle ? (
+                            <AppText
+                              style={{
+                                width: "100%",
+                                color: colors.mutedForeground,
+                                fontFamily: fonts.regular,
+                                ...typeScale.sm,
+                                marginTop: 2,
+                              }}
+                            >
+                              {opt.subtitle}
+                            </AppText>
+                          ) : null}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
+        </Modal>
+      </View>
+    </OverflowProbe>
   );
 }
 

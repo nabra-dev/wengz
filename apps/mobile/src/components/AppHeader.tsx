@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
 import { BRAND } from "../theme/brand";
 import { t } from "../i18n";
-import { isRtlLocale, localeDirection } from "./typography";
+import { backChevron, row } from "../rtl";
 
 const c = BRAND.colors;
 const LOGO_HEIGHT = 32;
@@ -30,12 +30,10 @@ type NavHeaderProps = {
  */
 export function AppNavHeader({ navigation, back }: NavHeaderProps) {
   const showBack = back != null;
-  // Locale-based — do not use I18nManager.isRTL (unreliable in Expo Go).
-  const rtl = isRtlLocale();
 
   return (
-    <SafeAreaView edges={["top"]} style={[styles.safe, { direction: localeDirection() }]}>
-      <View style={styles.bar}>
+    <SafeAreaView edges={["top"]} style={styles.safe}>
+      <View style={[styles.bar, row()]}>
         <View style={styles.side}>
           {showBack ? (
             <Pressable
@@ -46,11 +44,7 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
               accessibilityLabel={t("common.back", { defaultValue: "Back" })}
             >
               {/* Glyphs don’t mirror with RTL — flip the chevron explicitly. */}
-              <Ionicons
-                name={rtl ? "chevron-forward" : "chevron-back"}
-                size={26}
-                color={c.yellow}
-              />
+              <Ionicons name={backChevron()} size={26} color={c.yellow} />
             </Pressable>
           ) : null}
         </View>
@@ -75,7 +69,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     height: 56,
-    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 4,
     backgroundColor: c.background,

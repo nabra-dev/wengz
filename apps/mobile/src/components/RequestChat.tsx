@@ -22,7 +22,8 @@ import { useAuth } from "../providers/auth";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
-import { AppText, AppTextInput, isRtlLocale, localeDirection } from "./typography";
+import { AppText, AppTextInput } from "./typography";
+import { isRtl, row } from "../rtl";
 import { colors } from "./ui";
 
 export type ChatComment = {
@@ -266,7 +267,7 @@ export function RequestChat({
   const webRec = useRef<MediaRecorder | null>(null);
   const webStream = useRef<MediaStream | null>(null);
   const webChunks = useRef<BlobPart[]>([]);
-  const rtl = isRtlLocale();
+  const rtl = isRtl();
 
   const thread = useMemo(
     () => buildThread(comments, user?.id, maskProviderNames),
@@ -460,11 +461,12 @@ export function RequestChat({
             }}
           >
             <AppText
+              compact
+              align="center"
               style={{
                 color: colors.mutedForeground,
                 fontFamily: fonts.medium,
                 ...typeScale.xs,
-                textAlign: "center",
               }}
             >
               {item.label}
@@ -492,10 +494,11 @@ export function RequestChat({
             }}
           >
             <AppText
+              compact
+              align="center"
               style={{
                 color: colors.mutedForeground,
                 ...typeScale.xs,
-                textAlign: "center",
                 lineHeight: 16,
               }}
             >
@@ -516,10 +519,10 @@ export function RequestChat({
     return (
       <View
         style={{
-          // WhatsApp keeps mine on the physical right even in Arabic.
-          direction: "ltr",
-          flexDirection: "row",
-          justifyContent: isMine ? "flex-end" : "flex-start",
+          ...row(),
+          // WhatsApp keeps mine on the physical right even in Arabic, so the
+          // own-message edge is `start` under RTL and `end` under LTR.
+          justifyContent: isMine === rtl ? "flex-start" : "flex-end",
           paddingHorizontal: 10,
           marginTop: isFirstInGroup ? 10 : 2,
         }}
@@ -527,6 +530,7 @@ export function RequestChat({
         <View style={{ maxWidth: "82%", alignItems: isMine ? "flex-end" : "flex-start" }}>
           {showName ? (
             <AppText
+              compact
               style={{
                 color: "rgba(224,248,64,0.85)",
                 fontFamily: fonts.medium,
@@ -562,6 +566,7 @@ export function RequestChat({
                 }}
               >
                 <AppText
+                  compact
                   style={{
                     color: isMine ? colors.yellow : colors.yellow,
                     fontFamily: fonts.semiBold,
@@ -576,6 +581,8 @@ export function RequestChat({
 
             {showText ? (
               <AppText
+                // Keep bubble width content-sized; still pin Arabic to the right edge.
+                compact
                 style={{
                   color: colors.foreground,
                   fontFamily: fonts.regular,
@@ -605,10 +612,11 @@ export function RequestChat({
               }}
             >
               <AppText
+                compact
+                align="right"
                 style={{
                   color: isMine ? "rgba(245,247,232,0.65)" : colors.mutedForeground,
                   fontSize: 10,
-                  textAlign: "right",
                 }}
               >
                 {timeLabel}
@@ -624,7 +632,7 @@ export function RequestChat({
   }
 
   return (
-    <View style={{ flex: 1, direction: localeDirection() }}>
+    <View style={{ flex: 1 }}>
       <FlatList
         data={listData}
         inverted
@@ -696,7 +704,6 @@ export function RequestChat({
             paddingHorizontal: 8,
             paddingTop: 8,
             paddingBottom: 8,
-            direction: localeDirection(),
           }}
         >
           {showAttach || pendingFiles.length > 0 ? (
@@ -750,11 +757,12 @@ export function RequestChat({
                 }}
               />
               <AppText
+                compact
+                align="center"
                 style={{
                   color: colors.destructive,
                   fontFamily: fonts.medium,
                   ...typeScale.sm,
-                  textAlign: "center",
                 }}
               >
                 {t("requests.messages.recordingInProgress")}
@@ -822,8 +830,6 @@ export function RequestChat({
                   maxHeight: 100,
                   padding: 0,
                   margin: 0,
-                  textAlign: rtl ? "right" : "left",
-                  writingDirection: rtl ? "rtl" : "ltr",
                 }}
               />
             </View>
@@ -897,10 +903,10 @@ export function RequestChat({
           }}
         >
           <AppText
+            align="center"
             style={{
               color: colors.mutedForeground,
               ...typeScale.sm,
-              textAlign: "center",
             }}
           >
             {t("requests.messages.requestCompleted")}

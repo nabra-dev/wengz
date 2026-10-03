@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text as RNText,
   View,
   type RefreshControlProps,
   type ScrollViewProps,
@@ -16,7 +17,10 @@ import {
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
 import { t } from "../i18n";
-import { AppText, AppTextInput, isRtlLocale, localeDirection } from "./typography";
+import { AppText, AppTextInput } from "./typography";
+import { alignStart, row, startTextAlign } from "../rtl";
+import { debugOutlineStyle } from "../debug/outline";
+import { useDebugOutlineFlags } from "../debug/outline-state";
 
 const c = BRAND.colors;
 
@@ -33,6 +37,7 @@ export const listFillStyle: ViewStyle = {
 export const listContentDefaults: ViewStyle = {
   flexGrow: 1,
   paddingBottom: SCROLL_BOTTOM_PAD,
+  // Set at call sites too when locale can change — getter used below in Screen lists.
 };
 
 export function Screen({
@@ -47,9 +52,15 @@ export function Screen({
   padded?: boolean;
   edges?: Edge[];
 }) {
+  const { outlines } = useDebugOutlineFlags();
   return (
     <SafeAreaView
-      style={[styles.screen, padded && styles.padded, { direction: localeDirection() }, style]}
+      style={[
+        styles.screen,
+        padded && styles.padded,
+        debugOutlineStyle(outlines, "rgba(0,200,255,0.7)"),
+        style,
+      ]}
       edges={edges}
     >
       {children}
@@ -124,22 +135,15 @@ export function PageHeader({
   description?: string;
   right?: React.ReactNode;
 }) {
-  const rtl = isRtlLocale();
-  const titleBlock = (
-    <View style={{ flex: 1 }}>
-      <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
-      {description ? (
-        <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
-      ) : null}
-    </View>
-  );
-
   return (
-    <View style={[styles.pageHeader, { direction: localeDirection() }]}>
-      {/* Under RTL, first child sits on the right — put badge first so it stays on the outer edge. */}
-      {rtl ? right : null}
-      {titleBlock}
-      {!rtl ? right : null}
+    <View style={[styles.pageHeader, row()]}>
+      <View style={{ flex: 1, minWidth: 0, alignItems: alignStart() }}>
+        <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
+        {description ? (
+          <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
+        ) : null}
+      </View>
+      {right ? <View style={{ flexShrink: 0 }}>{right}</View> : null}
     </View>
   );
 }
@@ -155,20 +159,35 @@ export function Muted({ children, style }: { children: React.ReactNode; style?: 
 }
 
 export function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  const textAlign = startTextAlign();
   return (
-    <AppText style={[styles.label, { fontFamily: fonts.medium }]}>
+    <RNText
+      style={[
+        styles.label,
+        { fontFamily: fonts.medium, width: "100%" },
+        textAlign ? { textAlign } : null,
+      ]}
+    >
       {children}
-      {required ? <AppText style={{ color: c.destructive }}> *</AppText> : null}
-    </AppText>
+      {required ? (
+        <RNText style={{ color: c.destructive, fontFamily: fonts.medium }}> *</RNText>
+      ) : null}
+    </RNText>
   );
 }
 
 export function Field(props: TextInputProps) {
+  const { outlines } = useDebugOutlineFlags();
   return (
     <AppTextInput
       placeholderTextColor={c.mutedForeground}
       {...props}
-      style={[styles.input, props.multiline && styles.inputMultiline, props.style]}
+      style={[
+        styles.input,
+        props.multiline && styles.inputMultiline,
+        outlines ? { borderWidth: 1, borderColor: "rgba(255,170,0,0.9)" } : null,
+        props.style,
+      ]}
     />
   );
 }
@@ -184,6 +203,7 @@ export function Button({
   disabled?: boolean;
   variant?: "primary" | "secondary" | "ghost" | "danger";
 }) {
+  const { outlines } = useDebugOutlineFlags();
   return (
     <Pressable
       onPress={onPress}
@@ -194,6 +214,7 @@ export function Button({
         variant === "secondary" && styles.btnSecondary,
         variant === "ghost" && styles.btnGhost,
         variant === "danger" && styles.btnDanger,
+        debugOutlineStyle(outlines, "rgba(224,248,64,0.9)"),
         (disabled || pressed) && { opacity: 0.75 },
       ]}
     >
@@ -225,8 +246,20 @@ export function Card({
   highlight?: boolean;
   style?: ViewStyle;
 }) {
+  const { outlines } = useDebugOutlineFlags();
+  // Keep stretch so full-width controls (buttons, dropdowns, fields) don't shrink.
+  // Text RTL pinning is handled by AppText / Label, not alignItems on the card.
   const body = (
-    <View style={[styles.card, highlight && styles.cardHighlight, style]}>{children}</View>
+    <View
+      style={[
+        styles.card,
+        highlight && styles.cardHighlight,
+        debugOutlineStyle(outlines, "rgba(255,45,85,0.85)"),
+        style,
+      ]}
+    >
+      {children}
+    </View>
   );
   if (onPress) {
     return (
@@ -251,10 +284,16 @@ export function StatCard({
 }) {
   return (
     <Card highlight={highlight} style={styles.statCard}>
-      <AppText style={[styles.statLabel, { fontFamily: fonts.medium }]}>{label}</AppText>
-      <AppText style={[styles.statValue, { fontFamily: fonts.bold }]}>{value}</AppText>
+      <AppText compact style={[styles.statLabel, { fontFamily: fonts.medium }]}>
+        {label}
+      </AppText>
+      <AppText compact style={[styles.statValue, { fontFamily: fonts.bold }]}>
+        {value}
+      </AppText>
       {hint ? (
-        <AppText style={[styles.statHint, { fontFamily: fonts.regular }]}>{hint}</AppText>
+        <AppText compact style={[styles.statHint, { fontFamily: fonts.regular }]}>
+          {hint}
+        </AppText>
       ) : null}
     </Card>
   );
@@ -265,7 +304,11 @@ export function StatusBadge({ status }: { status: string }) {
   const label = t(`common.requestStatus.${status}`, { defaultValue: status });
   return (
     <View style={[styles.badge, { backgroundColor: s.bg }]}>
-      <AppText style={[styles.badgeText, { color: s.fg, fontFamily: fonts.medium }]}>
+      <AppText
+        compact
+        align="center"
+        style={[styles.badgeText, { color: s.fg, fontFamily: fonts.medium }]}
+      >
         {label}
       </AppText>
     </View>
@@ -322,7 +365,15 @@ export function ErrorText({ children }: { children: React.ReactNode }) {
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <AppText style={[styles.sectionTitle, { fontFamily: fonts.medium }]}>{children}</AppText>;
+  return (
+    <View style={{ width: "100%", alignItems: alignStart(), marginBottom: 8, marginTop: 16 }}>
+      <AppText
+        style={[styles.sectionTitle, { fontFamily: fonts.medium, marginBottom: 0, marginTop: 0 }]}
+      >
+        {children}
+      </AppText>
+    </View>
+  );
 }
 
 export function useUiFontFamily() {
@@ -348,12 +399,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   pageHeader: {
-    flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
     marginBottom: 16,
     marginTop: 0,
-    // Follows parent `direction` so status badge sits on the start side in AR.
   },
   pageTitle: {
     color: c.foreground,
@@ -395,9 +444,12 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   btn: {
+    // No width/alignSelf: column parents already stretch children, and forcing
+    // 100% here collapses siblings when a Button sits inside a row.
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 6,
   },
   btnPrimary: {
@@ -424,6 +476,11 @@ const styles = StyleSheet.create({
     color: "#2A0A55",
   },
   card: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
+    alignItems: "stretch",
+    overflow: "hidden",
     backgroundColor: c.card,
     borderRadius: 12,
     padding: 16,
