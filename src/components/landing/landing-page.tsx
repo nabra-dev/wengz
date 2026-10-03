@@ -45,7 +45,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"
-        className="h-6 w-6 shrink-0 sm:h-8 sm:w-8"
+        className="h-8 w-8 shrink-0 sm:h-10 sm:w-10"
       >
         <path d="M16.365 12.052c0-1.857 1.052-2.76 1.1-2.79-.66-.97-1.69-1.1-2.05-1.12-1.1-.11-2.15.65-2.71.65-.56 0-1.43-.63-2.35-.61-1.21.02-2.33.7-2.95 1.78-1.26 2.19-.32 5.43.91 7.21.6.87 1.31 1.84 2.25 1.81.9-.04 1.24-.58 2.33-.58 1.09 0 1.39.58 2.34.56.97-.02 1.58-.88 2.17-1.76.69-1.01.97-1.99 1-2.04-.02-.01-1.9-.73-1.92-2.89-.02-1.81 1.48-2.67 1.55-2.72-.86-1.26-2.19-1.4-2.66-1.43zm-2.0-6.1c.5-.6.83-1.44.74-2.28-.71.03-1.57.47-2.08 1.07-.46.53-.86 1.38-.75 2.19.8.06 1.61-.41 2.09-.98z" />
       </svg>
@@ -64,22 +64,27 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
 function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
     <span className="inline-flex h-11 w-[168px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[200px] sm:gap-2.5 sm:px-4">
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 shrink-0 sm:h-8 sm:w-8">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className="h-6 w-6 shrink-0 sm:h-8 sm:w-8"
+      >
         <path
-          fill="#EA4335"
-          d="M3.609 1.814 13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92Z"
+          d="M11.724 11.833 3.779 20.542a2.1 2.1 0 0 1-.281-1.084V4.642c-.022-.492.125-.977.416-1.374L11.724 11.833Z"
+          fill="#4285F5"
         />
         <path
-          fill="#FBBC04"
-          d="m16.795 9.197 2.807 1.626a1 1 0 0 1 0 1.732l-2.808 1.626L13.792 12l3.003-2.803Z"
+          d="m15.343 7.865-3.619 3.968L3.914 3.268a2.05 2.05 0 0 1 2.69-.445c2.778 1.655 5.594 3.242 8.4 4.839l.339.203Z"
+          fill="#00AE45"
         />
         <path
-          fill="#4285F4"
-          d="M3.609 22.186 13.792 12l3.003 2.803-10.937 6.333a1.006 1.006 0 0 1-1.249-.95Z"
+          d="M19.35 13.749c-1.016.6-2.042 1.18-3.058 1.771l-.784.455-3.784-4.142 3.619-3.968 4.007 2.342a2.02 2.02 0 0 1 0 3.542Z"
+          fill="#FFBB00"
         />
         <path
-          fill="#34A853"
-          d="m13.792 12 3.003-2.803L5.864 2.658a1.006 1.006 0 0 0-1.25.95L3.609 1.814 13.792 12Z"
+          d="m15.508 15.974-8.971 5.197a2.05 2.05 0 0 1-2.758-.63c-.067-.08-.128-.164-.184-.252L11.724 11.833l3.784 4.141Z"
+          fill="#EB4132"
         />
       </svg>
       <span className="flex min-w-0 flex-col items-start leading-none">
