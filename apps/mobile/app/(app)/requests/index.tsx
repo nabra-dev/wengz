@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { FlatList, RefreshControl, View } from "react-native";
@@ -21,9 +22,19 @@ import { fonts, typeScale } from "../../../src/theme/brand";
 import { alignStart, forwardChevron, row } from "../../../src/rtl";
 
 export default function RequestsScreen() {
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const q = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(50) });
 
-  if (q.isLoading) return <Loading />;
+  const onRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await q.refetch();
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [q]);
+
+  if (q.isLoading && !q.data) return <Loading />;
   const list = q.data?.requests ?? [];
 
   return (
@@ -38,8 +49,8 @@ export default function RequestsScreen() {
         alwaysBounceVertical
         refreshControl={
           <RefreshControl
-            refreshing={q.isFetching}
-            onRefresh={() => void q.refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={() => void onRefresh()}
             tintColor={colors.yellow}
           />
         }

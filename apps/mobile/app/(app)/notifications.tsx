@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { FlatList, RefreshControl, View } from "react-native";
@@ -24,6 +25,7 @@ import { row } from "../../src/rtl";
 
 export default function NotificationsScreen() {
   const qc = useQueryClient();
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const q = useQuery({
     queryKey: ["notifications"],
     queryFn: () => getNotifications(40),
@@ -40,7 +42,16 @@ export default function NotificationsScreen() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  if (q.isLoading) return <Loading />;
+  const onRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await q.refetch();
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [q]);
+
+  if (q.isLoading && !q.data) return <Loading />;
   const items = q.data?.notifications ?? [];
   const unread = items.filter((n) => !n.isRead).length;
 
@@ -56,8 +67,8 @@ export default function NotificationsScreen() {
         alwaysBounceVertical
         refreshControl={
           <RefreshControl
-            refreshing={q.isFetching}
-            onRefresh={() => void q.refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={() => void onRefresh()}
             tintColor={colors.yellow}
           />
         }

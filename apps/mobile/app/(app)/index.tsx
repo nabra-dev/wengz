@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { RefreshControl, View } from "react-native";
@@ -7,6 +8,7 @@ import { t, i18n } from "../../src/i18n";
 import {
   Button,
   Card,
+  ErrorText,
   Loading,
   Muted,
   PageHeader,
@@ -22,11 +24,22 @@ import { alignStart, row } from "../../src/rtl";
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const sub = useQuery({ queryKey: ["subscription"], queryFn: getActiveSubscription });
   const usage = useQuery({ queryKey: ["usage"], queryFn: getUsageStats });
   const requests = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(5) });
 
-  if (sub.isLoading) return <Loading />;
+  const onRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await Promise.all([sub.refetch(), requests.refetch(), usage.refetch()]);
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [sub, requests, usage]);
+
+  // Only block the first paint — never leave a full-screen spinner on refetch.
+  if (sub.isLoading && !sub.data && !sub.isError) return <Loading />;
 
   const pkg = sub.data as {
     package?: { name?: string; nameI18n?: Record<string, string> };
@@ -46,16 +59,15 @@ export default function HomeScreen() {
       keyboard={false}
       refreshControl={
         <RefreshControl
-          refreshing={sub.isFetching || requests.isFetching || usage.isFetching}
-          onRefresh={() => {
-            void sub.refetch();
-            void requests.refetch();
-            void usage.refetch();
-          }}
+          refreshing={pullRefreshing}
+          onRefresh={() => void onRefresh()}
           tintColor={colors.yellow}
         />
       }
     >
+      {sub.isError || usage.isError || requests.isError ? (
+        <ErrorText>{t("common.error")}</ErrorText>
+      ) : null}
       <PageHeader title={t("client.dashboard.welcome", { name: firstName })} />
       <View style={{ marginBottom: 16 }}>
         <Button
