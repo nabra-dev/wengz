@@ -43,7 +43,7 @@ export const ALLOWED_UPLOAD_MIME_TYPES = new Set([
 export const UPLOAD_ACCEPT_ATTR = "image/*,.pdf,.zip,audio/*,video/*";
 
 /** Public creator-application CV uploads (PDF / Word). */
-export const PROVIDER_CV_MAX_MB = 10;
+export const PROVIDER_CV_MAX_MB = 50;
 export const PROVIDER_CV_MAX_BYTES = PROVIDER_CV_MAX_MB * 1024 * 1024;
 export const PROVIDER_CV_ACCEPT_ATTR =
   ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";

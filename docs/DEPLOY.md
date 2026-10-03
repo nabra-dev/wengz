@@ -196,11 +196,11 @@ The Next.js proxy also 301s `www.wengz.tech` → `wengz.tech` for matched routes
 
 ### Large uploads (request attachments up to 500MB)
 
-Request/delivery files use **chunked** uploads (~5MB parts) to local disk. Nginx still needs room for a chunk (and for small single-shot uploads ≤20MB):
+Request/delivery files use **chunked** uploads (~5MB parts) to local disk. Nginx still needs room for a chunk and for single-shot uploads (creator CVs up to 50MB):
 
 ```nginx
 # inside the wengz.tech server { } block
-client_max_body_size 32m;
+client_max_body_size 64m;
 proxy_read_timeout 600s;
 proxy_send_timeout 600s;
 proxy_request_buffering off;
