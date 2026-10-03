@@ -429,43 +429,41 @@ export default function LandingPage({
         transition={{ duration: 0.35 }}
         className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <div className="mx-auto mb-1.5 max-w-2xl truncate px-4 text-center text-[10px] text-muted-foreground sm:mb-2 sm:px-6 sm:text-[11px] sm:text-xs">
+        <div className="mx-auto mb-1.5 max-w-2xl px-4 text-center text-[10px] leading-snug text-muted-foreground sm:mb-2 sm:truncate sm:px-6 sm:text-[11px] sm:leading-normal sm:text-xs">
           {t("landing.notices.beta")}
         </div>
         <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10">
-          <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-full border border-border bg-background/75 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5 lg:px-6">
-            <div className="justify-self-start">
-              <Link href="/" className="flex min-w-0 items-center gap-2">
-                <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
-              </Link>
-            </div>
+          <div className="flex w-full min-w-0 items-center gap-1.5 rounded-full border border-border bg-background/75 px-2.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5 lg:px-6">
+            <Link href="/" className="flex shrink-0 items-center gap-2">
+              <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
+            </Link>
 
             <nav
               aria-label={t("landing.nav.ariaLabel")}
-              className="hidden items-center justify-center gap-0.5 md:flex lg:gap-1"
+              className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex"
             >
               {LANDING_NAV_LINKS.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="rounded-full px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:px-3.5"
+                  className="rounded-full px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:px-3.5"
                 >
                   {t(item.labelKey)}
                 </a>
               ))}
             </nav>
 
-            <div className="flex min-w-0 items-center justify-end justify-self-end gap-0.5 sm:gap-1">
-              <ThemeSwitcher />
+            <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+              <ThemeSwitcher className="hidden min-[400px]:inline-flex" />
               <LanguageSwitcher variant="icon" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
-                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-3 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-3.5 sm:text-sm"
+                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-3.5 sm:text-sm"
                   >
-                    <span className="sm:hidden">{t("landing.cta.primaryShort")}</span>
-                    <span className="hidden sm:inline">{t("landing.cta.primary")}</span>
+                    <span className="lg:hidden">{t("landing.cta.primaryShort")}</span>
+                    <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-80 sm:h-4 sm:w-4" aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
@@ -498,7 +496,7 @@ export default function LandingPage({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 rounded-full text-foreground hover:bg-muted md:hidden sm:h-9 sm:w-9"
+                className="h-8 w-8 shrink-0 rounded-full text-foreground hover:bg-muted lg:hidden sm:h-9 sm:w-9"
                 aria-expanded={mobileNavOpen}
                 aria-controls="landing-mobile-nav"
                 aria-label={mobileNavOpen ? t("landing.nav.closeMenu") : t("landing.nav.openMenu")}
@@ -521,7 +519,7 @@ export default function LandingPage({
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: -8, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden md:hidden"
+                className="overflow-hidden lg:hidden"
               >
                 <nav
                   aria-label={t("landing.nav.ariaLabel")}
@@ -548,6 +546,14 @@ export default function LandingPage({
                         {t("common.buttons.signIn")}
                       </Link>
                     </li>
+                    <li className="min-[400px]:hidden">
+                      <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {t("landing.nav.theme")}
+                        </span>
+                        <ThemeSwitcher />
+                      </div>
+                    </li>
                   </ul>
                 </nav>
               </motion.div>
@@ -558,7 +564,7 @@ export default function LandingPage({
 
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
-        <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
+        <section className="relative isolate flex min-h-landing-screen flex-col overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
           <div className="pointer-events-none absolute inset-0 z-0 min-h-0 overflow-hidden">
             <Image
               src="/images/hero.png"
@@ -588,8 +594,8 @@ export default function LandingPage({
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
-            <div className="pointer-events-none absolute inset-x-4 top-0 bottom-0 flex items-center sm:inset-x-6 lg:inset-x-10">
-              <div className={`pointer-events-auto max-w-md sm:max-w-lg ${textDirectionClass}`}>
+            <div className="relative z-[1] mt-1 max-w-md shrink-0 sm:mt-2 sm:max-w-lg lg:pointer-events-none lg:absolute lg:inset-x-6 lg:top-0 lg:bottom-0 lg:mt-0 lg:flex lg:items-center xl:inset-x-10">
+              <div className={`pointer-events-auto ${textDirectionClass}`}>
                 <motion.h1
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}

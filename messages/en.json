@@ -71,7 +71,8 @@
       "gallery": "Gallery",
       "videos": "Videos",
       "pricing": "Plans",
-      "providerForm": "Creator form"
+      "providerForm": "Creator form",
+      "theme": "Theme"
     },
     "notices": {
       "maintenance": "Maintenance mode is enabled. Login is temporarily unavailable.",

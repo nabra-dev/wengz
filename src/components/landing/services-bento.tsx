@@ -167,7 +167,7 @@ export function ServicesBento() {
                       {title}
                     </h3>
                   </div>
-                  <p className="truncate text-xs leading-5 text-white/60 sm:text-sm sm:leading-6">
+                  <p className="line-clamp-2 text-xs leading-5 text-white/60 sm:line-clamp-1 sm:text-sm sm:leading-6">
                     {description}
                   </p>
                 </div>

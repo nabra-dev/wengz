@@ -136,7 +136,11 @@ async function connectRedis(): Promise<RedisClientType | UpstashRedis | null> {
     });
 
     client.on("error", (err: Error) => {
-      logger.error("Redis error:", err);
+      // Avoid logging AggregateError objects — Node can throw while inspecting them.
+      logger.error("Redis error:", {
+        error: err?.message || String(err),
+        code: (err as Error & { code?: string }).code,
+      });
       openCircuit();
     });
 

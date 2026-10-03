@@ -192,7 +192,9 @@ export function VideoMarquee() {
                             toggleMute(key);
                           }}
                           className={`pointer-events-auto absolute bottom-3 right-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/70 ${
-                            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                            isActive
+                              ? "opacity-100"
+                              : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                           }`}
                           aria-label={
                             isUnmuted
