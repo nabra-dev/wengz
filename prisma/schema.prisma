@@ -24,6 +24,8 @@ model User {
   rejectedAt          DateTime?
   rejectionReason     String?
   registrationIp      String? // IP address during registration for abuse prevention
+  /// UI/email locale last seen from the user (`en` | `ar`); used by cron emails.
+  preferredLocale     String                  @default("en")
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   deletedAt           DateTime?

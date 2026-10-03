@@ -7,7 +7,12 @@ import { logActivityAsync } from "@/lib/activity-log";
 import { persistPasswordChange } from "@/lib/password-reset";
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { isAllowedUploadUrl } from "@/lib/upload-url";
-import { notifyPasswordChanged } from "@/lib/notifications";
+import {
+  notifyEmailChanged,
+  notifyPasswordChanged,
+  sendAccountDeletedEmail,
+} from "@/lib/notifications";
+import { normalizeAppLocale } from "@/lib/notifications/i18n-helper";
 
 const PROFILE_IMAGE_EXT = /\.(jpe?g|png|gif|webp)$/i;
 
@@ -118,7 +123,7 @@ export const userRouter = router({
 
       const existingUser = await ctx.db.user.findUnique({
         where: { id: userId },
-        select: { id: true },
+        select: { id: true, email: true, name: true },
       });
 
       if (!existingUser) {
@@ -135,12 +140,13 @@ export const userRouter = router({
         });
       }
 
+      let nextEmail: string | undefined;
       // If email is being changed, check if it's already taken
       if (input.email) {
-        const normalizedEmail = input.email.toLowerCase().trim();
+        nextEmail = input.email.toLowerCase().trim();
         const conflictingUser = await ctx.db.user.findFirst({
           where: {
-            email: normalizedEmail,
+            email: nextEmail,
             id: { not: userId },
           },
         });
@@ -153,13 +159,16 @@ export const userRouter = router({
         }
       }
 
+      const emailChanged = !!nextEmail && nextEmail !== existingUser.email.toLowerCase().trim();
+
       const updatedUser = await ctx.db.user.update({
         where: { id: userId },
         data: {
           ...(input.name && { name: input.name }),
-          ...(input.email && { email: input.email }),
+          ...(nextEmail && { email: nextEmail }),
           ...(input.phone !== undefined && { phone: input.phone }),
           ...(input.image !== undefined && { image: input.image }),
+          preferredLocale: normalizeAppLocale(ctx.locale),
         },
         select: {
           id: true,
@@ -170,6 +179,16 @@ export const userRouter = router({
           role: true,
         },
       });
+
+      if (emailChanged && nextEmail) {
+        await notifyEmailChanged({
+          userId,
+          userName: updatedUser.name || existingUser.name || nextEmail,
+          oldEmail: existingUser.email,
+          newEmail: nextEmail,
+          locale: ctx.locale,
+        });
+      }
 
       return {
         success: true,
@@ -354,7 +373,7 @@ export const userRouter = router({
       // Get current user with password
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
-        select: { password: true },
+        select: { password: true, email: true, name: true },
       });
 
       if (!user?.password) {
@@ -374,12 +393,21 @@ export const userRouter = router({
         });
       }
 
+      // Farewell before rewriting the email on soft-delete.
+      await sendAccountDeletedEmail({
+        userEmail: user.email,
+        userName: user.name || user.email,
+        locale: ctx.locale,
+      });
+
       // Soft delete user
       await ctx.db.user.update({
         where: { id: userId },
         data: {
           deletedAt: new Date(),
           email: `deleted_${userId}@deleted.com`, // Prevent email conflicts
+          sessions: { deleteMany: {} },
+          accounts: { deleteMany: {} },
         },
       });
 

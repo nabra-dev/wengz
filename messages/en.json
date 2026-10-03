@@ -2889,6 +2889,28 @@
         "viewButton": "Sign in"
       }
     },
+    "emailChanged": {
+      "title": "Email address changed",
+      "message": "Your account email was changed from {oldEmail} to {newEmail}. If this wasn’t you, contact support immediately.",
+      "emailSubject": "Your Wengz email was changed",
+      "emailBody": {
+        "heading": "Email address changed",
+        "intro": "Hi {userName}, the email on your Wengz account was just changed.",
+        "message": "It was changed from <strong>{oldEmail}</strong> to <strong>{newEmail}</strong>. If you didn’t make this change, contact support immediately.",
+        "viewButton": "Sign in"
+      }
+    },
+    "accountDeleted": {
+      "title": "Account deleted",
+      "message": "Your Wengz account has been deleted.",
+      "emailSubject": "Your Wengz account was deleted",
+      "emailBody": {
+        "heading": "Account deleted",
+        "intro": "Hi {userName}, your Wengz account has been deleted as requested.",
+        "message": "If you didn’t request this, contact support as soon as possible.",
+        "viewButton": "Visit Wengz"
+      }
+    },
     "withdrawalRequested": {
       "title": "New withdrawal request",
       "message": "{providerNameOrEmail} requested a withdrawal of {amount} USD.",

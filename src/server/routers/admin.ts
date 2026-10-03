@@ -2869,6 +2869,7 @@ export const adminRouter = router({
           phone: input.phone,
           approvalStatus: "APPROVED",
           approvedAt: new Date(),
+          preferredLocale: ctx.locale === "ar" ? "ar" : "en",
         },
       });
 

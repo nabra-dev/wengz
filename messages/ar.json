@@ -2881,6 +2881,28 @@
         "viewButton": "تسجيل الدخول"
       }
     },
+    "emailChanged": {
+      "title": "تم تغيير البريد الإلكتروني",
+      "message": "تم تغيير بريد حسابك من {oldEmail} إلى {newEmail}. إذا لم تكن أنت، تواصل مع الدعم فوراً.",
+      "emailSubject": "تم تغيير بريد وينجز",
+      "emailBody": {
+        "heading": "تم تغيير البريد الإلكتروني",
+        "intro": "مرحباً {userName}، تم تغيير البريد الإلكتروني لحسابك في وينجز للتو.",
+        "message": "تم التغيير من <strong>{oldEmail}</strong> إلى <strong>{newEmail}</strong>. إذا لم تقم بهذا التغيير، تواصل مع الدعم فوراً.",
+        "viewButton": "تسجيل الدخول"
+      }
+    },
+    "accountDeleted": {
+      "title": "تم حذف الحساب",
+      "message": "تم حذف حسابك في وينجز.",
+      "emailSubject": "تم حذف حسابك في وينجز",
+      "emailBody": {
+        "heading": "تم حذف الحساب",
+        "intro": "مرحباً {userName}، تم حذف حسابك في وينجز بناءً على طلبك.",
+        "message": "إذا لم تطلب ذلك، تواصل مع الدعم في أقرب وقت.",
+        "viewButton": "زيارة وينجز"
+      }
+    },
     "withdrawalRequested": {
       "title": "طلب سحب جديد",
       "message": "{providerNameOrEmail} طلب سحب {amount} دولار.",

@@ -198,6 +198,7 @@ export const authRouter = router({
           role: "CLIENT",
           approvalStatus: "PENDING",
           registrationIp: ip,
+          preferredLocale: ctx.locale === "ar" ? "ar" : "en",
         },
       });
 
@@ -467,6 +468,7 @@ export const authRouter = router({
           role: "PROVIDER",
           approvalStatus: "PENDING",
           registrationIp,
+          preferredLocale: ctx.locale === "ar" ? "ar" : "en",
           providerProfile: {
             create: {
               bio,

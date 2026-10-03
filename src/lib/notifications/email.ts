@@ -995,6 +995,45 @@ export async function getPasswordChangedEmailTemplate(params: {
   });
 }
 
+export async function getEmailChangedEmailTemplate(params: {
+  userName: string;
+  oldEmail: string;
+  newEmail: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.emailChanged.emailSubject",
+    headingKey: "notifications.emailChanged.emailBody.heading",
+    introKey: "notifications.emailChanged.emailBody.intro",
+    introParams: { userName: params.userName },
+    bodyKey: "notifications.emailChanged.emailBody.message",
+    bodyParams: { oldEmail: params.oldEmail, newEmail: params.newEmail },
+    buttonKey: "notifications.emailChanged.emailBody.viewButton",
+    href: `${appBaseUrl()}/auth/login`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getAccountDeletedEmailTemplate(params: {
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.accountDeleted.emailSubject",
+    headingKey: "notifications.accountDeleted.emailBody.heading",
+    introKey: "notifications.accountDeleted.emailBody.intro",
+    introParams: { userName: params.userName },
+    bodyKey: "notifications.accountDeleted.emailBody.message",
+    buttonKey: "notifications.accountDeleted.emailBody.viewButton",
+    href: appBaseUrl(),
+    calloutVariant: "warning",
+  });
+}
+
 /** Ops / internal notify — English layout, no user-facing i18n. */
 export async function getOpsNotifyEmailHtml(params: {
   title: string;

@@ -6,6 +6,7 @@ import type { OpenApiMeta } from "trpc-to-openapi";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import { syncUserPreferredLocale } from "@/lib/user-locale";
 import { canManageFinance, canManageRequests, isStaffRole, isSuperAdmin } from "@/lib/roles";
 import { revalidateSessionUser } from "@/lib/session-user-cache";
 import { measurePerformance } from "@/lib/performance";
@@ -79,6 +80,7 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  syncUserPreferredLocale(ctx.session.user.id, ctx.locale);
   return next({
     ctx: {
       session: {
@@ -189,6 +191,7 @@ const enforceUserIsProvider = t.middleware(async ({ ctx, next }) => {
       message: "You must be a creator to access this resource",
     });
   }
+  syncUserPreferredLocale(ctx.session.user.id, ctx.locale);
   return next({
     ctx: {
       session: {
@@ -213,6 +216,7 @@ const enforceUserIsClient = t.middleware(async ({ ctx, next }) => {
       message: "You must be a client to access this resource",
     });
   }
+  syncUserPreferredLocale(ctx.session.user.id, ctx.locale);
   return next({
     ctx: {
       session: {

@@ -107,13 +107,10 @@ export async function formatEstimatedDeliveryDuration(
   return getTranslation(locale, key, { count: days });
 }
 
-/**
- * Get the user's preferred locale from the database or default to 'en'
- * We can extend the User model to include a preferredLanguage field in the future.
- * For now, we default to 'en' but the function accepts locale as a parameter.
- */
-// Reserved for future: fetch user's preferred language from DB
-// export async function getUserLocale(userId?: string | null): Promise<string> { /* ... */ }
+/** Normalize to a supported app locale. */
+export function normalizeAppLocale(locale?: string | null): "en" | "ar" {
+  return locale === "ar" ? "ar" : "en";
+}
 
 /**
  * Get locale from cookie string
@@ -125,7 +122,6 @@ export function getLocaleFromCookie(cookies?: string): string {
 
   const regex = /NEXT_LOCALE=([^;]+)/;
   const match = regex.exec(cookies);
-  const locale = match ? match[1] : "en";
-
+  const locale = normalizeAppLocale(match ? match[1] : "en");
   return ["en", "ar"].includes(locale) ? locale : "en";
 }

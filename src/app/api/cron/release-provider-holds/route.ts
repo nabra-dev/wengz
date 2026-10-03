@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { releaseDueHeldEarnings } from "@/lib/provider-wallet";
 import { notifyProviderEarningsHoldReleased } from "@/lib/notifications";
+import { getPreferredLocalesByUserIds } from "@/lib/user-locale";
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
 
@@ -25,12 +26,16 @@ export async function GET(request: Request) {
     const now = new Date();
     const results = await releaseDueHeldEarnings(db, { now });
 
+    const locales = await getPreferredLocalesByUserIds(
+      results.items.map((item) => item.providerId)
+    );
+
     for (const item of results.items) {
       try {
         await notifyProviderEarningsHoldReleased({
           providerId: item.providerId,
           amountUsd: item.amountUsd,
-          locale: "en",
+          locale: locales.get(item.providerId) ?? "en",
         });
       } catch (error) {
         logger.error(`[CRON] Failed hold-release notify for provider ${item.providerId}:`, error);

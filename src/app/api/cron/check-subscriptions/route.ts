@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifySubscriptionExpiring, notifySubscriptionExpired } from "@/lib/notifications";
+import { getPreferredLocalesByUserIds } from "@/lib/user-locale";
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
 
@@ -89,6 +90,7 @@ export async function GET(request: Request) {
           });
 
     const notifiedKeys = new Set(recentNotifications.map((n) => `${n.userId}:${n.title}`));
+    const locales = await getPreferredLocalesByUserIds(allUserIds);
 
     for (const subscription of expiringSubscriptions) {
       try {
@@ -105,6 +107,7 @@ export async function GET(request: Request) {
           packageNameI18n: subscription.package.nameI18n as Record<string, string> | null,
           daysRemaining,
           remainingCredits: subscription.remainingCredits,
+          locale: locales.get(subscription.userId) ?? "en",
         });
         notifiedKeys.add(key);
         results.expiringNotified++;
@@ -135,6 +138,7 @@ export async function GET(request: Request) {
           userId: subscription.userId,
           packageName: subscription.package.name,
           packageNameI18n: subscription.package.nameI18n as Record<string, string> | null,
+          locale: locales.get(subscription.userId) ?? "en",
         });
         notifiedKeys.add(key);
         results.expiredNotified++;

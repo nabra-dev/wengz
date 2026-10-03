@@ -34,6 +34,8 @@ import {
   getSubscriptionStartedEmailTemplate,
   getSubscriptionCancelledEmailTemplate,
   getPasswordChangedEmailTemplate,
+  getEmailChangedEmailTemplate,
+  getAccountDeletedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -1133,6 +1135,72 @@ export async function notifyPasswordChanged(params: {
       titleKey: "notifications.passwordChanged.title",
       messageKey: "notifications.passwordChanged.message",
     },
+  });
+}
+
+/** After email is updated on the user row — emails new address + old address. */
+export async function notifyEmailChanged(params: {
+  userId: string;
+  userName: string;
+  oldEmail: string;
+  newEmail: string;
+  locale?: string;
+}) {
+  const { userId, userName, oldEmail, newEmail, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.emailChanged.title");
+  const message = await getTranslation(locale, "notifications.emailChanged.message", {
+    oldEmail,
+    newEmail,
+  });
+  const emailTemplate = await getEmailChangedEmailTemplate({
+    userName,
+    oldEmail,
+    newEmail,
+    locale,
+  });
+
+  // Security copy to the previous inbox (createNotification only hits the new email).
+  if (oldEmail.toLowerCase() !== newEmail.toLowerCase()) {
+    void sendEmail({
+      to: oldEmail,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+    });
+  }
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/auth/login",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.emailChanged.title",
+      messageKey: "notifications.emailChanged.message",
+      messageParams: { oldEmail, newEmail },
+    },
+  });
+}
+
+/** Farewell email before the account email is rewritten on soft-delete. */
+export async function sendAccountDeletedEmail(params: {
+  userEmail: string;
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const template = await getAccountDeletedEmailTemplate({
+    userName: params.userName,
+    locale,
+  });
+
+  return sendEmail({
+    to: params.userEmail,
+    subject: template.subject,
+    html: template.html,
   });
 }
 

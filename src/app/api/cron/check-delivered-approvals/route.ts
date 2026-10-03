@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifyApprovalReminder } from "@/lib/notifications";
+import { getPreferredLocalesByUserIds } from "@/lib/user-locale";
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
 
@@ -33,6 +34,8 @@ async function processApprovalReminders(now: Date, results: ApprovalCronResults)
     take: 200,
   });
 
+  const locales = await getPreferredLocalesByUserIds(dueReminders.map((r) => r.clientId));
+
   for (const request of dueReminders) {
     try {
       // CAS: only mark once so concurrent cron runs do not double-email
@@ -51,7 +54,7 @@ async function processApprovalReminders(now: Date, results: ApprovalCronResults)
       await notifyApprovalReminder({
         requestId: request.id,
         clientId: request.clientId,
-        locale: "en",
+        locale: locales.get(request.clientId) ?? "en",
       });
 
       results.remindersSent++;
