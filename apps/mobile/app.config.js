@@ -21,6 +21,7 @@ module.exports = {
       NSCameraUsageDescription: "Upload payment proofs and request attachments.",
       NSPhotoLibraryUsageDescription: "Attach images to requests and payment proofs.",
       NSMicrophoneUsageDescription: "Record voice notes for service requests.",
+      ITSAppUsesNonExemptEncryption: false,
       // Required by react-native-screens when using native statusBarStyle options.
       UIViewControllerBasedStatusBarAppearance: true,
       // Dev: allow HTTP to LAN Next.js API from Expo Go / device.
