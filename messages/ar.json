@@ -286,9 +286,21 @@
       "googlePlayLabel": "Google Play"
     },
     "footer": {
+      "tagline": "اطلب اللي تحتاجه—مبدعون يشتغلون مع الـ AI ويسلّمون النتيجة.",
+      "explore": "استكشف",
+      "company": "الشركة",
+      "socialLabel": "تابع وينجز",
+      "instagram": "إنستغرام",
+      "facebook": "فيسبوك",
+      "tiktok": "تيك توك",
+      "linkedin": "لينكدإن",
       "privacy": "الخصوصية",
       "terms": "الشروط",
-      "contact": "تواصل"
+      "contact": "تواصل",
+      "creators": "انضم كمبدع",
+      "getStarted": "ابدأ الآن",
+      "email": "info@wengz.tech",
+      "copyright": "© {year} وينجز. جميع الحقوق محفوظة."
     }
   },
   "forms": {

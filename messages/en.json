@@ -290,9 +290,21 @@
       "googlePlayLabel": "Google Play"
     },
     "footer": {
+      "tagline": "Ask for what you need—creators work AI and ship the result.",
+      "explore": "Explore",
+      "company": "Company",
+      "socialLabel": "Follow Wengz",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "tiktok": "TikTok",
+      "linkedin": "LinkedIn",
       "privacy": "Privacy",
       "terms": "Terms",
-      "contact": "Contact"
+      "contact": "Contact",
+      "creators": "Join as a creator",
+      "getStarted": "Get started",
+      "email": "info@wengz.tech",
+      "copyright": "© {year} Wengz. All rights reserved."
     }
   },
   "forms": {

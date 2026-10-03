@@ -164,6 +164,70 @@ const LANDING_NAV_LINKS = [
   { href: "#pricing", labelKey: "landing.nav.pricing" },
 ] as const;
 
+const FOOTER_SOCIAL = [
+  {
+    key: "instagram" as const,
+    href: "https://www.instagram.com/wengz.ai",
+    labelKey: "landing.footer.instagram",
+  },
+  {
+    key: "facebook" as const,
+    href: "https://www.facebook.com/profile.php?id=61576454483831",
+    labelKey: "landing.footer.facebook",
+  },
+  {
+    key: "tiktok" as const,
+    href: "https://www.tiktok.com/@wengz.ai",
+    labelKey: "landing.footer.tiktok",
+  },
+  {
+    key: "linkedin" as const,
+    href: "https://www.linkedin.com/showcase/wengz/home/",
+    labelKey: "landing.footer.linkedin",
+  },
+] as const;
+
+/** Stable across a request; `suppressHydrationWarning` covers rare TZ year-boundary skew. */
+function FooterCopyright({ label }: { label: string }) {
+  return (
+    <p suppressHydrationWarning className="text-xs text-muted-foreground sm:text-sm">
+      {label}
+    </p>
+  );
+}
+
+function SocialIcon({ name }: { name: (typeof FOOTER_SOCIAL)[number]["key"] }) {
+  const common = "h-[18px] w-[18px]";
+  if (name === "instagram") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden className={common}>
+        <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="12" cy="12" r="3.6" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (name === "facebook") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={common}>
+        <path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h2.6l.4-3H13v-2c0-.6.4-1 1-1Z" />
+      </svg>
+    );
+  }
+  if (name === "tiktok") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={common}>
+        <path d="M16.6 5.8A4.9 4.9 0 0 1 14.2 3h-2.7v13.1c0 1.6-1.3 2.9-2.9 2.9S5.7 17.7 5.7 16.1s1.3-2.9 2.9-2.9c.3 0 .6 0 .9.1V10c-.3 0-.6-.1-.9-.1A5.6 5.6 0 0 0 3 15.5 5.6 5.6 0 0 0 8.6 21a5.6 5.6 0 0 0 5.6-5.6V9.5a7.4 7.4 0 0 0 4.3 1.4V8.1a4.9 4.9 0 0 1-1.9-2.3Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={common}>
+      <path d="M6.3 9.2H3.6v11.3h2.7V9.2ZM5 4.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2ZM20.4 20.5h-2.7v-5.5c0-1.5-.5-2.5-1.8-2.5-1 0-1.5.7-1.8 1.3-.1.2-.1.5-.1.8v5.9H11v-7.5c0-1.4 0-2.5-.1-3.4h2.3l.1 1.5h.1c.4-.7 1.3-1.7 3.2-1.7 2.1 0 3.8 1.4 3.8 4.4v6.7Z" />
+    </svg>
+  );
+}
+
 type HeroChatPhase = "idle" | "awaitingReply" | "showingReply" | "error";
 
 export default function LandingPage({
@@ -1080,30 +1144,143 @@ export default function LandingPage({
       </main>
 
       <motion.footer
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.45 }}
-        className="relative z-10 border-t border-border bg-background py-10 sm:py-12"
+        transition={{ duration: 0.5 }}
+        className="relative z-10 overflow-hidden border-t border-border bg-background"
       >
-        <div className="container flex w-full flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row md:items-center md:gap-8">
-          <div className="flex shrink-0 items-center gap-2">
-            <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(105,13,212,0.10),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(224,248,64,0.07),transparent_45%)]"
+        />
+
+        <div className="container relative mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-10">
+          <div className="grid gap-10 sm:gap-12 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-16">
+            <div className="flex flex-col items-start gap-5">
+              <BrandLogo tone="auto" className="h-7 sm:h-8" />
+              <p className="max-w-sm text-sm leading-7 text-muted-foreground">
+                {t("landing.footer.tagline")}
+              </p>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  {t("landing.footer.socialLabel")}
+                </p>
+                <ul className="flex flex-wrap items-center gap-2">
+                  {FOOTER_SOCIAL.map((item, index) => (
+                    <motion.li
+                      key={item.key}
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.05 * index, duration: 0.35 }}
+                    >
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t(item.labelKey)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/80 bg-background/60 text-foreground transition-colors hover:border-[#690DD4]/40 hover:bg-muted hover:text-[#690DD4]"
+                      >
+                        <SocialIcon name={item.key} />
+                      </a>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {t("landing.footer.explore")}
+              </p>
+              <ul className="flex flex-col gap-2.5 text-sm">
+                {LANDING_NAV_LINKS.map((item) => (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      className="text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {t(item.labelKey)}
+                    </a>
+                  </li>
+                ))}
+                <li>
+                  <Link
+                    href="/auth/register"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.getStarted")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/forms/provider"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.creators")}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {t("landing.footer.company")}
+              </p>
+              <ul className="flex flex-col gap-2.5 text-sm">
+                <li>
+                  <Link
+                    href="/contact"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.contact")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/privacy"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.privacy")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/terms"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.terms")}
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="mailto:info@wengz.tech"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {t("landing.footer.email")}
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground md:justify-end">
-            <Link href="/privacy" className="transition-colors hover:text-foreground">
-              {t("common.footer.privacy")}
-            </Link>
-            <Link href="/terms" className="transition-colors hover:text-foreground">
-              {t("common.footer.terms")}
-            </Link>
-            <Link href="/contact" className="transition-colors hover:text-foreground">
-              {t("common.footer.contact")}
-            </Link>
+          <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border/80 pt-6 sm:mt-14 sm:flex-row sm:items-center">
+            <FooterCopyright
+              label={t("landing.footer.copyright", { year: new Date().getFullYear() })}
+            />
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+              <Link href="/privacy" className="transition-colors hover:text-foreground">
+                {t("landing.footer.privacy")}
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-foreground">
+                {t("landing.footer.terms")}
+              </Link>
+              <Link href="/contact" className="transition-colors hover:text-foreground">
+                {t("landing.footer.contact")}
+              </Link>
+            </div>
           </div>
-
-          <p className="text-xs text-muted-foreground sm:text-sm">{t("common.footer.copyright")}</p>
         </div>
       </motion.footer>
     </div>
