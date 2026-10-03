@@ -16,6 +16,7 @@ import {
   AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
+import { row } from "../../src/rtl";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -84,15 +85,25 @@ export default function LoginScreen() {
         />
         <View
           style={{
-            flexDirection: "row",
+            ...row(),
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 8,
+            alignSelf: "stretch",
+            gap: 12,
+            marginBottom: 6,
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Label>{t("auth.login.passwordLabel")}</Label>
-          </View>
+          <AppText
+            compact
+            style={{
+              color: colors.foreground,
+              ...typeScale.sm,
+              fontFamily: fonts.medium,
+              flexShrink: 1,
+            }}
+          >
+            {t("auth.login.passwordLabel")}
+          </AppText>
           <Link href="/(auth)/forgot-password">
             <AppText
               compact
@@ -100,7 +111,6 @@ export default function LoginScreen() {
                 color: colors.purple,
                 ...typeScale.sm,
                 fontFamily: fonts.medium,
-                marginBottom: 6,
               }}
             >
               {t("auth.login.forgotPassword")}

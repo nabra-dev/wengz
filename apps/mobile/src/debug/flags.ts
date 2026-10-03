@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY = "wengz_debug_ui_v1";
+const KEY = "wengz_debug_ui_v2";
 
 export type DebugUiFlags = {
   /** Red borders on Screen / Card / Button / Field / dropdown / attachments */
@@ -13,8 +13,8 @@ export type DebugUiFlags = {
 
 const DEFAULTS: DebugUiFlags = {
   outlines: false,
-  hud: true,
-  overflowWarn: true,
+  hud: false,
+  overflowWarn: false,
 };
 
 export async function loadDebugFlags(): Promise<DebugUiFlags> {
