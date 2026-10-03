@@ -979,12 +979,7 @@ export default function LandingPage({
                         </h3>
 
                         <div className="mb-5">
-                          <div
-                            className={cn(
-                              "text-3xl font-semibold tracking-tight sm:text-4xl",
-                              featured ? "text-foreground" : "text-foreground"
-                            )}
-                          >
+                          <div className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                             {formatCurrency(pkg.price)}
                             <span className="ms-1 text-sm font-medium text-muted-foreground sm:text-base">
                               {t("landing.pricing.perMonth")}
