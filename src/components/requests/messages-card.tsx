@@ -695,7 +695,7 @@ export function MessagesCard({
         {canSendMessages ? (
           <div className="shrink-0 border-t border-border/60 bg-[hsl(var(--card))] px-2 py-2 sm:px-3 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             {(showAttach || commentFiles.length > 0) && (
-              <div className="mb-2 max-h-36 overflow-y-auto rounded-2xl border border-border/60 bg-muted/40 p-2">
+              <div className="mb-2 max-h-56 overflow-y-auto rounded-2xl border border-border/60 bg-muted/40 p-2">
                 <InlineFileUpload
                   onFilesChange={setCommentFiles}
                   maxFiles={3}
@@ -718,8 +718,12 @@ export function MessagesCard({
 
             <ContactPolicyNotice text={comment} mode="strict" className="mb-2" />
 
-            {/* Inherit page dir so attach/send mirror in Arabic (was hard-locked LTR). */}
-            <div className="flex items-end gap-1.5 sm:gap-2">
+            {/*
+              Physical order stays attach | input | send/mic (WhatsApp muscle memory).
+              Page-level RTL would reverse that — lock the row LTR, and align the
+              textarea itself for the active locale.
+            */}
+            <div dir="ltr" className="flex items-end gap-1.5 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -747,8 +751,11 @@ export function MessagesCard({
                     resizeTextarea();
                   }}
                   rows={1}
-                  dir="auto"
-                  className="max-h-32 min-h-[2.25rem] flex-1 resize-none border-0 bg-transparent px-0 py-1.5 text-sm leading-snug shadow-none focus-visible:ring-0 sm:text-[15px]"
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                  className={cn(
+                    "max-h-32 min-h-[2.25rem] flex-1 resize-none border-0 bg-transparent px-0 py-1.5 text-sm leading-snug shadow-none focus-visible:ring-0 sm:text-[15px]",
+                    locale === "ar" ? "text-right" : "text-left"
+                  )}
                   disabled={addComment.isPending}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -771,7 +778,7 @@ export function MessagesCard({
                   {addComment.isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Send className="h-5 w-5 rtl:-scale-x-100" />
+                    <Send className="h-5 w-5" />
                   )}
                 </Button>
               ) : (

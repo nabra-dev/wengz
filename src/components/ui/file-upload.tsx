@@ -387,6 +387,7 @@ export function InlineFileUpload({
   };
 
   const canPick = !disabled && !isUploading && uploadedFiles.length < maxFiles;
+  const hasFiles = uploadedFiles.length > 0;
 
   return (
     <div className="space-y-2">
@@ -400,59 +401,8 @@ export function InlineFileUpload({
         disabled={!canPick}
       />
 
-      <button
-        type="button"
-        onClick={() => {
-          if (canPick) inputRef.current?.click();
-        }}
-        disabled={!canPick}
-        className={cn(
-          "flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-3 py-5 text-center transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-          canPick
-            ? "cursor-pointer border-muted-foreground/30 hover:border-primary/55 hover:bg-primary/5"
-            : "cursor-not-allowed border-muted-foreground/20 opacity-60"
-        )}
-        aria-label={t("attachFiles")}
-      >
-        {isUploading ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {uploadPercent === null
-                ? t("uploading")
-                : t("uploadingProgress", { percent: uploadPercent })}
-            </span>
-          </>
-        ) : (
-          <>
-            <Upload className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium text-primary">{t("attachFiles")}</span>
-            {uploadedFiles.length > 0 ? (
-              <span className="text-xs text-muted-foreground">
-                {t("filesAttached", { count: uploadedFiles.length })}
-              </span>
-            ) : null}
-          </>
-        )}
-      </button>
-
-      {uploadedFiles.length > 0 ? (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={clearFiles}
-            className="h-8 text-xs"
-            disabled={disabled}
-          >
-            {t("clearAll")}
-          </Button>
-        </div>
-      ) : null}
-
-      {uploadedFiles.length > 0 && (
+      {/* Previews first — chat panel used to clip these below a tall dropzone. */}
+      {hasFiles ? (
         <ul className="space-y-2">
           {uploadedFiles.map((file, index) => {
             const kind = resolveFileKind(
@@ -463,7 +413,7 @@ export function InlineFileUpload({
             return (
               <li
                 key={`${file.url}-${index}`}
-                className="relative rounded-lg border bg-muted/40 p-2.5"
+                className="relative rounded-lg border bg-background/60 p-2.5"
               >
                 <Button
                   type="button"
@@ -520,6 +470,81 @@ export function InlineFileUpload({
             );
           })}
         </ul>
+      ) : null}
+
+      {hasFiles ? (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            {t("filesAttached", { count: uploadedFiles.length })}
+          </span>
+          <div className="flex items-center gap-1">
+            {canPick || isUploading ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (canPick) inputRef.current?.click();
+                }}
+                disabled={!canPick}
+                className="h-8 gap-1.5 text-xs"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5" />
+                )}
+                {isUploading
+                  ? uploadPercent === null
+                    ? t("uploading")
+                    : t("uploadingProgress", { percent: uploadPercent })
+                  : t("attachFiles")}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFiles}
+              className="h-8 text-xs"
+              disabled={disabled || isUploading}
+            >
+              {t("clearAll")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            if (canPick) inputRef.current?.click();
+          }}
+          disabled={!canPick}
+          className={cn(
+            "flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-3 py-4 text-center transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            canPick
+              ? "cursor-pointer border-muted-foreground/30 hover:border-primary/55 hover:bg-primary/5"
+              : "cursor-not-allowed border-muted-foreground/20 opacity-60"
+          )}
+          aria-label={t("attachFiles")}
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {uploadPercent === null
+                  ? t("uploading")
+                  : t("uploadingProgress", { percent: uploadPercent })}
+              </span>
+            </>
+          ) : (
+            <>
+              <Upload className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-primary">{t("attachFiles")}</span>
+            </>
+          )}
+        </button>
       )}
     </div>
   );
