@@ -11,20 +11,20 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging.example.com"
+        "EXPO_PUBLIC_API_URL": "https://wengz.tech"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://wengz.com"
+        "EXPO_PUBLIC_API_URL": "https://wengz.tech"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "replace@example.com",
+        "appleId": "info@wengz.tech",
         "ascAppId": "0000000000"
       },
       "android": {

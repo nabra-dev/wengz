@@ -81,7 +81,8 @@ module.exports = {
     router: {},
     supportsRTL: true,
     apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.27:3001",
-    // Set after `eas init` for push/EAS builds:
-    // eas: { projectId: process.env.EAS_PROJECT_ID },
+    eas: {
+      projectId: "c0a30a47-f88b-456f-bea0-dcc3340c97ce",
+    },
   },
 };
