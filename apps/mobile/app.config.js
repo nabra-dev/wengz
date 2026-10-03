@@ -13,6 +13,9 @@ module.exports = {
     resizeMode: "contain",
     backgroundColor: "#0E0A14",
   },
+  web: {
+    favicon: "./assets/favicon.png",
+  },
   backgroundColor: "#0E0A14",
   ios: {
     supportsTablet: true,
