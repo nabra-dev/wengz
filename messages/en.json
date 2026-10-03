@@ -2764,7 +2764,13 @@
     },
     "contactMessage": {
       "title": "New contact message",
-      "message": "{fullName} ({email}) — {topic}"
+      "message": "{fullName} ({email}) — {topic}",
+      "emailSubject": "New contact message from {fullName}",
+      "emailBody": {
+        "heading": "New contact message",
+        "intro": "<strong>{fullName}</strong> ({email}) sent a contact message about <strong>{topic}</strong>.",
+        "viewButton": "Open Contacts"
+      }
     },
     "newUserRegistration": {
       "title": "New registration pending",
@@ -2772,11 +2778,52 @@
       "reapplyTitle": "Registration re-submitted",
       "reapplyMessage": "{userName} ({userEmail}) re-applied as {role}",
       "roleClient": "Client",
-      "roleCreator": "Creator"
+      "roleCreator": "Creator",
+      "emailSubject": "New {role} registration: {userName}",
+      "emailBody": {
+        "heading": "New registration pending",
+        "intro": "<strong>{userName}</strong> ({userEmail}) applied as <strong>{role}</strong> and needs approval.",
+        "viewButton": "Review Users"
+      },
+      "reapply": {
+        "emailSubject": "Re-application: {userName} ({role})",
+        "emailBody": {
+          "heading": "Registration re-submitted",
+          "intro": "<strong>{userName}</strong> ({userEmail}) re-applied as <strong>{role}</strong> and needs approval.",
+          "viewButton": "Review Users"
+        }
+      }
     },
     "contactLeakRepeat": {
       "title": "Repeated off-platform contact attempts",
-      "message": "A user repeatedly tried to share off-platform contact ({kinds}). Review Activity → security.contact_leak."
+      "message": "A user repeatedly tried to share off-platform contact ({kinds}). Review Activity → security.contact_leak.",
+      "emailSubject": "Repeated off-platform contact attempts",
+      "emailBody": {
+        "heading": "Contact leak rate limit",
+        "intro": "A user repeatedly tried to share off-platform contact details (<strong>{kinds}</strong>). Review contact-leak activity.",
+        "viewButton": "Open Contact Leaks"
+      }
+    },
+    "manualApprovalNeeded": {
+      "title": "Manual approval needed",
+      "message": "Delivered request \"{requestTitle}\" still needs approval after 12 hours.",
+      "emailSubject": "Manual approval needed: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Manual approval needed",
+        "intro": "Delivered request <strong>{requestTitle}</strong> is still waiting for client approval after 12 hours.",
+        "viewButton": "Open Requests"
+      }
+    },
+    "roleChanged": {
+      "title": "Your role was updated",
+      "message": "Your account role changed from {oldRole} to {newRole}. Sign in again if your dashboard looks different.",
+      "emailSubject": "Your Wengz role is now {newRole}",
+      "emailBody": {
+        "heading": "Role updated",
+        "intro": "Hi {userName}, an admin updated your Wengz account role.",
+        "message": "Your role changed from <strong>{oldRole}</strong> to <strong>{newRole}</strong>. Sign in again if your dashboard looks different.",
+        "viewButton": "Sign in"
+      }
     },
     "newRequestAvailable": {
       "title": "New Request Available",

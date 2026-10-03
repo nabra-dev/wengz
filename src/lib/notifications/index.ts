@@ -36,6 +36,11 @@ import {
   getPasswordChangedEmailTemplate,
   getEmailChangedEmailTemplate,
   getAccountDeletedEmailTemplate,
+  getAdminNewUserRegistrationEmailTemplate,
+  getAdminContactMessageEmailTemplate,
+  getAdminContactLeakRepeatEmailTemplate,
+  getAdminManualApprovalNeededEmailTemplate,
+  getRoleChangedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -1458,7 +1463,7 @@ export async function sendPasswordResetEmail(params: {
   });
 }
 
-/** In-app + SSE alert for super admins when a client/creator applies (or re-applies). */
+/** In-app + email alert for super admins when a client/creator applies (or re-applies). */
 export async function notifyAdminsNewUserRegistration(params: {
   userName: string;
   userEmail: string;
@@ -1495,6 +1500,13 @@ export async function notifyAdminsNewUserRegistration(params: {
     role: roleLabel,
   });
   const link = "/admin/users";
+  const emailTemplate = await getAdminNewUserRegistrationEmailTemplate({
+    userName,
+    userEmail,
+    role: roleLabel,
+    reapplied,
+    locale,
+  });
 
   await Promise.all(
     admins.map(async (admin) =>
@@ -1504,8 +1516,8 @@ export async function notifyAdminsNewUserRegistration(params: {
         message,
         type: "general",
         link,
-        sendEmail: false,
         locale,
+        emailTemplate,
         sseI18n: {
           titleKey,
           messageKey,
@@ -1536,13 +1548,20 @@ export async function notifyAdminsContactMessage(params: {
     select: { id: true },
   });
 
+  const topicLabel = topic || "—";
   const title = await getTranslation(locale, "notifications.contactMessage.title");
   const message = await getTranslation(locale, "notifications.contactMessage.message", {
     fullName,
     email,
-    topic: topic || "—",
+    topic: topicLabel,
   });
   const link = `/admin/contacts?id=${messageId}`;
+  const emailTemplate = await getAdminContactMessageEmailTemplate({
+    fullName,
+    email,
+    topic: topicLabel,
+    locale,
+  });
 
   await Promise.all(
     admins.map(async (admin) =>
@@ -1552,15 +1571,15 @@ export async function notifyAdminsContactMessage(params: {
         message,
         type: "general",
         link,
-        sendEmail: false,
         locale,
+        emailTemplate,
         sseI18n: {
           titleKey: "notifications.contactMessage.title",
           messageKey: "notifications.contactMessage.message",
           messageParams: {
             fullName,
             email,
-            topic: topic || "—",
+            topic: topicLabel,
           },
         },
       })
@@ -1568,4 +1587,138 @@ export async function notifyAdminsContactMessage(params: {
   );
 
   return { notifiedAdmins: admins.length };
+}
+
+export async function notifyAdminsContactLeakRepeat(params: { kinds: string[]; locale?: string }) {
+  const { kinds, locale = "en" } = params;
+  const kindsLabel = kinds.join(", ") || "contact";
+
+  const admins = await db.user.findMany({
+    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
+    select: { id: true },
+  });
+  if (admins.length === 0) return { notifiedAdmins: 0 };
+
+  const title = await getTranslation(locale, "notifications.contactLeakRepeat.title");
+  const message = await getTranslation(locale, "notifications.contactLeakRepeat.message", {
+    kinds: kindsLabel,
+  });
+  const emailTemplate = await getAdminContactLeakRepeatEmailTemplate({
+    kinds: kindsLabel,
+    locale,
+  });
+
+  await Promise.all(
+    admins.map(async (admin) =>
+      createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type: "general",
+        link: "/admin/contact-leaks",
+        locale,
+        emailTemplate,
+        sseI18n: {
+          titleKey: "notifications.contactLeakRepeat.title",
+          messageKey: "notifications.contactLeakRepeat.message",
+          messageParams: { kinds: kindsLabel },
+        },
+      })
+    )
+  );
+
+  return { notifiedAdmins: admins.length };
+}
+
+export async function notifyAdminsManualApprovalNeeded(params: {
+  requestId: string;
+  requestTitle: string;
+  locale?: string;
+}) {
+  const { requestId, requestTitle, locale = "en" } = params;
+
+  const admins = await db.user.findMany({
+    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
+    select: { id: true },
+  });
+  if (admins.length === 0) return { notifiedAdmins: 0 };
+
+  const title = await getTranslation(locale, "notifications.manualApprovalNeeded.title");
+  const message = await getTranslation(locale, "notifications.manualApprovalNeeded.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getAdminManualApprovalNeededEmailTemplate({
+    requestTitle,
+    locale,
+  });
+
+  await Promise.all(
+    admins.map(async (admin) =>
+      createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type: "status_change",
+        link: `/admin/requests/${requestId}`,
+        requestId,
+        locale,
+        emailTemplate,
+        sseI18n: {
+          titleKey: "notifications.manualApprovalNeeded.title",
+          messageKey: "notifications.manualApprovalNeeded.message",
+          messageParams: { requestTitle },
+        },
+      })
+    )
+  );
+
+  return { notifiedAdmins: admins.length };
+}
+
+export async function notifyRoleChanged(params: {
+  userId: string;
+  userName: string;
+  oldRole: string;
+  newRole: string;
+  locale?: string;
+}) {
+  const { userId, userName, oldRole, newRole, locale = "en" } = params;
+
+  const [oldRoleLabel, newRoleLabel] = await Promise.all([
+    getTranslation(locale, `common.roles.${oldRole}`),
+    getTranslation(locale, `common.roles.${newRole}`),
+  ]);
+
+  // getTranslation returns the key when missing — normalize
+  const resolvedOld =
+    oldRoleLabel === `common.roles.${oldRole}` ? oldRole.replaceAll("_", " ") : oldRoleLabel;
+  const resolvedNew =
+    newRoleLabel === `common.roles.${newRole}` ? newRole.replaceAll("_", " ") : newRoleLabel;
+
+  const title = await getTranslation(locale, "notifications.roleChanged.title");
+  const message = await getTranslation(locale, "notifications.roleChanged.message", {
+    oldRole: resolvedOld,
+    newRole: resolvedNew,
+  });
+  const emailTemplate = await getRoleChangedEmailTemplate({
+    userName,
+    oldRole: resolvedOld,
+    newRole: resolvedNew,
+    locale,
+  });
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/auth/login",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.roleChanged.title",
+      messageKey: "notifications.roleChanged.message",
+      messageParams: { oldRole: resolvedOld, newRole: resolvedNew },
+    },
+  });
 }

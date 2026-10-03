@@ -1034,6 +1034,115 @@ export async function getAccountDeletedEmailTemplate(params: {
   });
 }
 
+export async function getAdminNewUserRegistrationEmailTemplate(params: {
+  userName: string;
+  userEmail: string;
+  role: string;
+  reapplied?: boolean;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const prefix = params.reapplied
+    ? "notifications.newUserRegistration.reapply"
+    : "notifications.newUserRegistration";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: `${prefix}.emailSubject`,
+    subjectParams: { userName: params.userName, role: params.role },
+    headingKey: `${prefix}.emailBody.heading`,
+    introKey: `${prefix}.emailBody.intro`,
+    introParams: {
+      userName: params.userName,
+      userEmail: params.userEmail,
+      role: params.role,
+    },
+    buttonKey: `${prefix}.emailBody.viewButton`,
+    href: `${appBaseUrl()}/admin/users`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getAdminContactMessageEmailTemplate(params: {
+  fullName: string;
+  email: string;
+  topic: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.contactMessage.emailSubject",
+    subjectParams: { fullName: params.fullName },
+    headingKey: "notifications.contactMessage.emailBody.heading",
+    introKey: "notifications.contactMessage.emailBody.intro",
+    introParams: {
+      fullName: params.fullName,
+      email: params.email,
+      topic: params.topic,
+    },
+    buttonKey: "notifications.contactMessage.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/contacts`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getAdminContactLeakRepeatEmailTemplate(params: {
+  kinds: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.contactLeakRepeat.emailSubject",
+    headingKey: "notifications.contactLeakRepeat.emailBody.heading",
+    introKey: "notifications.contactLeakRepeat.emailBody.intro",
+    introParams: { kinds: params.kinds },
+    buttonKey: "notifications.contactLeakRepeat.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/contact-leaks`,
+    calloutVariant: "danger",
+  });
+}
+
+export async function getAdminManualApprovalNeededEmailTemplate(params: {
+  requestTitle: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.manualApprovalNeeded.emailSubject",
+    subjectParams: { requestTitle: params.requestTitle },
+    headingKey: "notifications.manualApprovalNeeded.emailBody.heading",
+    introKey: "notifications.manualApprovalNeeded.emailBody.intro",
+    introParams: { requestTitle: params.requestTitle },
+    buttonKey: "notifications.manualApprovalNeeded.emailBody.viewButton",
+    href: `${appBaseUrl()}/admin/requests`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getRoleChangedEmailTemplate(params: {
+  userName: string;
+  oldRole: string;
+  newRole: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.roleChanged.emailSubject",
+    subjectParams: { newRole: params.newRole },
+    headingKey: "notifications.roleChanged.emailBody.heading",
+    introKey: "notifications.roleChanged.emailBody.intro",
+    introParams: { userName: params.userName },
+    bodyKey: "notifications.roleChanged.emailBody.message",
+    bodyParams: { oldRole: params.oldRole, newRole: params.newRole },
+    buttonKey: "notifications.roleChanged.emailBody.viewButton",
+    href: `${appBaseUrl()}/auth/login`,
+    calloutVariant: "warning",
+  });
+}
+
 /** Ops / internal notify — English layout, no user-facing i18n. */
 export async function getOpsNotifyEmailHtml(params: {
   title: string;

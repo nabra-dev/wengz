@@ -18,6 +18,8 @@ import {
   notifyRequestCancelled,
   notifyRequestRestored,
   notifyAccountActivationChanged,
+  notifyEmailChanged,
+  notifyRoleChanged,
   sendWelcomeEmail,
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
@@ -2297,6 +2299,8 @@ export const adminRouter = router({
         where: { id: input.userId },
         select: {
           id: true,
+          name: true,
+          email: true,
           role: true,
           _count: {
             select: {
@@ -2349,6 +2353,16 @@ export const adminRouter = router({
             userId: input.userId,
             skillsTags: [],
           },
+        });
+      }
+
+      if (existing.role !== input.role) {
+        await notifyRoleChanged({
+          userId: existing.id,
+          userName: existing.name || existing.email,
+          oldRole: existing.role,
+          newRole: input.role,
+          locale: ctx.locale,
         });
       }
 
@@ -3369,6 +3383,7 @@ export const adminRouter = router({
         where: { id: userId },
         select: {
           id: true,
+          name: true,
           email: true,
           role: true,
           _count: {
@@ -3416,12 +3431,13 @@ export const adminRouter = router({
         }
       }
 
+      let nextEmail: string | undefined;
       // If email is being changed, check if it's already taken
       if (email && email !== user.email) {
-        const normalizedEmail = email.toLowerCase().trim();
+        nextEmail = email.toLowerCase().trim();
         const existingUser = await ctx.db.user.findFirst({
           where: {
-            email: normalizedEmail,
+            email: nextEmail,
             id: { not: userId },
           },
         });
@@ -3434,13 +3450,16 @@ export const adminRouter = router({
         }
       }
 
+      const emailChanged = !!nextEmail && nextEmail !== user.email.toLowerCase().trim();
+      const roleChanged = !!role && role !== user.role;
+
       const updatedUser = await ctx.db.user.update({
         where: { id: userId },
         data: {
           ...(name && { name }),
-          ...(email && { email }),
+          ...(nextEmail && { email: nextEmail }),
           ...(phone !== undefined && { phone }),
-          ...(role && role !== user.role && { role }),
+          ...(roleChanged && { role }),
         },
         select: {
           id: true,
@@ -3451,7 +3470,7 @@ export const adminRouter = router({
         },
       });
 
-      if (role && role !== user.role) {
+      if (roleChanged && role) {
         await invalidateSessionUserCache(userId);
         if (role === "PROVIDER") {
           await ctx.db.providerProfile.upsert({
@@ -3463,6 +3482,23 @@ export const adminRouter = router({
             },
           });
         }
+        await notifyRoleChanged({
+          userId,
+          userName: updatedUser.name || user.name || updatedUser.email,
+          oldRole: user.role,
+          newRole: role,
+          locale: ctx.locale,
+        });
+      }
+
+      if (emailChanged && nextEmail) {
+        await notifyEmailChanged({
+          userId,
+          userName: updatedUser.name || user.name || nextEmail,
+          oldEmail: user.email,
+          newEmail: nextEmail,
+          locale: ctx.locale,
+        });
       }
 
       return {

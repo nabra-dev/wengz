@@ -2756,7 +2756,13 @@
     },
     "contactMessage": {
       "title": "رسالة تواصل جديدة",
-      "message": "{fullName} ({email}) — {topic}"
+      "message": "{fullName} ({email}) — {topic}",
+      "emailSubject": "رسالة تواصل جديدة من {fullName}",
+      "emailBody": {
+        "heading": "رسالة تواصل جديدة",
+        "intro": "أرسل <strong>{fullName}</strong> ({email}) رسالة تواصل بخصوص <strong>{topic}</strong>.",
+        "viewButton": "فتح الرسائل"
+      }
     },
     "newUserRegistration": {
       "title": "طلب تسجيل جديد بانتظار المراجعة",
@@ -2764,11 +2770,52 @@
       "reapplyTitle": "إعادة تقديم طلب تسجيل",
       "reapplyMessage": "{userName} ({userEmail}) أعاد التقديم كـ {role}",
       "roleClient": "عميل",
-      "roleCreator": "مبدع"
+      "roleCreator": "مبدع",
+      "emailSubject": "تسجيل {role} جديد: {userName}",
+      "emailBody": {
+        "heading": "طلب تسجيل بانتظار المراجعة",
+        "intro": "تقدّم <strong>{userName}</strong> ({userEmail}) كـ <strong>{role}</strong> ويحتاج موافقة.",
+        "viewButton": "مراجعة المستخدمين"
+      },
+      "reapply": {
+        "emailSubject": "إعادة تقديم: {userName} ({role})",
+        "emailBody": {
+          "heading": "إعادة تقديم طلب تسجيل",
+          "intro": "أعاد <strong>{userName}</strong> ({userEmail}) التقديم كـ <strong>{role}</strong> ويحتاج موافقة.",
+          "viewButton": "مراجعة المستخدمين"
+        }
+      }
     },
     "contactLeakRepeat": {
       "title": "محاولات متكررة لمشاركة تواصل خارج المنصة",
-      "message": "حاول مستخدم مراراً مشاركة بيانات تواصل خارج المنصة ({kinds}). راجع النشاط → security.contact_leak."
+      "message": "حاول مستخدم مراراً مشاركة بيانات تواصل خارج المنصة ({kinds}). راجع النشاط → security.contact_leak.",
+      "emailSubject": "محاولات متكررة لمشاركة تواصل خارج المنصة",
+      "emailBody": {
+        "heading": "حد معدل تسريب التواصل",
+        "intro": "حاول مستخدم مراراً مشاركة بيانات تواصل خارج المنصة (<strong>{kinds}</strong>). راجع نشاط تسريب التواصل.",
+        "viewButton": "فتح تسريبات التواصل"
+      }
+    },
+    "manualApprovalNeeded": {
+      "title": "مطلوب موافقة يدوية",
+      "message": "الطلب المسلّم \"{requestTitle}\" ما زال بانتظار الموافقة بعد 12 ساعة.",
+      "emailSubject": "مطلوب موافقة يدوية: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "مطلوب موافقة يدوية",
+        "intro": "الطلب المسلّم <strong>{requestTitle}</strong> ما زال بانتظار موافقة العميل بعد 12 ساعة.",
+        "viewButton": "فتح الطلبات"
+      }
+    },
+    "roleChanged": {
+      "title": "تم تحديث دورك",
+      "message": "تغيّر دور حسابك من {oldRole} إلى {newRole}. سجّل الدخول مجدداً إذا بدت لوحة التحكم مختلفة.",
+      "emailSubject": "دورك في وينجز أصبح {newRole}",
+      "emailBody": {
+        "heading": "تم تحديث الدور",
+        "intro": "مرحباً {userName}، قام مسؤول بتحديث دور حسابك في وينجز.",
+        "message": "تغيّر دورك من <strong>{oldRole}</strong> إلى <strong>{newRole}</strong>. سجّل الدخول مجدداً إذا بدت لوحة التحكم مختلفة.",
+        "viewButton": "تسجيل الدخول"
+      }
     },
     "newRequestAvailable": {
       "title": "طلب جديد متاح",

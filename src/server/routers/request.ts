@@ -837,31 +837,47 @@ export const requestRouter = router({
 
       // Determine recipients for notifications
       const senderName = comment.user.name || comment.user.email || "Someone";
-      const isProviderRole = ctx.session.user.role === "PROVIDER";
+      const messagePreview = input.content.slice(0, 100);
       if (isClient) {
         await notifyNewMessage({
           requestId: input.requestId,
           senderName,
           senderRole: "CLIENT",
           recipientId: request.providerId,
-          messagePreview: input.content.slice(0, 100),
+          messagePreview,
           locale: ctx.locale,
         });
-      } else {
-        // Non-client commented (provider/admin) - notify client
+      } else if (isProvider) {
         // Mask provider identity for client-facing notifications
         const brandProviderName = await getTranslation(
           ctx.locale,
           "requests.sidebar.brandProviderName"
         );
-        const maskedSenderName = isProviderRole ? brandProviderName : senderName;
         await notifyNewMessage({
           requestId: input.requestId,
-          senderName: maskedSenderName,
+          senderName: brandProviderName,
           recipientId: request.clientId,
-          messagePreview: input.content.slice(0, 100),
+          messagePreview,
           locale: ctx.locale,
         });
+      } else {
+        // Staff message — notify both client and assigned creator
+        await notifyNewMessage({
+          requestId: input.requestId,
+          senderName,
+          recipientId: request.clientId,
+          messagePreview,
+          locale: ctx.locale,
+        });
+        if (request.providerId && request.providerId !== userId) {
+          await notifyNewMessage({
+            requestId: input.requestId,
+            senderName,
+            recipientId: request.providerId,
+            messagePreview,
+            locale: ctx.locale,
+          });
+        }
       }
 
       logRequestActivity({

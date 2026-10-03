@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { notifyApprovalReminder } from "@/lib/notifications";
+import { notifyApprovalReminder, notifyAdminsManualApprovalNeeded } from "@/lib/notifications";
 import { getPreferredLocalesByUserIds } from "@/lib/user-locale";
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
@@ -68,18 +68,43 @@ async function processApprovalReminders(now: Date, results: ApprovalCronResults)
 async function processManualApprovalFlags(results: ApprovalCronResults) {
   const twelveHoursAgo = new Date(Date.now() - TWELVE_HOURS_MS);
 
-  // Single bulk update — per-request audit would amplify writes every cron tick.
-  const flagged = await db.request.updateMany({
+  const due = await db.request.findMany({
     where: {
       status: "DELIVERED",
       deletedAt: null,
       deliveredAt: { lte: twelveHoursAgo, not: null },
       needsManualApproval: false,
     },
-    data: { needsManualApproval: true },
+    select: { id: true, title: true },
+    take: 200,
   });
 
-  results.flaggedManualApproval = flagged.count;
+  for (const request of due) {
+    try {
+      // CAS: only flag once so concurrent cron runs do not double-notify
+      const claimed = await db.request.updateMany({
+        where: {
+          id: request.id,
+          status: "DELIVERED",
+          deletedAt: null,
+          needsManualApproval: false,
+        },
+        data: { needsManualApproval: true },
+      });
+
+      if (claimed.count === 0) continue;
+
+      await notifyAdminsManualApprovalNeeded({
+        requestId: request.id,
+        requestTitle: request.title,
+        locale: "en",
+      });
+      results.flaggedManualApproval++;
+    } catch (error) {
+      logger.error(`[CRON] Failed manual-approval flag for request ${request.id}:`, error);
+      results.errors.push(`ManualApproval ${request.id}: ${error}`);
+    }
+  }
 }
 
 export async function GET(request: Request) {

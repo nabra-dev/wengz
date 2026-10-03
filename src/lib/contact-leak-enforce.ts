@@ -2,8 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { logActivityAsync } from "@/lib/activity-log";
 import { clearRateLimit, getRateLimitState, rateLimit } from "@/lib/rate-limit";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
-import { createNotification } from "@/lib/notifications";
-import { db } from "@/lib/db";
+import { notifyAdminsContactLeakRepeat } from "@/lib/notifications";
 import { isSuperAdmin } from "@/lib/roles";
 import {
   CONTACT_LEAK_ERROR_MESSAGE,
@@ -48,47 +47,6 @@ export async function getContactLeakRateLimitMessage(locale: string): Promise<st
     locale,
     "errors.contactLeakRateLimited",
     CONTACT_LEAK_RATE_LIMIT_MESSAGE
-  );
-}
-
-async function notifyAdminsContactLeakRepeat(params: { kinds: string[]; locale: string }) {
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
-    select: { id: true },
-  });
-  if (admins.length === 0) return;
-
-  const title = await getLocalizedMessage(
-    params.locale,
-    "notifications.contactLeakRepeat.title",
-    "Repeated off-platform contact attempts"
-  );
-  const message = await getLocalizedMessage(
-    params.locale,
-    "notifications.contactLeakRepeat.message",
-    `A user repeatedly tried to share off-platform contact details (${params.kinds.join(", ") || "contact"}).`,
-    { kinds: params.kinds.join(", ") || "contact" }
-  );
-
-  const link = `/admin/contact-leaks`;
-
-  await Promise.all(
-    admins.map((admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link,
-        sendEmail: false,
-        locale: params.locale,
-        sseI18n: {
-          titleKey: "notifications.contactLeakRepeat.title",
-          messageKey: "notifications.contactLeakRepeat.message",
-          messageParams: { kinds: params.kinds.join(", ") || "contact" },
-        },
-      })
-    )
   );
 }
 
