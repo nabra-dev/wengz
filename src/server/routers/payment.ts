@@ -86,7 +86,7 @@ export const paymentRouter = router({
         senderCountry: z.string().min(1),
         amount: z.number().positive(),
         currency: z.literal("USD").default("USD"),
-        transferDate: z.date(),
+        transferDate: z.coerce.date(),
         referenceNumber: z.string().optional(),
         notes: z.string().optional(),
       })

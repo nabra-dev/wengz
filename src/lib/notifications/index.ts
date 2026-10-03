@@ -49,6 +49,7 @@ import { getTranslation, normalizeAppLocale } from "./i18n-helper";
 import { logger } from "@/lib/logger";
 import { formatMoneyAmount } from "@/lib/utils";
 import { getPreferredLocaleForUser } from "@/lib/user-locale";
+import { sendPushToUser } from "@/lib/push";
 
 type StaffRole = "SUPER_ADMIN" | "PROJECT_MANAGER" | "FINANCE_MANAGER";
 
@@ -272,6 +273,21 @@ export async function createNotification(data: NotificationData) {
   if (shouldSendEmail) {
     void sendEmailNotification(emailTemplate, user?.email);
   }
+
+  // Native push (Expo) — best-effort; does not block the request.
+  void sendPushToUser({
+    userId,
+    title,
+    body: message,
+    data: {
+      notificationId: notification.id,
+      type,
+      ...(link ? { link } : {}),
+      ...(requestId ? { requestId } : {}),
+    },
+  }).catch((error) => {
+    logger.error("Failed to send push notification:", error);
+  });
 
   return notification;
 }

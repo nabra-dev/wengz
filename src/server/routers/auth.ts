@@ -12,6 +12,7 @@ import { finalizePasswordReset, findValidPasswordResetToken } from "@/lib/passwo
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { isAllowedProviderCvUrl } from "@/lib/upload-url";
 import { sendEmail, getOpsNotifyEmailHtml } from "@/lib/notifications/email";
+import { mobileClientLogin } from "@/lib/mobile-auth";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -234,6 +235,81 @@ export const authRouter = router({
         success: true,
         message: "Application submitted. An admin will review it shortly.",
         userId: user.id,
+      };
+    }),
+
+  /**
+   * Client-only mobile login — returns a Bearer access token (NextAuth-compatible JWT).
+   * Web continues to use NextAuth cookie sessions.
+   */
+  mobileLogin: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/auth/mobile-login",
+        tags: ["auth", "mobile"],
+        summary: "Client mobile login (Bearer token)",
+        protect: false,
+      },
+    })
+    .input(
+      z.object({
+        email: z.string().email().toLowerCase(),
+        password: z.string().min(1),
+      })
+    )
+    .output(
+      z.object({
+        accessToken: z.string(),
+        tokenType: z.literal("Bearer"),
+        expiresIn: z.number(),
+        user: z.object({
+          id: z.string(),
+          email: z.string(),
+          name: z.string(),
+          role: z.string(),
+          image: z.string().nullable(),
+          phone: z.string().nullable(),
+        }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await mobileClientLogin({
+        email: input.email,
+        password: input.password,
+        ip: getClientIp(ctx.req),
+      });
+
+      if (!result.ok) {
+        const codeMap: Record<
+          string,
+          "UNAUTHORIZED" | "FORBIDDEN" | "TOO_MANY_REQUESTS" | "PRECONDITION_FAILED"
+        > = {
+          INVALID_CREDENTIALS: "UNAUTHORIZED",
+          ACCOUNT_PENDING_APPROVAL: "FORBIDDEN",
+          ACCOUNT_REJECTED: "FORBIDDEN",
+          CLIENT_ONLY: "FORBIDDEN",
+          MAINTENANCE_MODE: "PRECONDITION_FAILED",
+          RATE_LIMITED: "TOO_MANY_REQUESTS",
+        };
+        throw new TRPCError({
+          code: codeMap[result.code] ?? "UNAUTHORIZED",
+          message: `${result.code}:${result.message}`,
+        });
+      }
+
+      return {
+        accessToken: result.accessToken,
+        tokenType: "Bearer" as const,
+        expiresIn: result.expiresIn,
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          role: result.user.role,
+          image: result.user.image,
+          phone: result.user.phone,
+        },
       };
     }),
 

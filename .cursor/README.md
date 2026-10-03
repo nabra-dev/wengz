@@ -30,6 +30,10 @@ Ground truth for product/engineering remains in **`docs/`**. This folder teaches
 | `wengz-credits-payments`     | Credits, proofs, wallet, finance        |
 | `wengz-notifications-locale` | Email/in-app/SSE locale correctness     |
 
+## Mobile (Client Expo)
+
+Native Client app lives at **`apps/mobile`**. Auth is Bearer JWT + `X-Locale` against `/api/rest` (see `docs/ADVANCED_TECHNICAL.md` § Mobile client API). Provider/admin remain web-only.
+
 ## Refresh workflow
 
 Follow `skills/codebase-fit-skills/SKILL.md`: read ADVANCED business → technical → code → update rules/skills. Do not duplicate entire docs into rules — **link** and distill.

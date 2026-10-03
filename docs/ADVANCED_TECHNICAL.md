@@ -203,6 +203,24 @@ All cron routes require `Authorization: Bearer ${CRON_SECRET}` (in production `C
 
 ---
 
+## Mobile client API (Expo / native)
+
+Client-only native apps (see `apps/mobile`) authenticate with a **Bearer JWT**, not cookies.
+
+| Concern     | Implementation                                                                                                                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login       | `POST /api/rest/auth/mobile-login` (`auth.mobileLogin`) — **CLIENT** role only; returns `accessToken`, `expiresIn`, `user`                                                                      |
+| Auth header | `Authorization: Bearer <accessToken>` on tRPC REST, `/api/upload/*`, `/api/files/*`                                                                                                             |
+| Locale      | `X-Locale: en\|ar` (or `Accept-Language`) → `ctx.locale` + `preferredLocale` sync                                                                                                               |
+| Context     | [`src/lib/mobile-auth.ts`](src/lib/mobile-auth.ts), [`src/lib/request-session.ts`](src/lib/request-session.ts), [`createTRPCContext`](src/server/trpc.ts)                                       |
+| Inbox       | Poll `GET /api/rest/notification` — do not rely on SSE                                                                                                                                          |
+| Push        | Register via `POST /api/rest/notification/push-device` or `/api/push/subscribe`; fan-out from `createNotification` via Expo Push API ([`src/lib/push.ts`](src/lib/push.ts), `PushDevice` model) |
+| OpenAPI     | Bearer scheme `Authorization` documented in [`src/server/openapi.ts`](src/server/openapi.ts)                                                                                                    |
+
+Web cookie sessions remain unchanged. Tokens are NextAuth-compatible JWTs signed with `NEXTAUTH_SECRET` and invalidated when `passwordChangedAt` advances.
+
+---
+
 ## Environment and secrets (non-exhaustive)
 
 Treat as a **checklist** — verify each module for exact names. Production fail-fast (`src/lib/env.ts`): `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CRON_SECRET`.

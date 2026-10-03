@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { rm } from "node:fs/promises";
-import { authOptions } from "@/lib/auth";
+import { getRequestSession } from "@/lib/request-session";
 import { logger } from "@/lib/logger";
 import { chunkTmpDir } from "@/lib/upload-storage";
 
@@ -9,7 +8,7 @@ export const runtime = "nodejs";
 
 export async function DELETE(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session } = await getRequestSession(req);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

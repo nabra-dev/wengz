@@ -599,12 +599,22 @@ export const requestRouter = router({
 
   // Request revision (client)
   requestRevision: clientProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/request/revision",
+        tags: ["request", "mobile"],
+        summary: "Request a revision (client)",
+        protect: true,
+      },
+    })
     .input(
       z.object({
         requestId: z.string(),
         feedback: z.string().min(1, "Feedback is required"),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -657,7 +667,17 @@ export const requestRouter = router({
 
   // Approve request (client)
   approve: clientProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/request/approve",
+        tags: ["request", "mobile"],
+        summary: "Approve delivered request (client)",
+        protect: true,
+      },
+    })
     .input(z.object({ requestId: z.string() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return approveDeliveredRequest({
         db: ctx.db,
@@ -669,6 +689,15 @@ export const requestRouter = router({
 
   // Add comment to request
   addComment: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/request/comment",
+        tags: ["request", "mobile"],
+        summary: "Add a message/comment on a request",
+        protect: true,
+      },
+    })
     .input(
       z.object({
         requestId: z.string(),
@@ -676,6 +705,7 @@ export const requestRouter = router({
         files: z.array(z.string()).optional(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -804,11 +834,26 @@ export const requestRouter = router({
 
   // Submit rating (client)
   rate: clientProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/request/rate",
+        tags: ["request", "mobile"],
+        summary: "Rate completed request (client)",
+        protect: true,
+      },
+    })
     .input(
       z.object({
         requestId: z.string(),
         rating: z.number().min(1).max(5),
         reviewText: z.string().optional(),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        rating: z.any(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -906,97 +951,112 @@ export const requestRouter = router({
     }),
 
   // Get service types
-  getServiceTypes: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    const { getOrSetCached, cacheKeys, cacheTTL } = await import("@/lib/cache");
-
-    // Get user's active subscription with package services
-    const activeSubscription = (await ctx.db.clientSubscription.findFirst({
-      where: {
-        userId: userId,
-        isActive: true,
-        endDate: { gte: new Date() },
+  getServiceTypes: protectedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/request/service-types",
+        tags: ["request", "mobile"],
+        summary: "List service types available to the current client",
+        protect: true,
       },
-      include: {
-        package: {
-          select: {
-            id: true,
-            supportAllServices: true,
-            services: {
-              select: {
-                serviceType: { select: { id: true } },
+    })
+    .input(z.void())
+    .output(z.array(z.any()))
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.user.id;
+      const { getOrSetCached, cacheKeys, cacheTTL } = await import("@/lib/cache");
+
+      // Get user's active subscription with package services
+      const activeSubscription = (await ctx.db.clientSubscription.findFirst({
+        where: {
+          userId: userId,
+          isActive: true,
+          endDate: { gte: new Date() },
+        },
+        include: {
+          package: {
+            select: {
+              id: true,
+              supportAllServices: true,
+              services: {
+                select: {
+                  serviceType: { select: { id: true } },
+                },
               },
             },
           },
         },
-      },
-    })) as any;
+      })) as any;
 
-    // If no active subscription, return empty array
-    if (!activeSubscription) {
-      return [];
-    }
-
-    const allServices = await getOrSetCached(
-      cacheKeys.SERVICE_TYPES,
-      () =>
-        ctx.db.serviceType.findMany({
-          where: { isActive: true, deletedAt: null },
-          select: {
-            id: true,
-            name: true,
-            nameI18n: true,
-            description: true,
-            descriptionI18n: true,
-            icon: true,
-            attributes: true,
-            creditCost: true,
-            isActive: true,
-            sortOrder: true,
-          },
-          orderBy: { sortOrder: "asc" },
-        }),
-      cacheTTL.SERVICE_TYPES
-    );
-
-    const packageServices = await ctx.db.packageService.findMany({
-      where: {
-        package: { isActive: true, deletedAt: null },
-      },
-      select: {
-        serviceId: true,
-        package: {
-          select: { id: true, name: true, nameI18n: true },
-        },
-      },
-    });
-
-    const servicePackageMap = new Map<string, { id: string; name: string; nameI18n: unknown }[]>();
-    packageServices.forEach((ps) => {
-      if (!servicePackageMap.has(ps.serviceId)) {
-        servicePackageMap.set(ps.serviceId, []);
+      // If no active subscription, return empty array
+      if (!activeSubscription) {
+        return [];
       }
-      servicePackageMap.get(ps.serviceId)!.push(ps.package);
-    });
 
-    const supportAllServices = activeSubscription.package.supportAllServices;
-    const allowedServiceIds = supportAllServices
-      ? null
-      : new Set(
-          activeSubscription.package.services.map(
-            (ps: { serviceType: { id: string } }) => ps.serviceType.id
-          )
-        );
+      const allServices = await getOrSetCached(
+        cacheKeys.SERVICE_TYPES,
+        () =>
+          ctx.db.serviceType.findMany({
+            where: { isActive: true, deletedAt: null },
+            select: {
+              id: true,
+              name: true,
+              nameI18n: true,
+              description: true,
+              descriptionI18n: true,
+              icon: true,
+              attributes: true,
+              creditCost: true,
+              isActive: true,
+              sortOrder: true,
+            },
+            orderBy: { sortOrder: "asc" },
+          }),
+        cacheTTL.SERVICE_TYPES
+      );
 
-    return allServices.map((service) => {
-      const isSupported = supportAllServices || allowedServiceIds?.has(service.id) || false;
-      const supportingPackages = servicePackageMap.get(service.id) || [];
+      const packageServices = await ctx.db.packageService.findMany({
+        where: {
+          package: { isActive: true, deletedAt: null },
+        },
+        select: {
+          serviceId: true,
+          package: {
+            select: { id: true, name: true, nameI18n: true },
+          },
+        },
+      });
 
-      return {
-        ...service,
-        isSupported,
-        supportingPackages,
-      };
-    });
-  }),
+      const servicePackageMap = new Map<
+        string,
+        { id: string; name: string; nameI18n: unknown }[]
+      >();
+      packageServices.forEach((ps) => {
+        if (!servicePackageMap.has(ps.serviceId)) {
+          servicePackageMap.set(ps.serviceId, []);
+        }
+        servicePackageMap.get(ps.serviceId)!.push(ps.package);
+      });
+
+      const supportAllServices = activeSubscription.package.supportAllServices;
+      const allowedServiceIds = supportAllServices
+        ? null
+        : new Set(
+            activeSubscription.package.services.map(
+              (ps: { serviceType: { id: string } }) => ps.serviceType.id
+            )
+          );
+
+      return allServices.map((service) => {
+        const isSupported = supportAllServices || allowedServiceIds?.has(service.id) || false;
+        const supportingPackages = servicePackageMap.get(service.id) || [];
+
+        return {
+          ...service,
+          isSupported,
+          supportingPackages,
+        };
+      });
+    }),
 });

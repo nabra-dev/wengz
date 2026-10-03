@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { authOptions } from "@/lib/auth";
+import { getRequestSession } from "@/lib/request-session";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import {
@@ -27,7 +26,7 @@ type InitBody = {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session } = await getRequestSession(req);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

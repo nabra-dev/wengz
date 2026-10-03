@@ -8,6 +8,8 @@ This document describes the **business model**, **actors**, and **core workflows
 
 **Wengz** is a **service marketplace** where clients purchase **subscription packages** denominated in **credits**, then spend those credits to open **requests** for configurable **service types** (e.g. design, development, media). **Providers** fulfill work. **Project managers** oversee request ops; **finance managers** handle money flows; **super admins** configure the catalog and retain full platform control.
 
+**Mobile:** a Client-only Expo (iOS/Android) app (`apps/mobile`) uses the same business rules; auth is Bearer-token based (see `docs/ADVANCED_TECHNICAL.md` § Mobile client API). Provider/staff remain web-only for now.
+
 The application is **bilingual (English and Arabic)** end-to-end, including marketing surfaces, dashboards, transactional messaging, and notifications. UI copy lives in `messages/en.json` and `messages/ar.json`; toasts use `src/lib/error-handler.ts`, and outbound channels use `src/lib/notifications/` with **`locale`** aligned to the user (see `docs/ADVANCED_TECHNICAL.md`).
 
 ---

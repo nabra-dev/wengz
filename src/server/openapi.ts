@@ -6,11 +6,13 @@ export function buildOpenApiDocument(baseUrl: string) {
   try {
     return generateOpenApiDocument(appRouter, {
       title: "Wengz API",
-      description: "REST API for Wengz - A credit-based digital services marketplace",
+      description:
+        "REST API for Wengz. Web uses cookie sessions; native clients use Bearer tokens from POST /auth/mobile-login and may send X-Locale: en|ar.",
       version: "1.0.0",
       baseUrl,
       tags: [
         "auth",
+        "mobile",
         "user",
         "request",
         "provider",
@@ -20,6 +22,15 @@ export function buildOpenApiDocument(baseUrl: string) {
         "payment",
         "notification",
       ],
+      securitySchemes: {
+        Authorization: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description:
+            "Mobile client access token from POST /api/rest/auth/mobile-login (Authorization: Bearer <token>). Web cookie sessions also work.",
+        },
+      },
     });
   } catch (e) {
     // Log and fall back to a static OpenAPI spec

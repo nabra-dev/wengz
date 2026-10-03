@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "@/server/trpc";
 import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
 import { invalidateNotificationsCache } from "@/lib/cache-invalidation";
+import { registerPushDevice, unregisterPushDevice } from "@/lib/push";
 
 export const notificationRouter = router({
   // Get notifications for current user
@@ -183,5 +184,50 @@ export const notificationRouter = router({
       });
 
       return { success: true, deleted: result.count };
+    }),
+
+  registerPushDevice: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/notification/push-device",
+        tags: ["notification", "mobile"],
+        summary: "Register Expo push device token",
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        token: z.string().min(10).max(512),
+        platform: z.enum(["ios", "android", "web"]),
+        locale: z.enum(["en", "ar"]).optional(),
+      })
+    )
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await registerPushDevice({
+        userId: ctx.session.user.id,
+        token: input.token,
+        platform: input.platform,
+        locale: input.locale ?? ctx.locale,
+      });
+      return { success: true };
+    }),
+
+  unregisterPushDevice: protectedProcedure
+    .meta({
+      openapi: {
+        method: "DELETE",
+        path: "/notification/push-device",
+        tags: ["notification", "mobile"],
+        summary: "Unregister Expo push device token",
+        protect: true,
+      },
+    })
+    .input(z.object({ token: z.string().min(10).max(512) }))
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await unregisterPushDevice(ctx.session.user.id, input.token);
+      return { success: true };
     }),
 });

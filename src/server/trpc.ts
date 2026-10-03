@@ -1,11 +1,16 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import type { OpenApiMeta } from "trpc-to-openapi";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import {
+  extractBearerToken,
+  resolveRequestLocale,
+  sessionFromBearerToken,
+} from "@/lib/mobile-auth";
 import { syncUserPreferredLocale } from "@/lib/user-locale";
 import { canManageFinance, canManageRequests, isStaffRole, isSuperAdmin } from "@/lib/roles";
 import { revalidateSessionUser } from "@/lib/session-user-cache";
@@ -18,29 +23,44 @@ type NextApiCreateContextOpts = {
   res: NextApiResponse;
 };
 
+function readRequestHeaders(
+  opts?: FetchCreateContextFnOptions | NextApiCreateContextOpts
+): Headers | Record<string, string | string[] | undefined> | undefined {
+  if (!opts?.req) return undefined;
+  const req = opts.req;
+  if ("headers" in req && req.headers instanceof Headers) {
+    return req.headers;
+  }
+  if ("headers" in req && typeof req.headers === "object") {
+    return req.headers as Record<string, string | string[] | undefined>;
+  }
+  return undefined;
+}
+
+function readCookieHeader(
+  headers: Headers | Record<string, string | string[] | undefined> | undefined
+): string | undefined {
+  if (!headers) return undefined;
+  if (headers instanceof Headers) return headers.get("cookie") ?? undefined;
+  const raw = headers.cookie;
+  return Array.isArray(raw) ? raw[0] : raw;
+}
+
 export const createTRPCContext = async (
   opts?: FetchCreateContextFnOptions | NextApiCreateContextOpts
 ) => {
-  const session =
-    opts && "res" in opts
-      ? await getServerSession(opts.req, opts.res, authOptions)
-      : await getServerSession(authOptions);
+  const headers = readRequestHeaders(opts);
+  const cookieHeader = readCookieHeader(headers);
+  const locale = resolveRequestLocale(headers, cookieHeader);
 
-  // Extract locale from cookies
-  let locale = "en";
-  if (opts) {
-    const req = "res" in opts ? opts.req : opts.req;
-    if (req) {
-      let cookieHeader: string | undefined;
-      if ("headers" in req && req.headers instanceof Headers) {
-        cookieHeader = req.headers.get("cookie") ?? undefined;
-      } else if ("headers" in req && typeof req.headers === "object") {
-        cookieHeader = (req.headers as Record<string, any>).cookie;
-      }
-      if (cookieHeader) {
-        locale = getLocaleFromCookie(cookieHeader);
-      }
-    }
+  let session: Session | null = null;
+  const bearer = extractBearerToken(headers);
+  if (bearer) {
+    session = await sessionFromBearerToken(bearer);
+  } else if (opts && "res" in opts) {
+    session = await getServerSession(opts.req, opts.res, authOptions);
+  } else {
+    session = await getServerSession(authOptions);
   }
 
   return {

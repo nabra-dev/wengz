@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getRequestSession } from "@/lib/request-session";
 import { open, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
@@ -197,14 +197,9 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
-    // Prefer JWT from the request — more reliable than getServerSession
-    // for <img src> / new-tab GETs in App Router route handlers.
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-    const userId = typeof token?.id === "string" ? token.id : null;
-    const role = typeof token?.role === "string" ? token.role : "";
+    const { session } = await getRequestSession(req);
+    const userId = session?.user?.id ?? null;
+    const role = session?.user?.role ?? "";
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

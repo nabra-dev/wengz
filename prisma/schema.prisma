@@ -50,11 +50,27 @@ model User {
   watchedRequests     RequestWatcher[]
   activityLogs        ActivityLog[]
   passwordResetTokens PasswordResetToken[]
+  pushDevices         PushDevice[]
 
   @@index([deletedAt])
   @@index([registrationIp])
   @@index([role])
   @@index([approvalStatus])
+}
+
+/// Expo / native push tokens for client (and future) apps.
+model PushDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Expo push token (ExponentPushToken[...]) or FCM/APNs token
+  token     String   @unique
+  platform  String // ios | android | web
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {
