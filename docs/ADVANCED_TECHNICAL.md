@@ -173,9 +173,26 @@ Treat this list as a **checklist**, not a complete `.env` template—verify each
 
 ---
 
+## Role access (implementation pointers)
+
+| Concern               | Location                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| Role enums + path ACL | `src/lib/roles.ts` (`canManageRequests`, `canManageFinance`, `canManagePlatform`, `canAccessAdminPath`) |
+| Edge redirects        | `src/proxy.ts`                                                                                          |
+| tRPC procedures       | `src/server/trpc.ts` (`adminProcedure`, `requestManagerProcedure`, `financeManagerProcedure`, …)        |
+| Admin nav filter      | `src/app/[locale]/(dashboard)/dashboard-shell.tsx`                                                      |
+| Domain rules          | `docs/ADVANCED_BUSINESS.md` (actors, capability matrix, known gaps)                                     |
+
+`staffProcedure` exists in `src/server/trpc.ts` but is unused by routers; prefer the narrower request/finance procedures.
+
+Maintenance mode login allows **any staff** (`isStaffRole` in `src/lib/auth.ts`), not super admin only.
+
+---
+
 ## Related documents
 
 - `docs/ADVANCED_BUSINESS.md` — domain and workflows
+- `docs/WENGZ_KNOWLEDGE.md` — assistant/knowledge summary derived from business docs
 - `src/lib/error-handler.ts` — Sonner toasts and `errors.*` message keys
 - `src/lib/notifications/` — multi-channel notifications and locale parameters
 - `.cursor/rules/nabra-core.mdc` — concise agent-oriented project summary

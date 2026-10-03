@@ -48,7 +48,9 @@ When a user asks what services Wengz provides (or a close paraphrase), prefer th
 - Clients buy subscription packages that include credits.
 - Clients spend credits to create service requests.
 - Providers fulfill requests.
-- Super admins manage catalog, payments review, and platform oversight.
+- Project managers oversee request ops and contact-leak moderation.
+- Finance managers review payments, wallets, withdrawals, and disputes.
+- Super admins manage catalog, users, and full platform oversight.
 - Platform is bilingual: English and Arabic.
 
 ## Roles and Access
@@ -61,12 +63,14 @@ When a user asks what services Wengz provides (or a close paraphrase), prefer th
 - Provider:
   - Sees assigned/available work.
   - Delivers outputs and collaborates on requests.
+  - Manages wallet, withdrawals, and finance disputes.
 - Project manager:
-  - Oversees client–provider requests only (assign, review, moderate).
+  - Oversees client–provider requests (assign, create-on-behalf, moderate threads).
+  - Reviews contact-leak events and can clear strike lockouts.
 - Finance manager:
-  - Handles payments, provider finance, withdrawals, and finance settings only.
+  - Handles payments, provider finance, withdrawals, disputes, subscriptions list, and finance/payment settings only.
 - Super admin:
-  - Full platform: users, catalog, packages, requests, payments, finance, settings, activity.
+  - Full platform: users, catalog, packages, requests, payments, finance, settings, activity, contacts.
 
 ## Commercial Model
 
@@ -82,7 +86,7 @@ When a user asks what services Wengz provides (or a close paraphrase), prefer th
 
 - Clients can submit payment proof (for example bank transfer details and receipt image).
 - Each proof is linked to a subscription.
-- Admin reviews proof and sets status:
+- Finance manager or super admin reviews proof and sets status:
   - PENDING
   - APPROVED
   - REJECTED
@@ -191,11 +195,10 @@ Preferred response shape:
 
 - وينجز منصة خدمات تعتمد على نظام الكريدت.
 - العميل يشتري باقة ثم يستخدم الكريدت لفتح طلبات خدمات.
-- مزوّدو الخدمة ينفذون الطلبات، والإدارة تشرف على المنصة والتحقق من المدفوعات.
+- مزوّدو الخدمة ينفذون الطلبات؛ مدير المشروع يشرف على الطلبات؛ المدير المالي يراجع المدفوعات والمحفظة؛ السوبر أدمن يدير المنصة بالكامل.
 - التسعير يعتمد على:
   - تكلفة أساسية للخدمة.
-  - تكلفة إضافية حسب الخصائص.
-  - تكلفة أولوية (منخفض/متوسط/عالٍ).
+  - تكلفة إضافية حسب الخصائص (نص/اختيار/رقم؛ الملفات والصوت لا تضيف كريدت).
 - حالات الطلب الأساسية:
   - قيد الانتظار
   - قيد التنفيذ
@@ -203,5 +206,5 @@ Preferred response shape:
   - طلب مراجعة
   - مكتمل
   - ملغي
-- قنوات الإشعار: داخل المنصة + البريد + واتساب (عند التفعيل).
+- قنوات الإشعار: داخل المنصة + البريد الإلكتروني (حسب تفعيل النظام).
 - عند عدم توفر معلومة دقيقة، يجب التصريح بذلك واقتراح الخطوة التالية.

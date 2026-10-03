@@ -156,12 +156,14 @@ export const adminRouter = router({
         where: { key: "maintenance_mode" },
         update: {
           value: { enabled: input.enabled },
-          description: "When enabled, only SUPER_ADMIN users can log in.",
+          description:
+            "When enabled, only staff (super admin, project manager, finance manager) can log in.",
         },
         create: {
           key: "maintenance_mode",
           value: { enabled: input.enabled },
-          description: "When enabled, only SUPER_ADMIN users can log in.",
+          description:
+            "When enabled, only staff (super admin, project manager, finance manager) can log in.",
         },
         select: { value: true },
       });

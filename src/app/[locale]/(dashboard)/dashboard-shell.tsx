@@ -32,6 +32,7 @@ import {
   Plus,
   MessageSquare,
   ShieldAlert,
+  Receipt,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getInitials } from "@/lib/utils";
@@ -97,6 +98,12 @@ const adminNavConfig = [
     access: "finance" as const,
   },
   { href: "/admin/finance", labelKey: "admin.finance", icon: Wallet, access: "finance" as const },
+  {
+    href: "/admin/subscriptions",
+    labelKey: "admin.subscriptions",
+    icon: Receipt,
+    access: "finance" as const,
+  },
   {
     href: "/admin/activity",
     labelKey: "admin.activity",

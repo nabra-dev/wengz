@@ -6,7 +6,7 @@ This document describes the **business model**, **actors**, and **core workflows
 
 ## Product positioning
 
-**Wengz** is a **service marketplace** where clients purchase **subscription packages** denominated in **credits**, then spend those credits to open **requests** for configurable **service types** (e.g. design, development, media). **Providers** fulfill work; **super admins** configure the catalog, review certain money flows, and oversee the platform.
+**Wengz** is a **service marketplace** where clients purchase **subscription packages** denominated in **credits**, then spend those credits to open **requests** for configurable **service types** (e.g. design, development, media). **Providers** fulfill work. **Project managers** oversee request ops; **finance managers** handle money flows; **super admins** configure the catalog and retain full platform control.
 
 The application is **bilingual (English and Arabic)** end-to-end, including marketing surfaces, dashboards, transactional messaging, and notifications. UI copy lives in `messages/en.json` and `messages/ar.json`; toasts use `src/lib/error-handler.ts`, and outbound channels use `src/lib/notifications/` with **`locale`** aligned to the user (see `docs/ADVANCED_TECHNICAL.md`).
 
@@ -14,13 +14,13 @@ The application is **bilingual (English and Arabic)** end-to-end, including mark
 
 ## Actors and permissions
 
-| Role                | Typical use                                                                                      | Access (conceptual)                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| **Client**          | Buys packages, creates and tracks requests, messages, rates completed work                       | Client dashboard: subscriptions, payment proof, requests, notifications, profile                   |
-| **Provider**        | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile                    |
-| **Project manager** | Oversees client–provider requests only                                                           | Admin requests: list, assign/unassign, request detail, messaging oversight, notifications, profile |
-| **Finance manager** | Handles money flows only                                                                         | Admin finance + payments + finance/payment settings, subscriptions list, notifications, profile    |
-| **Super admin**     | Full platform control                                                                            | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity   |
+| Role                | Typical use                                                                                      | Access (conceptual)                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Client**          | Buys packages, creates and tracks requests, messages, rates completed work                       | Client dashboard: subscriptions, payment proof, requests, notifications, profile                                                                        |
+| **Provider**        | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile                                                                         |
+| **Project manager** | Oversees client–provider requests and contact-leak moderation                                    | Admin: requests (list, assign/unassign, create-on-behalf, soft-delete/restore), contact leaks, messaging oversight, notifications, profile              |
+| **Finance manager** | Handles money flows only                                                                         | Admin: finance (wallets, withdrawals, disputes, payouts), payments (proof review), subscriptions list, finance/payment settings, notifications, profile |
+| **Super admin**     | Full platform control                                                                            | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity, contacts, contact leaks                               |
 
 Registration and login are **credential-based** (email/password). **Self-serve** client registration and the creator form create accounts in **PENDING** status; login is blocked until an admin approves. Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
 
@@ -34,7 +34,7 @@ Logged-in users can **change password** from their profile Security tab (min **8
 - **Credits** are the **unit of spend** for opening and evolving requests. A **client subscription** stores **remaining credits** and an **end date**; inactive or expired subscriptions stop new spend unless business rules allow otherwise in code.
 - **Free-trial semantics** exist in the data model (`isFreeTrialUsed`, `isFreePackage`) so the business can distinguish promotional or trial packages from paid tiers. The free package (`isFreePackage`) is configured in **Admin → Packages** (credits + duration days; price stays `$0`). Defaults: **500 credits**, **14 days**. Changes apply to **future** grants only (newly approved clients).
 
-**Payment in the field**: clients choose a **payment method** on the payment page. **Bank transfer** and **InstaPay** (when enabled) are active and use **manual payment proofs** (receipt image + details) tied to a subscription; **admins** configure bank/InstaPay instructions under Settings and review approve/reject. Other methods (Fawry, Meeza, Visa, Mastercard) appear as **Coming soon**. Until approved, downstream fulfillment rules should align with your operational policy (the schema supports `PaymentProof` with `PENDING` / `APPROVED` / `REJECTED`).
+**Payment in the field**: clients choose a **payment method** on the payment page. **Bank transfer** and **InstaPay** (when enabled) are active and use **manual payment proofs** (receipt image + details) tied to a subscription; **finance managers / super admins** configure bank/InstaPay instructions under Settings and review approve/reject. Other methods (Fawry, Meeza, Visa, Mastercard) appear as **Coming soon**. Until approved, downstream fulfillment rules should align with your operational policy (the schema supports `PaymentProof` with `PENDING` / `APPROVED` / `REJECTED`).
 
 ## Provider earnings and withdrawals
 
@@ -49,9 +49,9 @@ Example: a request costing `500` credits with `$0.008`/credit and `0%` commissio
 
 **Settlement is not immediately withdrawable.** On client approval, the provider share is credited as **on hold** for **7 days** (`PROVIDER_EARNINGS_HOLD_DAYS`). It appears in the wallet (held balance + ledger status) but cannot be withdrawn until a release job moves it to **available**. Withdrawal requests only draw from available balance.
 
-Providers can **open a dispute** on a ledger settlement or withdrawal from the wallet page if something looks wrong. Disputes are reviewed **manually** by super admins (open → under review → resolved/rejected) and do **not** automatically change wallet balances.
+Providers can **open a dispute** on a ledger settlement or withdrawal from the wallet page if something looks wrong. Disputes are reviewed **manually** by **finance managers or super admins** (open → under review → resolved/rejected) and do **not** automatically change wallet balances.
 
-Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal** from available funds. That request holds the amount as pending until a super admin reviews it **manually**. Two **global** withdrawal settings apply:
+Providers store **payout details** (bank account or e-wallet number) and can **request a withdrawal** from available funds. That request holds the amount as pending until a **finance manager or super admin** reviews it **manually**. Two **global** withdrawal settings apply:
 
 - **Minimum withdrawal (USD)** — providers cannot request less than this amount (default `$1`).
 - **Withdrawal fee (USD)** — fixed fee stored on the withdrawal; the amount deducted from the wallet is the requested total, and admins should pay out **requested − fee**.
@@ -61,7 +61,7 @@ Withdrawal review:
 - **Approve / mark as paid** after sending the money off-platform, with a **reason** and a **required proof image** (e.g. transfer receipt).
 - **Reject** with a **reason** and a **required proof image**, which returns the held funds to the available balance.
 
-Admins can also **record a payout** against a provider’s available balance when they send money without a prior request. There is no automated payout gateway; operations handle the transfer, then record status and reason in the app.
+Finance managers / super admins can also **record a payout** against a provider’s available balance when they send money without a prior request. There is no automated payout gateway; operations handle the transfer, then record status and reason in the app.
 
 Settlement value is independent of what the client paid for a **package**; packages remain the client subscription product.
 
@@ -114,7 +114,45 @@ Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval re
 - **Self-serve signup** (client register + creator/provider form) creates users with `approvalStatus: PENDING`. They cannot sign in until an admin **approves** (free trial + welcome email run on approve for clients). Admin-created users are **APPROVED** immediately. Soft-delete remains a separate deactivate path from pending/rejected.
 - **System settings** (`SystemSettings` key/value) allow storing configurable policy without code changes for supported keys.
 
+**Maintenance mode** — when enabled (super admin only toggle), **clients and providers** cannot log in; **all staff** (super admin, project manager, finance manager) may still sign in.
+
 For legal, finance, and DPA details, extend this document in your own wiki; the codebase reflects **technical** enforcement points, not regulatory advice.
+
+---
+
+## Role capability matrix (implemented)
+
+| Capability                                      | Client | Provider | PM  | FM  | Super admin |
+| ----------------------------------------------- | :----: | :------: | :-: | :-: | :---------: |
+| Self-serve register / apply (PENDING)           |   ✓    |    ✓     |     |     |             |
+| Buy / manage subscription + payment proof       |   ✓    |          |     | ✓\* |     ✓\*     |
+| Create / revise / approve / rate requests       |   ✓    |          | ✓†  |     |     ✓†      |
+| Claim / start / deliver work + wallet           |        |    ✓     |     |     |             |
+| Assign / unassign / create-on-behalf / soft-del |        |          |  ✓  |     |      ✓      |
+| Contact-leak review + clear strikes             |        |          |  ✓  |     |      ✓      |
+| Withdrawals / disputes / payouts / finance set. |        |    ✓‡    |     |  ✓  |      ✓      |
+| Users, packages, services, activity, contacts   |        |          |     |     |      ✓      |
+| Maintenance mode toggle                         |        |          |     |     |      ✓      |
+
+\* Review / configure only (not client purchase).  
+† Staff create-on-behalf and messaging oversight; clients still own approve/rate.  
+‡ Provider opens withdrawal/dispute; FM/SA reviews.
+
+---
+
+## Known gaps / backlog (from role audit)
+
+Documented so product and engineering stay aligned; not every schema field is a shipped feature.
+
+| Gap                               | Notes                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Staff approve-on-behalf**       | After 12h, `needsManualApproval` is a **flag + notify** only; no admin/PM “approve for client” action.                         |
+| **Request watchers**              | `RequestWatcher` exists in Prisma; no manage UI/API for adding stakeholders.                                                   |
+| **Public contact inbox vs PM**    | Contact-form notifications may target PMs, but `/admin/contacts` is **super-admin only** — grant ACL or stop notifying PMs.    |
+| **Priority pricing UI**           | Schema has per-service priority credit costs; create-request currently stores `priorityCreditCost: 0` (not client-selectable). |
+| **Card / Fawry / Meeza rails**    | Shown as Coming soon; only bank transfer + InstaPay are live.                                                                  |
+| **WhatsApp notification channel** | Not a live outbound channel; knowledge copy must not promise it.                                                               |
+| **Object storage**                | Uploads are local disk today; remote hosts are configured for future S3/B2.                                                    |
 
 ---
 

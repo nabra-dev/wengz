@@ -431,6 +431,7 @@
         "requests": "All Requests",
         "payments": "Payments",
         "finance": "Finance",
+        "subscriptions": "Subscriptions",
         "activity": "Activity",
         "contacts": "Contacts",
         "notifications": "Notifications",
