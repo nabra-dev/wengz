@@ -647,6 +647,18 @@ export const en = {
       successMessage: "Password changed. Please sign in again.",
       errorMessage: "Failed to change password",
     },
+    deleteAccount: {
+      title: "Delete account",
+      description:
+        "This deactivates your account. You will be signed out and cannot sign in again.",
+      passwordLabel: "Confirm with your password",
+      passwordPlaceholder: "Enter your password",
+      confirm: "Delete account",
+      cancelling: "Deactivating…",
+      successMessage: "Account deactivated. You have been signed out.",
+      errorMessage: "Could not deactivate account",
+      passwordRequired: "Password is required",
+    },
     settings: {
       title: "Profile Settings",
       subtitle: "Manage your account settings and preferences",

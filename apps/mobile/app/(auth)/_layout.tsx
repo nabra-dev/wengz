@@ -5,6 +5,8 @@ import { Loading } from "../../src/components/ui";
 import { BRAND } from "../../src/theme/brand";
 import { stackPushAnimation } from "../../src/theme/navigation";
 
+export const unstable_settings = { anchor: "login" };
+
 export default function AuthLayout() {
   const { ready, token } = useAuth();
   const { locale } = useLocale();

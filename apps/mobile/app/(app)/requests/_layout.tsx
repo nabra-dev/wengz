@@ -5,6 +5,15 @@ import { t } from "../../../src/i18n";
 import { useLocale } from "../../../src/providers/locale";
 import { BRAND } from "../../../src/theme/brand";
 
+/**
+ * Anchor the stack to `index`.
+ *
+ * Without it, deep-pushing `/requests/create` from another tab mounts this
+ * stack with `create` as its ONLY route — popping it then leaves an empty
+ * stack, which renders as a blank screen.
+ */
+export const unstable_settings = { anchor: "index" };
+
 export default function RequestsLayout() {
   const { locale } = useLocale();
 

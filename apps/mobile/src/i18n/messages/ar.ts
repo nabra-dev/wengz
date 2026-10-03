@@ -655,6 +655,17 @@ export const ar: MessageTree = {
       successMessage: "تم تغيير كلمة المرور. سجّل الدخول مرة أخرى.",
       errorMessage: "فشل تغيير كلمة المرور",
     },
+    deleteAccount: {
+      title: "حذف الحساب",
+      description: "سيتم إلغاء تفعيل حسابك وتسجيل خروجك، ولن تتمكن من تسجيل الدخول مجددًا.",
+      passwordLabel: "أكد بكلمة المرور",
+      passwordPlaceholder: "أدخل كلمة المرور",
+      confirm: "حذف الحساب",
+      cancelling: "جارٍ إلغاء التفعيل…",
+      successMessage: "تم إلغاء تفعيل الحساب. تم تسجيل خروجك.",
+      errorMessage: "تعذّر إلغاء تفعيل الحساب",
+      passwordRequired: "كلمة المرور مطلوبة",
+    },
     settings: {
       title: "الملف الشخصي",
       subtitle: "إعدادات الحساب",

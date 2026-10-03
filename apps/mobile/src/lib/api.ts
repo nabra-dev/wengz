@@ -250,6 +250,14 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+/** Soft-deactivates the account (`deletedAt`) — not a hard delete. */
+export function deleteAccount(password: string) {
+  return apiRequest<{ success: boolean; message: string }>("/user/account", {
+    method: "DELETE",
+    body: { password },
+  });
+}
+
 export function getPackages() {
   return apiRequest<Record<string, unknown>[]>("/package");
 }

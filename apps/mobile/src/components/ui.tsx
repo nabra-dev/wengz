@@ -197,11 +197,13 @@ export function Button({
   onPress,
   disabled,
   variant = "primary",
+  style,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   variant?: "primary" | "secondary" | "ghost" | "danger";
+  style?: ViewStyle;
 }) {
   const { outlines } = useDebugOutlineFlags();
   return (
@@ -216,13 +218,16 @@ export function Button({
         variant === "danger" && styles.btnDanger,
         debugOutlineStyle(outlines, "rgba(224,248,64,0.9)"),
         (disabled || pressed) && { opacity: 0.75 },
+        style,
       ]}
     >
       <AppText
         align="center"
+        numberOfLines={1}
         style={[
           styles.btnText,
-          { fontFamily: fonts.semiBold },
+          // Locale type scale at render — StyleSheet.create freezes EN metrics.
+          { fontFamily: fonts.semiBold, ...typeScale.md },
           variant === "primary" && styles.btnTextOnPurple,
           variant === "secondary" && styles.btnTextOnYellow,
           (variant === "ghost" || variant === "danger") && { color: c.foreground },
@@ -326,7 +331,7 @@ export function SegmentedTabs<T extends string>({
   onChange: (key: T) => void;
 }) {
   return (
-    <View style={styles.segmentRow}>
+    <View style={[styles.segmentRow, row()]}>
       {options.map((opt) => {
         const active = value === opt.key;
         return (
@@ -447,7 +452,9 @@ const styles = StyleSheet.create({
     // No width/alignSelf: column parents already stretch children, and forcing
     // 100% here collapses siblings when a Button sits inside a row.
     borderRadius: 8,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 6,
@@ -467,7 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: c.destructive,
   },
   btnText: {
-    ...typeScale.md,
+    // Font size / lineHeight applied at render via `typeScale` (locale-aware).
   },
   btnTextOnPurple: {
     color: c.yellow,
@@ -522,7 +529,6 @@ const styles = StyleSheet.create({
     ...typeScale.xs,
   },
   segmentRow: {
-    flexDirection: "row",
     gap: 8,
     marginBottom: 14,
   },

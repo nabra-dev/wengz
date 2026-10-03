@@ -76,6 +76,8 @@ export function SelectDropdown({
     }
   }
 
+  // Match Field height (padding 12+12 + md line + borders ≈ 48).
+  const FIELD_HEIGHT = 48;
   const widthStyle = {
     alignSelf: compact ? ("flex-start" as const) : ("stretch" as const),
     width: compact ? undefined : ("100%" as const),
@@ -86,13 +88,24 @@ export function SelectDropdown({
       name="SelectDropdown"
       style={{
         ...widthStyle,
-        minWidth: compact ? 96 : undefined,
+        minWidth: compact ? 108 : undefined,
+        height: compact ? FIELD_HEIGHT : undefined,
         marginBottom: compact ? 0 : 12,
         zIndex: open ? 50 : 1,
       }}
     >
-      <View style={[widthStyle, debugOutlineStyle(outlines, "rgba(180,100,255,0.95)")]}>
-        <View ref={triggerRef} collapsable={false} style={widthStyle}>
+      <View
+        style={[
+          widthStyle,
+          compact ? { height: FIELD_HEIGHT } : null,
+          debugOutlineStyle(outlines, "rgba(180,100,255,0.95)"),
+        ]}
+      >
+        <View
+          ref={triggerRef}
+          collapsable={false}
+          style={[widthStyle, compact ? { height: FIELD_HEIGHT } : null]}
+        >
           <Pressable
             disabled={disabled}
             onPress={() => (open ? setOpen(false) : openMenu())}
@@ -101,13 +114,13 @@ export function SelectDropdown({
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 12,
+              paddingHorizontal: compact ? 10 : 12,
+              paddingVertical: 0,
               // Source order is start → end; `row()` mirrors it when needed.
               ...row(),
               alignItems: "center",
               ...widthStyle,
-              minHeight: 48,
+              height: FIELD_HEIGHT,
               opacity: disabled ? 0.5 : 1,
             }}
           >

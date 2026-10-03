@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { View } from "react-native";
-import { changePassword, getProfile, updateProfile } from "../../src/lib/api";
+import { Alert, View } from "react-native";
+import { changePassword, deleteAccount, getProfile, updateProfile } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { useLocale } from "../../src/providers/locale";
 import { t, type AppLocale } from "../../src/i18n";
@@ -19,7 +19,6 @@ import {
 } from "../../src/components/ui";
 import { SelectDropdown } from "../../src/components/SelectDropdown";
 import { row } from "../../src/rtl";
-import { useDebugUi } from "../../src/debug/DebugProvider";
 
 type Tab = "profile" | "security";
 
@@ -32,6 +31,8 @@ const COUNTRY_OPTIONS = [
   { value: "+33", label: "🇫🇷 +33" },
   { value: "+49", label: "🇩🇪 +49" },
 ];
+
+const FIELD_HEIGHT = 48;
 
 function splitPhone(raw: string | null | undefined): { code: string; number: string } {
   const value = String(raw ?? "").trim();
@@ -59,6 +60,8 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
@@ -117,10 +120,35 @@ export default function ProfileScreen() {
     onError: (e: Error) => setError(e.message),
   });
 
+  const deactivate = useMutation({
+    mutationFn: () => deleteAccount(deletePassword),
+    onSuccess: async () => {
+      setInfo(t("profile.deleteAccount.successMessage"));
+      await signOut();
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
   async function toggleLocale() {
     const next: AppLocale = locale === "ar" ? "en" : "ar";
     await setLocale(next);
     setInfo(next.toUpperCase());
+  }
+
+  function requestDeleteAccount() {
+    setError(null);
+    setInfo(null);
+    Alert.alert(t("profile.deleteAccount.title"), t("profile.deleteAccount.description"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("profile.deleteAccount.confirm"),
+        style: "destructive",
+        onPress: () => {
+          setDeletePassword("");
+          setShowDeleteConfirm(true);
+        },
+      },
+    ]);
   }
 
   if (profile.isLoading) return <Loading />;
@@ -159,8 +187,12 @@ export default function ProfileScreen() {
           />
           <Label>{t("profile.editProfile.labels.phone")}</Label>
           <View
-            // Dial code sits on the start edge; `row()` mirrors it in Arabic.
-            style={{ ...row(), alignItems: "flex-start", marginBottom: 12 }}
+            style={{
+              ...row(),
+              alignItems: "stretch",
+              marginBottom: 12,
+              height: FIELD_HEIGHT,
+            }}
           >
             <SelectDropdown
               compact
@@ -168,13 +200,20 @@ export default function ProfileScreen() {
               options={COUNTRY_OPTIONS}
               onChange={setCountryCode}
             />
-            <View style={{ flex: 1, minWidth: 0, marginStart: 8 }}>
+            {/* Physical spacer — marginStart breaks under manual row-reverse RTL. */}
+            <View style={{ width: 8 }} />
+            <View style={{ flex: 1, minWidth: 0, height: FIELD_HEIGHT }}>
               <Field
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={(v) => setPhone(v.replace(/\D/g, "").slice(0, 15))}
                 placeholder={t("profile.editProfile.placeholders.phone")}
-                style={{ marginBottom: 0 }}
+                style={{
+                  marginBottom: 0,
+                  height: FIELD_HEIGHT,
+                  paddingVertical: 0,
+                  textAlignVertical: "center",
+                }}
               />
             </View>
           </View>
@@ -265,36 +304,52 @@ export default function ProfileScreen() {
       />
       <Button label={t("common.logout")} onPress={() => void signOut()} variant="danger" />
 
-      {__DEV__ ? <DevDebugCard /> : null}
+      {showDeleteConfirm ? (
+        <Card>
+          <Label>{t("profile.deleteAccount.title")}</Label>
+          <Muted style={{ marginBottom: 10 }}>{t("profile.deleteAccount.description")}</Muted>
+          <Label required>{t("profile.deleteAccount.passwordLabel")}</Label>
+          <Field
+            secureTextEntry
+            placeholder={t("profile.deleteAccount.passwordPlaceholder")}
+            value={deletePassword}
+            onChangeText={setDeletePassword}
+          />
+          <Button
+            label={
+              deactivate.isPending
+                ? t("profile.deleteAccount.cancelling")
+                : t("profile.deleteAccount.confirm")
+            }
+            onPress={() => {
+              setError(null);
+              if (!deletePassword.trim()) {
+                setError(t("profile.deleteAccount.passwordRequired"));
+                return;
+              }
+              deactivate.mutate();
+            }}
+            variant="danger"
+            disabled={deactivate.isPending}
+            style={{ marginTop: 0 }}
+          />
+          <Button
+            label={t("common.cancel")}
+            onPress={() => {
+              setShowDeleteConfirm(false);
+              setDeletePassword("");
+            }}
+            variant="ghost"
+            disabled={deactivate.isPending}
+          />
+        </Card>
+      ) : (
+        <Button
+          label={t("profile.deleteAccount.title")}
+          onPress={requestDeleteAccount}
+          variant="ghost"
+        />
+      )}
     </ScrollScreen>
-  );
-}
-
-function DevDebugCard() {
-  const { flags, toggleFlag, dumpDiagnostics } = useDebugUi();
-  return (
-    <Card>
-      <Muted style={{ marginBottom: 8 }}>DEV — mobile debug</Muted>
-      <Button
-        label={`${flags.hud ? "Hide" : "Show"} debug HUD`}
-        onPress={() => toggleFlag("hud")}
-        variant="ghost"
-      />
-      <Button
-        label={`${flags.outlines ? "Disable" : "Enable"} layout outlines`}
-        onPress={() => toggleFlag("outlines")}
-        variant="ghost"
-      />
-      <Button
-        label={`${flags.overflowWarn ? "Disable" : "Enable"} overflow logs`}
-        onPress={() => toggleFlag("overflowWarn")}
-        variant="ghost"
-      />
-      <Button
-        label="Dump diagnostics → Metro"
-        onPress={() => dumpDiagnostics()}
-        variant="secondary"
-      />
-    </Card>
   );
 }

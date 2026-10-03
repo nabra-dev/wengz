@@ -14,7 +14,7 @@ import { t, i18n } from "../../../src/i18n";
 import { MediaImage } from "../../../src/components/MediaImage";
 import { RequestChat, type ChatComment } from "../../../src/components/RequestChat";
 import { VoiceNotePreview } from "../../../src/components/VoiceNotePreview";
-import { physicalRow } from "../../../src/rtl";
+import { physicalRow, row } from "../../../src/rtl";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
 import {
   Button,
@@ -245,7 +245,7 @@ export default function RequestDetailScreen() {
               <Label>
                 {t("client.requestDetail.attachmentsTitle", { count: attachments.length })}
               </Label>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <View style={{ ...row(), flexWrap: "wrap", gap: 8 }}>
                 {attachments.map((url, i) => (
                   <FileChip key={`${url}-${i}`} url={url} />
                 ))}
@@ -306,7 +306,7 @@ export default function RequestDetailScreen() {
                     </AppText>
                   ) : null}
                   {urls.length > 0 ? (
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                    <View style={{ ...row(), flexWrap: "wrap", gap: 8, marginTop: 6 }}>
                       {urls.map((url, i) => (
                         <FileChip key={`${url}-${i}`} url={url} />
                       ))}
@@ -335,9 +335,7 @@ export default function RequestDetailScreen() {
                   borderBottomColor: colors.border,
                 }}
               >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}
-                >
+                <View style={{ ...row(), alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <AppText
                     style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.sm }}
                   >
@@ -371,7 +369,7 @@ export default function RequestDetailScreen() {
                   </AppText>
                 ) : null}
                 {d.files?.length ? (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  <View style={{ ...row(), flexWrap: "wrap", gap: 8 }}>
                     {d.files.map((url, i) => (
                       <FileChip key={`${url}-${i}`} url={url} />
                     ))}

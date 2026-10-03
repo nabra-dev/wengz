@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getAccessToken } from "../lib/auth-store";
 import { isLikelyImageUrl, resolveMediaUrl } from "../lib/media";
 import { fonts } from "../theme/brand";
+import { row, rowGap } from "../rtl";
 import { colors } from "./ui";
 import { t } from "../i18n";
 import { AppText } from "./typography";
@@ -173,7 +174,7 @@ export function MediaThumbGrid({
 }) {
   if (!urls.length) return null;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+    <View style={{ ...row(), ...rowGap(8), flexWrap: "wrap", marginTop: 8 }}>
       {urls.map((url, i) => (
         <MediaImage
           key={`${url}-${i}`}

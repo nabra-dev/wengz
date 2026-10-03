@@ -263,6 +263,8 @@ export function RequestChat({
   const [showAttach, setShowAttach] = useState(false);
   const [recording, setRecording] = useState(false);
   const [uploadingVoice, setUploadingVoice] = useState(false);
+  /** Uploaded voice waiting for explicit Send / Delete — never auto-sent. */
+  const [voiceDraft, setVoiceDraft] = useState<string | null>(null);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const webRec = useRef<MediaRecorder | null>(null);
   const webStream = useRef<MediaStream | null>(null);
@@ -277,7 +279,7 @@ export function RequestChat({
   const listData = useMemo(() => [...thread].reverse(), [thread]);
 
   const attachmentFallback = t("requests.messages.attachmentFallback");
-  const hasContent = message.trim().length > 0 || pendingFiles.length > 0;
+  const hasContent = message.trim().length > 0 || pendingFiles.length > 0 || Boolean(voiceDraft);
 
   useEffect(() => {
     if (pendingFiles.length > 0) setShowAttach(true);
@@ -316,13 +318,15 @@ export function RequestChat({
     setMessage("");
     setPendingFiles([]);
     setPendingPreviews({});
+    setVoiceDraft(null);
     setShowAttach(false);
   }
 
   async function handleSend() {
     if (sending || recording || uploadingVoice || !hasContent) return;
     try {
-      await sendPayload(message, pendingFiles);
+      const files = voiceDraft ? [...pendingFiles, voiceDraft].slice(0, 3) : pendingFiles;
+      await sendPayload(message, files);
     } catch (e) {
       onError?.(e instanceof Error ? e.message : t("requests.messages.messageFailed"));
     }
@@ -332,13 +336,8 @@ export function RequestChat({
     setUploadingVoice(true);
     try {
       const url = await uploadFile(uri, name, mime);
-      // WhatsApp-style: voice alone sends immediately
-      if (!message.trim() && pendingFiles.length === 0) {
-        await sendPayload(attachmentFallback, [url]);
-      } else {
-        setPendingFiles((prev) => [...prev, url].slice(0, 3));
-        setShowAttach(true);
-      }
+      // Preview first — user must tap Send or delete the draft.
+      setVoiceDraft(url);
     } catch (e) {
       onError?.(e instanceof Error ? e.message : t("requests.messages.voiceAttachFailed"));
     } finally {
@@ -433,7 +432,7 @@ export function RequestChat({
       else await stopNativeRecord();
       return;
     }
-    if (pendingFiles.length >= 3) {
+    if (voiceDraft || pendingFiles.length >= 3) {
       onError?.(t("requests.messages.maxAttachments"));
       return;
     }
@@ -757,7 +756,6 @@ export function RequestChat({
                 }}
               />
               <AppText
-                compact
                 align="center"
                 style={{
                   color: colors.destructive,
@@ -767,6 +765,26 @@ export function RequestChat({
               >
                 {t("requests.messages.recordingInProgress")}
               </AppText>
+            </View>
+          ) : null}
+
+          {voiceDraft && !recording ? (
+            <View style={{ marginBottom: 8, gap: 6 }}>
+              <AppText
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: fonts.medium,
+                  ...typeScale.xs,
+                }}
+              >
+                {t("requests.messages.voiceAttachedHint")}
+              </AppText>
+              <VoiceNotePreview
+                url={voiceDraft}
+                variant="card"
+                disabled={sending || uploadingVoice}
+                onRemove={sending || uploadingVoice ? undefined : () => setVoiceDraft(null)}
+              />
             </View>
           ) : null}
 

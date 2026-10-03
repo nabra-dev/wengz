@@ -62,11 +62,14 @@ export const brandTabBarOptions = {
   sceneStyle: {
     backgroundColor: c.background,
   },
-  animation: "fade" as const,
-  transitionSpec: {
-    animation: "timing" as const,
-    config: { duration: 220 },
-  },
+  /**
+   * Never use tab `fade`/`shift` here. Those drive the WHOLE scene (header +
+   * content) via Animated opacity. Interrupted transitions (tabPress
+   * preventDefault + router.navigate, locale remount, Reduce Motion) leave
+   * opacity stuck at 0 → blank screen with a live tab bar. Instant switch
+   * is also the right UX for a dashboard.
+   */
+  animation: "none" as const,
   tabBarStyle: {
     backgroundColor: c.card,
     borderTopColor: c.border,

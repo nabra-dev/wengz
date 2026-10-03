@@ -29,7 +29,7 @@ const DebugUiContext = createContext<DebugUiContextValue | null>(null);
 const OFF: DebugUiFlags = { outlines: false, hud: false, overflowWarn: false };
 
 export function DebugUiProvider({ children }: { children: React.ReactNode }) {
-  const [flags, setFlags] = useState<DebugUiFlags>(__DEV__ ? { ...OFF, hud: true } : OFF);
+  const [flags, setFlags] = useState<DebugUiFlags>(OFF);
   const [ready, setReady] = useState(!__DEV__);
   const [expanded, setExpanded] = useState(false);
 

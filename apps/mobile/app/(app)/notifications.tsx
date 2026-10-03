@@ -72,6 +72,7 @@ export default function NotificationsScreen() {
                     onPress={() => markAll.mutate()}
                     variant="ghost"
                     disabled={markAll.isPending}
+                    style={{ marginTop: 0 }}
                   />
                 ) : undefined
               }

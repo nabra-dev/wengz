@@ -8,6 +8,9 @@ import { CenterNewRequestButton } from "../../src/components/CenterNewRequestBut
 import { TabBarItem } from "../../src/components/TabBarItem";
 import { brandTabBarOptions } from "../../src/theme/navigation";
 
+/** Always resolve to the Home tab when a route can't be matched. */
+export const unstable_settings = { anchor: "index" };
+
 export default function AppLayout() {
   const { ready, token } = useAuth();
   const { locale, direction } = useLocale();
@@ -117,7 +120,6 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.subscription.title"),
-          animation: "fade",
         }}
       />
       <Tabs.Screen
@@ -125,7 +127,6 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.payment.title"),
-          animation: "fade",
         }}
       />
     </Tabs>
