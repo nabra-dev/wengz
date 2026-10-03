@@ -2744,6 +2744,14 @@
       "title": "رسالة تواصل جديدة",
       "message": "{fullName} ({email}) — {topic}"
     },
+    "newUserRegistration": {
+      "title": "طلب تسجيل جديد بانتظار المراجعة",
+      "message": "{userName} ({userEmail}) تقدّم كـ {role}",
+      "reapplyTitle": "إعادة تقديم طلب تسجيل",
+      "reapplyMessage": "{userName} ({userEmail}) أعاد التقديم كـ {role}",
+      "roleClient": "عميل",
+      "roleCreator": "مبدع"
+    },
     "contactLeakRepeat": {
       "title": "محاولات متكررة لمشاركة تواصل خارج المنصة",
       "message": "حاول مستخدم مراراً مشاركة بيانات تواصل خارج المنصة ({kinds}). راجع النشاط → security.contact_leak."

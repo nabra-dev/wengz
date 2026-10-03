@@ -859,6 +859,70 @@ export async function sendPasswordResetEmail(params: {
   });
 }
 
+/** In-app + SSE alert for super admins when a client/creator applies (or re-applies). */
+export async function notifyAdminsNewUserRegistration(params: {
+  userName: string;
+  userEmail: string;
+  userRole: "CLIENT" | "PROVIDER";
+  userId: string;
+  reapplied?: boolean;
+  locale?: string;
+}) {
+  const { userName, userEmail, userRole, reapplied = false, locale = "en" } = params;
+
+  const admins = await db.user.findMany({
+    where: { role: "SUPER_ADMIN", deletedAt: null },
+    select: { id: true },
+  });
+
+  if (admins.length === 0) return { notifiedAdmins: 0 };
+
+  const roleLabelKey =
+    userRole === "PROVIDER"
+      ? "notifications.newUserRegistration.roleCreator"
+      : "notifications.newUserRegistration.roleClient";
+  const roleLabel = await getTranslation(locale, roleLabelKey);
+  const titleKey = reapplied
+    ? "notifications.newUserRegistration.reapplyTitle"
+    : "notifications.newUserRegistration.title";
+  const messageKey = reapplied
+    ? "notifications.newUserRegistration.reapplyMessage"
+    : "notifications.newUserRegistration.message";
+
+  const title = await getTranslation(locale, titleKey);
+  const message = await getTranslation(locale, messageKey, {
+    userName,
+    userEmail,
+    role: roleLabel,
+  });
+  const link = "/admin/users";
+
+  await Promise.all(
+    admins.map(async (admin) =>
+      createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type: "general",
+        link,
+        sendEmail: false,
+        locale,
+        sseI18n: {
+          titleKey,
+          messageKey,
+          messageParams: {
+            userName,
+            userEmail,
+            role: roleLabel,
+          },
+        },
+      })
+    )
+  );
+
+  return { notifiedAdmins: admins.length };
+}
+
 export async function notifyAdminsContactMessage(params: {
   fullName: string;
   email: string;

@@ -2,7 +2,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { sendApplicationReceivedEmail } from "@/lib/notifications";
+import { notifyAdminsNewUserRegistration, sendApplicationReceivedEmail } from "@/lib/notifications";
 import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivityAsync } from "@/lib/activity-log";
@@ -158,6 +158,17 @@ export const authRouter = router({
           logger.error("Failed to send application received email:", error);
         });
 
+        void notifyAdminsNewUserRegistration({
+          userName: user.name || "User",
+          userEmail: user.email,
+          userRole: "CLIENT",
+          userId: user.id,
+          reapplied: true,
+          locale: ctx.locale,
+        }).catch((error) => {
+          logger.error("Failed to notify admins of client re-application:", error);
+        });
+
         logActivityAsync({
           action: "auth.register_reapply",
           message: `Client re-applied after rejection: ${user.email}`,
@@ -197,6 +208,16 @@ export const authRouter = router({
         locale: ctx.locale,
       }).catch((error) => {
         logger.error("Failed to send application received email:", error);
+      });
+
+      void notifyAdminsNewUserRegistration({
+        userName: user.name || "User",
+        userEmail: user.email,
+        userRole: "CLIENT",
+        userId: user.id,
+        locale: ctx.locale,
+      }).catch((error) => {
+        logger.error("Failed to notify admins of client registration:", error);
       });
 
       logActivityAsync({
@@ -378,6 +399,17 @@ export const authRouter = router({
           logger.error("Failed to send provider application received email:", error);
         });
 
+        void notifyAdminsNewUserRegistration({
+          userName: user.name || "User",
+          userEmail: user.email,
+          userRole: "PROVIDER",
+          userId: user.id,
+          reapplied: true,
+          locale: ctx.locale,
+        }).catch((error) => {
+          logger.error("Failed to notify admins of provider re-application:", error);
+        });
+
         const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
         void getOpsNotifyEmailHtml({
           title: "Provider re-application (pending approval)",
@@ -457,6 +489,16 @@ export const authRouter = router({
         locale: ctx.locale,
       }).catch((error) => {
         logger.error("Failed to send provider application received email:", error);
+      });
+
+      void notifyAdminsNewUserRegistration({
+        userName: user.name || "User",
+        userEmail: user.email,
+        userRole: "PROVIDER",
+        userId: user.id,
+        locale: ctx.locale,
+      }).catch((error) => {
+        logger.error("Failed to notify admins of provider registration:", error);
       });
 
       // Ops notify (best-effort) — same recipient as legacy contact form

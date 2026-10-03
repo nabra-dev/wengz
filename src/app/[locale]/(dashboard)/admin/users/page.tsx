@@ -408,7 +408,7 @@ export default function AdminUsersPage() {
   const t = useTranslations("admin.users");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);

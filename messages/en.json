@@ -2752,6 +2752,14 @@
       "title": "New contact message",
       "message": "{fullName} ({email}) — {topic}"
     },
+    "newUserRegistration": {
+      "title": "New registration pending",
+      "message": "{userName} ({userEmail}) applied as {role}",
+      "reapplyTitle": "Registration re-submitted",
+      "reapplyMessage": "{userName} ({userEmail}) re-applied as {role}",
+      "roleClient": "Client",
+      "roleCreator": "Creator"
+    },
     "contactLeakRepeat": {
       "title": "Repeated off-platform contact attempts",
       "message": "A user repeatedly tried to share off-platform contact ({kinds}). Review Activity → security.contact_leak."
