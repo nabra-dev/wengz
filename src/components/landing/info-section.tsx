@@ -60,7 +60,7 @@ export function InfoSection() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
-          className="relative aspect-[4/5] max-h-[420px] w-full overflow-hidden rounded-2xl sm:max-h-none sm:rounded-3xl lg:aspect-auto lg:min-h-[560px] lg:h-full"
+          className="relative mx-auto aspect-[4/5] max-h-[360px] w-full max-w-md overflow-hidden rounded-2xl sm:max-h-[480px] sm:max-w-none sm:rounded-3xl lg:aspect-auto lg:max-h-none lg:min-h-[560px] lg:h-full"
         >
           <Image
             src="/images/landing/workflow.png"

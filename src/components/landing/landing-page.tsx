@@ -293,6 +293,16 @@ export default function LandingPage({
   }, []);
 
   useEffect(() => {
+    const onResize = () => {
+      if (window.matchMedia("(min-width: 1024px)").matches) {
+        setMobileNavOpen(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
     if (heroChatPhase !== "showingReply") return;
     const replyLength = heroReply.length;
     if (replyLength === 0) return;
@@ -429,7 +439,7 @@ export default function LandingPage({
         transition={{ duration: 0.35 }}
         className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <div className="mx-auto mb-1.5 max-w-2xl px-4 text-center text-[10px] leading-snug text-muted-foreground sm:mb-2 sm:truncate sm:px-6 sm:text-[11px] sm:leading-normal sm:text-xs">
+        <div className="mx-auto mb-1.5 max-w-2xl px-4 text-center text-[11px] leading-snug text-muted-foreground sm:mb-2 sm:truncate sm:px-6 sm:text-xs sm:leading-normal">
           {t("landing.notices.beta")}
         </div>
         <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10">
@@ -576,7 +586,10 @@ export default function LandingPage({
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/15 sm:via-black/40 sm:to-black/10"
+              className={cn(
+                "absolute inset-0 from-black/70 via-black/45 to-black/15 sm:via-black/40 sm:to-black/10",
+                isRTL ? "bg-gradient-to-l" : "bg-gradient-to-r"
+              )}
               aria-hidden
             />
             <div
@@ -586,16 +599,17 @@ export default function LandingPage({
             <div
               className="absolute inset-0 opacity-30 mix-blend-screen"
               style={{
-                backgroundImage:
-                  "radial-gradient(ellipse at 70% 45%, rgba(105,13,212,0.4), transparent 55%)",
+                backgroundImage: isRTL
+                  ? "radial-gradient(ellipse at 30% 45%, rgba(105,13,212,0.4), transparent 55%)"
+                  : "radial-gradient(ellipse at 70% 45%, rgba(105,13,212,0.4), transparent 55%)",
               }}
               aria-hidden
             />
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
-            <div className="relative z-[1] mt-1 max-w-md shrink-0 sm:mt-2 sm:max-w-lg lg:pointer-events-none lg:absolute lg:inset-x-6 lg:top-0 lg:bottom-0 lg:mt-0 lg:flex lg:items-center xl:inset-x-10">
-              <div className={`pointer-events-auto ${textDirectionClass}`}>
+            <div className="pointer-events-none absolute inset-x-4 top-0 bottom-0 z-[1] flex items-center pb-[11.5rem] pt-4 sm:inset-x-6 sm:pb-48 sm:pt-6 lg:inset-x-10 lg:pb-44 lg:pt-0 xl:inset-x-10 [@media(max-height:640px)]:relative [@media(max-height:640px)]:inset-auto [@media(max-height:640px)]:pointer-events-auto [@media(max-height:640px)]:mt-6 [@media(max-height:640px)]:block [@media(max-height:640px)]:pb-0 [@media(max-height:640px)]:pt-0">
+              <div className={`pointer-events-auto max-w-md sm:max-w-lg ${textDirectionClass}`}>
                 <motion.h1
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -612,7 +626,7 @@ export default function LandingPage({
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 }}
-                  className={`mt-2 max-w-sm sm:mt-3 ${FONT_SIZES.hero.subtitle} text-white/70`}
+                  className={`mt-2 max-w-sm sm:mt-3 ${FONT_SIZES.hero.subtitle} text-white/70 [@media(max-height:700px)]:line-clamp-3`}
                 >
                   {t("landing.hero.subtitle")}
                 </motion.p>
@@ -861,7 +875,7 @@ export default function LandingPage({
               </p>
             </motion.div>
 
-            <div className="grid w-full grid-cols-1 items-stretch gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-7">
+            <div className="grid w-full grid-cols-1 items-stretch gap-5 overflow-visible sm:gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-7">
               {showPackagesSkeleton && (
                 <div className="col-span-full flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -891,11 +905,14 @@ export default function LandingPage({
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: "-40px" }}
                       transition={{ delay: index * 0.06, duration: 0.4 }}
-                      className={cn("relative flex", featured && "xl:-mt-3 xl:mb-[-0.75rem]")}
+                      className={cn(
+                        "relative flex overflow-visible",
+                        featured && "xl:-mt-3 xl:mb-[-0.75rem]"
+                      )}
                     >
                       <div
                         className={cn(
-                          "relative flex h-full w-full flex-col rounded-[1.75rem] border p-6 transition-all duration-300 sm:p-7",
+                          "relative flex h-full w-full min-w-0 flex-col overflow-visible rounded-[1.75rem] border p-5 transition-all duration-300 sm:p-7",
                           featured
                             ? "mt-3 border-transparent bg-gradient-to-b from-[#690DD4]/20 via-card to-card shadow-[0_24px_80px_rgba(105,13,212,0.22)] ring-1 ring-[#690DD4]/35 xl:mt-0"
                             : "border-border/80 bg-card/80 hover:-translate-y-1 hover:border-[#690DD4]/35 hover:shadow-[0_18px_60px_rgba(0,0,0,0.12)]"
@@ -912,7 +929,7 @@ export default function LandingPage({
                           </>
                         ) : null}
 
-                        <h3 className="mb-5 text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                        <h3 className="mb-5 break-words text-base font-semibold tracking-tight text-foreground sm:text-lg">
                           {getLocalizedText(pkg.name, pkg.nameI18n)}
                         </h3>
 
@@ -1075,12 +1092,12 @@ export default function LandingPage({
                 transition={{ delay: 0.2, duration: 0.4 }}
                 className="mt-12 flex flex-col items-center gap-5 sm:mt-14 sm:gap-6"
               >
-                <div className="flex w-full max-w-sm items-center gap-3">
+                <div className="flex w-full max-w-sm items-center gap-2 sm:gap-3">
                   <span
-                    className="h-px flex-1 bg-gradient-to-r from-transparent to-wengz-yellow-line"
+                    className="h-px min-w-4 flex-1 bg-gradient-to-r from-transparent to-wengz-yellow-line"
                     aria-hidden
                   />
-                  <p className="inline-flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold uppercase tracking-[0.18em] text-wengz-yellow sm:text-[0.9375rem]">
+                  <p className="inline-flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-wengz-yellow sm:gap-2.5 sm:text-[0.9375rem] sm:tracking-[0.18em]">
                     <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
                       <span className="absolute inset-0 animate-ping rounded-full bg-wengz-yellow opacity-55" />
                       <span className="relative m-auto h-2 w-2 rounded-full bg-wengz-yellow shadow-[0_0_12px_var(--wengz-yellow-muted)]" />
@@ -1088,7 +1105,7 @@ export default function LandingPage({
                     {t("landing.cta.appComingSoon")}
                   </p>
                   <span
-                    className="h-px flex-1 bg-gradient-to-l from-transparent to-wengz-yellow-line"
+                    className="h-px min-w-4 flex-1 bg-gradient-to-l from-transparent to-wengz-yellow-line"
                     aria-hidden
                   />
                 </div>
