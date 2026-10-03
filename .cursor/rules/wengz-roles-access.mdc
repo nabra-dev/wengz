@@ -1,0 +1,38 @@
+---
+description: Role ACL — roles.ts, proxy, dashboard shell, tRPC procedures
+globs: src/lib/roles.ts,src/proxy.ts,src/server/trpc.ts,src/app/**/dashboard-shell.tsx,src/app/**/admin/**/*,src/app/**/client/**/*,src/app/**/provider/**/*
+alwaysApply: false
+---
+
+# Roles and access control
+
+Canon: `docs/ADVANCED_BUSINESS.md` (actors + capability matrix) · helpers: `src/lib/roles.ts` · edge: `src/proxy.ts` · UI nav: `dashboard-shell.tsx`.
+
+## Capability helpers
+
+- `canManageRequests` → SA | PM — requests, contact-leaks, create/assign/approve-on-behalf
+- `canManageFinance` → SA | FM — payments, finance, subscriptions, finance/payment settings
+- `canManagePlatform` → SA only — users, packages, services, activity, contacts, maintenance
+- `canAccessAdminPath(role, path)` — shared by proxy + admin layout
+
+## tRPC procedures (`src/server/trpc.ts`)
+
+| Procedure | Who |
+|-----------|-----|
+| `adminProcedure` | SUPER_ADMIN |
+| `requestManagerProcedure` | SA \| PM |
+| `financeManagerProcedure` | SA \| FM |
+| `providerProcedure` | PROVIDER \| SA |
+| `clientProcedure` | CLIENT \| SA |
+| `staffProcedure` | any staff — **unused**; prefer narrower procedures |
+
+## Homes
+
+PM → `/admin/requests` · FM → `/admin/finance` · SA → `/admin` · Provider → `/provider` · Client → `/client`
+
+## Checklist when adding admin UI
+
+1. Gate the **route** in `canAccessAdminPath` if new section.
+2. Gate the **procedure** with the correct middleware.
+3. Add **nav** entry in `adminNavConfig` with the right `access` tag (`platform` | `requests` | `finance` | `settings` | `staff`).
+4. Update capability matrix in `docs/ADVANCED_BUSINESS.md` if product scope changes.

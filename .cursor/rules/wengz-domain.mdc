@@ -1,0 +1,38 @@
+---
+description: Wengz business domain invariants — credits, requests, payments, wallet, trust
+alwaysApply: true
+---
+
+# Wengz domain (business → code)
+
+Canon: **`docs/ADVANCED_BUSINESS.md`**. Do not invent refunds, auto-approve, WhatsApp channels, or card rails unless docs + product say so.
+
+## Commercial
+
+- **Package** = credits + `durationDays` + optional service scope (`supportAllServices` / `PackageService`).
+- **Free package** (`isFreePackage`): admin-configured; granted **once** on client approve (`assignFreeClientSubscription`). Hidden from paid catalog.
+- **Payment**: bank + InstaPay proofs only (others Coming soon). FM/SA approve → activate paid sub, deactivate others, reset period. Reject → cancel pending sub. No credit carry on upgrade.
+
+## Request statuses
+
+`PENDING` → `IN_PROGRESS` → `DELIVERED` ⇄ `REVISION_REQUESTED` → `COMPLETED` (or staff soft-delete → `CANCELLED`).
+
+- Create: `src/lib/create-request.ts` (client or PM/SA on-behalf).
+- Provider concurrency: `src/lib/provider-workload.ts` (one active; revision + one new exception).
+- SLA: 1h reminder; 12h `needsManualApproval`; PM/SA **approve on behalf** via `approveDeliveredRequest` / `admin.approveRequestOnBehalf`.
+- Revisions: free then paid (`revision-logic.ts`); leak-scan feedback **before** credit/status change.
+- Rating: once when `COMPLETED`; review text leak-scanned.
+
+## Provider money
+
+Global settings (`finance-settings.ts`): credit USD price, commission %, min withdrawal, fee. Hold **7 days** then cron `release-provider-holds`. Withdrawals/disputes: FM/SA manual review with proof.
+
+## Trust
+
+- Signup → `PENDING` until SA approve; REJECTED may re-apply.
+- Contact-leak enforcement + Admin → Contact leaks (PM/SA). Super admin exempt from leak blocks.
+- Maintenance: staff can log in; clients/providers cannot (existing JWTs not revoked).
+
+## Gaps (do not pretend shipped)
+
+See business doc **Known gaps**: RequestWatcher UI, priority pricing UI, card rails, credit refunds, upgrade carry, WhatsApp notify channel.

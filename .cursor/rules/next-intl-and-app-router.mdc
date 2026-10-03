@@ -1,6 +1,6 @@
 ---
 description: next-intl, App Router, messages — aligned with ADVANCED_TECHNICAL i18n section
-globs: src/app/**/*.tsx,src/i18n/**/*.ts,messages/**/*.json
+globs: src/app/**/*.tsx,src/i18n/**/*.ts,messages/**/*.json,src/proxy.ts,src/app/api/locale/**
 alwaysApply: false
 ---
 
@@ -8,12 +8,18 @@ alwaysApply: false
 
 ## Grounding
 
-- **Routing and messages** (file map, RTL): `docs/ADVANCED_TECHNICAL.md` — internationalization section
-- **Why bilingual UX matters** (product): `docs/ADVANCED_BUSINESS.md` — product positioning
+- Technical i18n + proxy: `docs/ADVANCED_TECHNICAL.md`
+- Product bilingual requirement: `docs/ADVANCED_BUSINESS.md`
 
 ## Conventions
 
-- **Locales**: `en`, `ar` in `src/i18n/routing.ts` (`localePrefix: "as-needed"`). Navigation: **`Link`, `redirect`, `usePathname`, `useRouter` from `@/i18n/routing`**, not raw `next/navigation` exports.
-- **Messages**: `messages/en.json`, `messages/ar.json`; loaded in `src/app/[locale]/layout.tsx` via `NextIntlClientProvider`.
-- **RTL**: Locale layout sets `dir` for `ar`; keep nested layouts consistent.
-- **Strings**: `useTranslations` / `useFormatter` in client components; add keys to **both** JSON files. User-facing errors/toasts: `@/lib/error-handler` + `errors.*` in `messages/en.json` and `messages/ar.json`.
+- **Locales**: `en`, `ar` in `src/i18n/routing.ts` (`localePrefix: "as-needed"`).
+- **Navigation**: `Link`, `redirect`, `usePathname`, `useRouter` from **`@/i18n/routing`** — not raw `next/navigation`.
+- **Edge**: `src/proxy.ts` (Next 16 proxy) — locale + NextAuth + role redirects.
+- **Messages**: `messages/en.json` + `messages/ar.json` via `NextIntlClientProvider` in `src/app/[locale]/layout.tsx`.
+- **RTL**: layout sets `dir` for `ar`.
+- **Strings**: `useTranslations` / `useFormatter`; new keys in **both** JSON files.
+- **Locale cookie API**: prefer `POST /api/locale`; syncs `User.preferredLocale` (`src/lib/user-locale.ts`).
+- **Public redirects**: `resolvePublicRequestOrigin` / `publicRedirectUrl` (`src/lib/request-origin.ts`) behind reverse proxies.
+- **Toasts**: `@/lib/error-handler` + `errors.*` keys in both message files.
+- **Currency switcher**: display-only (USD stored); do not persist as settlement currency.

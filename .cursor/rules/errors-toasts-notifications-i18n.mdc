@@ -1,22 +1,27 @@
 ---
-description: Toasts and multi-channel notifications — see src/lib/error-handler and src/lib/notifications
-globs: src/lib/error-handler.ts,src/lib/notifications/**/*.ts,src/components/**/*.tsx
+description: Toasts and multi-channel notifications — error-handler + notifications locale rules
+globs: src/lib/error-handler.ts,src/lib/notifications/**/*.ts,src/lib/user-locale.ts,src/components/**/*.tsx,src/app/api/cron/**/*.ts,src/app/api/notifications/**/*
 alwaysApply: false
 ---
 
 # Errors, toasts, and notifications
 
-## Canonical sources (no separate doc files)
+## Canonical sources
 
 | Concern | Where |
 |---------|--------|
-| Sonner toasts, `showError` / `showSuccess`, `errors.*` keys | `src/lib/error-handler.ts`; translation keys in `messages/en.json` & `messages/ar.json` |
-| `notify*`, email, in-app, **`locale`** from `ctx` | `src/lib/notifications/`; context locale from `src/server/trpc.ts` |
-| Channels and subscription cron (business framing) | `docs/ADVANCED_BUSINESS.md` |
-| SSE/cron path pointers | `docs/ADVANCED_TECHNICAL.md` |
+| Sonner toasts, `showError` / `showSuccess`, `errors.*` | `src/lib/error-handler.ts` + `messages/en.json` & `ar.json` |
+| `notify*`, email, in-app, SSE | `src/lib/notifications/` |
+| Recipient locale | `localeForUser` / `getPreferredLocaleForUser` (`user-locale.ts`) — **not** actor `ctx.locale` |
+| Business channels / cron | `docs/ADVANCED_BUSINESS.md` · paths in `docs/ADVANCED_TECHNICAL.md` |
 
 ## Agent checklist
 
-- **Client toasts**: `useTranslations()` → pass `t` as third arg to `showError`, `showSuccess`, `showWarning`, `showInfo` in `@/lib/error-handler`.
-- **Server notifications**: pass **`locale`** (e.g. `ctx.locale`) into notification helpers under `@/lib/notifications/`.
-- **Single source of truth**: extend shared helpers and translation JSON — avoid one-off translated strings in random components.
+- **Client toasts**: `useTranslations()` → pass `t` as third arg to `showError` / `showSuccess` / `showWarning` / `showInfo`.
+- **Server notifications to a user**: prefer helpers that already call `localeForUser(recipientId)`. Do **not** force staff session locale onto clients/providers.
+- **Staff fan-out**: use `notifyStaffByRoles` (groups by each admin’s `preferredLocale`).
+- **New templates**: add keys under `notifications.*` in **both** message files; wire through existing email helpers.
+- **Cron dedupe**: use stable notification `type` (e.g. `subscription_expiring`), not translated titles.
+- Extend shared helpers — avoid one-off translated strings in random components.
+
+Deep workflow: `.cursor/skills/wengz-notifications-locale/SKILL.md`

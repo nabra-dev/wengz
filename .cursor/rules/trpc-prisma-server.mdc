@@ -1,6 +1,6 @@
 ---
 description: tRPC, Prisma, auth context — aligned with ADVANCED_TECHNICAL and domain model
-globs: src/server/**/*.ts,src/lib/db.ts,src/lib/auth.ts,prisma/**/*
+globs: src/server/**/*.ts,src/lib/db.ts,src/lib/auth.ts,src/lib/**/*-request*.ts,src/lib/credit-logic.ts,src/lib/provider-wallet.ts,prisma/**/*
 alwaysApply: false
 ---
 
@@ -8,13 +8,21 @@ alwaysApply: false
 
 ## Grounding
 
-- **Domain context** (roles, credits, requests, payments): `docs/ADVANCED_BUSINESS.md`
-- **Implementation map** (context shape, procedures, integrations): `docs/ADVANCED_TECHNICAL.md` § Stack, repository layout, tRPC path
+- Domain: `docs/ADVANCED_BUSINESS.md`
+- Implementation: `docs/ADVANCED_TECHNICAL.md` (stack, tRPC path, env, cron)
+- Roles: `src/lib/roles.ts` + rule `wengz-roles-access`
 
 ## Conventions
 
-- **Router composition**: Sub-routers in `src/server/routers/`; register in `src/server/routers/_app.ts` (`appRouter`).
-- **Context** (`src/server/trpc.ts`): `db`, `session`, optional `req`, **`locale`** (cookies via `getLocaleFromCookie`). Pass **`ctx.locale`** into `@/lib/notifications/*` and any user-facing server copy (see `docs/ADVANCED_TECHNICAL.md` § Internationalization).
-- **Procedures**: Use `publicProcedure`, `protectedProcedure`, `adminProcedure`, and role middlewares defined in `trpc.ts` (provider/client/admin). Do not bypass with ad-hoc session checks.
-- **Data**: `ctx.db` (Prisma from `@/lib/db`). Schema: `prisma/schema.prisma`. Production: `npm run db:migrate`; local iteration: `db:push` when appropriate.
-- **Errors**: `TRPCError` with correct codes; Zod errors formatted in `trpc.ts` `errorFormatter` for client consumption.
+- **Routers**: `src/server/routers/*` → register in `_app.ts`.
+- **Context** (`src/server/trpc.ts`): `db`, `session`, optional `req`, **`locale`** (cookie). Use `ctx.locale` for **actor UI language** (e.g. system comments in actor tongue only when intentional); outbound **user** copy → recipient `preferredLocale` via notification helpers.
+- **Procedures**: `public` / `protected` / `admin` / `requestManager` / `financeManager` / `client` / `provider`. Never ad-hoc role checks that bypass these.
+- **Data**: `ctx.db` (Prisma). Prod migrations: `npm run db:migrate` / `db:migrate:deploy`. Local: `db:push` when appropriate.
+- **Errors**: `TRPCError` + Zod via `errorFormatter`.
+- **Domain libs** (prefer over duplicating logic in routers):
+  - `create-request.ts`, `credit-logic.ts`, `revision-logic.ts`
+  - `approve-delivered-request.ts`, `provider-wallet.ts`, `provider-workload.ts`
+  - `contact-leak-enforce.ts`, `free-client-subscription.ts`
+- **Activity**: `logRequestActivity` / `logActivityAsync` on lifecycle mutations.
+
+Deep workflows: `.cursor/skills/wengz-credits-payments/SKILL.md`, `.cursor/skills/wengz-domain-workflows/SKILL.md`

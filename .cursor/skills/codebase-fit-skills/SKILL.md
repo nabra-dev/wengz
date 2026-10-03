@@ -1,74 +1,67 @@
 ---
 name: codebase-fit-skills
-description: Maps the repo using docs/ADVANCED_BUSINESS.md and docs/ADVANCED_TECHNICAL.md first, then code, to propose and author project-scoped skills under .cursor/skills/. Use when bootstrapping skills, refreshing after refactors, or aligning agents with Wengz documentation.
+description: Maps the repo using docs/ADVANCED_BUSINESS.md and docs/ADVANCED_TECHNICAL.md first, then code, to propose and author project-scoped skills and rules under .cursor/. Use when bootstrapping skills, refreshing after refactors, or aligning agents with Wengz documentation.
 ---
 
 # Codebase-fit project skills (Wengz)
 
 ## Goal
 
-Turn what is **documented and true in the repo** into **small, discoverable skills** under `.cursor/skills/<name>/SKILL.md` so agents default to **Wengz** conventions (credits, locales, tRPC context, notifications) instead of generic patterns.
+Turn what is **documented and true in the repo** into **small, discoverable skills** under `.cursor/skills/<name>/SKILL.md` and keep **`.cursor/rules/*.mdc`** as short distillations. Agents should default to Wengz conventions (credits, roles, locales, tRPC) instead of generic patterns.
 
-**Canonical narrative:** `docs/ADVANCED_BUSINESS.md` (what the product is) → `docs/ADVANCED_TECHNICAL.md` (how it is built) → implementation detail for toasts/notifications in **`src/lib/error-handler.ts`**, **`src/lib/notifications/`**, **`messages/*.json`**. **`.cursor/rules/*.mdc`** are editor-side distillations; skills may go deeper and must **link** the ADVANCED docs and real paths.
+**Canon:** `docs/ADVANCED_BUSINESS.md` → `docs/ADVANCED_TECHNICAL.md` → `src/lib/error-handler.ts` / `notifications/` / `roles.ts`. See also `.cursor/README.md`.
+
+## Current skill inventory
+
+| Skill                        | Trigger                                                      |
+| ---------------------------- | ------------------------------------------------------------ |
+| `wengz-domain-workflows`     | Request lifecycle, multi-role dashboards, SLA, contact leaks |
+| `wengz-credits-payments`     | Packages, subscriptions, proofs, wallet, withdrawals         |
+| `wengz-notifications-locale` | Email / in-app / SSE locale                                  |
+| `codebase-fit-skills`        | This meta skill — refresh config from docs                   |
 
 ## When to use
 
-- User asks to study the codebase and create or refresh **project skills**.
-- Onboarding or a large refactor changed `src/app/`, `src/server/`, or `prisma/`.
-- A workflow (i18n, tRPC, Prisma, notifications) keeps diverging from **`docs/*.md`**.
+- User asks to study the codebase and create/refresh **project skills or rules**.
+- Large refactor of `src/app/`, `src/server/`, or `prisma/`.
+- Workflows diverge from **`docs/*.md`**.
 
 ## Storage rule
 
-- **Project skills**: `.cursor/skills/<skill-name>/SKILL.md` (committed).
+- Project skills: `.cursor/skills/<skill-name>/SKILL.md` (committed).
 - Do **not** put project-specific skills in `~/.cursor/skills-cursor/`.
 
-## Phase 1 — Map the codebase (read-only)
+## Phase 1 — Map (read-only)
 
-**Order matters:**
+1. `docs/ADVANCED_BUSINESS.md`
+2. `docs/ADVANCED_TECHNICAL.md`
+3. Messaging: `error-handler`, `notifications/`, `messages/`
+4. Code: `package.json`, `prisma/schema.prisma`, routers, dashboards
+5. Existing `.cursor/rules/**` and `.cursor/skills/**`
 
-1. **`docs/ADVANCED_BUSINESS.md`** — roles, commercial model, request lifecycle vocabulary.
-2. **`docs/ADVANCED_TECHNICAL.md`** — stack table, directory map, tRPC flow, i18n, cron, env checklist.
-3. **`src/lib/error-handler.ts`**, **`src/lib/notifications/`**, **`messages/`** — when the task touches UX or outbound messages.
-4. **Code & config**: `package.json`, `tsconfig`, `next.config.*`, `prisma/schema.prisma`, `src/server/**`, `src/app/api/**`, `src/app/[locale]/**`, `messages/`, `src/lib/**`, tests (`jest`, `playwright`).
-5. **Agent config**: `.cursor/rules/**` for what is already distilled.
+## Phase 2 — Choose candidates
 
-Capture **paths and names**; note one **golden example** file per area (e.g. one router, one localized page, one test).
+Prefer **one skill per fragile workflow**. Skip mega-skills that paste ADVANCED docs — **link** instead.
 
-## Phase 2 — Choose skill candidates
+## Phase 3 — Author
 
-Prefer **one skill per recurring, fragile workflow** (narrow beats mega-skill).
-
-Good candidates:
-
-- Flows that **`docs/ADVANCED_TECHNICAL.md`** names explicitly (tRPC context, middleware/proxy behavior).
-- Toasts / notifications / `errors.*` keys — skill body = steps + link to **`src/lib/**` files and ADVANCED docs, not removed standalone doc paths.
-- Domain rules from **`docs/ADVANCED_BUSINESS.md`** that code must enforce (credits, statuses, payment proof).
-
-Skip:
-
-- Duplicating ESLint/Prettier unless the project adds rules **not** in config.
-- Mega-skills that repeat the two ADVANCED docs verbatim — **link** instead.
-
-## Phase 3 — Author skills
-
-For each candidate:
-
-1. **Name**: lowercase, hyphens, max 64 chars (e.g. `wengz-notification-locale`, not `backend-helper`).
-2. **Description** (YAML): third person, **WHAT** + **WHEN**, include trigger terms.
-3. **Body**: Prerequisites, steps, checklists, **`docs/...` links** and example file paths. Keep **SKILL.md** under ~500 lines; add `reference.md` in the same folder if needed.
-4. **Progressive disclosure**: at most one level of `reference.md` / `examples.md`.
+1. Name: lowercase hyphens, max 64 chars.
+2. Description: third person, WHAT + WHEN, trigger terms.
+3. Body: steps + real paths + doc links; keep under ~500 lines.
+4. Update `.cursor/README.md` inventory when adding/removing skills.
+5. Keep always-apply rules short; put depth in skills.
 
 ## Phase 4 — Verify
 
-- [ ] Each skill’s `description` has clear triggers.
-- [ ] Instructions cite **real paths** and **correct doc filenames**.
-- [ ] No duplicate skills; cross-link if related.
-- [ ] Optional: `npm run lint` / `npm run type-check` after code changes.
+- [ ] Descriptions have clear triggers
+- [ ] Paths and doc filenames real
+- [ ] No duplicate skills; cross-link related ones
+- [ ] Rules do not contradict ADVANCED docs
 
-## Output when the user only asked for analysis
+## Output when analysis-only
 
-1. Short **inventory** (stack + main dirs), grounded in **ADVANCED\_\*** docs where possible.
-2. **Proposed skill list** (name + one line each).
-3. **Suggested first skill file** (highest leverage).
+1. Short inventory grounded in ADVANCED docs
+2. Proposed skill/rule list
+3. Highest-leverage next file
 
-Implement `.cursor/skills/**/SKILL.md` only when the user confirms or asks to create files.
+Implement files when the user confirms or explicitly asks to create/update config.

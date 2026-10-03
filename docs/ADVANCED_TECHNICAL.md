@@ -245,8 +245,8 @@ Maintenance mode: **staff** may log in; clients/providers blocked (`src/lib/auth
 
 - **TypeScript**: strict; path alias `@/*` → `./src/*`.
 - **reactStrictMode**: currently `false` in `next.config.js` (intentional — document if re-enabled).
-- **AGENTS.md** / **CLAUDE.md**: Next.js 16 agent rules — read `node_modules/next/dist/docs/` before assuming older App Router APIs.
-- **Workspace rules**: `.cursor/rules/nabra-core.mdc` summarizes stack for agents; this file is the detailed canon.
+- **AGENTS.md** / **CLAUDE.md**: Wengz orientation + Next.js 16 agent rules — read `node_modules/next/dist/docs/` before assuming older App Router APIs.
+- **Cursor project config**: `.cursor/README.md` maps rules (`nabra-core`, `wengz-domain`, roles, tRPC, i18n, notifications) and skills (`wengz-domain-workflows`, `wengz-credits-payments`, `wengz-notifications-locale`, `codebase-fit-skills`). Refresh via the codebase-fit skill after large refactors.
 
 ---
 

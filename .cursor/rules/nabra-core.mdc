@@ -1,5 +1,5 @@
 ---
-description: Wengz stack, documentation canon, paths, and quality gates (always apply)
+description: Wengz documentation canon, stack, roles, and quality gates (always apply)
 alwaysApply: true
 ---
 
@@ -7,27 +7,54 @@ alwaysApply: true
 
 ## Documentation canon (read before large changes)
 
-Use these files as **source of truth** for intent and architecture; `.cursor/rules/*.mdc` files distill them for the agent.
-
 | Doc | Purpose |
 |-----|---------|
-| `docs/ADVANCED_BUSINESS.md` | Actors, credits, packages, request lifecycle, payments, notifications at a business level |
-| `docs/ADVANCED_TECHNICAL.md` | Stack, layers, tRPC flow, i18n wiring, cron, caching, env categories, repo map |
+| `docs/ADVANCED_BUSINESS.md` | Actors, credits, packages, client journey, request lifecycle, payments, wallet, gaps |
+| `docs/ADVANCED_TECHNICAL.md` | Stack versions, repo map, proxy, tRPC, i18n, cron, cache, uploads, env |
+| `docs/DEPLOY.md` | VPS / GitHub Actions deploy |
+| `docs/WENGZ_KNOWLEDGE.md` / `WENGZ_INTENT_PLAYBOOKS.md` | Landing assistant copy only |
 
 | Code (UX / messaging) | Purpose |
 |----------------------|---------|
-| `src/lib/error-handler.ts` | Sonner toasts; optional `t` from `useTranslations`; `errors.*` keys in `messages/en.json` & `messages/ar.json` |
-| `src/lib/notifications/` | Email, in-app, SSE; recipient **`preferredLocale`** (see technical doc) |
+| `src/lib/error-handler.ts` | Sonner toasts; `errors.*` in `messages/en.json` & `ar.json` |
+| `src/lib/notifications/` | Email, in-app, SSE — localize with **recipient** `preferredLocale` |
+| `src/lib/roles.ts` | Role helpers + admin path ACL |
 
-If behavior is unclear in code, **prefer aligning with these docs** or update the doc when product intent changes.
+If code and docs disagree, **align with ADVANCED docs** or update the docs when product intent changes. Prefer `.cursor/skills/*` for deep workflows.
 
-## Stack and layout (summary)
+## Product in one paragraph
 
-- **Stack**: Next.js 16 (App Router, webpack, dev **port 3001**), React 18, TypeScript strict, Tailwind + Radix, tRPC v11 + TanStack Query, Prisma 6 + PostgreSQL, NextAuth v4 (Credentials), next-intl (`en`/`ar`), Zod, local-disk uploads, optional Redis/Upstash, Sentry, Nodemailer, Jest, Playwright. Full table: `docs/ADVANCED_TECHNICAL.md`.
-- **Source**: `src/` only; alias `@/*` → `./src/*`. Edge: `src/proxy.ts` (not `middleware.ts`).
-- **Routes**: `src/app/[locale]/` — groups `(auth)`, `(dashboard)`; segments `client/`, `provider/`, `admin/`.
-- **API**: tRPC `src/app/api/trpc/[trpc]/route.ts`; OpenAPI/REST bridge under `src/pages/api/rest/`.
+Wengz is a **bilingual (en/ar) service marketplace**: clients buy **credit packages**, open **requests** against configurable **service types**; **providers** fulfill; **PM** runs request ops + contact leaks; **FM** runs payments/wallet; **super admin** owns catalog/users/platform.
+
+## Roles (do not invent new ones)
+
+`CLIENT` · `PROVIDER` · `PROJECT_MANAGER` · `FINANCE_MANAGER` · `SUPER_ADMIN` — see `src/lib/roles.ts` and business capability matrix.
+
+| Who | Procedures / home |
+|-----|-------------------|
+| Client | `clientProcedure` → `/client` |
+| Provider | `providerProcedure` → `/provider` |
+| PM | `requestManagerProcedure` → `/admin/requests` |
+| FM | `financeManagerProcedure` → `/admin/finance` |
+| SA | `adminProcedure` (+ all) → `/admin` |
+
+## Stack (summary)
+
+Next.js **16** App Router (dev **port 3001**, webpack for PWA), React 18, Prisma 6 + PostgreSQL, tRPC 11 + TanStack Query, NextAuth v4 Credentials, next-intl, Zod, **local-disk** uploads, optional Redis/Upstash, Sentry, Nodemailer. Edge: **`src/proxy.ts`** (not `middleware.ts`). Full table: `docs/ADVANCED_TECHNICAL.md`.
+
+- **Source**: `src/` · alias `@/*` → `./src/*`
+- **Dashboards**: `src/app/[locale]/(dashboard)/{client,provider,admin}/`
+- **API**: `src/app/api/trpc/[trpc]/route.ts` · OpenAPI REST bridge `src/pages/api/rest/`
+
+## Hard invariants (never violate quietly)
+
+1. **Credits**: spend only from **active + non-expired** subscription; deduct atomically (`src/lib/credit-logic.ts`).
+2. **Paid plan**: subscribe creates **inactive** sub until FM/SA **approves payment proof**.
+3. **Settlement**: on approve → provider wallet **7-day hold** (`src/lib/provider-wallet.ts`); not tied to package price.
+4. **Contact leaks**: scan free text before mutating request state (`src/lib/contact-leak-enforce.ts`).
+5. **Notifications**: build copy for the **recipient’s** locale, not the actor session.
+6. **i18n**: navigation via `@/i18n/routing`; add strings to **both** `messages/en.json` and `ar.json`.
 
 ## Quality gates
 
-Before finishing substantive work: `npm run lint`, `npm run type-check`; broader: `npm run test:ci`, `npm run test:e2e` as appropriate.
+Substantive work: `npm run lint`, `npm run type-check`. Broader: `npm run test:ci`, `npm run test:e2e` (Playwright on **3001**).
