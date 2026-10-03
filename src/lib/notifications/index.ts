@@ -28,6 +28,12 @@ import {
   getAdminWithdrawalRequestedEmailTemplate,
   getAdminFinanceDisputeOpenedEmailTemplate,
   getAdminPaymentVerificationEmailTemplate,
+  getPaymentApprovedEmailTemplate,
+  getPaymentRejectedEmailTemplate,
+  getPaymentProofReceivedEmailTemplate,
+  getSubscriptionStartedEmailTemplate,
+  getSubscriptionCancelledEmailTemplate,
+  getPasswordChangedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -941,6 +947,191 @@ export async function notifyAccountActivationChanged(params: {
     sseI18n: {
       titleKey: `notifications.${key}.title`,
       messageKey: `notifications.${key}.message`,
+    },
+  });
+}
+
+export async function notifyClientPaymentApproved(params: {
+  userId: string;
+  packageName: string;
+  locale?: string;
+}) {
+  const { userId, packageName, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.paymentApproved.title");
+  const message = await getTranslation(locale, "notifications.paymentApproved.message", {
+    packageName,
+  });
+  const emailTemplate = await getPaymentApprovedEmailTemplate(packageName, locale);
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/client/subscription",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.paymentApproved.title",
+      messageKey: "notifications.paymentApproved.message",
+      messageParams: { packageName },
+    },
+  });
+}
+
+export async function notifyClientPaymentRejected(params: {
+  userId: string;
+  reason: string;
+  locale?: string;
+}) {
+  const { userId, reason, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.paymentRejected.title");
+  const message = await getTranslation(locale, "notifications.paymentRejected.message", {
+    reason,
+  });
+  const emailTemplate = await getPaymentRejectedEmailTemplate(reason, locale);
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/client/subscription",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.paymentRejected.title",
+      messageKey: "notifications.paymentRejected.message",
+      messageParams: { reason },
+    },
+  });
+}
+
+export async function notifyClientPaymentProofReceived(params: {
+  userId: string;
+  packageName: string;
+  amount: number;
+  currency: string;
+  locale?: string;
+}) {
+  const { userId, packageName, amount, currency, locale = "en" } = params;
+  const formattedAmount = formatMoneyAmount(amount, locale);
+
+  const title = await getTranslation(locale, "notifications.paymentProofReceived.title");
+  const message = await getTranslation(locale, "notifications.paymentProofReceived.message", {
+    packageName,
+    amount: formattedAmount,
+    currency,
+  });
+  const emailTemplate = await getPaymentProofReceivedEmailTemplate({
+    amount: formattedAmount,
+    currency,
+    packageName,
+    locale,
+  });
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/client/subscription",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.paymentProofReceived.title",
+      messageKey: "notifications.paymentProofReceived.message",
+      messageParams: {
+        packageName,
+        amount: formattedAmount,
+        currency,
+      },
+    },
+  });
+}
+
+export async function notifyClientSubscriptionStarted(params: {
+  userId: string;
+  packageName: string;
+  locale?: string;
+}) {
+  const { userId, packageName, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.subscriptionStarted.title");
+  const message = await getTranslation(locale, "notifications.subscriptionStarted.message", {
+    packageName,
+  });
+  const emailTemplate = await getSubscriptionStartedEmailTemplate(packageName, locale);
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/client/payment",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.subscriptionStarted.title",
+      messageKey: "notifications.subscriptionStarted.message",
+      messageParams: { packageName },
+    },
+  });
+}
+
+export async function notifyClientSubscriptionCancelled(params: {
+  userId: string;
+  wasActive: boolean;
+  locale?: string;
+}) {
+  const { userId, wasActive, locale = "en" } = params;
+  const messageKey = wasActive
+    ? "notifications.subscriptionCancelled.activeMessage"
+    : "notifications.subscriptionCancelled.pendingMessage";
+
+  const title = await getTranslation(locale, "notifications.subscriptionCancelled.title");
+  const message = await getTranslation(locale, messageKey);
+  const emailTemplate = await getSubscriptionCancelledEmailTemplate({ wasActive, locale });
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/client/subscription",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.subscriptionCancelled.title",
+      messageKey,
+    },
+  });
+}
+
+export async function notifyPasswordChanged(params: {
+  userId: string;
+  userName: string;
+  locale?: string;
+}) {
+  const { userId, userName, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.passwordChanged.title");
+  const message = await getTranslation(locale, "notifications.passwordChanged.message");
+  const emailTemplate = await getPasswordChangedEmailTemplate({ userName, locale });
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: "/auth/login",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.passwordChanged.title",
+      messageKey: "notifications.passwordChanged.message",
     },
   });
 }

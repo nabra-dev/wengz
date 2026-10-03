@@ -7,8 +7,12 @@ import {
 } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { PaymentStatus } from "@prisma/client";
-import { createNotification, notifyAdminsNewPendingPayment } from "@/lib/notifications";
-import { getTranslation } from "@/lib/notifications/i18n-helper";
+import {
+  notifyAdminsNewPendingPayment,
+  notifyClientPaymentApproved,
+  notifyClientPaymentProofReceived,
+  notifyClientPaymentRejected,
+} from "@/lib/notifications";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { logActivityAsync } from "@/lib/activity-log";
 import { buildClientPaymentMethods, getPaymentSettings } from "@/lib/payment-settings";
@@ -99,6 +103,7 @@ export const paymentRouter = router({
         },
         include: {
           paymentProof: true,
+          package: true,
         },
       });
 
@@ -134,9 +139,22 @@ export const paymentRouter = router({
         },
       });
 
-      // Notify admins (DB + SSE)
+      const packageName = resolveLocalizedText(
+        subscription.package.nameI18n as Record<string, string> | null,
+        ctx.locale,
+        subscription.package.name
+      );
+
       await notifyAdminsNewPendingPayment({
         clientNameOrEmail: ctx.session.user.name || ctx.session.user.email || "Unknown",
+        amount: input.amount,
+        currency: input.currency,
+        locale: ctx.locale,
+      });
+
+      await notifyClientPaymentProofReceived({
+        userId,
+        packageName,
         amount: input.amount,
         currency: input.currency,
         locale: ctx.locale,
@@ -359,33 +377,15 @@ export const paymentRouter = router({
 
       await invalidateSubscriptionCache(payment.userId);
 
-      // Notify the user (DB + SSE)
       const localizedPackageName = resolveLocalizedText(
         payment.subscription.package.nameI18n as Record<string, string> | null,
         ctx.locale,
         payment.subscription.package.name
       );
-      const approvedTitle = await getTranslation(ctx.locale, "notifications.paymentApproved.title");
-      const approvedMessage = await getTranslation(
-        ctx.locale,
-        "notifications.paymentApproved.message",
-        {
-          packageName: localizedPackageName,
-        }
-      );
-      await createNotification({
+      await notifyClientPaymentApproved({
         userId: payment.userId,
-        title: approvedTitle,
-        message: approvedMessage,
-        type: "general",
-        link: "/client/subscription",
-        sendEmail: false,
+        packageName: localizedPackageName,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: "notifications.paymentApproved.title",
-          messageKey: "notifications.paymentApproved.message",
-          messageParams: { packageName: localizedPackageName },
-        },
       });
 
       logActivityAsync({
@@ -481,28 +481,10 @@ export const paymentRouter = router({
         });
       });
 
-      // Notify the user (DB + SSE)
-      const rejectedTitle = await getTranslation(ctx.locale, "notifications.paymentRejected.title");
-      const rejectedMessage = await getTranslation(
-        ctx.locale,
-        "notifications.paymentRejected.message",
-        {
-          reason: input.reason,
-        }
-      );
-      await createNotification({
+      await notifyClientPaymentRejected({
         userId: payment.userId,
-        title: rejectedTitle,
-        message: rejectedMessage,
-        type: "general",
-        link: "/client/subscription",
-        sendEmail: false,
+        reason: input.reason,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: "notifications.paymentRejected.title",
-          messageKey: "notifications.paymentRejected.message",
-          messageParams: { reason: input.reason },
-        },
       });
 
       logActivityAsync({

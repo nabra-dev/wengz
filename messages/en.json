@@ -2838,11 +2838,56 @@
     },
     "paymentApproved": {
       "title": "Payment Approved! 🎉",
-      "message": "Your payment has been verified. Your {packageName} subscription is now active!"
+      "message": "Your payment has been verified. Your {packageName} subscription is now active!",
+      "emailSubject": "Payment approved — {packageName} is active",
+      "emailBody": {
+        "heading": "Payment approved",
+        "intro": "Your payment has been verified. Your <strong>{packageName}</strong> subscription is now active.",
+        "viewButton": "View Subscription"
+      }
     },
     "paymentRejected": {
       "title": "Payment Verification Failed",
-      "message": "Your payment could not be verified. Reason: {reason}. Please contact support or try again."
+      "message": "Your payment could not be verified. Reason: {reason}. Please contact support or try again.",
+      "emailSubject": "Payment could not be verified",
+      "emailBody": {
+        "heading": "Payment verification failed",
+        "intro": "Your payment could not be verified. Please review the reason below and try again, or contact support.",
+        "reason": "Reason: {reason}",
+        "viewButton": "Submit Payment Again"
+      }
+    },
+    "paymentProofReceived": {
+      "title": "Payment proof received",
+      "message": "We received your payment proof for {packageName} ({amount} {currency}). We’ll review it shortly.",
+      "emailSubject": "We received your payment proof",
+      "emailBody": {
+        "heading": "Payment proof received",
+        "intro": "We received your payment proof for <strong>{packageName}</strong> (<strong>{amount} {currency}</strong>). We’ll review it and email you once it’s verified.",
+        "viewButton": "View Subscription"
+      }
+    },
+    "subscriptionStarted": {
+      "title": "Complete your payment",
+      "message": "Your {packageName} subscription is waiting for payment. Upload your transfer proof to activate it.",
+      "emailSubject": "Complete payment for {packageName}",
+      "emailBody": {
+        "heading": "Complete your payment",
+        "intro": "You started a <strong>{packageName}</strong> subscription. It stays inactive until payment is verified.",
+        "message": "Upload your transfer proof from the payment page to finish activation.",
+        "viewButton": "Go to Payment"
+      }
+    },
+    "passwordChanged": {
+      "title": "Password changed",
+      "message": "Your password was changed. If this wasn’t you, reset it immediately or contact support.",
+      "emailSubject": "Your Wengz password was changed",
+      "emailBody": {
+        "heading": "Password changed",
+        "intro": "Hi {userName}, your Wengz password was just changed.",
+        "message": "If you didn’t make this change, reset your password immediately or contact support.",
+        "viewButton": "Sign in"
+      }
     },
     "withdrawalRequested": {
       "title": "New withdrawal request",
@@ -2951,7 +2996,14 @@
     "subscriptionCancelled": {
       "title": "Subscription Cancelled",
       "activeMessage": "Your subscription has been cancelled. You can still use remaining credits until the end date.",
-      "pendingMessage": "Your pending subscription has been cancelled."
+      "pendingMessage": "Your pending subscription has been cancelled.",
+      "emailSubject": "Your subscription was cancelled",
+      "emailBody": {
+        "heading": "Subscription cancelled",
+        "activeMessage": "Your subscription has been cancelled. You can still use remaining credits until the end date.",
+        "pendingMessage": "Your pending subscription has been cancelled.",
+        "viewButton": "View Subscription"
+      }
     }
   },
   "pwa": {

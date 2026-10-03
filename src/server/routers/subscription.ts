@@ -2,8 +2,11 @@ import { z } from "zod";
 import { router, protectedProcedure, clientProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { getCreditBalance } from "@/lib/credit-logic";
-import { createNotification } from "@/lib/notifications";
-import { getTranslation } from "@/lib/notifications/i18n-helper";
+import {
+  notifyClientSubscriptionCancelled,
+  notifyClientSubscriptionStarted,
+} from "@/lib/notifications";
+import { resolveLocalizedText } from "@/lib/i18n";
 import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
 import { invalidateSubscriptionCache } from "@/lib/cache-invalidation";
 
@@ -249,6 +252,17 @@ export const subscriptionRouter = router({
         },
       });
 
+      const packageName = resolveLocalizedText(
+        pkg.nameI18n as Record<string, string> | null,
+        ctx.locale,
+        pkg.name
+      );
+      await notifyClientSubscriptionStarted({
+        userId,
+        packageName,
+        locale: ctx.locale,
+      });
+
       return {
         success: true,
         subscription,
@@ -304,27 +318,10 @@ export const subscriptionRouter = router({
         },
       });
 
-      // Notify user (DB + SSE)
-      const cancellationMessageKey = subscription.isActive
-        ? "notifications.subscriptionCancelled.activeMessage"
-        : "notifications.subscriptionCancelled.pendingMessage";
-      const cancellationTitle = await getTranslation(
-        ctx.locale,
-        "notifications.subscriptionCancelled.title"
-      );
-      const cancellationMessage = await getTranslation(ctx.locale, cancellationMessageKey);
-
-      await createNotification({
+      await notifyClientSubscriptionCancelled({
         userId,
-        title: cancellationTitle,
-        message: cancellationMessage,
-        type: "general",
-        sendEmail: false,
+        wasActive: subscription.isActive,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: "notifications.subscriptionCancelled.title",
-          messageKey: cancellationMessageKey,
-        },
       });
 
       return {

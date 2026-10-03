@@ -2830,11 +2830,56 @@
     },
     "paymentApproved": {
       "title": "تمت الموافقة على الدفع! 🎉",
-      "message": "تم التحقق من دفعتك. أصبح اشتراكك في {packageName} نشطاً الآن!"
+      "message": "تم التحقق من دفعتك. أصبح اشتراكك في {packageName} نشطاً الآن!",
+      "emailSubject": "تمت الموافقة على الدفع — {packageName} نشط",
+      "emailBody": {
+        "heading": "تمت الموافقة على الدفع",
+        "intro": "تم التحقق من دفعتك. أصبح اشتراكك في <strong>{packageName}</strong> نشطاً الآن.",
+        "viewButton": "عرض الاشتراك"
+      }
     },
     "paymentRejected": {
       "title": "فشل التحقق من الدفع",
-      "message": "تعذر التحقق من دفعتك. السبب: {reason}. يرجى التواصل مع الدعم أو المحاولة مرة أخرى."
+      "message": "تعذر التحقق من دفعتك. السبب: {reason}. يرجى التواصل مع الدعم أو المحاولة مرة أخرى.",
+      "emailSubject": "تعذر التحقق من الدفع",
+      "emailBody": {
+        "heading": "فشل التحقق من الدفع",
+        "intro": "تعذر التحقق من دفعتك. راجع السبب أدناه ثم حاول مرة أخرى، أو تواصل مع الدعم.",
+        "reason": "السبب: {reason}",
+        "viewButton": "إعادة إرسال الدفع"
+      }
+    },
+    "paymentProofReceived": {
+      "title": "تم استلام إثبات الدفع",
+      "message": "استلمنا إثبات دفعك لباقة {packageName} ({amount} {currency}). سنراجعه قريباً.",
+      "emailSubject": "استلمنا إثبات دفعك",
+      "emailBody": {
+        "heading": "تم استلام إثبات الدفع",
+        "intro": "استلمنا إثبات دفعك لباقة <strong>{packageName}</strong> (<strong>{amount} {currency}</strong>). سنراجعه ونراسلك بعد التحقق.",
+        "viewButton": "عرض الاشتراك"
+      }
+    },
+    "subscriptionStarted": {
+      "title": "أكمل الدفع",
+      "message": "اشتراكك في {packageName} بانتظار الدفع. ارفع إثبات التحويل لتفعيله.",
+      "emailSubject": "أكمل الدفع لباقة {packageName}",
+      "emailBody": {
+        "heading": "أكمل الدفع",
+        "intro": "بدأت اشتراكاً في <strong>{packageName}</strong>. يبقى غير نشط حتى يتم التحقق من الدفع.",
+        "message": "ارفع إثبات التحويل من صفحة الدفع لإكمال التفعيل.",
+        "viewButton": "الانتقال للدفع"
+      }
+    },
+    "passwordChanged": {
+      "title": "تم تغيير كلمة المرور",
+      "message": "تم تغيير كلمة مرورك. إذا لم تكن أنت، أعد تعيينها فوراً أو تواصل مع الدعم.",
+      "emailSubject": "تم تغيير كلمة مرور وينجز",
+      "emailBody": {
+        "heading": "تم تغيير كلمة المرور",
+        "intro": "مرحباً {userName}، تم تغيير كلمة مرور حسابك في وينجز للتو.",
+        "message": "إذا لم تقم بهذا التغيير، أعد تعيين كلمة المرور فوراً أو تواصل مع الدعم.",
+        "viewButton": "تسجيل الدخول"
+      }
     },
     "withdrawalRequested": {
       "title": "طلب سحب جديد",
@@ -2943,7 +2988,14 @@
     "subscriptionCancelled": {
       "title": "تم إلغاء الاشتراك",
       "activeMessage": "تم إلغاء اشتراكك. يمكنك الاستمرار في استخدام الكريدت المتبقي حتى تاريخ الانتهاء.",
-      "pendingMessage": "تم إلغاء اشتراكك المعلّق."
+      "pendingMessage": "تم إلغاء اشتراكك المعلّق.",
+      "emailSubject": "تم إلغاء اشتراكك",
+      "emailBody": {
+        "heading": "تم إلغاء الاشتراك",
+        "activeMessage": "تم إلغاء اشتراكك. يمكنك الاستمرار في استخدام الكريدت المتبقي حتى تاريخ الانتهاء.",
+        "pendingMessage": "تم إلغاء اشتراكك المعلّق.",
+        "viewButton": "عرض الاشتراك"
+      }
     }
   },
   "pwa": {

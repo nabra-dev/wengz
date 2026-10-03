@@ -7,6 +7,7 @@ import { logActivityAsync } from "@/lib/activity-log";
 import { persistPasswordChange } from "@/lib/password-reset";
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { isAllowedUploadUrl } from "@/lib/upload-url";
+import { notifyPasswordChanged } from "@/lib/notifications";
 
 const PROFILE_IMAGE_EXT = /\.(jpe?g|png|gif|webp)$/i;
 
@@ -270,7 +271,7 @@ export const userRouter = router({
       // Get current user with password
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
-        select: { password: true },
+        select: { password: true, name: true, email: true },
       });
 
       if (!user?.password) {
@@ -304,6 +305,12 @@ export const userRouter = router({
 
       await persistPasswordChange(ctx.db, userId, hashedPassword);
       await invalidateSessionUserCache(userId);
+
+      await notifyPasswordChanged({
+        userId,
+        userName: user.name || user.email,
+        locale: ctx.locale,
+      });
 
       logActivityAsync({
         action: "auth.password_change",

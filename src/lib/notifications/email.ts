@@ -890,6 +890,111 @@ export async function getAdminPaymentVerificationEmailTemplate(params: {
   });
 }
 
+export async function getPaymentApprovedEmailTemplate(packageName: string, locale: string = "en") {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.paymentApproved.emailSubject",
+    subjectParams: { packageName },
+    headingKey: "notifications.paymentApproved.emailBody.heading",
+    introKey: "notifications.paymentApproved.emailBody.intro",
+    introParams: { packageName },
+    buttonKey: "notifications.paymentApproved.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/subscription`,
+    calloutVariant: "success",
+  });
+}
+
+export async function getPaymentRejectedEmailTemplate(reason: string, locale: string = "en") {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.paymentRejected.emailSubject",
+    headingKey: "notifications.paymentRejected.emailBody.heading",
+    introKey: "notifications.paymentRejected.emailBody.intro",
+    bodyKey: "notifications.paymentRejected.emailBody.reason",
+    bodyParams: { reason },
+    buttonKey: "notifications.paymentRejected.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/payment`,
+    calloutVariant: "danger",
+  });
+}
+
+export async function getPaymentProofReceivedEmailTemplate(params: {
+  amount: string;
+  currency: string;
+  packageName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.paymentProofReceived.emailSubject",
+    headingKey: "notifications.paymentProofReceived.emailBody.heading",
+    introKey: "notifications.paymentProofReceived.emailBody.intro",
+    introParams: {
+      amount: params.amount,
+      currency: params.currency,
+      packageName: params.packageName,
+    },
+    buttonKey: "notifications.paymentProofReceived.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/subscription`,
+  });
+}
+
+export async function getSubscriptionStartedEmailTemplate(
+  packageName: string,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.subscriptionStarted.emailSubject",
+    subjectParams: { packageName },
+    headingKey: "notifications.subscriptionStarted.emailBody.heading",
+    introKey: "notifications.subscriptionStarted.emailBody.intro",
+    introParams: { packageName },
+    bodyKey: "notifications.subscriptionStarted.emailBody.message",
+    buttonKey: "notifications.subscriptionStarted.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/payment`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getSubscriptionCancelledEmailTemplate(params: {
+  wasActive: boolean;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const bodyKey = params.wasActive
+    ? "notifications.subscriptionCancelled.emailBody.activeMessage"
+    : "notifications.subscriptionCancelled.emailBody.pendingMessage";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.subscriptionCancelled.emailSubject",
+    headingKey: "notifications.subscriptionCancelled.emailBody.heading",
+    introKey: bodyKey,
+    buttonKey: "notifications.subscriptionCancelled.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/subscription`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getPasswordChangedEmailTemplate(params: {
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.passwordChanged.emailSubject",
+    headingKey: "notifications.passwordChanged.emailBody.heading",
+    introKey: "notifications.passwordChanged.emailBody.intro",
+    introParams: { userName: params.userName },
+    bodyKey: "notifications.passwordChanged.emailBody.message",
+    buttonKey: "notifications.passwordChanged.emailBody.viewButton",
+    href: `${appBaseUrl()}/auth/login`,
+    calloutVariant: "warning",
+  });
+}
+
 /** Ops / internal notify — English layout, no user-facing i18n. */
 export async function getOpsNotifyEmailHtml(params: {
   title: string;
