@@ -17,16 +17,16 @@ Use these files as **source of truth** for intent and architecture; `.cursor/rul
 | Code (UX / messaging) | Purpose |
 |----------------------|---------|
 | `src/lib/error-handler.ts` | Sonner toasts; optional `t` from `useTranslations`; `errors.*` keys in `messages/en.json` & `messages/ar.json` |
-| `src/lib/notifications/` | Email, in-app; pass **`locale`** (e.g. from `ctx`) into `notify*` helpers |
+| `src/lib/notifications/` | Email, in-app, SSE; recipient **`preferredLocale`** (see technical doc) |
 
 If behavior is unclear in code, **prefer aligning with these docs** or update the doc when product intent changes.
 
 ## Stack and layout (summary)
 
-- **Stack**: Next.js 16 (App Router, dev **port 3001**), React 18, TypeScript strict, Tailwind + Radix-style UI, tRPC v11 + TanStack Query, Prisma + PostgreSQL, NextAuth v4, next-intl (`en`/`ar`), Zod, Jest, Playwright.
-- **Source**: `src/` only; alias `@/*` → `./src/*`.
-- **Routes**: `src/app/[locale]/` — groups `(auth)`, `(dashboard)`; segments `client/`, `provider/`, `admin/`. Locale + auth: see `docs/ADVANCED_TECHNICAL.md` and `src/proxy.ts`.
-- **API**: tRPC `src/app/api/trpc/[trpc]/route.ts`; OpenAPI/REST bridge under `src/pages/api/rest/` per technical doc.
+- **Stack**: Next.js 16 (App Router, webpack, dev **port 3001**), React 18, TypeScript strict, Tailwind + Radix, tRPC v11 + TanStack Query, Prisma 6 + PostgreSQL, NextAuth v4 (Credentials), next-intl (`en`/`ar`), Zod, local-disk uploads, optional Redis/Upstash, Sentry, Nodemailer, Jest, Playwright. Full table: `docs/ADVANCED_TECHNICAL.md`.
+- **Source**: `src/` only; alias `@/*` → `./src/*`. Edge: `src/proxy.ts` (not `middleware.ts`).
+- **Routes**: `src/app/[locale]/` — groups `(auth)`, `(dashboard)`; segments `client/`, `provider/`, `admin/`.
+- **API**: tRPC `src/app/api/trpc/[trpc]/route.ts`; OpenAPI/REST bridge under `src/pages/api/rest/`.
 
 ## Quality gates
 

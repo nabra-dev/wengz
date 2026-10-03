@@ -1,25 +1,30 @@
 # Advanced guide — technical architecture (Wengz)
 
-This document maps **stack choices**, **runtime boundaries**, and **important code paths** so engineers can navigate the repo without spelunking every folder. It complements `docs/ADVANCED_BUSINESS.md` (domain) and the focused i18n guides under `docs/`.
+This document maps **stack choices**, **runtime boundaries**, and **important code paths** so engineers can navigate the repo without spelunking every folder. It complements `docs/ADVANCED_BUSINESS.md` (domain). Keep this file aligned with `package.json` and `src/` when the stack changes.
+
+Versions below are the **declared** ranges in `package.json` (lockfile may resolve newer patches).
 
 ---
 
 ## Stack overview
 
-| Layer               | Technology                                                                                                                                                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                                                                                                                                                                             |
-| UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**                                                                                                                                                      |
-| API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                                                                                                                                                                     |
-| Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt** (min 8 via shared `passwordSchema`); forgot/reset via hashed `PasswordResetToken` (1h, single-use) + email; `passwordChangedAt` invalidates JWTs after change/reset |
-| Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                                                                                                                                                                                 |
-| i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json`                                                                                                                                                    |
-| Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                                                                                                                                                                          |
-| Realtime / cache    | **Redis** (standard or **Upstash** — see `src/lib/cache.ts`)                                                                                                                                                                                           |
-| File storage        | **AWS S3** / **Backblaze B2** (image domains allowed in `next.config.js`)                                                                                                                                                                              |
-| PWA                 | **next-pwa** (disabled in development; see `next.config.js`)                                                                                                                                                                                           |
-| Testing             | **Jest** + Testing Library; **Playwright** for E2E                                                                                                                                                                                                     |
-| Docs / API explorer | **OpenAPI** surface (`trpc-to-openapi`, Swagger UI routes under `src/app/api/docs/`)                                                                                                                                                                   |
+| Layer               | Technology                                                                                                                                                                                                           | Notes                                                                                                                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework           | **Next.js 16.3.x** (App Router)                                                                                                                                                                                      | Dev: `next dev --webpack -p **3001**`. Prod start: `next start` (default **3000** unless `PORT` set). Webpack forced because **next-pwa** needs it.                                             |
+| UI                  | **React 18.3**, **Tailwind CSS 3.4**, **Radix** primitives, **Framer Motion**, **Recharts**, **lucide-react**, **Sonner**, **react-hook-form** + Zod resolvers, **react-datepicker**, **date-fns** / **date-fns-tz** | No Swiper (removed).                                                                                                                                                                            |
+| API                 | **tRPC v11** + **TanStack Query v5**; **SuperJSON**                                                                                                                                                                  | Routers in `src/server/routers/`. OpenAPI via **trpc-to-openapi** + **zod-openapi**.                                                                                                            |
+| Auth                | **NextAuth v4** (JWT, **Credentials** only)                                                                                                                                                                          | Passwords via **bcryptjs** (cost **12**); min 8 / max 128 (`passwordSchema`). Forgot/reset: hashed `PasswordResetToken` (1h).                                                                   |
+| Data                | **PostgreSQL** via **Prisma 6**                                                                                                                                                                                      | `prisma/schema.prisma`; `DATABASE_URL` + `DIRECT_URL`.                                                                                                                                          |
+| i18n                | **next-intl 4.x** — `en` / `ar`                                                                                                                                                                                      | `src/i18n/routing.ts`; `messages/*.json`; RTL for `ar`.                                                                                                                                         |
+| Validation          | **Zod 3**                                                                                                                                                                                                            | Shared shapes in `src/lib/validations.ts` + routers.                                                                                                                                            |
+| Cache               | **Redis** (`redis` client) or **Upstash** REST                                                                                                                                                                       | Optional — app runs without Redis (null cache + circuit breaker). See `src/lib/cache.ts`.                                                                                                       |
+| File storage        | **Local disk** (live)                                                                                                                                                                                                | `src/app/api/upload/*` → `storage/` or `LOCAL_UPLOAD_DIR`. Served via `/api/files/[...path]`. AWS S3 / B2 SDKs + `next.config` image hosts are **present for future** use only — **not wired**. |
+| PWA                 | **next-pwa** (devDependency)                                                                                                                                                                                         | Disabled when `NODE_ENV === "development"`.                                                                                                                                                     |
+| Observability       | **Sentry** (`@sentry/nextjs`)                                                                                                                                                                                        | `sentry.*.config.ts`, tunnel `/sentry-tunnel`; toggle via `SENTRY_DSN` / `SENTRY_DISABLE`.                                                                                                      |
+| Email               | **Nodemailer**                                                                                                                                                                                                       | SMTP env vars; templates under `src/lib/notifications/`.                                                                                                                                        |
+| Landing AI          | **OpenAI** (HTTP API)                                                                                                                                                                                                | `src/app/api/landing/chat/route.ts` — optional; needs `OPENAI_API_KEY`.                                                                                                                         |
+| Testing             | **Jest 30** + Testing Library; **Playwright**                                                                                                                                                                        | MSW available in devDeps. Husky + lint-staged on commit.                                                                                                                                        |
+| Docs / API explorer | OpenAPI + Swagger UI                                                                                                                                                                                                 | `src/app/api/docs/`, `src/app/api/openapi.json/`; Pages REST bridge `src/pages/api/rest/[...trpc].ts`.                                                                                          |
 
 ---
 
@@ -33,54 +38,84 @@ flowchart TB
   end
 
   subgraph edge [Edge / Node]
-    MW[next-intl + NextAuth middleware logic]
-    API[tRPC handler /api/trpc]
+    MW[src/proxy.ts - next-intl + NextAuth]
+    API[tRPC /api/trpc]
+    Upload[Local upload /api/upload]
+    SSE[/api/notifications/sse]
   end
 
   subgraph server [Server]
     Routers[src/server/routers]
-    Lib[src/lib - auth db notifications cache]
+    Lib[src/lib]
   end
 
   subgraph data [Data and integrations]
     PG[(PostgreSQL)]
-    Redis[(Redis)]
-    S3[(Object storage)]
-    Email[Email / In-app]
+    Redis[(Redis optional)]
+    Disk[(Local disk storage)]
+    Email[SMTP / Nodemailer]
+    Sentry[Sentry]
   end
 
   Pages --> TRPCReact
   TRPCReact --> API
+  Pages --> Upload
+  Pages --> SSE
   MW --> Pages
   API --> Routers
   Routers --> Lib
   Lib --> PG
   Lib --> Redis
-  Lib --> S3
+  Lib --> Disk
   Lib --> Email
+  Lib --> Sentry
 ```
 
 ---
 
 ## Repository layout (practical map)
 
-| Path                                         | Role                                                                                                                                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/`                                   | App Router: `layout.tsx`, `globals.css`, `api/**` route handlers                                                                                                                                        |
-| `src/app/[locale]/`                          | Locale segment; dashboard groups `(auth)`, `(dashboard)` with `client/`, `provider/`, `admin/`                                                                                                          |
-| `src/server/trpc.ts`                         | tRPC initialization, **context** (`db`, `session`, `locale`, `req`), **procedures** (`public`, `protected`, `admin` / super-admin, `requestManager`, `financeManager`, `staff`, provider/client guards) |
-| `src/server/routers/`                        | Domain routers composed in `_app.ts` → `AppRouter`                                                                                                                                                      |
-| `src/lib/db.ts`                              | Prisma client singleton                                                                                                                                                                                 |
-| `src/lib/auth.ts`                            | `authOptions` for NextAuth                                                                                                                                                                              |
-| `src/lib/trpc/client.ts`                     | `createTRPCReact<AppRouter>()`                                                                                                                                                                          |
-| `src/components/providers/trpc-provider.tsx` | React Query + tRPC provider wiring                                                                                                                                                                      |
-| `src/lib/error-handler.ts`                   | Sonner toasts + tRPC/Zod message mapping; optional `next-intl` `t`                                                                                                                                      |
-| `src/lib/notifications/`                     | Email, in-app, SSE helpers; **pass `locale`** from `ctx`                                                                                                                                                |
-| `src/lib/provider-wallet.ts`                 | Provider earnings settlement (global USD credit price + commission), 7-day earnings hold (`held*` / ledger `HOLD` + `availableAt`), withdrawal holds, and manual payout recording                       |
-| `src/lib/finance-settings.ts`                | Loads global `credit_price_usd` and `provider_commission_percent` from `SystemSettings`                                                                                                                 |
-| `src/proxy.ts`                               | **Middleware implementation**: `next-intl` + `withAuth`, locale rewrite, **role-based redirects** for `client` / `provider` / `admin` segments (`export const config.matcher`)                          |
+| Path                                             | Role                                                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`                                       | App Router: root `layout.tsx`, `globals.css`, `api/**`                                                                                                |
+| `src/app/[locale]/`                              | Locale segment; groups `(auth)`, `(dashboard)` → `client/`, `provider/`, `admin/`                                                                     |
+| `src/pages/api/rest/[...trpc].ts`                | OpenAPI/REST bridge for tRPC procedures                                                                                                               |
+| `src/server/trpc.ts`                             | Context (`db`, `session`, `locale`, `req`), procedures (`public`, `protected`, `admin`, `requestManager`, `financeManager`, `staff`, provider/client) |
+| `src/server/routers/`                            | Domain routers → `_app.ts` → `AppRouter` (auth, user, request, subscription, package, payment, provider, notification, admin)                         |
+| `src/lib/db.ts`                                  | Prisma client singleton                                                                                                                               |
+| `src/lib/auth.ts`                                | `authOptions` (Credentials)                                                                                                                           |
+| `src/lib/env.ts`                                 | Production fail-fast for required secrets                                                                                                             |
+| `src/lib/trpc/client.ts`                         | `createTRPCReact<AppRouter>()`                                                                                                                        |
+| `src/components/providers/trpc-provider.tsx`     | React Query + tRPC provider                                                                                                                           |
+| `src/lib/error-handler.ts`                       | Sonner toasts + tRPC/Zod mapping; optional `next-intl` `t`                                                                                            |
+| `src/lib/notifications/`                         | Email, in-app, SSE; recipient **`preferredLocale`** via `localeForUser`                                                                               |
+| `src/lib/user-locale.ts`                         | `preferredLocale` sync + batch/single lookup                                                                                                          |
+| `src/lib/approve-delivered-request.ts`           | Client / staff-on-behalf delivery approval + settle                                                                                                   |
+| `src/lib/provider-wallet.ts`                     | Settlement, 7-day hold, withdrawals, payouts                                                                                                          |
+| `src/lib/finance-settings.ts`                    | Global credit price / commission / withdrawal settings                                                                                                |
+| `src/lib/upload-storage.ts` / `upload-limits.ts` | Local upload paths and size caps                                                                                                                      |
+| `src/proxy.ts`                                   | **Next.js 16 proxy** (replaces deprecated `middleware.ts`): next-intl + `withAuth`, locale rewrite, role redirects                                    |
 
-> **Note:** Next.js convention expects middleware at `middleware.ts` (project root or `src/`). This repository implements the same behavior in `src/proxy.ts`; ensure your deployment pipeline renames or re-exports it if your toolchain requires `middleware.ts`.
+> **Next.js 16:** Edge auth/i18n lives in `src/proxy.ts` by design. Do **not** add a parallel `middleware.ts` unless upgrading away from the proxy convention. See `AGENTS.md` and `node_modules/next/dist/docs/` for framework-breaking changes.
+
+### HTTP API surface (App Router)
+
+| Route family                                                            | Purpose                                           |
+| ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `/api/trpc/[trpc]`                                                      | tRPC                                              |
+| `/api/auth/[...nextauth]`                                               | NextAuth                                          |
+| `/api/locale`                                                           | Locale cookie (POST preferred; GET fallback)      |
+| `/api/upload`, `/init`, `/chunk`, `/complete`, `/abort`, `/provider-cv` | Local uploads                                     |
+| `/api/files/[...path]`                                                  | Authenticated file serve + ACL                    |
+| `/api/notifications/sse`, `/unread-count`                               | Realtime + badge                                  |
+| `/api/cron/*`                                                           | Scheduled jobs (`CRON_SECRET`)                    |
+| `/api/forms/contact`                                                    | Public contact form                               |
+| `/api/landing/chat`                                                     | Landing AI chat (OpenAI)                          |
+| `/api/health`                                                           | Health check                                      |
+| `/api/docs`, `/api/openapi.json`                                        | API explorer (super-admin gated where applicable) |
+| `/api/debug-notify`                                                     | Dev/debug notify helper                           |
+
+Empty/stub dirs (no `route.ts` yet): `src/app/api/push/`, `src/app/api/webhooks/stripe/` — not live features.
 
 ---
 
@@ -89,112 +124,138 @@ flowchart TB
 1. Client calls `trpc.*` hooks from `@/lib/trpc/client` (typed by `AppRouter`).
 2. HTTP hits `src/app/api/trpc/[trpc]/route.ts` → `fetchRequestHandler` with `createTRPCContext`.
 3. Context resolves **session** (NextAuth) and **locale** from cookies (`getLocaleFromCookie` in `src/server/trpc.ts`).
-4. Routers use **Zod** inputs and throw **`TRPCError`**; `errorFormatter` attaches flattened **Zod** details for the client (`src/server/trpc.ts`).
+4. Routers use **Zod** inputs and throw **`TRPCError`**; `errorFormatter` attaches flattened **Zod** details.
 
 ---
 
 ## Passwords and session invalidation
 
-| Concern         | Implementation                                                                                                                                                                                                                                                                                                 |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy          | Shared `passwordSchema` in `src/lib/validations.ts` — trim, **min 8 / max 128**. Used by register, creator apply, reset, profile change (`user.changePassword`), admin create user. Login accepts any non-empty password (legacy accounts).                                                                    |
-| Hashing         | `bcrypt` cost **12** everywhere passwords are written.                                                                                                                                                                                                                                                         |
-| Forgot / reset  | `src/lib/password-reset.ts` + `src/lib/issue-password-reset.ts`. Raw token emailed; **SHA-256** stored. **1h TTL**, single-use, prior unused tokens invalidated. Requires `NEXTAUTH_URL` or `NEXT_PUBLIC_APP_URL`. SMTP failure revokes unused tokens and logs; public forgot response stays enumeration-safe. |
-| Reset rules     | New password must differ from current; token consume + password write + session wipe happen in one transaction (`finalizePasswordReset`).                                                                                                                                                                      |
-| Change password | Profile Security → `user.changePassword` only (no duplicate `auth.changePassword`). User is signed out afterward.                                                                                                                                                                                              |
-| Admin support   | `admin.sendPasswordResetLink` emails a reset link for a credentials user (fails loudly if SMTP is down).                                                                                                                                                                                                       |
-| Session kill    | `User.passwordChangedAt` bumped on change/reset; JWT callback + `src/proxy.ts` `authorized` reject older tokens; DB `Session` rows deleted.                                                                                                                                                                    |
-| Login hardening | Email lowercased/trimmed; dummy bcrypt compare when user/password missing (timing); rate limits on login / forgot / reset.                                                                                                                                                                                     |
+| Concern         | Implementation                                                                                                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy          | `passwordSchema` in `src/lib/validations.ts` — trim, **min 8 / max 128**. Register, creator apply, reset, `user.changePassword`, admin create user. Login accepts any non-empty password (legacy). |
+| Hashing         | **bcryptjs** cost **12**.                                                                                                                                                                          |
+| Forgot / reset  | `src/lib/password-reset.ts` + `src/lib/issue-password-reset.ts`. Raw token emailed; **SHA-256** stored; **1h TTL**, single-use. Needs `NEXTAUTH_URL` or `NEXT_PUBLIC_APP_URL`.                     |
+| Change password | Profile Security → `user.changePassword` only; sign-out afterward.                                                                                                                                 |
+| Admin support   | `admin.sendPasswordResetLink`.                                                                                                                                                                     |
+| Session kill    | `User.passwordChangedAt`; JWT + `src/proxy.ts` reject older tokens; DB `Session` rows deleted.                                                                                                     |
+| Login hardening | Email normalize; dummy bcrypt timing; rate limits; maintenance allows **staff** only (`isStaffRole`).                                                                                              |
 
 ---
 
 ## Internationalization
 
-- **Routing**: `src/i18n/routing.ts` — use **`Link` / `redirect` / `useRouter` / `usePathname` from `@/i18n/routing`**, not raw `next/navigation`, for locale-aware URLs (`localePrefix: "as-needed"`).
-- **Language switch**: Client prefers `POST /api/locale` (sets `NEXT_LOCALE`, returns JSON path) + `router.replace(..., { locale })`. GET `/api/locale` remains a no-JS fallback. Redirects must use **`resolvePublicRequestOrigin` / `publicRedirectUrl`** (`src/lib/request-origin.ts`) — never raw `new URL(path, req.url)` behind a reverse proxy (that yields `localhost` Location headers in production). Set `NEXT_PUBLIC_APP_URL` (and `NEXTAUTH_URL`) to the public HTTPS origin; proxy should forward `X-Forwarded-Host` / `X-Forwarded-Proto`.
-- **Messages**: `messages/en.json`, `messages/ar.json`; loaded in `src/app/[locale]/layout.tsx` into `NextIntlClientProvider`.
+- **Routing**: `src/i18n/routing.ts` — use **`Link` / `redirect` / `useRouter` / `usePathname` from `@/i18n/routing`**, not raw `next/navigation` (`localePrefix: "as-needed"`).
+- **Language switch**: `POST /api/locale` + `router.replace(..., { locale })`; syncs `User.preferredLocale` (`src/lib/user-locale.ts`).
+- **Public redirects**: `resolvePublicRequestOrigin` / `publicRedirectUrl` (`src/lib/request-origin.ts`) behind reverse proxies.
+- **Messages**: `messages/en.json`, `messages/ar.json` via `NextIntlClientProvider`.
 - **RTL**: Locale layout sets `dir` for Arabic.
-- **Server copy**: Notification helpers under `src/lib/notifications/` accept **`locale`**; tRPC **`ctx.locale`** (`src/server/trpc.ts`) should be passed through for parity with UI language.
+- **Notifications**: Single-recipient helpers resolve **recipient `preferredLocale`**, not actor `ctx.locale`. Staff fan-out groups by each admin’s preferred locale.
 
 ---
 
 ## Background and scheduled work
 
-- **`src/app/api/cron/check-subscriptions/route.ts`**: Intended to be triggered by an external scheduler (GitHub Actions, system cron, etc.); scans subscriptions for expiry notifications and related updates. Dedupes via notification `type` (`subscription_expiring` / `subscription_expired`) so Arabic titles do not re-fire. Secure this route in production (secret header, IP allowlist, or platform-only invocation).
-- **`src/app/api/cron/check-delivered-approvals/route.ts`**: Suggested every **~15 minutes**. For `DELIVERED` requests: sends a client approval reminder after **1 hour** (`approvalReminderSentAt`), and sets `needsManualApproval` after **12 hours**. Auth uses `Authorization: Bearer ${CRON_SECRET}` (same pattern as subscription cron).
-- **`src/app/api/cron/release-provider-holds/route.ts`**: Suggested every **~1 hour**. Releases `ProviderFinanceLedger` rows in `HOLD` whose `availableAt` has passed into wallet **available** balance (`held*` → `balance*`). Auth uses `Authorization: Bearer ${CRON_SECRET}`.
+All cron routes require `Authorization: Bearer ${CRON_SECRET}` (in production `CRON_SECRET` is required by `src/lib/env.ts`).
+
+| Route                                                 | Cadence (suggested) | Behavior                                                                                                                             |
+| ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/app/api/cron/check-subscriptions/route.ts`       | Daily               | ~day-7 expiring warn; deactivate expired; notify. Dedupes by notification `type` (`subscription_expiring` / `subscription_expired`). |
+| `src/app/api/cron/check-delivered-approvals/route.ts` | ~15 min             | 1h client reminder; 12h `needsManualApproval` + staff notify.                                                                        |
+| `src/app/api/cron/release-provider-holds/route.ts`    | ~1 hour             | Release ledger `HOLD` rows past `availableAt` into wallet available.                                                                 |
 
 ### Activity / audit log
 
-- **`ActivityLog`** (`prisma/schema.prisma`) — immutable rows: actor, role, action, entity, message, metadata, level, timestamp.
-- **Writers**: `src/lib/activity-log.ts` (`logActivity` / `logActivityAsync`) and request-scoped `src/lib/request-activity.ts` (`logRequestActivity`).
-- **Request coverage**: create, claim, assign, unassign, accept, start, status/deliver, revision, approve, message (metadata only — no full chat body), rate, delete, restore. Delivered-approval cron writes one summary row (`cron.deliveredApprovals`), not per-request spam.
-- **Admin UI**: `/admin/activity` via `admin.getActivityLogs` (filter by action prefix e.g. `request.`, level, or request `entityId`).
+- **`ActivityLog`** in Prisma — immutable rows (actor, role, action, entity, message, metadata, level).
+- Writers: `src/lib/activity-log.ts`, `src/lib/request-activity.ts` (includes `request.approve_on_behalf`).
+- Admin UI: `/admin/activity` → `admin.getActivityLogs`.
 
 ---
 
 ## Caching and performance
 
-- `src/lib/cache.ts` — Redis (Upstash REST or traditional) with SuperJSON serialization; key taxonomy for users, services, packages, subscriptions, notifications.
-- Hot reads use `getOrSetCached`: public packages, service types catalog, active subscription, unread notification counts. Mutations call helpers in `src/lib/cache-invalidation.ts`.
-- `src/lib/session-user-cache.ts` — short-TTL cache around JWT session revalidation (memory + Redis) so batched tRPC pages do not hit the DB once per procedure.
-- `src/lib/performance.ts` — wired as tRPC middleware on protected/admin/provider/client procedures.
-- Pattern deletes use `SCAN` (not `KEYS`) for traditional Redis.
-- Uploads are **local disk** via `src/app/api/upload/` (not S3 yet); `next.config.js` still allows remote image hosts for future object storage.
-- Request/delivery attachments support up to **500MB** via chunked streaming (`/api/upload/init` → `/chunk` → `/complete`). Small files (≤20MB) still use single-shot `POST /api/upload`. Payment proofs stay capped at 10MB.
-- Landing media: prefer compressed assets under `public/images/landing`; gallery videos lazy-load via IntersectionObserver.
+- `src/lib/cache.ts` — Upstash REST **or** traditional Redis; SuperJSON; graceful no-op if unset.
+- Hot reads: `getOrSetCached` (packages, service types, active subscription, unread counts). Mutations: `src/lib/cache-invalidation.ts`.
+- `src/lib/session-user-cache.ts` — short-TTL session revalidation (memory + Redis).
+- `src/lib/performance.ts` — tRPC middleware on protected procedures.
+- `src/lib/cache-monitor.ts` — cache observability helpers.
+- Pattern deletes use `SCAN` (not `KEYS`).
+- Uploads: local disk; attachments up to **500MB** chunked (`init` → `chunk` → `complete`); small files ≤20MB single-shot; payment proofs ≤10MB.
+- Landing media: compressed assets under `public/images/landing`.
 
 ---
 
 ## Quality gates (commands)
 
-| Command              | Purpose                  |
-| -------------------- | ------------------------ |
-| `npm run lint`       | ESLint (Next)            |
-| `npm run type-check` | `tsc --noEmit`           |
-| `npm run test:ci`    | Jest in CI with coverage |
-| `npm run test:e2e`   | Playwright               |
+| Command                                                            | Purpose         |
+| ------------------------------------------------------------------ | --------------- |
+| `npm run lint`                                                     | ESLint (Next)   |
+| `npm run type-check`                                               | `tsc --noEmit`  |
+| `npm run test:ci`                                                  | Jest + coverage |
+| `npm run test:e2e`                                                 | Playwright      |
+| `npm run format` / `format:check`                                  | Prettier        |
+| `npm run db:migrate` / `db:migrate:deploy` / `db:push` / `db:seed` | Prisma          |
 
-**Lint-staged** (on commit) runs ESLint, Prettier, and related Jest tests for touched files.
+**Lint-staged** (Husky): ESLint, Prettier, related Jest for touched `*.{js,jsx,ts,tsx}`.
+
+**E2E:** `playwright.config.ts` targets **port 3001** (same as `npm run dev`). Prod `npm start` defaults to 3000 unless `PORT` is set.
+
+**Deploy:** see `docs/DEPLOY.md` (Hostinger VPS + GitHub Actions). CI runs type-check + lint; production build runs on the VPS.
 
 ---
 
 ## Environment and secrets (non-exhaustive)
 
-Typical categories inferred from code and dependencies:
+Treat as a **checklist** — verify each module for exact names. Production fail-fast (`src/lib/env.ts`): `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `CRON_SECRET`.
 
-- **Database**: `DATABASE_URL`, `DIRECT_URL` (Prisma)
-- **Auth**: NextAuth `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-- **Redis / Upstash**: as consumed in `src/lib/cache.ts`
-- **Analytics**: `NEXT_PUBLIC_GTM_ID` (Google Tag Manager; omitted when unset — no hardcoded fallback)
-- **Object storage (planned)**: AWS S3 / B2 SDKs may be present; current upload path is local filesystem
-
-Treat this list as a **checklist**, not a complete `.env` template—verify each integration’s module for exact variable names.
+| Category                 | Sample keys                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Database                 | `DATABASE_URL`, `DIRECT_URL`                                                                                        |
+| Auth / app URL           | `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `PORT`                                                    |
+| Cron                     | `CRON_SECRET`                                                                                                       |
+| Redis                    | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, or `REDIS_URL` / `REDIS_HOST` + `REDIS_PORT`                  |
+| Email (SMTP)             | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_FROM`, `CONTACT_FORMS_RECIPIENT` |
+| Uploads                  | `LOCAL_UPLOAD_DIR`                                                                                                  |
+| Analytics / SEO          | `NEXT_PUBLIC_GTM_ID`, `GOOGLE_SITE_VERIFICATION`                                                                    |
+| Sentry                   | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DISABLE`                                                            |
+| Landing chat             | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TEMPERATURE`, `OPENAI_MAX_TOKENS`                                         |
+| Seed                     | `SEED_ADMIN_PASSWORD`, `SEED_DEMO_PASSWORD`                                                                         |
+| Object storage (planned) | AWS/B2 SDKs in deps; no live `AWS_*` upload path yet                                                                |
 
 ---
 
 ## Role access (implementation pointers)
 
-| Concern                 | Location                                                                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Role enums + path ACL   | `src/lib/roles.ts` (`canManageRequests`, `canManageFinance`, `canManagePlatform`, `canAccessAdminPath`)    |
-| Edge redirects          | `src/proxy.ts`                                                                                             |
-| tRPC procedures         | `src/server/trpc.ts` (`adminProcedure`, `requestManagerProcedure`, `financeManagerProcedure`, …)           |
-| Admin nav filter        | `src/app/[locale]/(dashboard)/dashboard-shell.tsx`                                                         |
-| Domain rules            | `docs/ADVANCED_BUSINESS.md` (actors, capability matrix, known gaps)                                        |
-| Recipient notify locale | `getPreferredLocaleForUser` / `localeForUser` in `src/lib/notifications/index.ts` (not actor `ctx.locale`) |
-| Staff approve delivered | `src/lib/approve-delivered-request.ts` + `admin.approveRequestOnBehalf`                                    |
+| Concern                 | Location                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Role enums + path ACL   | `src/lib/roles.ts`                                                            |
+| Edge redirects          | `src/proxy.ts`                                                                |
+| tRPC procedures         | `src/server/trpc.ts`                                                          |
+| Admin nav filter        | `src/app/[locale]/(dashboard)/dashboard-shell.tsx`                            |
+| Domain rules            | `docs/ADVANCED_BUSINESS.md`                                                   |
+| Recipient notify locale | `src/lib/notifications/index.ts` (`localeForUser`) + `src/lib/user-locale.ts` |
+| Staff approve delivered | `src/lib/approve-delivered-request.ts` + `admin.approveRequestOnBehalf`       |
 
-`staffProcedure` exists in `src/server/trpc.ts` but is unused by routers; prefer the narrower request/finance procedures.
+`staffProcedure` exists but is unused by routers — prefer request/finance procedures.
 
-Maintenance mode login allows **any staff** (`isStaffRole` in `src/lib/auth.ts`), not super admin only.
+Maintenance mode: **staff** may log in; clients/providers blocked (`src/lib/auth.ts`). Existing JWTs are not revoked on toggle.
+
+---
+
+## Tooling and agent notes
+
+- **TypeScript**: strict; path alias `@/*` → `./src/*`.
+- **reactStrictMode**: currently `false` in `next.config.js` (intentional — document if re-enabled).
+- **AGENTS.md** / **CLAUDE.md**: Next.js 16 agent rules — read `node_modules/next/dist/docs/` before assuming older App Router APIs.
+- **Workspace rules**: `.cursor/rules/nabra-core.mdc` summarizes stack for agents; this file is the detailed canon.
 
 ---
 
 ## Related documents
 
 - `docs/ADVANCED_BUSINESS.md` — domain and workflows
-- `docs/WENGZ_KNOWLEDGE.md` — assistant/knowledge summary derived from business docs
-- `src/lib/error-handler.ts` — Sonner toasts and `errors.*` message keys
-- `src/lib/notifications/` — multi-channel notifications and locale parameters
+- `docs/DEPLOY.md` — VPS / GitHub Actions deploy
+- `docs/WENGZ_KNOWLEDGE.md` — assistant/knowledge summary
+- `docs/WENGZ_INTENT_PLAYBOOKS.md` — landing chat intents
+- `src/lib/error-handler.ts` — Sonner toasts and `errors.*` keys
+- `src/lib/notifications/` — multi-channel notifications
 - `.cursor/rules/nabra-core.mdc` — concise agent-oriented project summary
