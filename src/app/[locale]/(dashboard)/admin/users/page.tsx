@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditUserDialog } from "@/components/admin/edit-user-dialog";
+import { ProviderDetailsDialog } from "@/components/admin/provider-details-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate, getInitials } from "@/lib/utils";
@@ -108,25 +109,6 @@ function ServiceCheckboxItem({
         {service.nameI18n?.[locale] || service.name}
       </label>
     </div>
-  );
-}
-
-function ProviderServiceBadges({ services }: { services: ServiceType[] }): JSX.Element {
-  const t = useTranslations("admin.users");
-  const locale = useLocale();
-  if (services.length === 0) {
-    return (
-      <span className="text-xs text-muted-foreground italic">{t("servicesBadge.noServices")}</span>
-    );
-  }
-  return (
-    <>
-      {services.map((service) => (
-        <Badge key={service.id} variant="outline" className="text-xs">
-          {service.nameI18n?.[locale] || service.name}
-        </Badge>
-      ))}
-    </>
   );
 }
 
@@ -233,7 +215,6 @@ function UserListItem({
   const t = useTranslations("admin.users");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const providerServices = user.providerProfile?.supportedServices || [];
   const isActive = !user.deletedAt;
   const approvalStatus = user.approvalStatus ?? "APPROVED";
 
@@ -249,23 +230,18 @@ function UserListItem({
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-4">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-12 w-12">
+    <div className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50 md:flex-row md:items-center md:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
+        <Avatar className="h-12 w-12 shrink-0">
           <AvatarImage src={user.image || ""} className="object-cover" />
           <AvatarFallback className="text-lg">
             {getInitials(user.name || user.email)}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <p className="font-medium text-lg">{user.name || "No name"}</p>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-          {user.phone && (
-            <p dir="ltr" className="text-sm rtl:text-right text-muted-foreground mb-0">
-              {user.phone}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
+        <div className="min-w-0">
+          <p className="truncate text-lg font-medium">{user.name || t("providerDetails.noName")}</p>
+          <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <Badge className={getRoleColor(user.role)}>{getRoleLabel(user.role)}</Badge>
             <Badge variant={isActive ? "default" : "secondary"}>
               {isActive ? t("badges.active") : t("badges.inactive")}
@@ -285,54 +261,23 @@ function UserListItem({
               {t("table.joined")} {formatDate(user.createdAt, locale)}
             </span>
           </div>
-          {user.role === "PROVIDER" && (
-            <div className="mt-2 space-y-1">
-              <div className="flex flex-wrap gap-1">
-                <ProviderServiceBadges services={providerServices} />
-              </div>
-              {user.providerProfile?.portfolio && (
-                <p className="text-xs text-muted-foreground truncate max-w-md">
-                  {t("table.portfolio")}: {user.providerProfile.portfolio}
-                </p>
-              )}
-              {user.providerProfile?.cvUrl && (
-                <p className="text-xs">
-                  <a
-                    href={user.providerProfile.cvUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-[#690DD4] underline-offset-2 hover:underline"
-                  >
-                    {t("table.viewCv")}
-                  </a>
-                </p>
-              )}
-              {user.providerProfile?.bio && (
-                <p className="text-xs text-muted-foreground line-clamp-2 max-w-md">
-                  {user.providerProfile.bio}
-                </p>
-              )}
-            </div>
-          )}
-          {user.rejectionReason && (
-            <p className="mt-1 text-xs text-destructive">
-              {t("table.rejectionReason")}: {user.rejectionReason}
-            </p>
-          )}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 md:justify-end">
         {user.role === "CLIENT" && <UserStatsClient count={user._count} />}
         {user.role === "PROVIDER" && (
-          <UserStatsProvider
-            count={user._count}
-            averageRating={user.averageRating}
-            onEditServices={onEditServices}
-          />
+          <>
+            <UserStatsProvider
+              count={user._count}
+              averageRating={user.averageRating}
+              onEditServices={onEditServices}
+            />
+            <ProviderDetailsDialog user={user} />
+          </>
         )}
         {user.role !== "SUPER_ADMIN" && (
-          <div className="flex items-center gap-3 flex-wrap">
+          <>
             {approvalStatus === "PENDING" && (
               <>
                 <Button
@@ -386,7 +331,7 @@ function UserListItem({
             <div className="flex items-center gap-2">
               <Label
                 htmlFor={`user-active-${user.id}`}
-                className="text-sm text-muted-foreground cursor-pointer"
+                className="cursor-pointer text-sm text-muted-foreground"
               >
                 {isActive ? t("badges.active") : t("badges.inactive")}
               </Label>
@@ -397,7 +342,7 @@ function UserListItem({
                 onCheckedChange={(checked: boolean) => onActiveChange(user.id, checked)}
               />
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

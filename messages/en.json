@@ -788,6 +788,19 @@
         "noServices": "No services assigned",
         "more": "more"
       },
+      "providerDetails": {
+        "open": "Creator info",
+        "title": "Creator details",
+        "description": "Application profile, services, links, and message",
+        "contact": "Contact",
+        "links": "Links",
+        "message": "Message",
+        "noName": "No name",
+        "noPhone": "No phone number",
+        "noPortfolio": "No portfolio link",
+        "noCv": "No CV uploaded",
+        "noMessage": "No message provided"
+      },
       "badges": {
         "active": "Active",
         "inactive": "Inactive",
