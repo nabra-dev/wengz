@@ -1,18 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  createRequest,
-  getActiveSubscription,
-  getServiceTypes,
-  uploadFile,
-} from "../../../src/lib/api";
+import { createRequest, getActiveSubscription, getServiceTypes } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
 import { ServiceAttributesForm } from "../../../src/components/ServiceAttributesForm";
+import { AttachmentPicker } from "../../../src/components/AttachmentPicker";
 import {
   Button,
   Card,
@@ -109,25 +104,6 @@ export default function CreateRequestScreen() {
     },
     onError: (e: Error) => setError(e.message),
   });
-
-  async function pickAttachment() {
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.85,
-    });
-    if (picked.canceled || !picked.assets[0]) return;
-    if (attachments.length >= 5) {
-      setError(t("client.newRequest.validation.formErrors"));
-      return;
-    }
-    const asset = picked.assets[0];
-    const url = await uploadFile(
-      asset.uri,
-      asset.fileName ?? "file.jpg",
-      asset.mimeType ?? "image/jpeg"
-    );
-    setAttachments((prev) => [...prev, url]);
-  }
 
   function onSubmit() {
     setError(null);
@@ -377,18 +353,13 @@ export default function CreateRequestScreen() {
             />
           ) : null}
 
-          <Label>{t("client.newRequest.fields.attachments")}</Label>
-          <Muted>{attachments.length}/5</Muted>
-          {attachments.map((url, idx) => (
-            <Muted key={url} style={{ marginBottom: 4 }}>
-              {idx + 1}. {url.split("/").pop()}
-            </Muted>
-          ))}
-          <Button
+          <AttachmentPicker
             label={t("client.newRequest.fields.attachments")}
-            onPress={() => void pickAttachment()}
-            variant="ghost"
+            urls={attachments}
+            onChange={setAttachments}
+            max={5}
             disabled={!hasCredits}
+            hint={t("profile.editProfile.helperText.maxFileSize")}
           />
 
           <Muted style={{ marginTop: 8, marginBottom: 0 }}>{t("errors.contactNotAllowed")}</Muted>

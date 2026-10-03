@@ -3,8 +3,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { appRouter } from "@/server/routers/_app";
 import { createTRPCContext } from "@/server/trpc";
 import { logger } from "@/lib/logger";
+import { withPagesCors } from "@/lib/cors";
 
-export default createOpenApiNextHandler({
+const openApiHandler = createOpenApiNextHandler({
   router: appRouter,
   createContext: ({ req, res }: { req: NextApiRequest; res: NextApiResponse }) =>
     createTRPCContext({ req, res }),
@@ -29,3 +30,5 @@ export default createOpenApiNextHandler({
     }
   },
 });
+
+export default withPagesCors(openApiHandler);

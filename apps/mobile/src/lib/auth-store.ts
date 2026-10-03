@@ -1,8 +1,26 @@
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TOKEN_KEY = "wengz_access_token";
 const USER_KEY = "wengz_user";
 const LOCALE_KEY = "wengz_locale";
+
+/** SecureStore is native-only; web uses AsyncStorage for local Mac testing. */
+const storage = {
+  getItem(key: string): Promise<string | null> {
+    if (Platform.OS === "web") return AsyncStorage.getItem(key);
+    return SecureStore.getItemAsync(key);
+  },
+  setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === "web") return AsyncStorage.setItem(key, value);
+    return SecureStore.setItemAsync(key, value);
+  },
+  deleteItem(key: string): Promise<void> {
+    if (Platform.OS === "web") return AsyncStorage.removeItem(key);
+    return SecureStore.deleteItemAsync(key);
+  },
+};
 
 export type StoredUser = {
   id: string;
@@ -14,16 +32,16 @@ export type StoredUser = {
 };
 
 export async function getAccessToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  return storage.getItem(TOKEN_KEY);
 }
 
 export async function setSession(params: { accessToken: string; user: StoredUser }): Promise<void> {
-  await SecureStore.setItemAsync(TOKEN_KEY, params.accessToken);
-  await SecureStore.setItemAsync(USER_KEY, JSON.stringify(params.user));
+  await storage.setItem(TOKEN_KEY, params.accessToken);
+  await storage.setItem(USER_KEY, JSON.stringify(params.user));
 }
 
 export async function getStoredUser(): Promise<StoredUser | null> {
-  const raw = await SecureStore.getItemAsync(USER_KEY);
+  const raw = await storage.getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as StoredUser;
@@ -33,15 +51,15 @@ export async function getStoredUser(): Promise<StoredUser | null> {
 }
 
 export async function clearSession(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(USER_KEY);
+  await storage.deleteItem(TOKEN_KEY);
+  await storage.deleteItem(USER_KEY);
 }
 
 export async function getStoredLocale(): Promise<"en" | "ar"> {
-  const v = await SecureStore.getItemAsync(LOCALE_KEY);
+  const v = await storage.getItem(LOCALE_KEY);
   return v === "ar" ? "ar" : "en";
 }
 
 export async function setStoredLocale(locale: "en" | "ar"): Promise<void> {
-  await SecureStore.setItemAsync(LOCALE_KEY, locale);
+  await storage.setItem(LOCALE_KEY, locale);
 }

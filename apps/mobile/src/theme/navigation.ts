@@ -2,7 +2,7 @@ import { BRAND, fonts } from "./brand";
 
 const c = BRAND.colors;
 
-/** Shared native stack header chrome — logo-centered identity on every screen. */
+/** Shared stack options — header chrome comes from `AppNavHeader`. */
 export const brandStackOptions = {
   headerStyle: {
     backgroundColor: c.background,
@@ -11,29 +11,30 @@ export const brandStackOptions = {
   headerTintColor: c.yellow,
   headerTitleAlign: "center" as const,
   headerBackTitleVisible: false,
-  headerTitleStyle: {
-    fontFamily: fonts.semiBold,
-    color: c.foreground,
-    fontSize: 16,
-  },
+  // Prevent native-stack from reserving a second (often white) status-bar strip.
+  headerStatusBarHeight: 0,
+  statusBarStyle: "light" as const,
+  statusBarBackgroundColor: c.background,
   contentStyle: {
     backgroundColor: c.background,
   },
 };
 
-/** Shared tab bar + header chrome. */
+/** Shared tab bar options — header chrome comes from `AppNavHeader`. */
 export const brandTabBarOptions = {
   headerStyle: {
     backgroundColor: c.background,
-    borderBottomColor: c.border,
-    borderBottomWidth: 1,
   },
   headerShadowVisible: false,
   headerTintColor: c.yellow,
   headerTitleAlign: "center" as const,
+  headerStatusBarHeight: 0,
   headerTitleStyle: {
     fontFamily: fonts.semiBold,
     fontSize: 16,
+  },
+  sceneStyle: {
+    backgroundColor: c.background,
   },
   tabBarStyle: {
     backgroundColor: c.card,

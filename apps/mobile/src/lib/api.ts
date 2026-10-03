@@ -86,20 +86,46 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
   return data as T;
 }
 
+/**
+ * Upload a local file (ImagePicker URI) to `/api/upload`.
+ * Expo's fetch FormData only accepts Blob/string — not RN `{ uri, name, type }`.
+ */
 export async function uploadFile(uri: string, name: string, mimeType: string): Promise<string> {
+  const safeName = name.includes(".")
+    ? name
+    : `${name}.${mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg"}`;
+  const type = mimeType || "image/jpeg";
+
+  let blob: Blob;
+  try {
+    const local = await fetch(uri);
+    blob = await local.blob();
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "read failed";
+    throw new ApiError(`Could not read selected file (${detail})`, 0, "FILE_READ_ERROR");
+  }
+
+  // Ensure the server sees a real image MIME (picker blobs are sometimes octet-stream).
+  if (!blob.type || blob.type === "application/octet-stream") {
+    blob = new Blob([blob], { type });
+  }
+
   const form = new FormData();
-  form.append("file", {
-    uri,
-    name,
-    type: mimeType,
-  } as unknown as Blob);
+  form.append("file", blob, safeName);
 
   const headers = await buildHeaders(true, true);
-  const res = await fetch(UPLOAD_URL, {
-    method: "POST",
-    headers,
-    body: form,
-  });
+  let res: Response;
+  try {
+    res = await fetch(UPLOAD_URL, {
+      method: "POST",
+      headers,
+      body: form,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "Network request failed";
+    throw new ApiError(`Upload failed (${detail})`, 0, "NETWORK_ERROR");
+  }
+
   const data = (await res.json()) as { url?: string; error?: string };
   if (!res.ok || !data.url) {
     throw new ApiError(data.error || "Upload failed", res.status);

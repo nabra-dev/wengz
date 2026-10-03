@@ -1,9 +1,8 @@
 import { Pressable, Text, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { Field, Label, Muted, colors } from "./ui";
 import { fonts } from "../theme/brand";
 import { t, i18n } from "../i18n";
-import { uploadFile } from "../lib/api";
+import { AttachmentPicker } from "./AttachmentPicker";
 import {
   localizedAttrText,
   type AttributeResponse,
@@ -43,6 +42,11 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
         const help = localizedAttrText(attr.helpText, attr.helpTextI18n, i18n.locale);
         const current = responses.find((r) => r.question === attr.question)?.answer;
         const options = attr.optionsWithCost?.map((o) => o.value) || attr.options || [];
+        const fileUrls = Array.isArray(current)
+          ? current.map(String)
+          : current
+            ? [String(current)]
+            : [];
 
         return (
           <View key={attr.question} style={{ marginBottom: 14 }}>
@@ -113,45 +117,17 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
               })}
 
             {(attr.type === "file" || attr.type === "voice") && (
-              <>
-                <Muted>
-                  {Array.isArray(current) ? `${current.length} file(s)` : current ? "1 file" : "—"}
-                </Muted>
-                <Pressable
-                  disabled={disabled}
-                  onPress={async () => {
-                    const picked = await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: ["images"],
-                      quality: 0.85,
-                    });
-                    if (picked.canceled || !picked.assets[0]) return;
-                    const asset = picked.assets[0];
-                    const url = await uploadFile(
-                      asset.uri,
-                      asset.fileName ?? "upload.jpg",
-                      asset.mimeType ?? "image/jpeg"
-                    );
-                    const prev = Array.isArray(current)
-                      ? current
-                      : current
-                        ? [String(current)]
-                        : [];
-                    onChange(upsert(responses, attr.question, [...prev, url]));
-                  }}
-                  style={{
-                    padding: 12,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium }}>
-                    {t("client.newRequest.fields.attachments")}
-                  </Text>
-                </Pressable>
-              </>
+              <AttachmentPicker
+                urls={fileUrls}
+                onChange={(next) => onChange(upsert(responses, attr.question, next))}
+                max={attr.type === "voice" ? 1 : 3}
+                disabled={disabled}
+                hint={
+                  attr.type === "voice"
+                    ? t("requests.workspace.attach")
+                    : t("profile.editProfile.helperText.maxFileSize")
+                }
+              />
             )}
           </View>
         );

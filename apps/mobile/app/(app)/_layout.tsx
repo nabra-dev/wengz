@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
-import { AppHeaderTitle } from "../../src/components/AppHeader";
+import { AppNavHeader } from "../../src/components/AppHeader";
 import { brandTabBarOptions } from "../../src/theme/navigation";
 
 export default function AppLayout() {
@@ -15,7 +15,7 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         ...brandTabBarOptions,
-        headerTitle: () => <AppHeaderTitle />,
+        header: (props) => <AppNavHeader {...props} />,
       }}
     >
       <Tabs.Screen
@@ -31,7 +31,7 @@ export default function AppLayout() {
         name="requests"
         options={{
           title: t("tabs.requests"),
-          // Nested stack owns the top bar (same logo chrome).
+          // Stack owns the header so we don't get a white status-bar strip from nesting.
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "list" : "list-outline"} size={22} color={color} />
@@ -65,7 +65,6 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.subscription.title"),
-          headerTitle: () => <AppHeaderTitle />,
         }}
       />
       <Tabs.Screen
@@ -73,7 +72,6 @@ export default function AppLayout() {
         options={{
           href: null,
           title: t("client.payment.title"),
-          headerTitle: () => <AppHeaderTitle />,
         }}
       />
     </Tabs>

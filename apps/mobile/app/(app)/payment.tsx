@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { Pressable, Text, View } from "react-native";
 import {
   cancelSubscription,
   getPaymentInfo,
   getPendingSubscription,
   submitPaymentProof,
-  uploadFile,
 } from "../../src/lib/api";
 import { t, i18n } from "../../src/i18n";
+import { AttachmentPicker } from "../../src/components/AttachmentPicker";
 import {
   Button,
   Card,
@@ -106,21 +105,6 @@ export default function PaymentScreen() {
     },
     onError: (e: Error) => setError(e.message),
   });
-
-  async function pickImage() {
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.85,
-    });
-    if (picked.canceled || !picked.assets[0]) return;
-    const asset = picked.assets[0];
-    const url = await uploadFile(
-      asset.uri,
-      asset.fileName ?? "proof.jpg",
-      asset.mimeType ?? "image/jpeg"
-    );
-    setImageUrl(url);
-  }
 
   if (pending.isLoading || info.isLoading) return <Loading />;
 
@@ -277,12 +261,12 @@ export default function PaymentScreen() {
           </Text>
           <Muted>{t("client.payment.uploadProof.description")}</Muted>
 
-          <Label>{t("client.payment.uploadProof.transferReceipt")}</Label>
-          <Muted>{imageUrl ? "✓" : t("client.payment.uploadProof.uploadImage")}</Muted>
-          <Button
+          <AttachmentPicker
             label={t("client.payment.uploadProof.transferReceipt")}
-            onPress={() => void pickImage()}
-            variant="ghost"
+            urls={imageUrl ? [imageUrl] : []}
+            onChange={(next) => setImageUrl(next[0] ?? null)}
+            single
+            hint={t("client.payment.uploadProof.uploadImage")}
           />
 
           <Label>{t("client.payment.uploadProof.senderName")}</Label>

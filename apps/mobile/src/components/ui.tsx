@@ -121,14 +121,11 @@ export function PageHeader({
 }) {
   return (
     <View style={styles.pageHeader}>
-      <View style={styles.pageHeaderAccent} />
-      <View style={styles.pageHeaderRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.pageTitle}>{title}</Text>
-          {description ? <Text style={styles.pageDesc}>{description}</Text> : null}
-        </View>
-        {right}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.pageTitle}>{title}</Text>
+        {description ? <Text style={styles.pageDesc}>{description}</Text> : null}
       </View>
+      {right}
     </View>
   );
 }
@@ -315,20 +312,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   pageHeader: {
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  pageHeaderAccent: {
-    width: 36,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: c.yellow,
-    marginBottom: 12,
-  },
-  pageHeaderRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
+    marginBottom: 20,
+    marginTop: 8,
   },
   pageTitle: {
     color: c.foreground,

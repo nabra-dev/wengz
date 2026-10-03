@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
 import {
   addComment,
@@ -9,9 +8,9 @@ import {
   getRequest,
   rateRequest,
   requestRevision,
-  uploadFile,
 } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
+import { AttachmentPicker } from "../../../src/components/AttachmentPicker";
 import {
   Button,
   Card,
@@ -38,6 +37,7 @@ export default function RequestDetailScreen() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("messages");
   const [message, setMessage] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +56,10 @@ export default function RequestDetailScreen() {
 
   const send = useMutation({
     mutationFn: async (files: string[] = []) =>
-      addComment(String(id), message.trim() || " ", files),
+      addComment(String(id), message.trim() || (files.length ? " " : ""), files),
     onSuccess: () => {
       setMessage("");
+      setPendingFiles([]);
       invalidate();
     },
     onError: (e: Error) => setError(e.message),
@@ -88,22 +89,6 @@ export default function RequestDetailScreen() {
     },
     onError: (e: Error) => setError(e.message),
   });
-
-  async function attachAndSend() {
-    setError(null);
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-    if (picked.canceled || !picked.assets[0]) return;
-    const asset = picked.assets[0];
-    const url = await uploadFile(
-      asset.uri,
-      asset.fileName ?? "attach.jpg",
-      asset.mimeType ?? "image/jpeg"
-    );
-    await send.mutateAsync([url]);
-  }
 
   if (q.isLoading) return <Loading />;
   if (!q.data) {
@@ -346,31 +331,31 @@ export default function RequestDetailScreen() {
               backgroundColor: colors.background,
             }}
           >
+            <AttachmentPicker
+              urls={pendingFiles}
+              onChange={setPendingFiles}
+              max={3}
+              hint={
+                pendingFiles.length
+                  ? t("requests.workspace.attachmentsSendHint")
+                  : t("requests.workspace.attach")
+              }
+            />
             <Field
               placeholder={t("client.requestDetail.messagesPlaceholder")}
               value={message}
               onChangeText={setMessage}
             />
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  label={t("common.send")}
-                  onPress={() => {
-                    setError(null);
-                    if (message.trim()) send.mutate([]);
-                  }}
-                  disabled={send.isPending || !message.trim()}
-                  variant="secondary"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  label={t("client.newRequest.fields.attachments")}
-                  onPress={() => void attachAndSend()}
-                  variant="ghost"
-                />
-              </View>
-            </View>
+            <Button
+              label={t("common.send")}
+              onPress={() => {
+                setError(null);
+                if (!message.trim() && pendingFiles.length === 0) return;
+                send.mutate(pendingFiles);
+              }}
+              disabled={send.isPending || (!message.trim() && pendingFiles.length === 0)}
+              variant="secondary"
+            />
           </View>
         ) : null}
       </KeyboardAvoidingView>

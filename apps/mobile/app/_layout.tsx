@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
   Unbounded_400Regular,
@@ -43,18 +44,20 @@ export default function RootLayout() {
   if (!localeReady || !fontsLoaded) return <Loading />;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: BRAND.colors.background },
-            }}
-          />
-        </AuthProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: BRAND.colors.background },
+              }}
+            />
+          </AuthProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
