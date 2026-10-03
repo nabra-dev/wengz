@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Pressable, Text, View } from "react-native";
 import { changePassword, getProfile, updateProfile } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { applyLocale, t, type AppLocale } from "../../src/i18n";
@@ -14,10 +13,8 @@ import {
   Muted,
   PageHeader,
   ScrollScreen,
-  colors,
+  SegmentedTabs,
 } from "../../src/components/ui";
-import { BrandLogo } from "../../src/components/BrandLogo";
-import { fonts } from "../../src/theme/brand";
 
 type Tab = "profile" | "security";
 
@@ -74,41 +71,16 @@ export default function ProfileScreen() {
   return (
     <ScrollScreen>
       <PageHeader title={t("client.profile.title")} description={t("client.profile.subtitle")} />
-      <Card style={{ alignItems: "center", marginBottom: 16 }}>
-        <BrandLogo height={28} tone="yellow" />
-        <Muted style={{ marginTop: 10, marginBottom: 0 }}>
-          {String(profile.data?.email ?? "")}
-        </Muted>
-      </Card>
+      <Muted style={{ marginBottom: 14 }}>{String(profile.data?.email ?? "")}</Muted>
 
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
-        {(["profile", "security"] as Tab[]).map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setTab(key)}
-            style={{
-              flex: 1,
-              height: 44,
-              borderRadius: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: tab === key ? colors.purple : colors.card,
-              borderWidth: 1,
-              borderColor: tab === key ? colors.purple : colors.border,
-            }}
-          >
-            <Text
-              style={{
-                color: tab === key ? colors.yellow : colors.foreground,
-                fontFamily: fonts.medium,
-                fontSize: 13,
-              }}
-            >
-              {t(`client.profile.tabs.${key}`)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedTabs
+        value={tab}
+        onChange={setTab}
+        options={[
+          { key: "profile", label: t("client.profile.tabs.profile") },
+          { key: "security", label: t("client.profile.tabs.security") },
+        ]}
+      />
 
       {error ? <ErrorText>{error}</ErrorText> : null}
       {info ? <Muted>{info}</Muted> : null}

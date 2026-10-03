@@ -1,22 +1,30 @@
 import { Stack } from "expo-router";
-import { BRAND, fonts } from "../../../src/theme/brand";
+import { AppHeaderTitle } from "../../../src/components/AppHeader";
+import { brandStackOptions } from "../../../src/theme/navigation";
 import { t } from "../../../src/i18n";
-
-const c = BRAND.colors;
 
 export default function RequestsLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: c.background },
-        headerTintColor: c.yellow,
-        headerTitleStyle: { fontFamily: fonts.semiBold, color: c.foreground, fontSize: 16 },
-        contentStyle: { backgroundColor: c.background },
-        headerShadowVisible: false,
+        ...brandStackOptions,
+        headerTitle: () => <AppHeaderTitle />,
       }}
     >
-      <Stack.Screen name="index" options={{ title: t("client.requests.title") }} />
-      <Stack.Screen name="[id]" options={{ title: t("client.requests.title") }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: t("client.requests.title"),
+          headerBackTitle: t("tabs.requests"),
+        }}
+      />
+      <Stack.Screen
+        name="[id]"
+        options={{
+          title: t("client.requests.title"),
+          headerBackTitle: t("tabs.requests"),
+        }}
+      />
       <Stack.Screen
         name="create"
         options={{

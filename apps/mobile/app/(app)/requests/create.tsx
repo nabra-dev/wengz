@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -21,8 +21,10 @@ import {
   Label,
   Loading,
   Muted,
-  Screen,
+  PageHeader,
+  ScrollScreen,
   colors,
+  SCROLL_BOTTOM_PAD,
 } from "../../../src/components/ui";
 import { fonts } from "../../../src/theme/brand";
 import {
@@ -127,6 +129,35 @@ export default function CreateRequestScreen() {
     setAttachments((prev) => [...prev, url]);
   }
 
+  function onSubmit() {
+    setError(null);
+    if (!serviceTypeId) {
+      setError(t("client.newRequest.validation.selectService"));
+      return;
+    }
+    if (!title.trim() || !description.trim()) {
+      setError(t("client.newRequest.validation.requiredField"));
+      return;
+    }
+    for (const attr of attributes) {
+      if (!attr.required) continue;
+      const ans = attributeResponses.find((r) => r.question === attr.question)?.answer;
+      const empty =
+        ans === undefined ||
+        (typeof ans === "string" && !ans.trim()) ||
+        (Array.isArray(ans) && ans.length === 0);
+      if (empty) {
+        setError(
+          t("client.newRequest.validation.requiredAttribute", {
+            field: attr.questionI18n?.[i18n.locale] || attr.question,
+          })
+        );
+        return;
+      }
+    }
+    create.mutate();
+  }
+
   if (services.isLoading || sub.isLoading) return <Loading />;
 
   const buttonLabel = create.isPending
@@ -135,321 +166,269 @@ export default function CreateRequestScreen() {
       ? t("client.newRequest.actions.create", { cost: totalCost })
       : t("client.newRequest.actions.createCredits", { cost: totalCost });
 
-  const footerHeight = 128 + insets.bottom;
   const selectedName = selected
     ? localized(selected.name, selected.nameI18n)
     : t("client.newRequest.fields.serviceTypePlaceholder");
 
+  const footerPad = 88 + Math.max(insets.bottom, 12);
+
   return (
-    <Screen padded={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
-        <ScrollView
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          alwaysBounceVertical
-          nestedScrollEnabled
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 16,
-            paddingTop: 8,
-            paddingBottom: footerHeight + 24,
-          }}
-        >
-          <Muted style={{ marginBottom: 16 }}>{t("client.newRequest.subtitle")}</Muted>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollScreen bottomPad={footerPad + SCROLL_BOTTOM_PAD}>
+        <PageHeader
+          title={t("client.newRequest.title")}
+          description={t("client.newRequest.subtitle")}
+        />
 
-          {!hasSub ? (
-            <Card highlight>
-              <Text
-                style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
-              >
-                {t("client.newRequest.noSubscription.title")}
-              </Text>
-              <Muted>{t("client.newRequest.noSubscription.description")}</Muted>
-              <Button
-                label={t("client.newRequest.noSubscription.viewPackages")}
-                onPress={() => router.push("/(app)/subscribe")}
-                variant="secondary"
-              />
-            </Card>
-          ) : null}
+        {!hasSub ? (
+          <Card highlight>
+            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+              {t("client.newRequest.noSubscription.title")}
+            </Text>
+            <Muted>{t("client.newRequest.noSubscription.description")}</Muted>
+            <Button
+              label={t("client.newRequest.noSubscription.viewPackages")}
+              onPress={() => router.push("/(app)/subscribe")}
+              variant="secondary"
+            />
+          </Card>
+        ) : null}
 
-          {hasSub && !canAfford ? (
-            <Card highlight>
-              <Text
-                style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
-              >
-                {t("client.newRequest.insufficientCredits.title")}
-              </Text>
-              <Muted>
-                {remainingCredits === 0
-                  ? t("client.newRequest.insufficientCredits.zeroCredits")
-                  : t("client.newRequest.insufficientCredits.descriptionNoPriority", {
-                      required: totalCost,
-                      credit: t("client.newRequest.credits"),
-                      baseCost,
-                      available: remainingCredits,
-                    })}
-              </Muted>
-              <Button
-                label={t("client.newRequest.insufficientCredits.viewPlans")}
-                onPress={() => router.push("/(app)/subscribe")}
-                variant="ghost"
-              />
-            </Card>
-          ) : null}
+        {hasSub && !canAfford ? (
+          <Card highlight>
+            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+              {t("client.newRequest.insufficientCredits.title")}
+            </Text>
+            <Muted>
+              {remainingCredits === 0
+                ? t("client.newRequest.insufficientCredits.zeroCredits")
+                : t("client.newRequest.insufficientCredits.descriptionNoPriority", {
+                    required: totalCost,
+                    credit: t("client.newRequest.credits"),
+                    baseCost,
+                    available: remainingCredits,
+                  })}
+            </Muted>
+            <Button
+              label={t("client.newRequest.insufficientCredits.viewPlans")}
+              onPress={() => router.push("/(app)/subscribe")}
+              variant="ghost"
+            />
+          </Card>
+        ) : null}
 
-          {hasSub && serviceList.length === 0 && !services.isError ? (
-            <Card highlight>
-              <Text
-                style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
-              >
-                {t("client.newRequest.noServices.title")}
-              </Text>
-              <Muted>{t("client.newRequest.noServices.description", { name: packageName })}</Muted>
-              <Button
-                label={t("client.newRequest.noServices.upgradePackage")}
-                onPress={() => router.push("/(app)/subscribe")}
-              />
-            </Card>
-          ) : null}
+        {hasSub && serviceList.length === 0 && !services.isError ? (
+          <Card highlight>
+            <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
+              {t("client.newRequest.noServices.title")}
+            </Text>
+            <Muted>{t("client.newRequest.noServices.description", { name: packageName })}</Muted>
+            <Button
+              label={t("client.newRequest.noServices.upgradePackage")}
+              onPress={() => router.push("/(app)/subscribe")}
+            />
+          </Card>
+        ) : null}
 
-          {services.isError ? (
-            <ErrorText>{(services.error as Error)?.message || t("common.error")}</ErrorText>
-          ) : null}
-          {error ? <ErrorText>{error}</ErrorText> : null}
+        {services.isError ? (
+          <ErrorText>{(services.error as Error)?.message || t("common.error")}</ErrorText>
+        ) : null}
+        {error ? <ErrorText>{error}</ErrorText> : null}
 
-          <Card>
+        <Card>
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: fonts.semiBold,
+              fontSize: 16,
+              marginBottom: 16,
+            }}
+          >
+            {t("client.newRequest.requestDetails")}
+          </Text>
+
+          <Label>{t("client.newRequest.fields.serviceType")} *</Label>
+          <Pressable
+            disabled={!hasCredits}
+            onPress={() => setPickerOpen((v) => !v)}
+            style={{
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 8,
+              paddingHorizontal: 14,
+              paddingVertical: 14,
+              marginBottom: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              opacity: hasCredits ? 1 : 0.5,
+            }}
+          >
             <Text
               style={{
-                color: colors.foreground,
-                fontFamily: fonts.semiBold,
-                fontSize: 16,
-                marginBottom: 16,
+                color: selected ? colors.foreground : colors.mutedForeground,
+                fontFamily: fonts.regular,
+                flex: 1,
+                paddingRight: 8,
               }}
+              numberOfLines={2}
             >
-              {t("client.newRequest.requestDetails")}
+              {selected
+                ? `${selected.icon ? `${selected.icon} ` : ""}${selectedName} · ${selected.creditCost ?? 1} ${t("client.newRequest.credits")}`
+                : selectedName}
             </Text>
+            <Ionicons
+              name={pickerOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.mutedForeground}
+            />
+          </Pressable>
 
-            <Label>{t("client.newRequest.fields.serviceType")} *</Label>
-            <Pressable
-              disabled={!hasCredits}
-              onPress={() => setPickerOpen((v) => !v)}
+          {pickerOpen ? (
+            <View style={{ marginBottom: 14 }}>
+              {serviceList.map((s) => {
+                const name = localized(s.name, s.nameI18n);
+                const allowed = Boolean(s.isSupported);
+                const active = serviceTypeId === s.id;
+                const pkgHint =
+                  s.supportingPackages?.[0] &&
+                  localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
+                return (
+                  <Pressable
+                    key={s.id}
+                    disabled={!allowed || !hasCredits}
+                    onPress={() => {
+                      setServiceTypeId(s.id);
+                      setPickerOpen(false);
+                    }}
+                    style={{
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: active ? colors.yellow : colors.border,
+                      backgroundColor: active ? "rgba(224,248,64,0.1)" : colors.card,
+                      opacity: allowed ? 1 : 0.45,
+                    }}
+                  >
+                    <Text style={{ color: colors.foreground, fontFamily: fonts.medium }}>
+                      {s.icon ? `${s.icon} ` : ""}
+                      {name}
+                      {"  "}
+                      <Text style={{ color: colors.mutedForeground }}>
+                        {s.creditCost ?? 1} {t("client.newRequest.credits")}
+                      </Text>
+                    </Text>
+                    {!allowed && pkgHint ? (
+                      <Muted style={{ marginBottom: 0, marginTop: 4 }}>
+                        {t("client.newRequest.supportedFromPackage", { name: pkgHint })}
+                      </Muted>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {selected ? (
+            <View
               style={{
-                backgroundColor: colors.background,
+                marginBottom: 14,
+                padding: 12,
+                borderRadius: 8,
+                backgroundColor: colors.muted,
                 borderWidth: 1,
                 borderColor: colors.border,
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                marginBottom: 10,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                opacity: hasCredits ? 1 : 0.5,
               }}
             >
-              <Text
-                style={{
-                  color: selected ? colors.foreground : colors.mutedForeground,
-                  fontFamily: fonts.regular,
-                  flex: 1,
-                  paddingRight: 8,
-                }}
-              >
-                {selected
-                  ? `${selected.icon ? `${selected.icon} ` : ""}${selectedName} · ${selected.creditCost ?? 1} ${t("client.newRequest.credits")}`
-                  : selectedName}
-              </Text>
-              <Ionicons
-                name={pickerOpen ? "chevron-up" : "chevron-down"}
-                size={18}
-                color={colors.mutedForeground}
-              />
-            </Pressable>
-
-            {pickerOpen ? (
-              <View style={{ marginBottom: 14 }}>
-                {serviceList.map((s) => {
-                  const name = localized(s.name, s.nameI18n);
-                  const allowed = Boolean(s.isSupported);
-                  const active = serviceTypeId === s.id;
-                  const pkgHint =
-                    s.supportingPackages?.[0] &&
-                    localized(s.supportingPackages[0].name, s.supportingPackages[0].nameI18n);
-                  return (
-                    <Pressable
-                      key={s.id}
-                      disabled={!allowed || !hasCredits}
-                      onPress={() => {
-                        setServiceTypeId(s.id);
-                        setPickerOpen(false);
-                      }}
-                      style={{
-                        padding: 12,
-                        borderRadius: 10,
-                        marginBottom: 8,
-                        borderWidth: 1,
-                        borderColor: active ? colors.yellow : colors.border,
-                        backgroundColor: active ? "rgba(224,248,64,0.1)" : colors.card,
-                        opacity: allowed ? 1 : 0.45,
-                      }}
-                    >
-                      <Text style={{ color: colors.foreground, fontFamily: fonts.medium }}>
-                        {s.icon ? `${s.icon} ` : ""}
-                        {name}
-                        {"  "}
-                        <Text style={{ color: colors.mutedForeground }}>
-                          {s.creditCost ?? 1} {t("client.newRequest.credits")}
-                        </Text>
-                      </Text>
-                      {!allowed && pkgHint ? (
-                        <Muted style={{ marginBottom: 0, marginTop: 4 }}>
-                          {t("client.newRequest.supportedFromPackage", { name: pkgHint })}
-                        </Muted>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
-
-            {selected ? (
-              <View
-                style={{
-                  marginBottom: 14,
-                  padding: 12,
-                  borderRadius: 10,
-                  backgroundColor: colors.muted,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Muted style={{ marginBottom: 0 }}>
-                  {localized(selected.description, selected.descriptionI18n) ||
-                    `${selected.creditCost ?? 1} ${t("client.newRequest.credits")}`}
-                </Muted>
-              </View>
-            ) : null}
-
-            <Label>{t("client.newRequest.fields.title")} *</Label>
-            <Muted>{t("client.newRequest.fields.titleHint")}</Muted>
-            <Field
-              editable={hasCredits}
-              placeholder={t("client.newRequest.fields.titlePlaceholder")}
-              value={title}
-              onChangeText={setTitle}
-            />
-
-            <Label>{t("client.newRequest.fields.description")} *</Label>
-            <Muted>{t("client.newRequest.fields.descriptionHint")}</Muted>
-            <Field
-              editable={hasCredits}
-              placeholder={t("client.newRequest.fields.descriptionPlaceholder")}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
-
-            {attributes.length > 0 ? (
-              <ServiceAttributesForm
-                attributes={attributes}
-                responses={attributeResponses}
-                onChange={setAttributeResponses}
-                disabled={!hasCredits}
-              />
-            ) : null}
-
-            <Label>{t("client.newRequest.fields.attachments")}</Label>
-            <Muted>{attachments.length}/5</Muted>
-            {attachments.map((url, idx) => (
-              <Muted key={url} style={{ marginBottom: 4 }}>
-                {idx + 1}. {url.split("/").pop()}
+              <Muted style={{ marginBottom: 0 }}>
+                {localized(selected.description, selected.descriptionI18n) ||
+                  `${selected.creditCost ?? 1} ${t("client.newRequest.credits")}`}
               </Muted>
-            ))}
-            <Button
-              label={t("client.newRequest.fields.attachments")}
-              onPress={() => void pickAttachment()}
-              variant="ghost"
+            </View>
+          ) : null}
+
+          <Label>{t("client.newRequest.fields.title")} *</Label>
+          <Muted>{t("client.newRequest.fields.titleHint")}</Muted>
+          <Field
+            editable={hasCredits}
+            placeholder={t("client.newRequest.fields.titlePlaceholder")}
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          <Label>{t("client.newRequest.fields.description")} *</Label>
+          <Muted>{t("client.newRequest.fields.descriptionHint")}</Muted>
+          <Field
+            editable={hasCredits}
+            placeholder={t("client.newRequest.fields.descriptionPlaceholder")}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+
+          {attributes.length > 0 ? (
+            <ServiceAttributesForm
+              attributes={attributes}
+              responses={attributeResponses}
+              onChange={setAttributeResponses}
               disabled={!hasCredits}
             />
+          ) : null}
 
-            <Muted style={{ marginTop: 8, marginBottom: 0 }}>{t("errors.contactNotAllowed")}</Muted>
-          </Card>
-
-          <Card style={{ marginTop: 4 }}>
-            <Muted>
-              {t("client.newRequest.costSummary.total")}: {totalCost}
+          <Label>{t("client.newRequest.fields.attachments")}</Label>
+          <Muted>{attachments.length}/5</Muted>
+          {attachments.map((url, idx) => (
+            <Muted key={url} style={{ marginBottom: 4 }}>
+              {idx + 1}. {url.split("/").pop()}
             </Muted>
-            <Muted>
-              {t("client.newRequest.costSummary.available")}: {remainingCredits}
-            </Muted>
-            <Muted style={{ marginBottom: 0 }}>
-              {t("client.newRequest.costSummary.remaining")}:{" "}
-              {Math.max(0, remainingCredits - totalCost)}
-            </Muted>
-          </Card>
-        </ScrollView>
-
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: Math.max(insets.bottom, 12),
-            backgroundColor: colors.background,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-          }}
-        >
+          ))}
           <Button
-            label={buttonLabel}
-            variant="secondary"
-            disabled={create.isPending || !canAfford || !serviceTypeId || !hasCredits}
-            onPress={() => {
-              setError(null);
-              if (!serviceTypeId) {
-                setError(t("client.newRequest.validation.selectService"));
-                return;
-              }
-              if (!title.trim() || !description.trim()) {
-                setError(t("client.newRequest.validation.requiredField"));
-                return;
-              }
-              for (const attr of attributes) {
-                if (!attr.required) continue;
-                const ans = attributeResponses.find((r) => r.question === attr.question)?.answer;
-                const empty =
-                  ans === undefined ||
-                  (typeof ans === "string" && !ans.trim()) ||
-                  (Array.isArray(ans) && ans.length === 0);
-                if (empty) {
-                  setError(
-                    t("client.newRequest.validation.requiredAttribute", {
-                      field: attr.questionI18n?.[i18n.locale] || attr.question,
-                    })
-                  );
-                  return;
-                }
-              }
-              create.mutate();
-            }}
-          />
-          <Button
-            label={t("client.newRequest.actions.cancel")}
-            onPress={() => router.back()}
+            label={t("client.newRequest.fields.attachments")}
+            onPress={() => void pickAttachment()}
             variant="ghost"
+            disabled={!hasCredits}
           />
-        </View>
-      </KeyboardAvoidingView>
-    </Screen>
+
+          <Muted style={{ marginTop: 8, marginBottom: 0 }}>{t("errors.contactNotAllowed")}</Muted>
+        </Card>
+
+        <Card>
+          <Muted>
+            {t("client.newRequest.costSummary.total")}: {totalCost}
+          </Muted>
+          <Muted>
+            {t("client.newRequest.costSummary.available")}: {remainingCredits}
+          </Muted>
+          <Muted style={{ marginBottom: 0 }}>
+            {t("client.newRequest.costSummary.remaining")}:{" "}
+            {Math.max(0, remainingCredits - totalCost)}
+          </Muted>
+        </Card>
+      </ScrollScreen>
+
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: Math.max(insets.bottom, 12),
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
+        <Button
+          label={buttonLabel}
+          variant="secondary"
+          disabled={create.isPending || !canAfford || !serviceTypeId || !hasCredits}
+          onPress={onSubmit}
+        />
+      </View>
+    </View>
   );
 }

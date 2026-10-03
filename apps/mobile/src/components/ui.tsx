@@ -121,11 +121,14 @@ export function PageHeader({
 }) {
   return (
     <View style={styles.pageHeader}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.pageTitle}>{title}</Text>
-        {description ? <Text style={styles.pageDesc}>{description}</Text> : null}
+      <View style={styles.pageHeaderAccent} />
+      <View style={styles.pageHeaderRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageTitle}>{title}</Text>
+          {description ? <Text style={styles.pageDesc}>{description}</Text> : null}
+        </View>
+        {right}
       </View>
-      {right}
     </View>
   );
 }
@@ -245,6 +248,36 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/** Shared two/three-way tabs used on profile + request detail. */
+export function SegmentedTabs<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: Array<{ key: T; label: string }>;
+  value: T;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <View style={styles.segmentRow}>
+      {options.map((opt) => {
+        const active = value === opt.key;
+        return (
+          <Pressable
+            key={opt.key}
+            onPress={() => onChange(opt.key)}
+            style={[styles.segmentItem, active && styles.segmentItemActive]}
+          >
+            <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>
+              {opt.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Loading() {
   return (
     <View style={styles.center}>
@@ -282,11 +315,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   pageHeader: {
+    marginBottom: 20,
+    marginTop: 4,
+  },
+  pageHeaderAccent: {
+    width: 36,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: c.yellow,
+    marginBottom: 12,
+  },
+  pageHeaderRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 24,
-    marginTop: 4,
   },
   pageTitle: {
     color: c.foreground,
@@ -416,6 +458,33 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontFamily: fonts.medium,
+  },
+  segmentRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  segmentItem: {
+    flex: 1,
+    height: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  segmentItemActive: {
+    backgroundColor: c.purple,
+    borderColor: c.purple,
+  },
+  segmentLabel: {
+    color: c.foreground,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+  },
+  segmentLabelActive: {
+    color: c.yellow,
   },
   center: {
     flex: 1,

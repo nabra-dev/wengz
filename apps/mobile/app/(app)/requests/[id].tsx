@@ -11,7 +11,7 @@ import {
   requestRevision,
   uploadFile,
 } from "../../../src/lib/api";
-import { t } from "../../../src/i18n";
+import { t, i18n } from "../../../src/i18n";
 import {
   Button,
   Card,
@@ -20,8 +20,10 @@ import {
   Label,
   Loading,
   Muted,
+  PageHeader,
   Screen,
   ScrollScreen,
+  SegmentedTabs,
   StatusBadge,
   colors,
   listContentDefaults,
@@ -124,54 +126,31 @@ export default function RequestDetailScreen() {
     serviceType?: { name?: string; nameI18n?: Record<string, string> };
   };
 
+  const serviceName =
+    request.serviceType?.nameI18n?.[i18n.locale] ||
+    request.serviceType?.nameI18n?.en ||
+    request.serviceType?.name;
+
   const header = (
     <View>
-      <Card>
-        <Text
-          style={{
-            color: colors.foreground,
-            fontFamily: fonts.semiBold,
-            fontSize: 18,
-            marginBottom: 10,
-          }}
-        >
-          {request.title}
-        </Text>
-        <StatusBadge status={String(request.status)} />
-        {request.needsManualApproval ? (
-          <Muted style={{ marginTop: 10 }}>{t("requests.card.needsManualApproval")}</Muted>
-        ) : null}
-      </Card>
+      <PageHeader
+        title={String(request.title || t("client.requests.title"))}
+        description={
+          [serviceName, request.needsManualApproval ? t("requests.card.needsManualApproval") : null]
+            .filter(Boolean)
+            .join(" · ") || undefined
+        }
+        right={<StatusBadge status={String(request.status)} />}
+      />
 
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-        {(["messages", "details"] as Tab[]).map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setTab(key)}
-            style={{
-              flex: 1,
-              height: 42,
-              borderRadius: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: tab === key ? colors.purple : colors.card,
-              borderWidth: 1,
-              borderColor: tab === key ? colors.purple : colors.border,
-            }}
-          >
-            <Text
-              style={{
-                color: tab === key ? colors.yellow : colors.foreground,
-                fontFamily: fonts.medium,
-              }}
-            >
-              {key === "messages"
-                ? t("client.requestDetail.messagesTitle")
-                : t("requests.workspace.details") || "Details"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedTabs
+        value={tab}
+        onChange={setTab}
+        options={[
+          { key: "messages", label: t("client.requestDetail.messagesTitle") },
+          { key: "details", label: t("requests.workspace.details") || "Details" },
+        ]}
+      />
 
       {error ? <ErrorText>{error}</ErrorText> : null}
     </View>
@@ -319,6 +298,13 @@ export default function RequestDetailScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             alwaysBounceVertical
+            ListEmptyComponent={
+              <Card>
+                <Muted style={{ marginBottom: 0 }}>
+                  {t("client.requestDetail.messagesPlaceholder")}
+                </Muted>
+              </Card>
+            }
             renderItem={({ item }) => (
               <View
                 style={{
@@ -326,7 +312,7 @@ export default function RequestDetailScreen() {
                   borderColor: colors.border,
                   borderWidth: 1,
                   padding: 12,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   marginBottom: 8,
                 }}
               >
@@ -353,10 +339,11 @@ export default function RequestDetailScreen() {
         {request.providerId && request.status !== "COMPLETED" ? (
           <View
             style={{
-              paddingTop: 4,
+              paddingTop: 10,
               paddingBottom: 8,
               borderTopWidth: 1,
               borderTopColor: colors.border,
+              backgroundColor: colors.background,
             }}
           >
             <Field
@@ -373,6 +360,7 @@ export default function RequestDetailScreen() {
                     if (message.trim()) send.mutate([]);
                   }}
                   disabled={send.isPending || !message.trim()}
+                  variant="secondary"
                 />
               </View>
               <View style={{ flex: 1 }}>

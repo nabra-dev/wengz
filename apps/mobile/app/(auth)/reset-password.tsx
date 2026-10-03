@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { View } from "react-native";
 import { resetPassword } from "../../src/lib/api";
 import { t } from "../../src/i18n";
-import { BrandLogo } from "../../src/components/BrandLogo";
+import { AuthBrand } from "../../src/components/AuthBrand";
 import { Button, Card, ErrorText, Field, Label, ScrollScreen } from "../../src/components/ui";
 
 export default function ResetPasswordScreen() {
@@ -43,9 +42,7 @@ export default function ResetPasswordScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <View style={{ alignItems: "center", marginBottom: 24 }}>
-        <BrandLogo height={36} tone="yellow" />
-      </View>
+      <AuthBrand height={36} />
       <Card>
         <Label>{t("auth.resetPassword.title")}</Label>
         {error ? <ErrorText>{error}</ErrorText> : null}

@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { ApiError } from "../../src/lib/api";
-import { BrandLogo } from "../../src/components/BrandLogo";
+import { AuthBrand } from "../../src/components/AuthBrand";
 import {
   Button,
   Card,
@@ -56,9 +56,7 @@ export default function LoginScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <View style={{ alignItems: "center", marginBottom: 28 }}>
-        <BrandLogo height={40} tone="yellow" />
-      </View>
+      <AuthBrand height={40} />
 
       <Card>
         <Text

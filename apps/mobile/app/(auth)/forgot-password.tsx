@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { router } from "expo-router";
-import { View } from "react-native";
 import { requestPasswordReset } from "../../src/lib/api";
 import { t } from "../../src/i18n";
-import { BrandLogo } from "../../src/components/BrandLogo";
+import { AuthBrand } from "../../src/components/AuthBrand";
 import {
   Button,
   Card,
@@ -38,9 +37,7 @@ export default function ForgotPasswordScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <View style={{ alignItems: "center", marginBottom: 24 }}>
-        <BrandLogo height={36} tone="yellow" />
-      </View>
+      <AuthBrand height={36} />
       <Card>
         <Label>{t("auth.forgotPassword.title")}</Label>
         <Muted>{t("auth.forgotPassword.description")}</Muted>
