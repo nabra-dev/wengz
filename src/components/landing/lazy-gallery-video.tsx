@@ -7,7 +7,9 @@ interface LazyGalleryVideoProps {
   /** Static preview shown before the video source loads / plays. */
   readonly poster?: string;
   readonly className?: string;
+  /** Initial muted state only — later changes must be done on the DOM node. */
   readonly muted?: boolean;
+  readonly loop?: boolean;
   readonly videoRef?: RefCallback<HTMLVideoElement | null>;
   readonly onClick?: () => void;
   readonly onLoadedMetadata?: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
@@ -29,6 +31,7 @@ export function LazyGalleryVideo({
   poster,
   className,
   muted = true,
+  loop = false,
   videoRef,
   onClick,
   onLoadedMetadata,
@@ -38,6 +41,8 @@ export function LazyGalleryVideo({
   children,
 }: LazyGalleryVideoProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const innerVideoRef = useRef<HTMLVideoElement | null>(null);
+  const initialMutedRef = useRef(muted);
   const [shouldLoad, setShouldLoad] = useState(false);
 
   useEffect(() => {
@@ -68,10 +73,19 @@ export function LazyGalleryVideo({
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         className={className}
-        ref={videoRef}
+        ref={(node) => {
+          innerVideoRef.current = node;
+          // Apply initial mute once when the node mounts — never re-force on parent re-renders.
+          if (node && initialMutedRef.current) {
+            node.muted = true;
+            node.defaultMuted = true;
+            initialMutedRef.current = false;
+          }
+          if (typeof videoRef === "function") videoRef(node);
+        }}
         playsInline
-        muted={muted}
-        preload="none"
+        loop={loop}
+        preload="metadata"
         poster={poster}
         tabIndex={-1}
         onClick={onClick}

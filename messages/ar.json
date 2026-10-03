@@ -63,9 +63,13 @@
   },
   "landing": {
     "nav": {
+      "ariaLabel": "أقسام الصفحة",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة",
       "features": "المزايا",
+      "services": "الخدمات",
       "gallery": "المعرض",
-      "pricing": "الأسعار",
+      "pricing": "الباقات",
       "providerForm": "نموذج المبدعين"
     },
     "notices": {

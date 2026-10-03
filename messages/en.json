@@ -63,9 +63,13 @@
   },
   "landing": {
     "nav": {
+      "ariaLabel": "Page sections",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
       "features": "Features",
+      "services": "Services",
       "gallery": "Gallery",
-      "pricing": "Pricing",
+      "pricing": "Plans",
       "providerForm": "Provider form"
     },
     "notices": {

@@ -1,92 +1,132 @@
 "use client";
 
-import { useCallback, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
 
 /** `/images/landing/{n}.mp4` for n = 1..14 */
 const GALLERY_VIDEO_INDICES = Array.from({ length: 14 }, (_, i) => i + 1);
 
-function getVideoPlaybackLabel(locale: string, isPlaying: boolean) {
-  if (isPlaying) {
-    return locale === "ar" ? "إيقاف الفيديو" : "Pause video";
-  }
-  return locale === "ar" ? "تشغيل الفيديو" : "Play video";
-}
+const MARQUEE_SPEED_PX = 0.45;
 
-function getVideoMuteLabel(locale: string, isMuted: boolean) {
-  if (isMuted) {
-    return locale === "ar" ? "إلغاء كتم الصوت" : "Unmute";
-  }
-  return locale === "ar" ? "كتم الصوت" : "Mute";
-}
-
-const marqueeDuration = (seconds: number): CSSProperties =>
-  ({ "--landing-marquee-duration": `${seconds}s` }) as CSSProperties;
-
-/** Infinite horizontal video strip — marquee pauses on hover. */
+/** Infinite horizontal video strip — play on hover; click to unmute; only one at a time. */
 export function VideoMarquee() {
   const locale = useLocale();
   const t = useTranslations("landing.gallery.videos");
-  const [playing, setPlaying] = useState<Record<number, boolean>>({});
-  const [muted, setMuted] = useState<Record<number, boolean>>({});
-  const [progress, setProgress] = useState<Record<number, number>>({});
-  /** Duplicate strips share playback; key `${idx}-${strip}`. */
+  const trackRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const marqueePausedRef = useRef(false);
+  const offsetRef = useRef(0);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [unmutedKey, setUnmutedKey] = useState<string | null>(null);
 
-  const setGalleryVideoRef = useCallback(
-    (idx: number, strip: 0 | 1) => (el: HTMLVideoElement | null) => {
-      const key = `${idx}-${strip}`;
-      if (el) videoRefs.current[key] = el;
-      else delete videoRefs.current[key];
+  const galleryRefCallbacks = useRef<Record<string, (el: HTMLVideoElement | null) => void>>({});
+
+  const setGalleryVideoRef = useCallback((idx: number, strip: 0 | 1) => {
+    const key = `${idx}-${strip}`;
+    if (!galleryRefCallbacks.current[key]) {
+      galleryRefCallbacks.current[key] = (el: HTMLVideoElement | null) => {
+        if (el) videoRefs.current[key] = el;
+        else delete videoRefs.current[key];
+      };
+    }
+    return galleryRefCallbacks.current[key];
+  }, []);
+
+  const resetAllVideos = useCallback((exceptKey?: string) => {
+    Object.entries(videoRefs.current).forEach(([key, el]) => {
+      if (!el || key === exceptKey) return;
+      el.pause();
+      el.currentTime = 0;
+      el.muted = true;
+    });
+  }, []);
+
+  const playOnHover = useCallback(
+    (key: string) => {
+      const el = videoRefs.current[key];
+      if (!el) return;
+      resetAllVideos(key);
+      // Browsers only allow autoplay when muted; sound unlocks on click.
+      el.muted = true;
+      el.defaultMuted = true;
+      void el.play().catch(() => {
+        /* ignore transient autoplay failures */
+      });
+      setActiveKey(key);
+      setUnmutedKey(null);
+      marqueePausedRef.current = true;
     },
-    []
+    [resetAllVideos]
   );
 
-  const getGalleryVideos = (idx: number): HTMLVideoElement[] =>
-    ([0, 1] as const)
-      .map((s) => videoRefs.current[`${idx}-${s}`])
-      .filter((x): x is HTMLVideoElement => x != null);
-
-  const togglePlayback = (idx: number) => {
-    const els = getGalleryVideos(idx);
-    if (els.length === 0) return;
-    const anyPlaying = els.some((v) => !v.paused);
-    els.forEach((el) => {
-      if (anyPlaying) el.pause();
-      else void el.play();
+  const stopOnLeave = useCallback((key: string) => {
+    const el = videoRefs.current[key];
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+      el.muted = true;
+    }
+    setActiveKey((current) => {
+      if (current === key) {
+        marqueePausedRef.current = false;
+        return null;
+      }
+      return current;
     });
-  };
+    setUnmutedKey((current) => (current === key ? null : current));
+  }, []);
 
-  const toggleMute = (idx: number) => {
-    const els = getGalleryVideos(idx);
-    const first = els[0];
-    if (!first) return;
-    const nextMuted = !first.muted;
-    els.forEach((el) => {
-      el.muted = nextMuted;
-    });
-    setMuted((prev) => ({ ...prev, [idx]: nextMuted }));
-  };
+  const toggleMute = useCallback((key: string) => {
+    const el = videoRefs.current[key];
+    if (!el) return;
 
-  const seek = (idx: number, progressValue: number) => {
-    const els = getGalleryVideos(idx);
-    if (els.length === 0) return;
-    const duration = els[0].duration;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    const time = (progressValue / 100) * duration;
-    els.forEach((el) => {
-      el.currentTime = time;
+    Object.entries(videoRefs.current).forEach(([k, video]) => {
+      if (!video || k === key) return;
+      video.muted = true;
     });
-    setProgress((prev) => ({ ...prev, [idx]: progressValue }));
-  };
+
+    if (el.muted) {
+      el.muted = false;
+      el.volume = 1;
+      setUnmutedKey(key);
+      void el.play().catch(() => {
+        /* ignore */
+      });
+      return;
+    }
+
+    el.muted = true;
+    setUnmutedKey(null);
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let raf = 0;
+    const tick = () => {
+      if (!marqueePausedRef.current) {
+        offsetRef.current -= MARQUEE_SPEED_PX;
+        const half = track.scrollWidth / 2;
+        if (half > 0 && Math.abs(offsetRef.current) >= half) {
+          offsetRef.current += half;
+        }
+        track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   return (
     <section
-      id="gallery"
-      className="relative w-full overflow-hidden border-t border-border bg-background py-16 sm:py-24 md:py-32"
+      id="gallery-videos"
+      className="relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32"
     >
       <div className="container px-4 sm:px-6">
         <motion.div
@@ -113,130 +153,67 @@ export function VideoMarquee() {
         className="mt-8 w-full"
       >
         <div className="relative w-full overflow-hidden py-1" dir="ltr">
-          <div
-            className="flex w-max gap-3 animate-landing-marquee hover:[animation-play-state:paused] sm:gap-4 md:gap-5"
-            style={marqueeDuration(70)}
-          >
+          <div ref={trackRef} className="flex w-max gap-3 will-change-transform sm:gap-4 md:gap-5">
             {[0, 1].map((strip) => (
               <div key={`vstrip-${strip}`} className="flex shrink-0 gap-3 sm:gap-4 md:gap-5">
-                {GALLERY_VIDEO_INDICES.map((idx) => (
-                  <div
-                    key={`landing-video-${idx}-${strip}`}
-                    className="w-[42vw] max-w-[12rem] shrink-0 sm:w-48 sm:max-w-none md:w-52"
-                  >
-                    <div className="group relative overflow-hidden rounded-2xl border border-border bg-muted sm:rounded-3xl">
-                      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_30%_20%,rgba(224,248,64,0.16),transparent_55%),radial-gradient(circle_at_70%_80%,rgba(105,13,212,0.14),transparent_55%)]" />
-                      <LazyGalleryVideo
-                        className="aspect-[9/16] w-full object-cover"
-                        src={`/images/landing/${idx}.mp4`}
-                        poster={`/images/landing/${idx}.jpg`}
-                        videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
-                        muted={muted[idx] ?? true}
-                        onClick={() => {
-                          togglePlayback(idx);
-                        }}
-                        onLoadedMetadata={
-                          strip === 0
-                            ? (event) => {
-                                const target = event.currentTarget;
-                                setMuted((prev) => ({
-                                  ...prev,
-                                  [idx]: target.muted,
-                                }));
-                                setProgress((prev) => ({
-                                  ...prev,
-                                  [idx]: 0,
-                                }));
-                              }
-                            : undefined
-                        }
-                        onPlay={
-                          strip === 0
-                            ? () => {
-                                setPlaying((prev) => ({ ...prev, [idx]: true }));
-                              }
-                            : undefined
-                        }
-                        onPause={
-                          strip === 0
-                            ? () => {
-                                setPlaying((prev) => ({ ...prev, [idx]: false }));
-                              }
-                            : undefined
-                        }
-                        onTimeUpdate={
-                          strip === 0
-                            ? (event) => {
-                                const target = event.currentTarget;
-                                if (!Number.isFinite(target.duration) || target.duration <= 0) {
-                                  return;
-                                }
-                                const next = (target.currentTime / target.duration) * 100;
-                                setProgress((prev) => ({
-                                  ...prev,
-                                  [idx]: next,
-                                }));
-                              }
-                            : undefined
-                        }
-                      />
-
+                {GALLERY_VIDEO_INDICES.map((idx) => {
+                  const key = `${idx}-${strip as 0 | 1}`;
+                  const isActive = activeKey === key;
+                  const isUnmuted = unmutedKey === key;
+                  return (
+                    <div
+                      key={`landing-video-${key}`}
+                      className="w-[42vw] max-w-[12rem] shrink-0 sm:w-48 sm:max-w-none md:w-52"
+                      onMouseEnter={() => playOnHover(key)}
+                      onMouseLeave={() => stopOnLeave(key)}
+                    >
                       <div
-                        className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pb-3 pt-12"
-                        onPointerDown={(event) => {
-                          event.stopPropagation();
-                        }}
+                        className={`group relative overflow-hidden rounded-2xl border bg-muted transition-[border-color,box-shadow] duration-300 sm:rounded-3xl ${
+                          isActive
+                            ? "border-[#E0F840]/50 shadow-[0_0_28px_rgba(105,13,212,0.35)]"
+                            : "border-border"
+                        }`}
                       >
-                        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/20">
-                          <input
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={0.1}
-                            value={progress[idx] ?? 0}
-                            onChange={(event) => {
-                              seek(idx, Number(event.target.value));
-                            }}
-                            className="h-1 w-full cursor-pointer appearance-none bg-transparent accent-[#E0F840]"
-                            aria-label={locale === "ar" ? "تقدم الفيديو" : "Video progress"}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              togglePlayback(idx);
-                            }}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
-                            aria-label={getVideoPlaybackLabel(locale, playing[idx] ?? false)}
-                          >
-                            {playing[idx] ? (
-                              <Pause className="h-4 w-4" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              toggleMute(idx);
-                            }}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
-                            aria-label={getVideoMuteLabel(locale, muted[idx] ?? true)}
-                          >
-                            {(muted[idx] ?? true) ? (
-                              <VolumeX className="h-4 w-4" />
-                            ) : (
-                              <Volume2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
+                        <div className="pointer-events-none absolute inset-0 z-[1] opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_30%_20%,rgba(224,248,64,0.16),transparent_55%),radial-gradient(circle_at_70%_80%,rgba(105,13,212,0.14),transparent_55%)]" />
+                        <LazyGalleryVideo
+                          className="aspect-[9/16] w-full cursor-pointer object-cover"
+                          src={`/images/landing/${idx}.mp4`}
+                          poster={`/images/landing/video-thumbs/${idx}.jpg`}
+                          videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
+                          muted
+                          loop
+                          onClick={() => toggleMute(key)}
+                        />
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleMute(key);
+                          }}
+                          className={`pointer-events-auto absolute bottom-3 right-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm transition hover:bg-black/70 ${
+                            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                          aria-label={
+                            isUnmuted
+                              ? locale === "ar"
+                                ? "كتم الصوت"
+                                : "Mute"
+                              : locale === "ar"
+                                ? "إلغاء كتم الصوت"
+                                : "Unmute"
+                          }
+                        >
+                          {isUnmuted ? (
+                            <Volume2 className="h-4 w-4" />
+                          ) : (
+                            <VolumeX className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>

@@ -117,7 +117,7 @@ export function ServicesBento() {
   return (
     <section
       id="services"
-      className="relative w-full bg-background px-4 py-12 sm:px-6 sm:py-20 lg:px-10"
+      className="relative w-full scroll-mt-28 bg-background px-4 py-12 sm:scroll-mt-32 sm:px-6 sm:py-20 lg:px-10"
       aria-label={t("ariaLabel")}
     >
       <div className="mx-auto max-w-[1400px]">

@@ -12,17 +12,28 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { PwaInstallButton } from "@/components/ui/pwa-install-button";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import { Check, ChevronDown, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Loader2,
+  Plus,
+  ArrowUp,
+  LayoutGrid,
+  ArrowUpRight,
+  Menu,
+  X,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ServicesBento } from "@/components/landing/services-bento";
+import { ImageMarquee } from "@/components/landing/image-marquee";
 import { VideoMarquee } from "@/components/landing/video-marquee";
 import { InfoSection } from "@/components/landing/info-section";
 import type { PublicPackage } from "@/lib/public-packages";
@@ -141,6 +152,12 @@ const scaleIn = {
 
 const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 
+const LANDING_NAV_LINKS = [
+  { href: "#services", labelKey: "landing.nav.services" },
+  { href: "#gallery", labelKey: "landing.nav.gallery" },
+  { href: "#pricing", labelKey: "landing.nav.pricing" },
+] as const;
+
 type HeroChatPhase = "idle" | "awaitingReply" | "showingReply" | "error";
 
 export default function LandingPage({
@@ -162,6 +179,7 @@ export default function LandingPage({
   const [heroLoadingReply, setHeroLoadingReply] = useState(false);
   const [heroTypingReply, setHeroTypingReply] = useState(false);
   const [isHeroReady, setIsHeroReady] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [promptRotateIndex, setPromptRotateIndex] = useState(0);
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -381,34 +399,40 @@ export default function LandingPage({
         transition={{ duration: 0.35 }}
         className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <div className="mx-auto mb-1.5 max-w-xl truncate px-3 text-center text-[10px] text-muted-foreground sm:mb-2 sm:px-4 sm:text-[11px] sm:text-xs">
+        <div className="mx-auto mb-1.5 max-w-2xl truncate px-4 text-center text-[10px] text-muted-foreground sm:mb-2 sm:px-6 sm:text-[11px] sm:text-xs">
           {t("landing.notices.beta")}
         </div>
-        <div className="mx-auto flex max-w-[1400px] items-center justify-center px-3 sm:px-6 lg:px-10">
-          <div className="flex w-full max-w-4xl min-w-0 items-center justify-between gap-2 rounded-full border border-border bg-background/70 px-2.5 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5">
-            <Link href="/" className="relative z-10 flex min-w-0 shrink-0 items-center gap-2">
-              <BrandLogo tone="auto" className="h-5 sm:h-7 md:h-8" priority />
-            </Link>
+        <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10">
+          <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-full border border-border bg-background/75 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5 lg:px-6">
+            <div className="justify-self-start">
+              <Link href="/" className="flex min-w-0 items-center gap-2">
+                <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
+              </Link>
+            </div>
 
-            <div className="relative z-10 flex min-w-0 shrink items-center justify-end gap-0.5 sm:gap-2">
-              <div className="flex items-center">
-                <PwaInstallButton />
-                <ThemeSwitcher />
-                <LanguageSwitcher />
-              </div>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="hidden h-9 rounded-full border-border bg-transparent px-4 text-sm font-medium text-foreground hover:bg-muted hover:text-foreground sm:inline-flex"
-              >
-                <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
-              </Button>
+            <nav
+              aria-label={t("landing.nav.ariaLabel")}
+              className="hidden items-center justify-center gap-0.5 md:flex lg:gap-1"
+            >
+              {LANDING_NAV_LINKS.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-full px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:px-3.5"
+                >
+                  {t(item.labelKey)}
+                </a>
+              ))}
+            </nav>
+
+            <div className="flex min-w-0 items-center justify-end justify-self-end gap-0.5 sm:gap-1">
+              <ThemeSwitcher />
+              <LanguageSwitcher variant="icon" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
-                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:gap-1.5 sm:px-5 sm:text-sm"
+                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-3 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-3.5 sm:text-sm"
                   >
                     <span className="sm:hidden">{t("landing.cta.primaryShort")}</span>
                     <span className="hidden sm:inline">{t("landing.cta.primary")}</span>
@@ -431,10 +455,74 @@ export default function LandingPage({
                   >
                     <Link href="/forms/provider">{t("landing.cta.asProvider")}</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
+                  >
+                    <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 rounded-full text-foreground hover:bg-muted md:hidden sm:h-9 sm:w-9"
+                aria-expanded={mobileNavOpen}
+                aria-controls="landing-mobile-nav"
+                aria-label={mobileNavOpen ? t("landing.nav.closeMenu") : t("landing.nav.openMenu")}
+                onClick={() => setMobileNavOpen((open) => !open)}
+              >
+                {mobileNavOpen ? (
+                  <X className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Menu className="h-5 w-5" aria-hidden />
+                )}
+              </Button>
             </div>
           </div>
+
+          <AnimatePresence>
+            {mobileNavOpen ? (
+              <motion.div
+                id="landing-mobile-nav"
+                initial={{ opacity: 0, y: -8, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -8, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden md:hidden"
+              >
+                <nav
+                  aria-label={t("landing.nav.ariaLabel")}
+                  className="mt-2 rounded-2xl border border-border bg-background/90 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl"
+                >
+                  <ul className="flex flex-col gap-0.5">
+                    {LANDING_NAV_LINKS.map((item) => (
+                      <li key={item.href}>
+                        <a
+                          href={item.href}
+                          className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                          onClick={() => setMobileNavOpen(false)}
+                        >
+                          {t(item.labelKey)}
+                        </a>
+                      </li>
+                    ))}
+                    <li className="mt-1 border-t border-border pt-1">
+                      <Link
+                        href="/auth/login"
+                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                        onClick={() => setMobileNavOpen(false)}
+                      >
+                        {t("common.buttons.signIn")}
+                      </Link>
+                    </li>
+                  </ul>
+                </nav>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
       </motion.header>
 
@@ -520,14 +608,10 @@ export default function LandingPage({
             </div>
 
             <motion.div
-              initial={{ y: 20 }}
-              animate={{ y: 0 }}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className={`relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/15 bg-black/45 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-opacity duration-300 sm:rounded-3xl sm:p-4 ${
-                heroChatPhase === "idle"
-                  ? "opacity-40 hover:opacity-100 focus-within:opacity-100"
-                  : "opacity-100"
-              }`}
+              className="relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/30 bg-black/70 p-2.5 shadow-[0_0_0_1px_rgba(105,13,212,0.35),0_0_48px_rgba(105,13,212,0.28),0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-[box-shadow,transform,border-color] duration-300 focus-within:border-[#E0F840]/45 focus-within:shadow-[0_0_0_1px_rgba(224,248,64,0.35),0_0_56px_rgba(105,13,212,0.4),0_24px_64px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-4"
             >
               <div className="relative min-h-[4.5rem]">
                 {heroChatPhase === "showingReply" ? (
@@ -581,7 +665,7 @@ export default function LandingPage({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -6 }}
                             transition={{ duration: 0.35 }}
-                            className="line-clamp-2 text-sm leading-8 text-white/45"
+                            className="line-clamp-2 text-sm leading-8 text-white/70"
                           >
                             {promptRotations[promptRotateIndex % promptRotations.length]}
                           </motion.span>
@@ -611,8 +695,8 @@ export default function LandingPage({
                 )}
               </div>
               <div
-                className={`flex flex-nowrap items-center justify-between gap-2 border-t border-white/10 px-1.5 pb-1 pt-2 sm:px-2 ${
-                  heroChatPhase === "idle" ? "" : "opacity-60"
+                className={`flex flex-nowrap items-center justify-between gap-2 border-t border-white/15 px-1.5 pb-1 pt-2 sm:px-2 ${
+                  heroChatPhase === "idle" ? "" : "opacity-70"
                 }`}
               >
                 <div className="group relative shrink-0">
@@ -660,6 +744,7 @@ export default function LandingPage({
         </section>
 
         <ServicesBento />
+        <ImageMarquee />
         <VideoMarquee />
         <InfoSection />
 
@@ -744,7 +829,7 @@ export default function LandingPage({
         {/* Pricing */}
         <section
           id="pricing"
-          className="relative w-full border-t border-border bg-background py-12 sm:py-24 md:py-32"
+          className="relative w-full scroll-mt-28 border-t border-border bg-background py-12 sm:scroll-mt-32 sm:py-24 md:py-32"
         >
           <div className="container relative z-10 px-4 sm:px-6">
             <div className="mb-12 sm:mb-16 text-center">
