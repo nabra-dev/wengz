@@ -1,3 +1,4 @@
+import "../src/lib/install-expo-blob";
 import {
   Stack,
   LocaleProvider as RouterLocaleProvider,

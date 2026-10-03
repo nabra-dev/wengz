@@ -1,24 +1,31 @@
 import { Platform } from "react-native";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { registerPushDevice } from "./api";
 
-/** Expo Go cannot register remote push on recent SDKs — skip quietly. */
+/** Expo Go cannot register remote push on recent SDKs — never import the module there. */
 function isExpoGo(): boolean {
   return Constants.appOwnership === "expo";
 }
 
-if (!isExpoGo()) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+let handlerReady = false;
+
+async function getNotifications() {
+  if (isExpoGo()) return null;
+  const Notifications = await import("expo-notifications");
+  if (!handlerReady) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    handlerReady = true;
+  }
+  return Notifications;
 }
 
 export async function registerForPush(): Promise<string | null> {
@@ -26,6 +33,9 @@ export async function registerForPush(): Promise<string | null> {
   if (!Device.isDevice) return null;
 
   try {
+    const Notifications = await getNotifications();
+    if (!Notifications) return null;
+
     const { status: existing } = await Notifications.getPermissionsAsync();
     let finalStatus = existing;
     if (existing !== "granted") {
