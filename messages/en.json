@@ -255,14 +255,15 @@
       "subheading": "Pick what fits—then request. We route it to creators who ship with AI and expertise.",
       "freeTrialNote": "New users get a free plan for one week—try Wengz before you commit.",
       "perMonth": "/month",
-      "featuredBadge": "Featured",
+      "featuredBadge": "Most popular",
+      "credits": "{count} credits",
       "cta": "Start your free trial",
       "empty": "Plans will appear here once packages are published.",
       "loadError": "Couldn’t load plans right now. Please refresh and try again.",
       "custom": {
-        "name": "Custom package",
+        "name": "Custom",
         "description": "Need volume, services, or a team plan that doesn’t fit the list? We’ll shape credits and scope with you.",
-        "priceLabel": "Custom",
+        "priceLabel": "Let’s talk",
         "creditsLabel": "Credits tailored to you",
         "features": [
           "Credits and services sized to your needs",

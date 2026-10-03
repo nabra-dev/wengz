@@ -37,6 +37,7 @@ import { ImageMarquee } from "@/components/landing/image-marquee";
 import { VideoMarquee } from "@/components/landing/video-marquee";
 import { InfoSection } from "@/components/landing/info-section";
 import type { PublicPackage } from "@/lib/public-packages";
+import { cn } from "@/lib/utils";
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
@@ -899,20 +900,30 @@ export default function LandingPage({
         {/* Pricing */}
         <section
           id="pricing"
-          className="relative w-full scroll-mt-28 border-t border-border bg-background py-12 sm:scroll-mt-32 sm:py-24 md:py-32"
+          className="relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-12 sm:scroll-mt-32 sm:py-24 md:py-32"
         >
-          <div className="container relative z-10 px-4 sm:px-6">
-            <div className="mb-12 sm:mb-16 text-center">
-              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-6`}>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(224,248,64,0.07),transparent_50%)]"
+          />
+          <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.45 }}
+              className="mx-auto mb-12 max-w-2xl text-center sm:mb-16"
+            >
+              <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-5`}>
                 {t("landing.pricing.heading")}
               </h2>
               <p className={FONT_SIZES.body.normal}>{t("landing.pricing.subheading")}</p>
-              <p className="mx-auto mt-4 max-w-xl text-pretty rounded-2xl border border-wengz-yellow bg-wengz-yellow-soft px-3 py-2.5 text-center text-sm font-medium leading-7 text-foreground sm:mt-5 sm:rounded-full sm:px-4 sm:text-base sm:leading-8">
+              <p className="mt-5 text-sm font-medium leading-7 text-wengz-yellow sm:text-base sm:leading-8">
                 {t("landing.pricing.freeTrialNote")}
               </p>
-            </div>
+            </motion.div>
 
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 pt-2 sm:gap-8 sm:pt-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid w-full grid-cols-1 items-stretch gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-7">
               {showPackagesSkeleton && (
                 <div className="col-span-full flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -930,62 +941,83 @@ export default function LandingPage({
               )}
               {!showPackagesSkeleton &&
                 packages.length > 0 &&
-                packages.map((pkg) => {
+                packages.map((pkg, index) => {
+                  const featured = Boolean(pkg.isFeatured);
+                  const description = getLocalizedText(pkg.description, pkg.descriptionI18n);
+                  const features = getPackageFeatures(pkg);
+
                   return (
-                    <div
+                    <motion.div
                       key={pkg.id}
-                      className="group relative transition-transform duration-200 hover:-translate-y-1"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ delay: index * 0.06, duration: 0.4 }}
+                      className={cn("relative flex", featured && "xl:-mt-3 xl:mb-[-0.75rem]")}
                     >
                       <div
-                        className={`relative flex h-full flex-col overflow-visible rounded-2xl border bg-card p-5 transition-all duration-300 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8 ${
-                          pkg.isFeatured
-                            ? "mt-3 border-wengz-yellow shadow-[0_0_0_1px_var(--wengz-yellow-soft)] hover:opacity-90 sm:mt-0"
-                            : "border-border hover:border-[#690DD4]/40"
-                        }`}
+                        className={cn(
+                          "relative flex h-full w-full flex-col rounded-[1.75rem] border p-6 transition-all duration-300 sm:p-7",
+                          featured
+                            ? "mt-3 border-transparent bg-gradient-to-b from-[#690DD4]/20 via-card to-card shadow-[0_24px_80px_rgba(105,13,212,0.22)] ring-1 ring-[#690DD4]/35 xl:mt-0"
+                            : "border-border/80 bg-card/80 hover:-translate-y-1 hover:border-[#690DD4]/35 hover:shadow-[0_18px_60px_rgba(0,0,0,0.12)]"
+                        )}
                       >
-                        {pkg.isFeatured ? (
-                          <div className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 sm:-top-3.5">
-                            <Badge className="relative border border-border bg-[#690DD4] px-4 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-wengz-yellow shadow-[0_10px_28px_rgba(105,13,212,0.45),0_2px_8px_var(--wengz-yellow-soft)] ring-2 ring-background">
-                              {t("landing.pricing.featuredBadge")}
-                            </Badge>
-                          </div>
+                        {featured ? (
+                          <>
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E0F840] to-transparent" />
+                            <div className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2">
+                              <Badge className="border-0 bg-[#690DD4] px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-wengz-yellow shadow-[0_8px_24px_rgba(105,13,212,0.4)] ring-2 ring-background">
+                                {t("landing.pricing.featuredBadge")}
+                              </Badge>
+                            </div>
+                          </>
                         ) : null}
-                        <h3
-                          className={`${FONT_SIZES.cardTitle.main} mb-2 font-semibold text-foreground text-center`}
-                        >
+
+                        <h3 className="mb-5 text-base font-semibold tracking-tight text-foreground sm:text-lg">
                           {getLocalizedText(pkg.name, pkg.nameI18n)}
                         </h3>
-                        <p className={`${FONT_SIZES.body.small} mb-3 text-center`}>
-                          {pkg.credits} {t("common.credits")}
-                        </p>
-                        {getLocalizedText(pkg.description, pkg.descriptionI18n) ? (
-                          <p
-                            className={`${FONT_SIZES.body.small} mb-6 text-pretty text-center text-muted-foreground`}
+
+                        <div className="mb-5">
+                          <div
+                            className={cn(
+                              "text-3xl font-semibold tracking-tight sm:text-4xl",
+                              featured ? "text-foreground" : "text-foreground"
+                            )}
                           >
-                            {getLocalizedText(pkg.description, pkg.descriptionI18n)}
-                          </p>
-                        ) : (
-                          <div className="mb-6" />
-                        )}
-
-                        <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-wengz-yellow-line" />
-
-                        <div className="mb-6">
-                          <div className="mb-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
                             {formatCurrency(pkg.price)}
+                            <span className="ms-1 text-sm font-medium text-muted-foreground sm:text-base">
+                              {t("landing.pricing.perMonth")}
+                            </span>
                           </div>
-                          <p className={`${FONT_SIZES.body.small} text-center`}>
-                            {t("landing.pricing.perMonth")}
+                          <p className="mt-2 text-sm font-medium text-[#690DD4] dark:text-wengz-yellow">
+                            {t("landing.pricing.credits", {
+                              count: pkg.credits.toLocaleString(locale),
+                            })}
                           </p>
                         </div>
 
-                        <ul className="mb-8 flex-grow space-y-2 sm:space-y-3">
-                          {getPackageFeatures(pkg).map((feature, featureIdx) => (
+                        {description ? (
+                          <p className="mb-5 text-sm leading-6 text-muted-foreground">
+                            {description}
+                          </p>
+                        ) : (
+                          <div className="mb-5" />
+                        )}
+
+                        <ul className="mb-7 flex flex-1 flex-col gap-2.5">
+                          {features.map((feature, featureIdx) => (
                             <li
                               key={`${pkg.id}-${featureIdx}`}
-                              className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
+                              className="flex items-start gap-2.5 text-sm leading-6 text-foreground/90"
                             >
-                              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                              <Check
+                                className={cn(
+                                  "mt-0.5 h-4 w-4 shrink-0",
+                                  featured ? "text-wengz-yellow" : "text-[#690DD4]"
+                                )}
+                                aria-hidden
+                              />
                               <span>{feature}</span>
                             </li>
                           ))}
@@ -993,55 +1025,56 @@ export default function LandingPage({
 
                         <Button
                           asChild
-                          className={
-                            pkg.isFeatured
-                              ? "mt-auto h-11 w-full rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95"
-                              : "mt-auto h-11 w-full rounded-full border-border bg-transparent text-sm font-medium text-foreground hover:bg-muted"
-                          }
-                          variant={pkg.isFeatured ? "default" : "outline"}
+                          variant={featured ? "default" : "outline"}
+                          className={cn(
+                            "mt-auto h-11 w-full rounded-full text-sm",
+                            featured
+                              ? "bg-gradient-to-r from-[#690DD4] to-[#E0F840] font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.28)] hover:opacity-95"
+                              : "border-border bg-transparent font-medium text-foreground hover:bg-muted"
+                          )}
                         >
                           <Link href="/auth/register">{t("landing.pricing.cta")}</Link>
                         </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               {!showPackagesSkeleton && (
-                <div className="group relative transition-transform duration-200 hover:-translate-y-1">
-                  <div className="relative flex h-full flex-col overflow-visible rounded-2xl border border-dashed border-[#690DD4]/45 bg-card p-5 transition-all duration-300 hover:border-[#690DD4]/70 hover:shadow-[0_22px_90px_rgba(0,0,0,0.12)] sm:rounded-3xl sm:p-8">
-                    <h3
-                      className={`${FONT_SIZES.cardTitle.main} mb-2 text-center font-semibold text-foreground`}
-                    >
-                      {t("landing.pricing.custom.name")}
-                    </h3>
-                    <p className={`${FONT_SIZES.body.small} mb-3 text-center`}>
-                      {t("landing.pricing.custom.creditsLabel")}
-                    </p>
-                    <p
-                      className={`${FONT_SIZES.body.small} mb-6 text-pretty text-center text-muted-foreground`}
-                    >
-                      {t("landing.pricing.custom.description")}
-                    </p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ delay: packages.length * 0.06, duration: 0.4 }}
+                  className="relative flex"
+                >
+                  <div className="relative flex h-full w-full flex-col rounded-[1.75rem] border border-dashed border-[#690DD4]/40 bg-background/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#690DD4]/65 sm:p-7">
+                    <div className="mb-5 flex min-h-[1.75rem] items-center">
+                      <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                        {t("landing.pricing.custom.name")}
+                      </h3>
+                    </div>
 
-                    <div className="mb-6 h-px w-full bg-gradient-to-r from-[#690DD4]/35 via-border to-wengz-yellow-line" />
-
-                    <div className="mb-6">
-                      <div className="mb-1 text-center text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    <div className="mb-5">
+                      <div className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                         {t("landing.pricing.custom.priceLabel")}
                       </div>
-                      <p className={`${FONT_SIZES.body.small} text-center`}>
-                        {t("landing.pricing.perMonth")}
+                      <p className="mt-2 text-sm font-medium text-muted-foreground">
+                        {t("landing.pricing.custom.creditsLabel")}
                       </p>
                     </div>
 
-                    <ul className="mb-8 flex-grow space-y-2 sm:space-y-3">
+                    <p className="mb-5 text-sm leading-6 text-muted-foreground">
+                      {t("landing.pricing.custom.description")}
+                    </p>
+
+                    <ul className="mb-7 flex flex-1 flex-col gap-2.5">
                       {(t.raw("landing.pricing.custom.features") as string[]).map(
                         (feature, featureIdx) => (
                           <li
                             key={`custom-pkg-${featureIdx}`}
-                            className={`flex items-start gap-2 ${FONT_SIZES.body.small}`}
+                            className="flex items-start gap-2.5 text-sm leading-6 text-foreground/90"
                           >
-                            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#690DD4]" aria-hidden />
                             <span>{feature}</span>
                           </li>
                         )
@@ -1056,7 +1089,7 @@ export default function LandingPage({
                       <Link href="/contact">{t("landing.pricing.custom.cta")}</Link>
                     </Button>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
