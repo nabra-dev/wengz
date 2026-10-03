@@ -2,8 +2,10 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { router, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { phoneWithCountryCodeSchema } from "@/lib/validations";
+import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
 import { logActivityAsync } from "@/lib/activity-log";
+import { persistPasswordChange } from "@/lib/password-reset";
+import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { isAllowedUploadUrl } from "@/lib/upload-url";
 
 const PROFILE_IMAGE_EXT = /\.(jpe?g|png|gif|webp)$/i;
@@ -253,7 +255,7 @@ export const userRouter = router({
     .input(
       z.object({
         currentPassword: z.string().min(1, "Current password is required"),
-        newPassword: z.string().min(1, "New password is required"),
+        newPassword: passwordSchema,
       })
     )
     .output(
@@ -300,11 +302,8 @@ export const userRouter = router({
       // Hash new password
       const hashedPassword = await bcrypt.hash(input.newPassword, 12);
 
-      // Update password
-      await ctx.db.user.update({
-        where: { id: userId },
-        data: { password: hashedPassword },
-      });
+      await persistPasswordChange(ctx.db, userId, hashedPassword);
+      await invalidateSessionUserCache(userId);
 
       logActivityAsync({
         action: "auth.password_change",
@@ -317,7 +316,7 @@ export const userRouter = router({
 
       return {
         success: true,
-        message: "Password changed successfully",
+        message: "Password changed successfully. Please sign in again.",
       };
     }),
 

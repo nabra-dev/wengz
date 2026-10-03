@@ -6,9 +6,18 @@ export const emailSchema = z
   .min(1, "Email is required")
   .email("Please enter a valid email address");
 
-export const passwordSchema = z.string().min(1, "Password is required");
+/** Shared account password policy (register, reset, change, admin create). */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 
-export const simplePasswordSchema = z.string().min(1, "Password is required");
+export const passwordSchema = z
+  .string()
+  .trim()
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  .max(PASSWORD_MAX_LENGTH, `Password must be at most ${PASSWORD_MAX_LENGTH} characters`);
+
+/** @deprecated Use passwordSchema — kept as an alias for existing imports. */
+export const simplePasswordSchema = passwordSchema;
 
 export const nameSchema = z.string().min(1, "Name is required");
 

@@ -334,6 +334,7 @@
       "password": "Password",
       "confirmPassword": "Confirm password",
       "passwordsNotMatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 8 characters",
       "company": "Company (optional)",
       "website": "Website / links (optional)",
       "message": "Message"
@@ -500,7 +501,7 @@
       "successTitle": "Password updated",
       "successDescription": "You can now sign in with your new password.",
       "mismatch": "Passwords do not match",
-      "required": "Password is required",
+      "required": "Password must be at least 8 characters",
       "missingToken": "This reset link is missing or invalid.",
       "requestNewLink": "Request a new reset link",
       "errorFallback": "Could not reset password. Please try again."
@@ -518,7 +519,7 @@
       "emailPlaceholder": "name@example.com",
       "emailHint": "Valid email address required",
       "passwordLabel": "Password",
-      "passwordHint": "Required",
+      "passwordHint": "At least 8 characters",
       "confirmPasswordLabel": "Confirm Password",
       "confirmPasswordHint": "Must match password above",
       "creatingAccount": "Creating account...",
@@ -1741,18 +1742,18 @@
       },
       "strengthText": "Strength",
       "helperText": {
-        "requirements": "Password is required",
+        "requirements": "Use at least 8 characters",
         "mismatch": "Passwords do not match"
       },
       "validationErrors": {
         "mismatch": "New passwords do not match",
-        "tooShort": "Password is required"
+        "tooShort": "Password must be at least 8 characters"
       },
       "buttons": {
         "changing": "Changing...",
         "changePassword": "Change Password"
       },
-      "successMessage": "Password changed successfully",
+      "successMessage": "Password changed. Please sign in again.",
       "errorMessage": "Failed to change password"
     },
     "settings": {

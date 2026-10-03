@@ -6,20 +6,20 @@ This document maps **stack choices**, **runtime boundaries**, and **important co
 
 ## Stack overview
 
-| Layer               | Technology                                                                                                                        |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                                                        |
-| UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**                                 |
-| API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                                                |
-| Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt**; forgot/reset via `PasswordResetToken` + email |
-| Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                                                            |
-| i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json`                               |
-| Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                                                     |
-| Realtime / cache    | **Redis** (standard or **Upstash** — see `src/lib/cache.ts`)                                                                      |
-| File storage        | **AWS S3** / **Backblaze B2** (image domains allowed in `next.config.js`)                                                         |
-| PWA                 | **next-pwa** (disabled in development; see `next.config.js`)                                                                      |
-| Testing             | **Jest** + Testing Library; **Playwright** for E2E                                                                                |
-| Docs / API explorer | **OpenAPI** surface (`trpc-to-openapi`, Swagger UI routes under `src/app/api/docs/`)                                              |
+| Layer               | Technology                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Framework           | **Next.js 16** (App Router); dev server uses **port 3001** (`npm run dev`)                                                                                                                                                                             |
+| UI                  | **React 18**, **Tailwind CSS**, **Radix** primitives, **Framer Motion**, **Recharts**, **Swiper**                                                                                                                                                      |
+| API                 | **tRPC v11** + **TanStack Query**; **SuperJSON** for serialization                                                                                                                                                                                     |
+| Auth                | **NextAuth v4** (JWT sessions, **Credentials** provider), passwords via **bcrypt** (min 8 via shared `passwordSchema`); forgot/reset via hashed `PasswordResetToken` (1h, single-use) + email; `passwordChangedAt` invalidates JWTs after change/reset |
+| Data                | **PostgreSQL** via **Prisma** (`prisma/schema.prisma`)                                                                                                                                                                                                 |
+| i18n                | **next-intl** — locales `en`, `ar`; routing in `src/i18n/routing.ts`; messages in `messages/*.json`                                                                                                                                                    |
+| Validation          | **Zod** (shared client/server shapes in `src/lib/validations.ts` and routers)                                                                                                                                                                          |
+| Realtime / cache    | **Redis** (standard or **Upstash** — see `src/lib/cache.ts`)                                                                                                                                                                                           |
+| File storage        | **AWS S3** / **Backblaze B2** (image domains allowed in `next.config.js`)                                                                                                                                                                              |
+| PWA                 | **next-pwa** (disabled in development; see `next.config.js`)                                                                                                                                                                                           |
+| Testing             | **Jest** + Testing Library; **Playwright** for E2E                                                                                                                                                                                                     |
+| Docs / API explorer | **OpenAPI** surface (`trpc-to-openapi`, Swagger UI routes under `src/app/api/docs/`)                                                                                                                                                                   |
 
 ---
 

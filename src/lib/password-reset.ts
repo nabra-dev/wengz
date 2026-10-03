@@ -68,10 +68,36 @@ export async function consumePasswordResetToken(
   return { userId: row.userId };
 }
 
+export function getPasswordResetBaseUrl(): string {
+  return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+}
+
 export function buildPasswordResetUrl(locale: string, rawToken: string): string {
-  const base = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(
-    /\/$/,
-    ""
-  );
+  const base = getPasswordResetBaseUrl();
+  if (!base) {
+    throw new Error(
+      "NEXTAUTH_URL or NEXT_PUBLIC_APP_URL must be set to build password reset links"
+    );
+  }
   return `${base}/${locale}/auth/reset-password?token=${encodeURIComponent(rawToken)}`;
+}
+
+/**
+ * Persist a new password hash, bump passwordChangedAt, and clear DB sessions.
+ * Callers must also invalidate session-user cache for this user.
+ */
+export async function persistPasswordChange(
+  db: PrismaClient,
+  userId: string,
+  hashedPassword: string
+): Promise<Date> {
+  const passwordChangedAt = new Date();
+  await db.$transaction([
+    db.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword, passwordChangedAt },
+    }),
+    db.session.deleteMany({ where: { userId } }),
+  ]);
+  return passwordChangedAt;
 }

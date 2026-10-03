@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { trpc } from "@/lib/trpc/client";
-import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
 
 const fieldClass =
   "h-12 rounded-xl border-border/70 bg-background/70 shadow-sm transition-all placeholder:text-muted-foreground/60 focus-visible:border-[#690DD4]/50 focus-visible:ring-2 focus-visible:ring-[#690DD4]/25";
@@ -106,6 +106,15 @@ export function ContactFormPage() {
         return;
       }
 
+      const passwordValidation = passwordSchema.safeParse(password);
+      if (!passwordValidation.success) {
+        toast.error(t("forms.toast.errorTitle"), {
+          description:
+            passwordValidation.error.errors[0]?.message || t("forms.fields.passwordTooShort"),
+        });
+        return;
+      }
+
       if (serviceIds.length === 0) {
         toast.error(t("forms.toast.errorTitle"), {
           description: t("forms.provider.servicesRequired"),
@@ -116,8 +125,8 @@ export function ContactFormPage() {
       const result = await registerProvider.mutateAsync({
         name,
         email,
-        password,
-        confirmPassword,
+        password: passwordValidation.data,
+        confirmPassword: passwordValidation.data,
         phone: `${countryCode} ${phoneInput}`,
         website,
         message,

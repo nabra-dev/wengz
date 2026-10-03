@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { signOut } from "next-auth/react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
+import { PASSWORD_MIN_LENGTH, passwordSchema } from "@/lib/validations";
 
 export function ChangePasswordForm() {
   const t = useTranslations("profile.changePassword");
+  const locale = useLocale();
   const changePassword = trpc.user.changePassword.useMutation();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -29,23 +32,23 @@ export function ChangePasswordForm() {
       return;
     }
 
-    if (!newPassword.trim()) {
-      toast.error(t("validationErrors.tooShort"));
+    const passwordValidation = passwordSchema.safeParse(newPassword);
+    if (!passwordValidation.success) {
+      toast.error(passwordValidation.error.errors[0]?.message || t("validationErrors.tooShort"));
       return;
     }
 
     try {
-      const result = await changePassword.mutateAsync({
+      await changePassword.mutateAsync({
         currentPassword,
-        newPassword,
+        newPassword: passwordValidation.data,
       });
 
-      toast.success(result.message);
-
-      // Reset form
+      toast.success(t("successMessage"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      await signOut({ callbackUrl: `/${locale}/auth/login` });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("errorMessage");
       toast.error(message);
@@ -54,7 +57,7 @@ export function ChangePasswordForm() {
 
   const passwordStrength = (password: string) => {
     let strength = 0;
-    if (password.trim().length >= 1) strength++;
+    if (password.trim().length >= PASSWORD_MIN_LENGTH) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
@@ -98,6 +101,7 @@ export function ChangePasswordForm() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder={t("placeholders.currentPassword")}
+                autoComplete="current-password"
                 required
               />
               <Button
@@ -124,6 +128,8 @@ export function ChangePasswordForm() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t("placeholders.newPassword")}
+                autoComplete="new-password"
+                minLength={PASSWORD_MIN_LENGTH}
                 required
               />
               <Button
@@ -170,6 +176,8 @@ export function ChangePasswordForm() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t("placeholders.confirmPassword")}
+                autoComplete="new-password"
+                minLength={PASSWORD_MIN_LENGTH}
                 required
               />
               <Button

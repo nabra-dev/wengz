@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
-import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
@@ -139,7 +139,17 @@ export default function RegisterPage() {
       return;
     }
 
-    registerMutation.mutate({ name, email, password, phone });
+    const passwordValidation = passwordSchema.safeParse(password);
+    if (!passwordValidation.success) {
+      const errorMsg = passwordValidation.error.errors[0]?.message || t("passwordHint");
+      setError(errorMsg);
+      toast.error(t("validationError"), {
+        description: errorMsg,
+      });
+      return;
+    }
+
+    registerMutation.mutate({ name, email, password: passwordValidation.data, phone });
   }
 
   return (

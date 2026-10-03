@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendApplicationReceivedEmail } from "@/lib/notifications";
-import { phoneWithCountryCodeSchema } from "@/lib/validations";
+import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logger } from "@/lib/logger";
@@ -12,7 +12,9 @@ import {
   consumePasswordResetToken,
   createPasswordResetToken,
   PASSWORD_RESET_TTL_MS,
+  persistPasswordChange,
 } from "@/lib/password-reset";
+import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { sendEmail, getOpsNotifyEmailHtml } from "@/lib/notifications/email";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
@@ -60,7 +62,7 @@ export const authRouter = router({
       z.object({
         name: z.string().min(1, "Name is required"),
         email: z.string().email("Invalid email address").toLowerCase(),
-        password: z.string().min(1, "Password is required"),
+        password: passwordSchema,
         phone: phoneWithCountryCodeSchema,
       })
     )
@@ -234,8 +236,8 @@ export const authRouter = router({
         .object({
           name: z.string().min(1, "Name is required"),
           email: z.string().email("Invalid email address").toLowerCase(),
-          password: z.string().min(1, "Password is required"),
-          confirmPassword: z.string().min(1, "Confirm password is required"),
+          password: passwordSchema,
+          confirmPassword: passwordSchema,
           phone: requiredPhoneSchema,
           website: z.string().optional().default(""),
           message: z.string().optional().default(""),
@@ -635,7 +637,7 @@ export const authRouter = router({
     .input(
       z.object({
         currentPassword: z.string().min(1, "Current password is required"),
-        newPassword: z.string().min(1, "New password is required"),
+        newPassword: passwordSchema,
       })
     )
     .output(
@@ -674,10 +676,8 @@ export const authRouter = router({
       }
 
       const hashedPassword = await bcrypt.hash(input.newPassword, 12);
-      await ctx.db.user.update({
-        where: { id: user.id },
-        data: { password: hashedPassword },
-      });
+      await persistPasswordChange(ctx.db, user.id, hashedPassword);
+      await invalidateSessionUserCache(user.id);
 
       logActivityAsync({
         action: "auth.password_change",
@@ -690,7 +690,7 @@ export const authRouter = router({
 
       return {
         success: true,
-        message: "Password changed successfully",
+        message: "Password changed successfully. Please sign in again.",
       };
     }),
 
@@ -738,7 +738,7 @@ export const authRouter = router({
         try {
           const { rawToken } = await createPasswordResetToken(ctx.db, user.id);
           const resetUrl = buildPasswordResetUrl(ctx.locale, rawToken);
-          await sendPasswordResetEmail({
+          const emailSent = await sendPasswordResetEmail({
             userEmail: user.email,
             userName: user.name || "User",
             resetUrl,
@@ -746,18 +746,31 @@ export const authRouter = router({
             locale: ctx.locale,
           });
 
-          logActivityAsync({
-            action: "auth.password_reset_request",
-            message: `Password reset requested for ${user.email}`,
-            actorId: user.id,
-            actorRole: null,
-            entityType: "User",
-            entityId: user.id,
-            ip,
-          });
+          if (!emailSent) {
+            // Revoke unused tokens so a silent SMTP failure does not leave a live link
+            // that never reached the user (and ops can see the failure in logs).
+            await ctx.db.passwordResetToken.updateMany({
+              where: { userId: user.id, usedAt: null },
+              data: { usedAt: new Date() },
+            });
+            logger.error("Password reset email was not sent (SMTP skipped or failed)", {
+              userId: user.id,
+              email: user.email,
+            });
+          } else {
+            logActivityAsync({
+              action: "auth.password_reset_request",
+              message: `Password reset requested for ${user.email}`,
+              actorId: user.id,
+              actorRole: null,
+              entityType: "User",
+              entityId: user.id,
+              ip,
+            });
+          }
         } catch (error) {
           logger.error("Failed to process password reset request:", error);
-          // Still return generic success to the client
+          // Still return generic success to the client (enumeration-safe)
         }
       }
 
@@ -781,8 +794,8 @@ export const authRouter = router({
       z
         .object({
           token: z.string().min(1, "Reset token is required"),
-          newPassword: z.string().min(1, "Password is required"),
-          confirmPassword: z.string().min(1, "Confirm password is required"),
+          newPassword: passwordSchema,
+          confirmPassword: passwordSchema,
         })
         .refine((data) => data.newPassword === data.confirmPassword, {
           message: "Passwords do not match",
@@ -826,10 +839,8 @@ export const authRouter = router({
       }
 
       const hashedPassword = await bcrypt.hash(input.newPassword, 12);
-      await ctx.db.user.update({
-        where: { id: user.id },
-        data: { password: hashedPassword },
-      });
+      await persistPasswordChange(ctx.db, user.id, hashedPassword);
+      await invalidateSessionUserCache(user.id);
 
       logActivityAsync({
         action: "auth.password_reset",

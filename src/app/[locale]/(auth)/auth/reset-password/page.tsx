@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
+import { passwordSchema } from "@/lib/validations";
 
 export default function ResetPasswordPage() {
   const t = useTranslations("auth.resetPassword");
@@ -50,14 +51,15 @@ export default function ResetPasswordPage() {
       toast.error(t("mismatch"));
       return;
     }
-    if (!newPassword.trim()) {
-      toast.error(t("required"));
+    const passwordValidation = passwordSchema.safeParse(newPassword);
+    if (!passwordValidation.success) {
+      toast.error(passwordValidation.error.errors[0]?.message || t("required"));
       return;
     }
     resetPassword.mutate({
       token,
-      newPassword,
-      confirmPassword,
+      newPassword: passwordValidation.data,
+      confirmPassword: passwordValidation.data,
     });
   }
 

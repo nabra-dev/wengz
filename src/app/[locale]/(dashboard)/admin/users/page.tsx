@@ -30,7 +30,7 @@ import { EditUserDialog } from "@/components/admin/edit-user-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate, getInitials } from "@/lib/utils";
-import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
 import { toast } from "sonner";
 import {
   Search,
@@ -526,6 +526,14 @@ export default function AdminUsersPage() {
       return;
     }
 
+    const passwordValidation = passwordSchema.safeParse(newUser.password);
+    if (!passwordValidation.success) {
+      toast.error(
+        passwordValidation.error.errors[0]?.message || "Password must be at least 8 characters"
+      );
+      return;
+    }
+
     // Validate phone number if provided
     let phone: string | undefined = undefined;
     if (newUser.phone) {
@@ -544,6 +552,7 @@ export default function AdminUsersPage() {
     const payload = {
       ...newUser,
       email: newUser.email.toLowerCase().trim(),
+      password: passwordValidation.data,
       phone,
     };
     createUser.mutate(payload as any);

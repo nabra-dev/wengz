@@ -330,6 +330,7 @@
       "password": "كلمة المرور",
       "confirmPassword": "تأكيد كلمة المرور",
       "passwordsNotMatch": "كلمتا المرور غير متطابقتين",
+      "passwordTooShort": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
       "company": "الشركة (اختياري)",
       "website": "الموقع / الروابط (اختياري)",
       "message": "الرسالة"
@@ -496,7 +497,7 @@
       "successTitle": "تم تحديث كلمة المرور",
       "successDescription": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
       "mismatch": "كلمتا المرور غير متطابقتين",
-      "required": "كلمة المرور مطلوبة",
+      "required": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
       "missingToken": "رابط إعادة التعيين مفقود أو غير صالح.",
       "requestNewLink": "اطلب رابطاً جديداً",
       "errorFallback": "تعذر إعادة تعيين كلمة المرور. حاول مرة أخرى."
@@ -514,7 +515,7 @@
       "emailPlaceholder": "name@example.com",
       "emailHint": "عنوان بريد إلكتروني صالح مطلوب",
       "passwordLabel": "كلمة المرور",
-      "passwordHint": "مطلوب",
+      "passwordHint": "8 أحرف على الأقل",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordHint": "يجب أن تطابق كلمة المرور أعلاه",
       "creatingAccount": "جاري إنشاء الحساب...",
@@ -1737,18 +1738,18 @@
       },
       "strengthText": "القوة",
       "helperText": {
-        "requirements": "كلمة المرور مطلوبة",
+        "requirements": "استخدم 8 أحرف على الأقل",
         "mismatch": "كلمات المرور غير متطابقة"
       },
       "validationErrors": {
         "mismatch": "كلمات المرور الجديدة غير متطابقة",
-        "tooShort": "كلمة المرور مطلوبة"
+        "tooShort": "كلمة المرور يجب أن تكون 8 أحرف على الأقل"
       },
       "buttons": {
         "changing": "جارٍ التغيير...",
         "changePassword": "تغيير كلمة المرور"
       },
-      "successMessage": "تم تغيير كلمة المرور بنجاح",
+      "successMessage": "تم تغيير كلمة المرور. سجّل الدخول مرة أخرى.",
       "errorMessage": "فشل تغيير كلمة المرور"
     },
     "settings": {

@@ -843,7 +843,7 @@ export async function sendPasswordResetEmail(params: {
   resetUrl: string;
   expiresInMinutes: number;
   locale?: string;
-}) {
+}): Promise<boolean> {
   const locale = params.locale ?? "en";
   const template = await getPasswordResetEmailTemplate({
     userName: params.userName,
@@ -852,7 +852,7 @@ export async function sendPasswordResetEmail(params: {
     locale,
   });
 
-  await sendEmail({
+  return sendEmail({
     to: params.userEmail,
     subject: template.subject,
     html: template.html,

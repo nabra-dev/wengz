@@ -169,7 +169,8 @@ const authMiddleware = withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      // Reject cleared / password-rotated JWTs (token may still exist with `error` only).
+      authorized: ({ token }) => Boolean(token?.id) && !token?.error,
     },
   }
 );

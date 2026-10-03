@@ -18,7 +18,7 @@ import {
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
 } from "@/lib/notifications";
-import { phoneWithCountryCodeSchema } from "@/lib/validations";
+import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import {
   reviewProviderWithdrawal,
@@ -2803,7 +2803,7 @@ export const adminRouter = router({
       z.object({
         name: z.string().min(1),
         email: z.string().email("Invalid email address").toLowerCase(),
-        password: z.string().min(1),
+        password: passwordSchema,
         role: z.enum(ASSIGNABLE_ROLES),
         phone: phoneWithCountryCodeSchema,
         supportedServiceIds: z.array(z.string()).optional(), // For providers only
@@ -2830,7 +2830,7 @@ export const adminRouter = router({
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(input.password, 10);
+      const hashedPassword = await bcrypt.hash(input.password, 12);
 
       // Create user
       const user = await ctx.db.user.create({

@@ -18,7 +18,9 @@ declare module "next-auth" {
       role: UserRole;
       image?: string | null;
       phone?: string | null;
+      passwordChangedAt?: number;
     };
+    error?: "PasswordChanged" | "SessionInvalid";
   }
 
   interface User {
@@ -28,14 +30,17 @@ declare module "next-auth" {
     role: UserRole;
     image?: string | null;
     phone?: string | null;
+    passwordChangedAt?: number;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string;
-    role: UserRole;
+    id?: string;
+    role?: UserRole;
     phone?: string | null;
+    passwordChangedAt?: number;
+    error?: "PasswordChanged" | "SessionInvalid";
   }
 }
 
@@ -60,13 +65,15 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        const email = credentials.email.toLowerCase().trim();
+
         // Rate limit login attempts per email+IP to slow credential stuffing.
         const forwarded = req?.headers?.["x-forwarded-for"];
         const ip =
           (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() ||
           (req?.headers?.["x-real-ip"] as string | undefined) ||
           "unknown";
-        const rl = rateLimit(`login:${credentials.email.toLowerCase()}:${ip}`, {
+        const rl = rateLimit(`login:${email}:${ip}`, {
           limit: 10,
           windowMs: 60_000,
         });
@@ -76,7 +83,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await db.user.findFirst({
           where: {
-            email: credentials.email,
+            email,
             deletedAt: null,
           },
         });
@@ -121,6 +128,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           image: user.image || DEFAULT_AVATAR,
           phone: user.phone,
+          passwordChangedAt: user.passwordChangedAt?.getTime() ?? 0,
         };
       },
     }),
@@ -134,6 +142,8 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.picture = user.image || DEFAULT_AVATAR;
         token.phone = user.phone;
+        token.passwordChangedAt = user.passwordChangedAt ?? 0;
+        delete token.error;
       }
 
       // Update token when session is updated
@@ -144,17 +154,45 @@ export const authOptions: NextAuthOptions = {
         token.phone = session.phone ?? token.phone;
       }
 
+      // Invalidate JWTs issued before a password change/reset (or for deleted users).
+      if (token.id && !user) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id },
+          select: { passwordChangedAt: true, deletedAt: true },
+        });
+
+        if (!dbUser || dbUser.deletedAt) {
+          return { error: "SessionInvalid" as const };
+        }
+
+        const changedAt = dbUser.passwordChangedAt?.getTime() ?? 0;
+        const tokenChangedAt =
+          typeof token.passwordChangedAt === "number" ? token.passwordChangedAt : 0;
+        if (changedAt > tokenChangedAt) {
+          return { error: "PasswordChanged" as const };
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
-        session.user.image = (token.picture as string | null) || DEFAULT_AVATAR;
-        session.user.phone = token.phone;
+      if (token.error || !token.id || !token.role) {
+        return {
+          ...session,
+          user: undefined as unknown as typeof session.user,
+          error: token.error,
+          expires: session.expires,
+        };
       }
+
+      session.user.id = token.id;
+      session.user.role = token.role;
+      session.user.name = token.name as string;
+      session.user.email = token.email as string;
+      session.user.image = (token.picture as string | null) || DEFAULT_AVATAR;
+      session.user.phone = token.phone;
+      session.user.passwordChangedAt =
+        typeof token.passwordChangedAt === "number" ? token.passwordChangedAt : 0;
       return session;
     },
   },
