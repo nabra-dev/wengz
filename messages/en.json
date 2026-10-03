@@ -2623,7 +2623,13 @@
     },
     "providerClaimed": {
       "title": "Creator claimed your request",
-      "message": "{providerName} claimed \"{requestTitle}\". They will start work and share an estimated delivery time next."
+      "message": "{providerName} claimed \"{requestTitle}\". They will start work and share an estimated delivery time next.",
+      "emailSubject": "Creator claimed \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Creator claimed your request",
+        "intro": "<strong>{providerName}</strong> claimed <strong>{requestTitle}</strong>. They will start work and share an estimated delivery time next.",
+        "viewButton": "View Request"
+      }
     },
     "approvalReminder": {
       "title": "Please review your deliverable",
@@ -2768,7 +2774,13 @@
     },
     "newRequestAvailable": {
       "title": "New Request Available",
-      "message": "New {serviceName} request: \"{requestTitle}\""
+      "message": "New {serviceName} request: \"{requestTitle}\"",
+      "emailSubject": "New {serviceName} request available",
+      "emailBody": {
+        "heading": "New request available",
+        "intro": "A new <strong>{serviceName}</strong> request is available: <strong>{requestTitle}</strong>. Claim it from your available jobs list.",
+        "viewButton": "Browse Available Requests"
+      }
     },
     "requestCreatedByAdmin": {
       "title": "New request created for you",
@@ -2776,7 +2788,13 @@
     },
     "requestAccepted": {
       "title": "Request Accepted",
-      "message": "Your request \"{requestTitle}\" has been accepted by a creator."
+      "message": "Your request \"{requestTitle}\" has been accepted by a creator.",
+      "emailSubject": "Creator accepted \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Request accepted",
+        "intro": "A creator accepted your request <strong>{requestTitle}</strong> and work is now in progress.",
+        "viewButton": "View Request"
+      }
     },
     "deliverableReady": {
       "title": "Deliverable Ready",
@@ -2788,7 +2806,13 @@
     },
     "ratingSubmitted": {
       "title": "Rating Submitted",
-      "message": "You received a {rating}-star rating for \"{requestTitle}\"."
+      "message": "You received a {rating}-star rating for \"{requestTitle}\".",
+      "emailSubject": "You received a {rating}-star rating",
+      "emailBody": {
+        "heading": "New rating received",
+        "intro": "You received a <strong>{rating}-star</strong> rating for <strong>{requestTitle}</strong>.",
+        "viewButton": "View Request"
+      }
     },
     "paymentApproved": {
       "title": "Payment Approved! 🎉",
@@ -2804,11 +2828,25 @@
     },
     "withdrawalApproved": {
       "title": "Withdrawal paid",
-      "message": "Your withdrawal of {amount} USD was marked as paid. {reason}"
+      "message": "Your withdrawal of {amount} USD was marked as paid. {reason}",
+      "emailSubject": "Withdrawal paid: {amount} USD",
+      "emailBody": {
+        "heading": "Withdrawal paid",
+        "intro": "Your withdrawal of <strong>{amount} USD</strong> was marked as paid.",
+        "reason": "{reason}",
+        "viewButton": "View Wallet"
+      }
     },
     "withdrawalRejected": {
       "title": "Withdrawal rejected",
-      "message": "Your withdrawal of {amount} USD was rejected. Reason: {reason}"
+      "message": "Your withdrawal of {amount} USD was rejected. Reason: {reason}",
+      "emailSubject": "Withdrawal rejected: {amount} USD",
+      "emailBody": {
+        "heading": "Withdrawal rejected",
+        "intro": "Your withdrawal of <strong>{amount} USD</strong> was rejected.",
+        "reason": "Reason: {reason}",
+        "viewButton": "View Wallet"
+      }
     },
     "financeDisputeOpened": {
       "title": "New finance dispute",
@@ -2816,7 +2854,65 @@
     },
     "financeDisputeReviewed": {
       "title": "Dispute update",
-      "message": "Your wallet dispute was marked as {status}. {note}"
+      "message": "Your wallet dispute was marked as {status}. {note}",
+      "emailSubject": "Wallet dispute update: {status}",
+      "emailBody": {
+        "heading": "Dispute update",
+        "intro": "Your wallet dispute was marked as <strong>{status}</strong>.",
+        "note": "{note}",
+        "viewButton": "View Wallet"
+      }
+    },
+    "requestUnassigned": {
+      "title": "Request unassigned",
+      "message": "You were unassigned from \"{requestTitle}\". It is available again for other creators.",
+      "emailSubject": "Unassigned from \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Request unassigned",
+        "intro": "You were unassigned from <strong>{requestTitle}</strong>. The request is available again for other creators.",
+        "viewButton": "Browse Available Requests"
+      }
+    },
+    "requestCancelled": {
+      "title": "Request cancelled",
+      "message": "The request \"{requestTitle}\" was cancelled.",
+      "emailSubject": "Request cancelled: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Request cancelled",
+        "intro": "The request <strong>{requestTitle}</strong> was cancelled and is no longer active.",
+        "viewButton": "View Dashboard"
+      }
+    },
+    "earningsHoldReleased": {
+      "title": "Earnings available",
+      "message": "{amount} USD from held earnings is now available to withdraw.",
+      "emailSubject": "Earnings available: {amount} USD",
+      "emailBody": {
+        "heading": "Earnings available to withdraw",
+        "intro": "<strong>{amount} USD</strong> from held earnings is now available in your wallet.",
+        "viewButton": "View Wallet"
+      }
+    },
+    "accountDeactivated": {
+      "title": "Account deactivated",
+      "message": "Your Wengz account has been deactivated. Contact support if you think this is a mistake.",
+      "emailSubject": "Your Wengz account was deactivated",
+      "emailBody": {
+        "heading": "Account deactivated",
+        "intro": "Hi {userName}, your Wengz account has been deactivated.",
+        "message": "You can no longer sign in. Contact support if you believe this was a mistake.",
+        "viewButton": "Visit Wengz"
+      }
+    },
+    "accountReactivated": {
+      "title": "Account reactivated",
+      "message": "Your Wengz account has been reactivated. You can sign in again.",
+      "emailSubject": "Your Wengz account was reactivated",
+      "emailBody": {
+        "heading": "Account reactivated",
+        "intro": "Hi {userName}, your Wengz account has been reactivated. You can sign in again.",
+        "viewButton": "Sign in"
+      }
     },
     "subscriptionCancelled": {
       "title": "Subscription Cancelled",

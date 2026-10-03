@@ -12,6 +12,17 @@ import {
   getApplicationReceivedEmailTemplate,
   getAccountApprovedEmailTemplate,
   getAccountRejectedEmailTemplate,
+  getNewRequestAvailableEmailTemplate,
+  getProviderClaimedEmailTemplate,
+  getRequestAcceptedEmailTemplate,
+  getRatingSubmittedEmailTemplate,
+  getWithdrawalReviewedEmailTemplate,
+  getFinanceDisputeReviewedEmailTemplate,
+  getRequestUnassignedEmailTemplate,
+  getRequestCancelledEmailTemplate,
+  getEarningsHoldReleasedEmailTemplate,
+  getAccountDeactivatedEmailTemplate,
+  getAccountReactivatedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation } from "./i18n-helper";
@@ -281,6 +292,12 @@ export async function notifyProviderWithdrawalReviewed(params: {
     amount: formattedAmount,
     reason,
   });
+  const emailTemplate = await getWithdrawalReviewedEmailTemplate({
+    status,
+    amount: formattedAmount,
+    reason,
+    locale,
+  });
 
   return createNotification({
     userId: providerId,
@@ -288,8 +305,8 @@ export async function notifyProviderWithdrawalReviewed(params: {
     message,
     type: "general",
     link: "/provider/wallet",
-    sendEmail: false,
     locale,
+    emailTemplate,
     sseI18n: {
       titleKey: `notifications.${key}.title`,
       messageKey: `notifications.${key}.message`,
@@ -351,6 +368,11 @@ export async function notifyProviderFinanceDisputeReviewed(params: {
     status: statusLabel,
     note,
   });
+  const emailTemplate = await getFinanceDisputeReviewedEmailTemplate({
+    status: statusLabel,
+    note,
+    locale,
+  });
 
   return createNotification({
     userId: providerId,
@@ -358,8 +380,8 @@ export async function notifyProviderFinanceDisputeReviewed(params: {
     message,
     type: "general",
     link: "/provider/wallet",
-    sendEmail: false,
     locale,
+    emailTemplate,
     sseI18n: {
       titleKey: "notifications.financeDisputeReviewed.title",
       messageKey: "notifications.financeDisputeReviewed.message",
@@ -588,6 +610,7 @@ export async function notifyClientProviderClaimed(params: {
     requestTitle: request.title,
     providerName,
   });
+  const emailTemplate = await getProviderClaimedEmailTemplate(request.title, providerName, locale);
 
   return createNotification({
     userId: clientId,
@@ -597,7 +620,7 @@ export async function notifyClientProviderClaimed(params: {
     link: `/client/requests/${requestId}`,
     requestId,
     locale,
-    sendEmail: false,
+    emailTemplate,
     sseI18n: {
       titleKey: "notifications.providerClaimed.title",
       messageKey: "notifications.providerClaimed.message",
@@ -605,6 +628,235 @@ export async function notifyClientProviderClaimed(params: {
         requestTitle: request.title,
         providerName,
       },
+    },
+  });
+}
+
+export async function notifyNewRequestAvailable(params: {
+  providerId: string;
+  requestId: string;
+  serviceName: string;
+  requestTitle: string;
+  locale?: string;
+}) {
+  const { providerId, requestId, serviceName, requestTitle, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.newRequestAvailable.title");
+  const message = await getTranslation(locale, "notifications.newRequestAvailable.message", {
+    serviceName,
+    requestTitle,
+  });
+  const emailTemplate = await getNewRequestAvailableEmailTemplate(
+    serviceName,
+    requestTitle,
+    locale
+  );
+
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "general",
+    link: `/provider/available/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.newRequestAvailable.title",
+      messageKey: "notifications.newRequestAvailable.message",
+      messageParams: { serviceName, requestTitle },
+    },
+  });
+}
+
+export async function notifyClientRequestAccepted(params: {
+  requestId: string;
+  clientId: string;
+  requestTitle: string;
+  locale?: string;
+}) {
+  const { requestId, clientId, requestTitle, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.requestAccepted.title");
+  const message = await getTranslation(locale, "notifications.requestAccepted.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getRequestAcceptedEmailTemplate(requestTitle, locale);
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "status_change",
+    link: `/client/requests/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.requestAccepted.title",
+      messageKey: "notifications.requestAccepted.message",
+      messageParams: { requestTitle },
+    },
+  });
+}
+
+export async function notifyProviderRatingSubmitted(params: {
+  providerId: string;
+  requestId: string;
+  requestTitle: string;
+  rating: number;
+  locale?: string;
+}) {
+  const { providerId, requestId, requestTitle, rating, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.ratingSubmitted.title");
+  const message = await getTranslation(locale, "notifications.ratingSubmitted.message", {
+    rating: String(rating),
+    requestTitle,
+  });
+  const emailTemplate = await getRatingSubmittedEmailTemplate(requestTitle, rating, locale);
+
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "general",
+    link: `/provider/requests/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.ratingSubmitted.title",
+      messageKey: "notifications.ratingSubmitted.message",
+      messageParams: { rating: String(rating), requestTitle },
+    },
+  });
+}
+
+export async function notifyProviderUnassigned(params: {
+  providerId: string;
+  requestId: string;
+  requestTitle: string;
+  locale?: string;
+}) {
+  const { providerId, requestId, requestTitle, locale = "en" } = params;
+
+  const title = await getTranslation(locale, "notifications.requestUnassigned.title");
+  const message = await getTranslation(locale, "notifications.requestUnassigned.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getRequestUnassignedEmailTemplate(requestTitle, locale);
+
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "assignment",
+    link: `/provider/available/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.requestUnassigned.title",
+      messageKey: "notifications.requestUnassigned.message",
+      messageParams: { requestTitle },
+    },
+  });
+}
+
+export async function notifyRequestCancelled(params: {
+  userId: string;
+  requestId: string;
+  requestTitle: string;
+  role: "PROVIDER" | "CLIENT";
+  locale?: string;
+}) {
+  const { userId, requestId, requestTitle, role, locale = "en" } = params;
+  const link =
+    role === "CLIENT" ? `/client/requests/${requestId}` : `/provider/requests/${requestId}`;
+
+  const title = await getTranslation(locale, "notifications.requestCancelled.title");
+  const message = await getTranslation(locale, "notifications.requestCancelled.message", {
+    requestTitle,
+  });
+  const emailTemplate = await getRequestCancelledEmailTemplate(requestTitle, locale, role);
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "status_change",
+    link,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.requestCancelled.title",
+      messageKey: "notifications.requestCancelled.message",
+      messageParams: { requestTitle },
+    },
+  });
+}
+
+export async function notifyProviderEarningsHoldReleased(params: {
+  providerId: string;
+  amountUsd: number;
+  locale?: string;
+}) {
+  const { providerId, amountUsd, locale = "en" } = params;
+  const formattedAmount = formatMoneyAmount(amountUsd, locale);
+
+  const title = await getTranslation(locale, "notifications.earningsHoldReleased.title");
+  const message = await getTranslation(locale, "notifications.earningsHoldReleased.message", {
+    amount: formattedAmount,
+  });
+  const emailTemplate = await getEarningsHoldReleasedEmailTemplate({
+    amount: formattedAmount,
+    locale,
+  });
+
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "general",
+    link: "/provider/wallet",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.earningsHoldReleased.title",
+      messageKey: "notifications.earningsHoldReleased.message",
+      messageParams: { amount: formattedAmount },
+    },
+  });
+}
+
+export async function notifyAccountActivationChanged(params: {
+  userId: string;
+  userName: string;
+  isActive: boolean;
+  locale?: string;
+}) {
+  const { userId, userName, isActive, locale = "en" } = params;
+  const key = isActive ? "accountReactivated" : "accountDeactivated";
+
+  const title = await getTranslation(locale, `notifications.${key}.title`);
+  const message = await getTranslation(locale, `notifications.${key}.message`);
+  const emailTemplate = isActive
+    ? await getAccountReactivatedEmailTemplate({ userName, locale })
+    : await getAccountDeactivatedEmailTemplate({ userName, locale });
+
+  return createNotification({
+    userId,
+    title,
+    message,
+    type: "general",
+    link: isActive ? "/auth/login" : "/",
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: `notifications.${key}.title`,
+      messageKey: `notifications.${key}.message`,
     },
   });
 }

@@ -13,7 +13,9 @@ import {
 import {
   createNotification,
   getLocalizedRequestStatusLabel,
+  notifyClientRequestAccepted,
   notifyNewMessage,
+  notifyProviderRatingSubmitted,
   notifyStatusChange,
 } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
@@ -441,28 +443,11 @@ export const requestRouter = router({
         },
       });
 
-      // Notify client
-      const acceptedTitle = await getTranslation(ctx.locale, "notifications.requestAccepted.title");
-      const acceptedMessage = await getTranslation(
-        ctx.locale,
-        "notifications.requestAccepted.message",
-        {
-          requestTitle: request.title,
-        }
-      );
-      await createNotification({
-        userId: request.clientId,
-        title: acceptedTitle,
-        message: acceptedMessage,
-        type: "status_change",
-        link: `/client/requests/${request.id}`,
-        sendEmail: false,
+      await notifyClientRequestAccepted({
+        requestId: request.id,
+        clientId: request.clientId,
+        requestTitle: request.title,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: "notifications.requestAccepted.title",
-          messageKey: "notifications.requestAccepted.message",
-          messageParams: { requestTitle: request.title },
-        },
       });
 
       logRequestActivity({
@@ -979,30 +964,12 @@ export const requestRouter = router({
         },
       });
 
-      // Send real-time notification to provider
-      const ratingTitle = await getTranslation(ctx.locale, "notifications.ratingSubmitted.title");
-      const ratingMessage = await getTranslation(
-        ctx.locale,
-        "notifications.ratingSubmitted.message",
-        {
-          rating: input.rating,
-          requestTitle: request.title,
-        }
-      );
-      await createNotification({
-        userId: request.providerId,
-        title: ratingTitle,
-        message: ratingMessage,
-        type: "general",
-        link: `/provider/requests/${request.id}`,
+      await notifyProviderRatingSubmitted({
+        providerId: request.providerId,
         requestId: request.id,
-        sendEmail: false,
+        requestTitle: request.title,
+        rating: input.rating,
         locale: ctx.locale,
-        sseI18n: {
-          titleKey: "notifications.ratingSubmitted.title",
-          messageKey: "notifications.ratingSubmitted.message",
-          messageParams: { rating: input.rating.toString(), requestTitle: request.title },
-        },
       });
 
       logRequestActivity({

@@ -552,6 +552,245 @@ export async function getAccountRejectedEmailTemplate(params: {
   return { subject, html };
 }
 
+async function buildSimpleCtaEmail(params: {
+  locale: string;
+  subjectKey: string;
+  subjectParams?: Record<string, string>;
+  headingKey: string;
+  introKey: string;
+  introParams?: Record<string, string>;
+  bodyKey?: string;
+  bodyParams?: Record<string, string>;
+  buttonKey: string;
+  href: string;
+  calloutVariant?: "warning" | "danger" | "success";
+  metaRows?: Array<{ label: string; value: string }>;
+}): Promise<{ subject: string; html: string }> {
+  const subject = await getTranslation(params.locale, params.subjectKey, params.subjectParams);
+  const heading = await getTranslation(params.locale, params.headingKey);
+  const intro = await getTranslation(params.locale, params.introKey, params.introParams);
+  const button = await getTranslation(params.locale, params.buttonKey);
+  const body = params.bodyKey
+    ? await getTranslation(params.locale, params.bodyKey, params.bodyParams)
+    : null;
+
+  const html = await wrapEmailHtml(
+    `
+      ${emailParagraph(intro)}
+      ${params.metaRows?.length ? emailMetaRows(params.metaRows) : ""}
+      ${
+        body
+          ? emailCallout(
+              `<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;">${body}</p>`,
+              params.calloutVariant ?? "warning"
+            )
+          : ""
+      }
+      ${emailButton(button, params.href)}
+    `,
+    { locale: params.locale, title: heading, preheader: subject }
+  );
+
+  return { subject, html };
+}
+
+export async function getNewRequestAvailableEmailTemplate(
+  serviceName: string,
+  requestTitle: string,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.newRequestAvailable.emailSubject",
+    subjectParams: { serviceName },
+    headingKey: "notifications.newRequestAvailable.emailBody.heading",
+    introKey: "notifications.newRequestAvailable.emailBody.intro",
+    introParams: { serviceName, requestTitle },
+    buttonKey: "notifications.newRequestAvailable.emailBody.viewButton",
+    href: `${appBaseUrl()}/provider/available`,
+  });
+}
+
+export async function getProviderClaimedEmailTemplate(
+  requestTitle: string,
+  providerName: string,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.providerClaimed.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.providerClaimed.emailBody.heading",
+    introKey: "notifications.providerClaimed.emailBody.intro",
+    introParams: { requestTitle, providerName },
+    buttonKey: "notifications.providerClaimed.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/requests`,
+  });
+}
+
+export async function getRequestAcceptedEmailTemplate(requestTitle: string, locale: string = "en") {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.requestAccepted.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.requestAccepted.emailBody.heading",
+    introKey: "notifications.requestAccepted.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.requestAccepted.emailBody.viewButton",
+    href: `${appBaseUrl()}/client/requests`,
+  });
+}
+
+export async function getRatingSubmittedEmailTemplate(
+  requestTitle: string,
+  rating: number,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.ratingSubmitted.emailSubject",
+    subjectParams: { rating: String(rating) },
+    headingKey: "notifications.ratingSubmitted.emailBody.heading",
+    introKey: "notifications.ratingSubmitted.emailBody.intro",
+    introParams: { requestTitle, rating: String(rating) },
+    buttonKey: "notifications.ratingSubmitted.emailBody.viewButton",
+    href: `${appBaseUrl()}/provider/requests`,
+  });
+}
+
+export async function getWithdrawalReviewedEmailTemplate(params: {
+  status: "APPROVED" | "REJECTED";
+  amount: string;
+  reason: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const key = params.status === "APPROVED" ? "withdrawalApproved" : "withdrawalRejected";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: `notifications.${key}.emailSubject`,
+    subjectParams: { amount: params.amount },
+    headingKey: `notifications.${key}.emailBody.heading`,
+    introKey: `notifications.${key}.emailBody.intro`,
+    introParams: { amount: params.amount },
+    bodyKey: `notifications.${key}.emailBody.reason`,
+    bodyParams: { reason: params.reason },
+    buttonKey: `notifications.${key}.emailBody.viewButton`,
+    href: `${appBaseUrl()}/provider/wallet`,
+    calloutVariant: params.status === "APPROVED" ? "success" : "danger",
+  });
+}
+
+export async function getFinanceDisputeReviewedEmailTemplate(params: {
+  status: string;
+  note: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.financeDisputeReviewed.emailSubject",
+    subjectParams: { status: params.status },
+    headingKey: "notifications.financeDisputeReviewed.emailBody.heading",
+    introKey: "notifications.financeDisputeReviewed.emailBody.intro",
+    introParams: { status: params.status },
+    bodyKey: "notifications.financeDisputeReviewed.emailBody.note",
+    bodyParams: { note: params.note },
+    buttonKey: "notifications.financeDisputeReviewed.emailBody.viewButton",
+    href: `${appBaseUrl()}/provider/wallet`,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getRequestUnassignedEmailTemplate(
+  requestTitle: string,
+  locale: string = "en"
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.requestUnassigned.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.requestUnassigned.emailBody.heading",
+    introKey: "notifications.requestUnassigned.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.requestUnassigned.emailBody.viewButton",
+    href: `${appBaseUrl()}/provider/available`,
+  });
+}
+
+export async function getRequestCancelledEmailTemplate(
+  requestTitle: string,
+  locale: string = "en",
+  role: "PROVIDER" | "CLIENT" = "PROVIDER"
+) {
+  const href =
+    role === "CLIENT" ? `${appBaseUrl()}/client/requests` : `${appBaseUrl()}/provider/requests`;
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.requestCancelled.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.requestCancelled.emailBody.heading",
+    introKey: "notifications.requestCancelled.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.requestCancelled.emailBody.viewButton",
+    href,
+    calloutVariant: "warning",
+  });
+}
+
+export async function getEarningsHoldReleasedEmailTemplate(params: {
+  amount: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.earningsHoldReleased.emailSubject",
+    subjectParams: { amount: params.amount },
+    headingKey: "notifications.earningsHoldReleased.emailBody.heading",
+    introKey: "notifications.earningsHoldReleased.emailBody.intro",
+    introParams: { amount: params.amount },
+    buttonKey: "notifications.earningsHoldReleased.emailBody.viewButton",
+    href: `${appBaseUrl()}/provider/wallet`,
+    calloutVariant: "success",
+  });
+}
+
+export async function getAccountDeactivatedEmailTemplate(params: {
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.accountDeactivated.emailSubject",
+    headingKey: "notifications.accountDeactivated.emailBody.heading",
+    introKey: "notifications.accountDeactivated.emailBody.intro",
+    introParams: { userName: params.userName },
+    bodyKey: "notifications.accountDeactivated.emailBody.message",
+    buttonKey: "notifications.accountDeactivated.emailBody.viewButton",
+    href: appBaseUrl(),
+    calloutVariant: "danger",
+  });
+}
+
+export async function getAccountReactivatedEmailTemplate(params: {
+  userName: string;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.accountReactivated.emailSubject",
+    headingKey: "notifications.accountReactivated.emailBody.heading",
+    introKey: "notifications.accountReactivated.emailBody.intro",
+    introParams: { userName: params.userName },
+    buttonKey: "notifications.accountReactivated.emailBody.viewButton",
+    href: `${appBaseUrl()}/auth/login`,
+    calloutVariant: "success",
+  });
+}
+
 /** Ops / internal notify — English layout, no user-facing i18n. */
 export async function getOpsNotifyEmailHtml(params: {
   title: string;

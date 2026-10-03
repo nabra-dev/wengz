@@ -14,6 +14,9 @@ import {
   notifyProviderAssignment,
   notifyProviderWithdrawalReviewed,
   notifyProviderFinanceDisputeReviewed,
+  notifyProviderUnassigned,
+  notifyRequestCancelled,
+  notifyAccountActivationChanged,
   sendWelcomeEmail,
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
@@ -2717,11 +2720,21 @@ export const adminRouter = router({
         },
       });
 
-      // Notify provider about assignment
+      // If reassigning, notify the previous creator that they lost the job.
+      if (request.providerId && request.providerId !== input.providerId) {
+        await notifyProviderUnassigned({
+          providerId: request.providerId,
+          requestId: input.requestId,
+          requestTitle: request.title,
+          locale: ctx.locale,
+        });
+      }
+
       await notifyProviderAssignment({
         requestId: input.requestId,
         providerId: input.providerId,
         providerName: provider.name || provider.email,
+        locale: ctx.locale,
       });
 
       logRequestActivity({
@@ -2766,6 +2779,8 @@ export const adminRouter = router({
         });
       }
 
+      const previousProviderId = request.providerId;
+
       const updatedRequest = await ctx.db.request.update({
         where: { id: input.requestId },
         data: {
@@ -2779,6 +2794,15 @@ export const adminRouter = router({
         },
       });
 
+      if (previousProviderId) {
+        await notifyProviderUnassigned({
+          providerId: previousProviderId,
+          requestId: input.requestId,
+          requestTitle: request.title,
+          locale: ctx.locale,
+        });
+      }
+
       logRequestActivity({
         action: "request.unassign",
         requestId: input.requestId,
@@ -2786,7 +2810,7 @@ export const adminRouter = router({
         actorRole: ctx.session.user.role,
         message: `Request unassigned: ${request.title}`,
         metadata: {
-          previousProviderId: request.providerId,
+          previousProviderId,
           previousStatus: request.status,
           newStatus: "PENDING",
         },
@@ -2863,6 +2887,14 @@ export const adminRouter = router({
       if (input.role === "CLIENT") {
         await assignFreeClientSubscription(ctx.db, user.id);
       }
+
+      sendWelcomeEmail({
+        userId: user.id,
+        userName: user.name || "User",
+        userEmail: user.email,
+        userRole: user.role,
+        locale: ctx.locale,
+      }).catch(() => undefined);
 
       return {
         success: true,
@@ -3041,6 +3073,13 @@ export const adminRouter = router({
 
       await invalidateSessionUserCache(input.userId);
 
+      await notifyAccountActivationChanged({
+        userId: user.id,
+        userName: user.name || user.email,
+        isActive: input.isActive,
+        locale: ctx.locale,
+      });
+
       return {
         success: true,
         message: `User ${user.email} has been ${input.isActive ? "activated" : "deactivated"}`,
@@ -3213,6 +3252,24 @@ export const adminRouter = router({
           status: "CANCELLED",
         },
       });
+
+      const cancelRecipients: Array<{ userId: string; role: "PROVIDER" | "CLIENT" }> = [
+        { userId: request.clientId, role: "CLIENT" },
+      ];
+      if (request.providerId) {
+        cancelRecipients.push({ userId: request.providerId, role: "PROVIDER" });
+      }
+      await Promise.all(
+        cancelRecipients.map((recipient) =>
+          notifyRequestCancelled({
+            userId: recipient.userId,
+            requestId: input.requestId,
+            requestTitle: request.title,
+            role: recipient.role,
+            locale: ctx.locale,
+          })
+        )
+      );
 
       logRequestActivity({
         action: "request.delete",

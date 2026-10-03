@@ -8,7 +8,11 @@ import {
   collectAttributeMediaUrls,
 } from "@/lib/attribute-validation";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
-import { createNotification, notifyProviderAssignment } from "@/lib/notifications";
+import {
+  createNotification,
+  notifyNewRequestAvailable,
+  notifyProviderAssignment,
+} from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { logRequestActivity } from "@/lib/request-activity";
 import { collectAttributeTextAnswers } from "@/lib/contact-leak";
@@ -189,27 +193,14 @@ export async function notifyMatchingProviders(
 
   if (providersWithService.length === 0) return;
 
-  const title = await getTranslation(locale, "notifications.newRequestAvailable.title");
-  const message = await getTranslation(locale, "notifications.newRequestAvailable.message", {
-    serviceName,
-    requestTitle,
-  });
   await Promise.all(
     providersWithService.map((provider: { userId: string }) =>
-      createNotification({
-        userId: provider.userId,
-        title,
-        message,
-        type: "general",
-        link: `/provider/available/${requestId}`,
+      notifyNewRequestAvailable({
+        providerId: provider.userId,
         requestId,
-        sendEmail: false,
+        serviceName,
+        requestTitle,
         locale,
-        sseI18n: {
-          titleKey: "notifications.newRequestAvailable.title",
-          messageKey: "notifications.newRequestAvailable.message",
-          messageParams: { serviceName, requestTitle },
-        },
       })
     )
   );

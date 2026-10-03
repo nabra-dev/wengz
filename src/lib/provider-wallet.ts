@@ -178,6 +178,7 @@ export async function releaseDueHeldEarnings(
   });
 
   let released = 0;
+  const releasedByProvider = new Map<string, { amountUsd: number; credits: number }>();
 
   for (const entry of dueLedgers) {
     const didRelease = await db.$transaction(async (tx) => {
@@ -226,10 +227,26 @@ export async function releaseDueHeldEarnings(
 
     if (didRelease) {
       released += 1;
+      const existing = releasedByProvider.get(entry.providerId) ?? {
+        amountUsd: 0,
+        credits: 0,
+      };
+      releasedByProvider.set(entry.providerId, {
+        amountUsd: roundUsd(existing.amountUsd + entry.providerAmountUsd),
+        credits: existing.credits + entry.providerCredits,
+      });
     }
   }
 
-  return { released, scanned: dueLedgers.length };
+  return {
+    released,
+    scanned: dueLedgers.length,
+    items: Array.from(releasedByProvider, ([providerId, totals]) => ({
+      providerId,
+      amountUsd: totals.amountUsd,
+      credits: totals.credits,
+    })),
+  };
 }
 
 export function normalizePayoutDetails(input: PayoutDetailsInput): NormalizedPayoutDetails {

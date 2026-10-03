@@ -2615,7 +2615,13 @@
     },
     "providerClaimed": {
       "title": "استلم مزود طلبك",
-      "message": "استلم {providerName} طلب \"{requestTitle}\". سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك."
+      "message": "استلم {providerName} طلب \"{requestTitle}\". سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك.",
+      "emailSubject": "استلم مبدع طلب \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "استلم مبدع طلبك",
+        "intro": "استلم <strong>{providerName}</strong> طلب <strong>{requestTitle}</strong>. سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك.",
+        "viewButton": "عرض الطلب"
+      }
     },
     "approvalReminder": {
       "title": "يرجى مراجعة التسليم",
@@ -2760,7 +2766,13 @@
     },
     "newRequestAvailable": {
       "title": "طلب جديد متاح",
-      "message": "طلب جديد لخدمة {serviceName}: \"{requestTitle}\""
+      "message": "طلب جديد لخدمة {serviceName}: \"{requestTitle}\"",
+      "emailSubject": "طلب جديد متاح لخدمة {serviceName}",
+      "emailBody": {
+        "heading": "طلب جديد متاح",
+        "intro": "يتوفر طلب جديد لخدمة <strong>{serviceName}</strong>: <strong>{requestTitle}</strong>. يمكنك المطالبة به من قائمة الطلبات المتاحة.",
+        "viewButton": "تصفح الطلبات المتاحة"
+      }
     },
     "requestCreatedByAdmin": {
       "title": "تم إنشاء طلب نيابةً عنك",
@@ -2768,7 +2780,13 @@
     },
     "requestAccepted": {
       "title": "تم قبول الطلب",
-      "message": "تم قبول طلبك \"{requestTitle}\" من قِبل مبدع."
+      "message": "تم قبول طلبك \"{requestTitle}\" من قِبل مبدع.",
+      "emailSubject": "قبل مبدع طلب \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تم قبول الطلب",
+        "intro": "قبل مبدع طلبك <strong>{requestTitle}</strong> والعمل قيد التنفيذ الآن.",
+        "viewButton": "عرض الطلب"
+      }
     },
     "deliverableReady": {
       "title": "التسليم جاهز",
@@ -2780,7 +2798,13 @@
     },
     "ratingSubmitted": {
       "title": "تم استلام تقييم",
-      "message": "لقد استلمت تقييماً {rating} نجوم على \"{requestTitle}\"."
+      "message": "لقد استلمت تقييماً {rating} نجوم على \"{requestTitle}\".",
+      "emailSubject": "حصلت على تقييم {rating} نجوم",
+      "emailBody": {
+        "heading": "تقييم جديد",
+        "intro": "حصلت على تقييم <strong>{rating} نجوم</strong> لطلب <strong>{requestTitle}</strong>.",
+        "viewButton": "عرض الطلب"
+      }
     },
     "paymentApproved": {
       "title": "تمت الموافقة على الدفع! 🎉",
@@ -2796,11 +2820,25 @@
     },
     "withdrawalApproved": {
       "title": "تم دفع السحب",
-      "message": "تم تعليم سحبك بقيمة {amount} دولار كمدفوع. {reason}"
+      "message": "تم تعليم سحبك بقيمة {amount} دولار كمدفوع. {reason}",
+      "emailSubject": "تم دفع السحب: {amount} دولار",
+      "emailBody": {
+        "heading": "تم دفع السحب",
+        "intro": "تم تعليم سحبك بقيمة <strong>{amount} دولار</strong> كمدفوع.",
+        "reason": "{reason}",
+        "viewButton": "عرض المحفظة"
+      }
     },
     "withdrawalRejected": {
       "title": "تم رفض السحب",
-      "message": "تم رفض سحبك بقيمة {amount} دولار. السبب: {reason}"
+      "message": "تم رفض سحبك بقيمة {amount} دولار. السبب: {reason}",
+      "emailSubject": "تم رفض السحب: {amount} دولار",
+      "emailBody": {
+        "heading": "تم رفض السحب",
+        "intro": "تم رفض سحبك بقيمة <strong>{amount} دولار</strong>.",
+        "reason": "السبب: {reason}",
+        "viewButton": "عرض المحفظة"
+      }
     },
     "financeDisputeOpened": {
       "title": "نزاع مالي جديد",
@@ -2808,7 +2846,65 @@
     },
     "financeDisputeReviewed": {
       "title": "تحديث النزاع",
-      "message": "تم تحديث نزاع محفظتك إلى {status}. {note}"
+      "message": "تم تحديث نزاع محفظتك إلى {status}. {note}",
+      "emailSubject": "تحديث نزاع المحفظة: {status}",
+      "emailBody": {
+        "heading": "تحديث النزاع",
+        "intro": "تم تحديث نزاع محفظتك إلى <strong>{status}</strong>.",
+        "note": "{note}",
+        "viewButton": "عرض المحفظة"
+      }
+    },
+    "requestUnassigned": {
+      "title": "تم إلغاء تعيين الطلب",
+      "message": "تم إلغاء تعيينك من \"{requestTitle}\". أصبح الطلب متاحاً لمبدعين آخرين.",
+      "emailSubject": "تم إلغاء تعيينك من \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تم إلغاء تعيين الطلب",
+        "intro": "تم إلغاء تعيينك من <strong>{requestTitle}</strong>. أصبح الطلب متاحاً لمبدعين آخرين.",
+        "viewButton": "تصفح الطلبات المتاحة"
+      }
+    },
+    "requestCancelled": {
+      "title": "تم إلغاء الطلب",
+      "message": "تم إلغاء الطلب \"{requestTitle}\".",
+      "emailSubject": "تم إلغاء الطلب: \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تم إلغاء الطلب",
+        "intro": "تم إلغاء الطلب <strong>{requestTitle}</strong> ولم يعد نشطاً.",
+        "viewButton": "عرض لوحة التحكم"
+      }
+    },
+    "earningsHoldReleased": {
+      "title": "الأرباح متاحة",
+      "message": "أصبح مبلغ {amount} دولار من الأرباح المحتجزة متاحاً للسحب.",
+      "emailSubject": "أرباح متاحة: {amount} دولار",
+      "emailBody": {
+        "heading": "أرباح متاحة للسحب",
+        "intro": "أصبح مبلغ <strong>{amount} دولار</strong> من الأرباح المحتجزة متاحاً في محفظتك.",
+        "viewButton": "عرض المحفظة"
+      }
+    },
+    "accountDeactivated": {
+      "title": "تم تعطيل الحساب",
+      "message": "تم تعطيل حسابك في وينجز. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+      "emailSubject": "تم تعطيل حسابك في وينجز",
+      "emailBody": {
+        "heading": "تم تعطيل الحساب",
+        "intro": "مرحباً {userName}، تم تعطيل حسابك في وينجز.",
+        "message": "لم يعد بإمكانك تسجيل الدخول. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+        "viewButton": "زيارة وينجز"
+      }
+    },
+    "accountReactivated": {
+      "title": "تم إعادة تفعيل الحساب",
+      "message": "تم إعادة تفعيل حسابك في وينجز. يمكنك تسجيل الدخول مجدداً.",
+      "emailSubject": "تم إعادة تفعيل حسابك في وينجز",
+      "emailBody": {
+        "heading": "تم إعادة تفعيل الحساب",
+        "intro": "مرحباً {userName}، تم إعادة تفعيل حسابك في وينجز. يمكنك تسجيل الدخول مجدداً.",
+        "viewButton": "تسجيل الدخول"
+      }
     },
     "subscriptionCancelled": {
       "title": "تم إلغاء الاشتراك",

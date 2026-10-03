@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { releaseDueHeldEarnings } from "@/lib/provider-wallet";
+import { notifyProviderEarningsHoldReleased } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import { logActivityAsync } from "@/lib/activity-log";
 
@@ -24,17 +25,37 @@ export async function GET(request: Request) {
     const now = new Date();
     const results = await releaseDueHeldEarnings(db, { now });
 
+    for (const item of results.items) {
+      try {
+        await notifyProviderEarningsHoldReleased({
+          providerId: item.providerId,
+          amountUsd: item.amountUsd,
+          locale: "en",
+        });
+      } catch (error) {
+        logger.error(`[CRON] Failed hold-release notify for provider ${item.providerId}:`, error);
+      }
+    }
+
     logActivityAsync({
       action: "cron.releaseProviderHolds",
       message: `Cron released provider earnings holds: ${results.released} of ${results.scanned} due`,
-      metadata: { ...results },
+      metadata: {
+        released: results.released,
+        scanned: results.scanned,
+        notifiedProviders: results.items.length,
+      },
       level: "info",
     });
 
     return NextResponse.json({
       success: true,
       timestamp: now.toISOString(),
-      results,
+      results: {
+        released: results.released,
+        scanned: results.scanned,
+        notifiedProviders: results.items.length,
+      },
     });
   } catch (error) {
     logger.error("[CRON] release-provider-holds failed:", error);
