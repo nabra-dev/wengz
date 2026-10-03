@@ -93,7 +93,6 @@ async function handleContactLeakHits(
 
       void notifyAdminsContactLeakRepeat({
         kinds: summary.kinds,
-        locale: ctx.locale,
       });
 
       throw new TRPCError({

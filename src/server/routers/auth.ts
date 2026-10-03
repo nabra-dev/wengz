@@ -164,7 +164,6 @@ export const authRouter = router({
           userRole: "CLIENT",
           userId: user.id,
           reapplied: true,
-          locale: ctx.locale,
         }).catch((error) => {
           logger.error("Failed to notify admins of client re-application:", error);
         });
@@ -216,7 +215,6 @@ export const authRouter = router({
         userEmail: user.email,
         userRole: "CLIENT",
         userId: user.id,
-        locale: ctx.locale,
       }).catch((error) => {
         logger.error("Failed to notify admins of client registration:", error);
       });
@@ -406,7 +404,6 @@ export const authRouter = router({
           userRole: "PROVIDER",
           userId: user.id,
           reapplied: true,
-          locale: ctx.locale,
         }).catch((error) => {
           logger.error("Failed to notify admins of provider re-application:", error);
         });
@@ -498,7 +495,6 @@ export const authRouter = router({
         userEmail: user.email,
         userRole: "PROVIDER",
         userId: user.id,
-        locale: ctx.locale,
       }).catch((error) => {
         logger.error("Failed to notify admins of provider registration:", error);
       });

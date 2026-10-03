@@ -41,11 +41,64 @@ import {
   getAdminContactLeakRepeatEmailTemplate,
   getAdminManualApprovalNeededEmailTemplate,
   getRoleChangedEmailTemplate,
+  getProviderServicesUpdatedEmailTemplate,
+  getMaintenanceModeChangedEmailTemplate,
 } from "./email";
 import { sendNotificationToUser } from "./sse-utils";
-import { getTranslation } from "./i18n-helper";
+import { getTranslation, normalizeAppLocale } from "./i18n-helper";
 import { logger } from "@/lib/logger";
 import { formatMoneyAmount } from "@/lib/utils";
+
+type StaffRole = "SUPER_ADMIN" | "PROJECT_MANAGER" | "FINANCE_MANAGER";
+
+/** Fan out to staff using each admin's preferredLocale (grouped to avoid N template builds). */
+async function notifyStaffByRoles(
+  roles: StaffRole[],
+  build: (locale: "en" | "ar") => Promise<{
+    title: string;
+    message: string;
+    link: string;
+    type?: NotificationData["type"];
+    requestId?: string;
+    emailTemplate: NonNullable<NotificationData["emailTemplate"]>;
+    sseI18n?: NotificationData["sseI18n"];
+  }>,
+  options?: { excludeUserIds?: string[] }
+) {
+  const exclude = new Set(options?.excludeUserIds?.filter(Boolean) ?? []);
+  const admins = (
+    await db.user.findMany({
+      where: { role: { in: roles }, deletedAt: null },
+      select: { id: true, preferredLocale: true },
+    })
+  ).filter((admin) => !exclude.has(admin.id));
+  if (admins.length === 0) return { notifiedAdmins: 0 };
+
+  const byLocale = new Map<"en" | "ar", string[]>();
+  for (const admin of admins) {
+    const locale = normalizeAppLocale(admin.preferredLocale);
+    const list = byLocale.get(locale) ?? [];
+    list.push(admin.id);
+    byLocale.set(locale, list);
+  }
+
+  await Promise.all(
+    Array.from(byLocale.entries()).map(async ([locale, userIds]) => {
+      const payload = await build(locale);
+      await Promise.all(
+        userIds.map((userId) =>
+          createNotification({
+            userId,
+            ...payload,
+            locale,
+          })
+        )
+      );
+    })
+  );
+
+  return { notifiedAdmins: admins.length };
+}
 
 // Store for SSE notification sender (will be set by SSE route when a user connects)
 let sseNotificationSender: ((userId: string, notification: any) => void) | null = null;
@@ -207,101 +260,76 @@ export async function notifyAdminsNewPendingPayment(params: {
   clientNameOrEmail: string;
   amount: number;
   currency: string;
-  locale?: string;
 }) {
-  const { clientNameOrEmail, amount, currency, locale = "en" } = params;
+  const { clientNameOrEmail, amount, currency } = params;
 
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
-    select: { id: true, email: true },
-  });
-
-  const title = await getTranslation(locale, "notifications.paymentVerification.title");
-  const formattedAmount = formatMoneyAmount(amount, locale);
-  const message = await getTranslation(locale, "notifications.paymentVerification.message", {
-    clientNameOrEmail,
-    amount: formattedAmount,
-    currency,
-  });
-  const link = "/admin/payments";
-  const emailTemplate = await getAdminPaymentVerificationEmailTemplate({
-    clientNameOrEmail,
-    amount: formattedAmount,
-    currency,
-    locale,
-  });
-
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link,
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey: "notifications.paymentVerification.title",
-          messageKey: "notifications.paymentVerification.message",
-          messageParams: {
-            clientNameOrEmail,
-            amount: formattedAmount,
-            currency,
-          },
+  return notifyStaffByRoles(["SUPER_ADMIN", "FINANCE_MANAGER"], async (locale) => {
+    const formattedAmount = formatMoneyAmount(amount, locale);
+    const title = await getTranslation(locale, "notifications.paymentVerification.title");
+    const message = await getTranslation(locale, "notifications.paymentVerification.message", {
+      clientNameOrEmail,
+      amount: formattedAmount,
+      currency,
+    });
+    const emailTemplate = await getAdminPaymentVerificationEmailTemplate({
+      clientNameOrEmail,
+      amount: formattedAmount,
+      currency,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: "/admin/payments",
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.paymentVerification.title",
+        messageKey: "notifications.paymentVerification.message",
+        messageParams: {
+          clientNameOrEmail,
+          amount: formattedAmount,
+          currency,
         },
-      })
-    )
-  );
-
-  return { notifiedAdmins: admins.length };
+      },
+    };
+  });
 }
 
 export async function notifyAdminsNewWithdrawal(params: {
   providerNameOrEmail: string;
   amountUsd: number;
-  locale?: string;
 }) {
-  const { providerNameOrEmail, amountUsd, locale = "en" } = params;
+  const { providerNameOrEmail, amountUsd } = params;
 
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
-    select: { id: true },
-  });
-
-  const title = await getTranslation(locale, "notifications.withdrawalRequested.title");
-  const formattedAmount = formatMoneyAmount(amountUsd, locale);
-  const message = await getTranslation(locale, "notifications.withdrawalRequested.message", {
-    providerNameOrEmail,
-    amount: formattedAmount,
-  });
-  const emailTemplate = await getAdminWithdrawalRequestedEmailTemplate({
-    providerNameOrEmail,
-    amount: formattedAmount,
-    locale,
-  });
-
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link: "/admin/finance",
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey: "notifications.withdrawalRequested.title",
-          messageKey: "notifications.withdrawalRequested.message",
-          messageParams: {
-            providerNameOrEmail,
-            amount: formattedAmount,
-          },
+  return notifyStaffByRoles(["SUPER_ADMIN", "FINANCE_MANAGER"], async (locale) => {
+    const formattedAmount = formatMoneyAmount(amountUsd, locale);
+    const title = await getTranslation(locale, "notifications.withdrawalRequested.title");
+    const message = await getTranslation(locale, "notifications.withdrawalRequested.message", {
+      providerNameOrEmail,
+      amount: formattedAmount,
+    });
+    const emailTemplate = await getAdminWithdrawalRequestedEmailTemplate({
+      providerNameOrEmail,
+      amount: formattedAmount,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: "/admin/finance",
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.withdrawalRequested.title",
+        messageKey: "notifications.withdrawalRequested.message",
+        messageParams: {
+          providerNameOrEmail,
+          amount: formattedAmount,
         },
-      })
-    )
-  );
+      },
+    };
+  });
 }
 
 export async function notifyProviderWithdrawalReviewed(params: {
@@ -346,44 +374,31 @@ export async function notifyProviderWithdrawalReviewed(params: {
   });
 }
 
-export async function notifyAdminsFinanceDisputeOpened(params: {
-  providerNameOrEmail: string;
-  locale?: string;
-}) {
-  const { providerNameOrEmail, locale = "en" } = params;
+export async function notifyAdminsFinanceDisputeOpened(params: { providerNameOrEmail: string }) {
+  const { providerNameOrEmail } = params;
 
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "FINANCE_MANAGER"] } },
-    select: { id: true },
+  return notifyStaffByRoles(["SUPER_ADMIN", "FINANCE_MANAGER"], async (locale) => {
+    const title = await getTranslation(locale, "notifications.financeDisputeOpened.title");
+    const message = await getTranslation(locale, "notifications.financeDisputeOpened.message", {
+      providerNameOrEmail,
+    });
+    const emailTemplate = await getAdminFinanceDisputeOpenedEmailTemplate({
+      providerNameOrEmail,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: "/admin/finance",
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.financeDisputeOpened.title",
+        messageKey: "notifications.financeDisputeOpened.message",
+        messageParams: { providerNameOrEmail },
+      },
+    };
   });
-
-  const title = await getTranslation(locale, "notifications.financeDisputeOpened.title");
-  const message = await getTranslation(locale, "notifications.financeDisputeOpened.message", {
-    providerNameOrEmail,
-  });
-  const emailTemplate = await getAdminFinanceDisputeOpenedEmailTemplate({
-    providerNameOrEmail,
-    locale,
-  });
-
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link: "/admin/finance",
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey: "notifications.financeDisputeOpened.title",
-          messageKey: "notifications.financeDisputeOpened.message",
-          messageParams: { providerNameOrEmail },
-        },
-      })
-    )
-  );
 }
 
 export async function notifyProviderFinanceDisputeReviewed(params: {
@@ -498,14 +513,15 @@ export async function notifyNewMessage(params: {
   const message = await getTranslation(locale, "notifications.newMessage.message", {
     messagePreview,
   });
+  const isAssigned = request.providerId === recipientId;
+  const link = getLinkForNotificationRecipient(user?.role, requestId, isAssigned);
   const emailTemplate = await getNewMessageEmailTemplate(
     senderName,
     request.title,
     messagePreview,
-    locale
+    locale,
+    link
   );
-  const isAssigned = request.providerId === recipientId;
-  const link = getLinkForNotificationRecipient(user?.role, requestId, isAssigned);
 
   return createNotification({
     userId: recipientId,
@@ -559,20 +575,22 @@ export async function notifyStatusChange(params: {
     oldStatus: oldStatusLabel,
     newStatus: newStatusLabel,
   });
+  const linkPrefix = user?.role === "CLIENT" ? "/client" : "/provider";
+  const link = `${linkPrefix}/requests/${requestId}`;
   const emailTemplate = await getStatusChangeEmailTemplate(
     request.title,
     oldStatus,
     newStatus,
-    locale
+    locale,
+    link
   );
-  const linkPrefix = user?.role === "CLIENT" ? "/client" : "/provider";
 
   return createNotification({
     userId,
     title,
     message,
     type: "status_change",
-    link: `${linkPrefix}/requests/${requestId}`,
+    link,
     requestId,
     locale,
     emailTemplate,
@@ -607,7 +625,12 @@ export async function notifyProviderAssignment(params: {
   const message = await getTranslation(locale, "notifications.assignment.message", {
     requestTitle: request.title,
   });
-  const emailTemplate = await getAssignmentEmailTemplate(request.title, providerName, locale);
+  const emailTemplate = await getAssignmentEmailTemplate(
+    request.title,
+    providerName,
+    locale,
+    requestId
+  );
 
   return createNotification({
     userId: providerId,
@@ -642,7 +665,12 @@ export async function notifyClientProviderClaimed(params: {
     requestTitle: request.title,
     providerName,
   });
-  const emailTemplate = await getProviderClaimedEmailTemplate(request.title, providerName, locale);
+  const emailTemplate = await getProviderClaimedEmailTemplate(
+    request.title,
+    providerName,
+    locale,
+    requestId
+  );
 
   return createNotification({
     userId: clientId,
@@ -681,7 +709,8 @@ export async function notifyNewRequestAvailable(params: {
   const emailTemplate = await getNewRequestAvailableEmailTemplate(
     serviceName,
     requestTitle,
-    locale
+    locale,
+    requestId
   );
 
   return createNotification({
@@ -713,7 +742,7 @@ export async function notifyClientRequestAccepted(params: {
   const message = await getTranslation(locale, "notifications.requestAccepted.message", {
     requestTitle,
   });
-  const emailTemplate = await getRequestAcceptedEmailTemplate(requestTitle, locale);
+  const emailTemplate = await getRequestAcceptedEmailTemplate(requestTitle, locale, requestId);
 
   return createNotification({
     userId: clientId,
@@ -746,7 +775,12 @@ export async function notifyProviderRatingSubmitted(params: {
     rating: String(rating),
     requestTitle,
   });
-  const emailTemplate = await getRatingSubmittedEmailTemplate(requestTitle, rating, locale);
+  const emailTemplate = await getRatingSubmittedEmailTemplate(
+    requestTitle,
+    rating,
+    locale,
+    requestId
+  );
 
   return createNotification({
     userId: providerId,
@@ -777,7 +811,7 @@ export async function notifyProviderUnassigned(params: {
   const message = await getTranslation(locale, "notifications.requestUnassigned.message", {
     requestTitle,
   });
-  const emailTemplate = await getRequestUnassignedEmailTemplate(requestTitle, locale);
+  const emailTemplate = await getRequestUnassignedEmailTemplate(requestTitle, locale, requestId);
 
   return createNotification({
     userId: providerId,
@@ -811,7 +845,12 @@ export async function notifyRequestCancelled(params: {
   const message = await getTranslation(locale, "notifications.requestCancelled.message", {
     requestTitle,
   });
-  const emailTemplate = await getRequestCancelledEmailTemplate(requestTitle, locale, role);
+  const emailTemplate = await getRequestCancelledEmailTemplate(
+    requestTitle,
+    locale,
+    role,
+    requestId
+  );
 
   return createNotification({
     userId,
@@ -875,7 +914,11 @@ export async function notifyClientRequestCreatedByAdmin(params: {
   const message = await getTranslation(locale, "notifications.requestCreatedByAdmin.message", {
     requestTitle,
   });
-  const emailTemplate = await getRequestCreatedByAdminEmailTemplate(requestTitle, locale);
+  const emailTemplate = await getRequestCreatedByAdminEmailTemplate(
+    requestTitle,
+    locale,
+    requestId
+  );
 
   return createNotification({
     userId: clientId,
@@ -909,7 +952,12 @@ export async function notifyRequestRestored(params: {
   const message = await getTranslation(locale, "notifications.requestRestored.message", {
     requestTitle,
   });
-  const emailTemplate = await getRequestRestoredEmailTemplate(requestTitle, locale, role);
+  const emailTemplate = await getRequestRestoredEmailTemplate(
+    requestTitle,
+    locale,
+    role,
+    requestId
+  );
 
   return createNotification({
     userId,
@@ -1227,7 +1275,7 @@ export async function notifyApprovalReminder(params: {
   const message = await getTranslation(locale, "notifications.approvalReminder.message", {
     requestTitle: request.title,
   });
-  const emailTemplate = await getApprovalReminderEmailTemplate(request.title, locale);
+  const emailTemplate = await getApprovalReminderEmailTemplate(request.title, locale, requestId);
 
   return createNotification({
     userId: clientId,
@@ -1235,6 +1283,7 @@ export async function notifyApprovalReminder(params: {
     message,
     type: "status_change",
     link: `/client/requests/${requestId}`,
+    requestId,
     locale,
     emailTemplate,
     sseI18n: {
@@ -1470,68 +1519,52 @@ export async function notifyAdminsNewUserRegistration(params: {
   userRole: "CLIENT" | "PROVIDER";
   userId: string;
   reapplied?: boolean;
-  locale?: string;
 }) {
-  const { userName, userEmail, userRole, reapplied = false, locale = "en" } = params;
+  const { userName, userEmail, userRole, reapplied = false } = params;
 
-  const admins = await db.user.findMany({
-    where: { role: "SUPER_ADMIN", deletedAt: null },
-    select: { id: true },
-  });
+  return notifyStaffByRoles(["SUPER_ADMIN"], async (locale) => {
+    const roleLabelKey =
+      userRole === "PROVIDER"
+        ? "notifications.newUserRegistration.roleCreator"
+        : "notifications.newUserRegistration.roleClient";
+    const roleLabel = await getTranslation(locale, roleLabelKey);
+    const titleKey = reapplied
+      ? "notifications.newUserRegistration.reapplyTitle"
+      : "notifications.newUserRegistration.title";
+    const messageKey = reapplied
+      ? "notifications.newUserRegistration.reapplyMessage"
+      : "notifications.newUserRegistration.message";
 
-  if (admins.length === 0) return { notifiedAdmins: 0 };
-
-  const roleLabelKey =
-    userRole === "PROVIDER"
-      ? "notifications.newUserRegistration.roleCreator"
-      : "notifications.newUserRegistration.roleClient";
-  const roleLabel = await getTranslation(locale, roleLabelKey);
-  const titleKey = reapplied
-    ? "notifications.newUserRegistration.reapplyTitle"
-    : "notifications.newUserRegistration.title";
-  const messageKey = reapplied
-    ? "notifications.newUserRegistration.reapplyMessage"
-    : "notifications.newUserRegistration.message";
-
-  const title = await getTranslation(locale, titleKey);
-  const message = await getTranslation(locale, messageKey, {
-    userName,
-    userEmail,
-    role: roleLabel,
-  });
-  const link = "/admin/users";
-  const emailTemplate = await getAdminNewUserRegistrationEmailTemplate({
-    userName,
-    userEmail,
-    role: roleLabel,
-    reapplied,
-    locale,
-  });
-
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link,
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey,
-          messageKey,
-          messageParams: {
-            userName,
-            userEmail,
-            role: roleLabel,
-          },
+    const title = await getTranslation(locale, titleKey);
+    const message = await getTranslation(locale, messageKey, {
+      userName,
+      userEmail,
+      role: roleLabel,
+    });
+    const emailTemplate = await getAdminNewUserRegistrationEmailTemplate({
+      userName,
+      userEmail,
+      role: roleLabel,
+      reapplied,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: "/admin/users",
+      emailTemplate,
+      sseI18n: {
+        titleKey,
+        messageKey,
+        messageParams: {
+          userName,
+          userEmail,
+          role: roleLabel,
         },
-      })
-    )
-  );
-
-  return { notifiedAdmins: admins.length };
+      },
+    };
+  });
 }
 
 export async function notifyAdminsContactMessage(params: {
@@ -1539,140 +1572,154 @@ export async function notifyAdminsContactMessage(params: {
   email: string;
   topic?: string | null;
   messageId: string;
-  locale?: string;
 }) {
-  const { fullName, email, topic, messageId, locale = "en" } = params;
-
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
-    select: { id: true },
-  });
-
+  const { fullName, email, topic, messageId } = params;
   const topicLabel = topic || "—";
-  const title = await getTranslation(locale, "notifications.contactMessage.title");
-  const message = await getTranslation(locale, "notifications.contactMessage.message", {
-    fullName,
-    email,
-    topic: topicLabel,
-  });
-  const link = `/admin/contacts?id=${messageId}`;
-  const emailTemplate = await getAdminContactMessageEmailTemplate({
-    fullName,
-    email,
-    topic: topicLabel,
-    locale,
-  });
 
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link,
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey: "notifications.contactMessage.title",
-          messageKey: "notifications.contactMessage.message",
-          messageParams: {
-            fullName,
-            email,
-            topic: topicLabel,
-          },
+  return notifyStaffByRoles(["SUPER_ADMIN", "PROJECT_MANAGER"], async (locale) => {
+    const title = await getTranslation(locale, "notifications.contactMessage.title");
+    const message = await getTranslation(locale, "notifications.contactMessage.message", {
+      fullName,
+      email,
+      topic: topicLabel,
+    });
+    const emailTemplate = await getAdminContactMessageEmailTemplate({
+      fullName,
+      email,
+      topic: topicLabel,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: `/admin/contacts?id=${messageId}`,
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.contactMessage.title",
+        messageKey: "notifications.contactMessage.message",
+        messageParams: {
+          fullName,
+          email,
+          topic: topicLabel,
         },
-      })
-    )
-  );
-
-  return { notifiedAdmins: admins.length };
+      },
+    };
+  });
 }
 
-export async function notifyAdminsContactLeakRepeat(params: { kinds: string[]; locale?: string }) {
-  const { kinds, locale = "en" } = params;
-  const kindsLabel = kinds.join(", ") || "contact";
+export async function notifyAdminsContactLeakRepeat(params: { kinds: string[] }) {
+  const kindsLabel = params.kinds.join(", ") || "contact";
 
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
-    select: { id: true },
+  return notifyStaffByRoles(["SUPER_ADMIN", "PROJECT_MANAGER"], async (locale) => {
+    const title = await getTranslation(locale, "notifications.contactLeakRepeat.title");
+    const message = await getTranslation(locale, "notifications.contactLeakRepeat.message", {
+      kinds: kindsLabel,
+    });
+    const emailTemplate = await getAdminContactLeakRepeatEmailTemplate({
+      kinds: kindsLabel,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "general" as const,
+      link: "/admin/contact-leaks",
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.contactLeakRepeat.title",
+        messageKey: "notifications.contactLeakRepeat.message",
+        messageParams: { kinds: kindsLabel },
+      },
+    };
   });
-  if (admins.length === 0) return { notifiedAdmins: 0 };
-
-  const title = await getTranslation(locale, "notifications.contactLeakRepeat.title");
-  const message = await getTranslation(locale, "notifications.contactLeakRepeat.message", {
-    kinds: kindsLabel,
-  });
-  const emailTemplate = await getAdminContactLeakRepeatEmailTemplate({
-    kinds: kindsLabel,
-    locale,
-  });
-
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type: "general",
-        link: "/admin/contact-leaks",
-        locale,
-        emailTemplate,
-        sseI18n: {
-          titleKey: "notifications.contactLeakRepeat.title",
-          messageKey: "notifications.contactLeakRepeat.message",
-          messageParams: { kinds: kindsLabel },
-        },
-      })
-    )
-  );
-
-  return { notifiedAdmins: admins.length };
 }
 
 export async function notifyAdminsManualApprovalNeeded(params: {
   requestId: string;
   requestTitle: string;
+}) {
+  const { requestId, requestTitle } = params;
+
+  return notifyStaffByRoles(["SUPER_ADMIN", "PROJECT_MANAGER"], async (locale) => {
+    const title = await getTranslation(locale, "notifications.manualApprovalNeeded.title");
+    const message = await getTranslation(locale, "notifications.manualApprovalNeeded.message", {
+      requestTitle,
+    });
+    const emailTemplate = await getAdminManualApprovalNeededEmailTemplate({
+      requestTitle,
+      requestId,
+      locale,
+    });
+    return {
+      title,
+      message,
+      type: "status_change" as const,
+      link: `/admin/requests/${requestId}`,
+      requestId,
+      emailTemplate,
+      sseI18n: {
+        titleKey: "notifications.manualApprovalNeeded.title",
+        messageKey: "notifications.manualApprovalNeeded.message",
+        messageParams: { requestTitle },
+      },
+    };
+  });
+}
+
+export async function notifyProviderServicesUpdated(params: {
+  providerId: string;
   locale?: string;
 }) {
-  const { requestId, requestTitle, locale = "en" } = params;
+  const { providerId, locale = "en" } = params;
 
-  const admins = await db.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "PROJECT_MANAGER"] }, deletedAt: null },
-    select: { id: true },
-  });
-  if (admins.length === 0) return { notifiedAdmins: 0 };
+  const title = await getTranslation(locale, "notifications.providerServicesUpdated.title");
+  const message = await getTranslation(locale, "notifications.providerServicesUpdated.message");
+  const emailTemplate = await getProviderServicesUpdatedEmailTemplate({ locale });
 
-  const title = await getTranslation(locale, "notifications.manualApprovalNeeded.title");
-  const message = await getTranslation(locale, "notifications.manualApprovalNeeded.message", {
-    requestTitle,
-  });
-  const emailTemplate = await getAdminManualApprovalNeededEmailTemplate({
-    requestTitle,
+  return createNotification({
+    userId: providerId,
+    title,
+    message,
+    type: "general",
+    link: "/provider/available",
     locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.providerServicesUpdated.title",
+      messageKey: "notifications.providerServicesUpdated.message",
+    },
   });
+}
 
-  await Promise.all(
-    admins.map(async (admin) =>
-      createNotification({
-        userId: admin.id,
+/** Alert other staff when maintenance mode is toggled (uses each admin preferredLocale). */
+export async function notifyAdminsMaintenanceModeChanged(params: {
+  enabled: boolean;
+  actorUserId?: string;
+}) {
+  const { enabled, actorUserId } = params;
+  const key = enabled ? "maintenanceModeEnabled" : "maintenanceModeDisabled";
+
+  return notifyStaffByRoles(
+    ["SUPER_ADMIN", "PROJECT_MANAGER", "FINANCE_MANAGER"],
+    async (locale) => {
+      const title = await getTranslation(locale, `notifications.${key}.title`);
+      const message = await getTranslation(locale, `notifications.${key}.message`);
+      const emailTemplate = await getMaintenanceModeChangedEmailTemplate({ enabled, locale });
+      return {
         title,
         message,
-        type: "status_change",
-        link: `/admin/requests/${requestId}`,
-        requestId,
-        locale,
+        type: "general" as const,
+        link: "/admin/settings",
         emailTemplate,
         sseI18n: {
-          titleKey: "notifications.manualApprovalNeeded.title",
-          messageKey: "notifications.manualApprovalNeeded.message",
-          messageParams: { requestTitle },
+          titleKey: `notifications.${key}.title`,
+          messageKey: `notifications.${key}.message`,
         },
-      })
-    )
+      };
+    },
+    { excludeUserIds: actorUserId ? [actorUserId] : [] }
   );
-
-  return { notifiedAdmins: admins.length };
 }
 
 export async function notifyRoleChanged(params: {

@@ -97,7 +97,6 @@ async function processManualApprovalFlags(results: ApprovalCronResults) {
       await notifyAdminsManualApprovalNeeded({
         requestId: request.id,
         requestTitle: request.title,
-        locale: "en",
       });
       results.flaggedManualApproval++;
     } catch (error) {

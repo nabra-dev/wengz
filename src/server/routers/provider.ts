@@ -968,7 +968,6 @@ export const providerRouter = router({
       await notifyAdminsNewWithdrawal({
         providerNameOrEmail,
         amountUsd: withdrawal.amountUsd,
-        locale: ctx.locale,
       });
 
       return { success: true, withdrawalId: withdrawal.id };
@@ -1009,7 +1008,6 @@ export const providerRouter = router({
       const providerNameOrEmail = ctx.session.user.name || ctx.session.user.email || "Provider";
       await notifyAdminsFinanceDisputeOpened({
         providerNameOrEmail,
-        locale: ctx.locale,
       });
 
       logActivityAsync({

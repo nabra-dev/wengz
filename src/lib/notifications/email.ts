@@ -85,6 +85,13 @@ function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
 }
 
+/** Absolute app URL for email CTAs (deep link when path provided). */
+function appUrl(path?: string | null): string {
+  const base = appBaseUrl().replace(/\/$/, "");
+  if (!path) return base;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 async function quickStartSteps(
   locale: string,
   role: "client" | "provider" | "admin"
@@ -116,7 +123,8 @@ export async function getNewMessageEmailTemplate(
   senderName: string,
   requestTitle: string,
   messagePreview: string,
-  locale: string = "en"
+  locale: string = "en",
+  ctaPath?: string | null
 ) {
   const subject = await getTranslation(locale, "notifications.newMessage.emailSubject", {
     senderName,
@@ -132,7 +140,7 @@ export async function getNewMessageEmailTemplate(
     `
       ${emailParagraph(intro)}
       ${emailPanel(`<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${EMAIL_COLORS.ink};">${messagePreview}</p>`)}
-      ${emailButton(viewButton, appBaseUrl())}
+      ${emailButton(viewButton, appUrl(ctaPath))}
     `,
     { locale, title: heading, preheader: subject }
   );
@@ -144,7 +152,8 @@ export async function getStatusChangeEmailTemplate(
   requestTitle: string,
   oldStatus: string,
   newStatus: string,
-  locale: string = "en"
+  locale: string = "en",
+  ctaPath?: string | null
 ) {
   const subject = await getTranslation(locale, "notifications.statusChange.emailSubject", {
     requestTitle,
@@ -167,7 +176,7 @@ export async function getStatusChangeEmailTemplate(
         { label: fromLabel, value: statusLabel(oldStatus) },
         { label: toLabel, value: statusLabel(newStatus) },
       ])}
-      ${emailButton(viewButton, appBaseUrl())}
+      ${emailButton(viewButton, appUrl(ctaPath))}
     `,
     { locale, title: heading, preheader: subject }
   );
@@ -178,7 +187,8 @@ export async function getStatusChangeEmailTemplate(
 export async function getAssignmentEmailTemplate(
   requestTitle: string,
   _providerName: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   const subject = await getTranslation(locale, "notifications.assignment.emailSubject", {
     requestTitle,
@@ -192,7 +202,7 @@ export async function getAssignmentEmailTemplate(
   const html = await wrapEmailHtml(
     `
       ${emailParagraph(intro)}
-      ${emailButton(viewButton, appBaseUrl())}
+      ${emailButton(viewButton, appUrl(requestId ? `/provider/requests/${requestId}` : "/provider/requests"))}
     `,
     { locale, title: heading, preheader: subject }
   );
@@ -202,7 +212,8 @@ export async function getAssignmentEmailTemplate(
 
 export async function getApprovalReminderEmailTemplate(
   requestTitle: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   const subject = await getTranslation(locale, "notifications.approvalReminder.emailSubject", {
     requestTitle,
@@ -221,7 +232,7 @@ export async function getApprovalReminderEmailTemplate(
     `
       ${emailParagraph(intro)}
       ${emailCallout(`<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;">${body}</p>`, "warning")}
-      ${emailButton(viewButton, appBaseUrl(), "warning")}
+      ${emailButton(viewButton, appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"), "warning")}
     `,
     { locale, title: heading, preheader: subject }
   );
@@ -597,7 +608,8 @@ async function buildSimpleCtaEmail(params: {
 export async function getNewRequestAvailableEmailTemplate(
   serviceName: string,
   requestTitle: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   return buildSimpleCtaEmail({
     locale,
@@ -607,14 +619,15 @@ export async function getNewRequestAvailableEmailTemplate(
     introKey: "notifications.newRequestAvailable.emailBody.intro",
     introParams: { serviceName, requestTitle },
     buttonKey: "notifications.newRequestAvailable.emailBody.viewButton",
-    href: `${appBaseUrl()}/provider/available`,
+    href: appUrl(requestId ? `/provider/available/${requestId}` : "/provider/available"),
   });
 }
 
 export async function getProviderClaimedEmailTemplate(
   requestTitle: string,
   providerName: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   return buildSimpleCtaEmail({
     locale,
@@ -624,11 +637,15 @@ export async function getProviderClaimedEmailTemplate(
     introKey: "notifications.providerClaimed.emailBody.intro",
     introParams: { requestTitle, providerName },
     buttonKey: "notifications.providerClaimed.emailBody.viewButton",
-    href: `${appBaseUrl()}/client/requests`,
+    href: appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"),
   });
 }
 
-export async function getRequestAcceptedEmailTemplate(requestTitle: string, locale: string = "en") {
+export async function getRequestAcceptedEmailTemplate(
+  requestTitle: string,
+  locale: string = "en",
+  requestId?: string
+) {
   return buildSimpleCtaEmail({
     locale,
     subjectKey: "notifications.requestAccepted.emailSubject",
@@ -637,14 +654,15 @@ export async function getRequestAcceptedEmailTemplate(requestTitle: string, loca
     introKey: "notifications.requestAccepted.emailBody.intro",
     introParams: { requestTitle },
     buttonKey: "notifications.requestAccepted.emailBody.viewButton",
-    href: `${appBaseUrl()}/client/requests`,
+    href: appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"),
   });
 }
 
 export async function getRatingSubmittedEmailTemplate(
   requestTitle: string,
   rating: number,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   return buildSimpleCtaEmail({
     locale,
@@ -654,7 +672,7 @@ export async function getRatingSubmittedEmailTemplate(
     introKey: "notifications.ratingSubmitted.emailBody.intro",
     introParams: { requestTitle, rating: String(rating) },
     buttonKey: "notifications.ratingSubmitted.emailBody.viewButton",
-    href: `${appBaseUrl()}/provider/requests`,
+    href: appUrl(requestId ? `/provider/requests/${requestId}` : "/provider/requests"),
   });
 }
 
@@ -704,7 +722,8 @@ export async function getFinanceDisputeReviewedEmailTemplate(params: {
 
 export async function getRequestUnassignedEmailTemplate(
   requestTitle: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   return buildSimpleCtaEmail({
     locale,
@@ -714,17 +733,17 @@ export async function getRequestUnassignedEmailTemplate(
     introKey: "notifications.requestUnassigned.emailBody.intro",
     introParams: { requestTitle },
     buttonKey: "notifications.requestUnassigned.emailBody.viewButton",
-    href: `${appBaseUrl()}/provider/available`,
+    href: appUrl(requestId ? `/provider/available/${requestId}` : "/provider/available"),
   });
 }
 
 export async function getRequestCancelledEmailTemplate(
   requestTitle: string,
   locale: string = "en",
-  role: "PROVIDER" | "CLIENT" = "PROVIDER"
+  role: "PROVIDER" | "CLIENT" = "PROVIDER",
+  requestId?: string
 ) {
-  const href =
-    role === "CLIENT" ? `${appBaseUrl()}/client/requests` : `${appBaseUrl()}/provider/requests`;
+  const base = role === "CLIENT" ? "/client/requests" : "/provider/requests";
   return buildSimpleCtaEmail({
     locale,
     subjectKey: "notifications.requestCancelled.emailSubject",
@@ -733,7 +752,7 @@ export async function getRequestCancelledEmailTemplate(
     introKey: "notifications.requestCancelled.emailBody.intro",
     introParams: { requestTitle },
     buttonKey: "notifications.requestCancelled.emailBody.viewButton",
-    href,
+    href: appUrl(requestId ? `${base}/${requestId}` : base),
     calloutVariant: "warning",
   });
 }
@@ -793,7 +812,8 @@ export async function getAccountReactivatedEmailTemplate(params: {
 
 export async function getRequestCreatedByAdminEmailTemplate(
   requestTitle: string,
-  locale: string = "en"
+  locale: string = "en",
+  requestId?: string
 ) {
   return buildSimpleCtaEmail({
     locale,
@@ -803,17 +823,17 @@ export async function getRequestCreatedByAdminEmailTemplate(
     introKey: "notifications.requestCreatedByAdmin.emailBody.intro",
     introParams: { requestTitle },
     buttonKey: "notifications.requestCreatedByAdmin.emailBody.viewButton",
-    href: `${appBaseUrl()}/client/requests`,
+    href: appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"),
   });
 }
 
 export async function getRequestRestoredEmailTemplate(
   requestTitle: string,
   locale: string = "en",
-  role: "PROVIDER" | "CLIENT" = "PROVIDER"
+  role: "PROVIDER" | "CLIENT" = "PROVIDER",
+  requestId?: string
 ) {
-  const href =
-    role === "CLIENT" ? `${appBaseUrl()}/client/requests` : `${appBaseUrl()}/provider/requests`;
+  const base = role === "CLIENT" ? "/client/requests" : "/provider/requests";
   return buildSimpleCtaEmail({
     locale,
     subjectKey: "notifications.requestRestored.emailSubject",
@@ -822,7 +842,7 @@ export async function getRequestRestoredEmailTemplate(
     introKey: "notifications.requestRestored.emailBody.intro",
     introParams: { requestTitle },
     buttonKey: "notifications.requestRestored.emailBody.viewButton",
-    href,
+    href: appUrl(requestId ? `${base}/${requestId}` : base),
     calloutVariant: "success",
   });
 }
@@ -1105,6 +1125,7 @@ export async function getAdminContactLeakRepeatEmailTemplate(params: {
 
 export async function getAdminManualApprovalNeededEmailTemplate(params: {
   requestTitle: string;
+  requestId?: string;
   locale?: string;
 }) {
   const locale = params.locale ?? "en";
@@ -1116,8 +1137,37 @@ export async function getAdminManualApprovalNeededEmailTemplate(params: {
     introKey: "notifications.manualApprovalNeeded.emailBody.intro",
     introParams: { requestTitle: params.requestTitle },
     buttonKey: "notifications.manualApprovalNeeded.emailBody.viewButton",
-    href: `${appBaseUrl()}/admin/requests`,
+    href: appUrl(params.requestId ? `/admin/requests/${params.requestId}` : "/admin/requests"),
     calloutVariant: "warning",
+  });
+}
+
+export async function getProviderServicesUpdatedEmailTemplate(params: { locale?: string }) {
+  const locale = params.locale ?? "en";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.providerServicesUpdated.emailSubject",
+    headingKey: "notifications.providerServicesUpdated.emailBody.heading",
+    introKey: "notifications.providerServicesUpdated.emailBody.intro",
+    buttonKey: "notifications.providerServicesUpdated.emailBody.viewButton",
+    href: appUrl("/provider/available"),
+  });
+}
+
+export async function getMaintenanceModeChangedEmailTemplate(params: {
+  enabled: boolean;
+  locale?: string;
+}) {
+  const locale = params.locale ?? "en";
+  const key = params.enabled ? "maintenanceModeEnabled" : "maintenanceModeDisabled";
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: `notifications.${key}.emailSubject`,
+    headingKey: `notifications.${key}.emailBody.heading`,
+    introKey: `notifications.${key}.emailBody.intro`,
+    buttonKey: `notifications.${key}.emailBody.viewButton`,
+    href: appUrl("/admin/settings"),
+    calloutVariant: params.enabled ? "warning" : "success",
   });
 }
 

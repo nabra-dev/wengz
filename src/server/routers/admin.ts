@@ -20,6 +20,8 @@ import {
   notifyAccountActivationChanged,
   notifyEmailChanged,
   notifyRoleChanged,
+  notifyProviderServicesUpdated,
+  notifyAdminsMaintenanceModeChanged,
   sendWelcomeEmail,
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
@@ -165,9 +167,16 @@ export const adminRouter = router({
       });
 
       const value = updated.value as { enabled?: boolean } | null | undefined;
+      const enabled = Boolean(value?.enabled);
+
+      void notifyAdminsMaintenanceModeChanged({
+        enabled,
+        actorUserId: ctx.session.user.id,
+      });
+
       return {
         success: true,
-        enabled: Boolean(value?.enabled),
+        enabled,
       };
     }),
 
@@ -2994,7 +3003,12 @@ export const adminRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
         where: { id: input.userId },
-        include: { providerProfile: true },
+        select: {
+          id: true,
+          role: true,
+          preferredLocale: true,
+          providerProfile: { select: { id: true } },
+        },
       });
 
       if (!user || user.role !== "PROVIDER") {
@@ -3019,6 +3033,11 @@ export const adminRouter = router({
             set: input.serviceIds.map((id) => ({ id })),
           },
         },
+      });
+
+      void notifyProviderServicesUpdated({
+        providerId: user.id,
+        locale: user.preferredLocale === "ar" ? "ar" : "en",
       });
 
       return { success: true };

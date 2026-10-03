@@ -149,7 +149,6 @@ export const paymentRouter = router({
         clientNameOrEmail: ctx.session.user.name || ctx.session.user.email || "Unknown",
         amount: input.amount,
         currency: input.currency,
-        locale: ctx.locale,
       });
 
       await notifyClientPaymentProofReceived({

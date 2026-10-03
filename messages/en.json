@@ -2865,14 +2865,6 @@
         "viewButton": "View Request"
       }
     },
-    "deliverableReady": {
-      "title": "Deliverable Ready",
-      "message": "Your request \"{requestTitle}\" has a new deliverable ready for review."
-    },
-    "requestStatusUpdate": {
-      "title": "Status Update",
-      "message": "Your request \"{requestTitle}\" status has been updated."
-    },
     "ratingSubmitted": {
       "title": "Rating Submitted",
       "message": "You received a {rating}-star rating for \"{requestTitle}\".",
@@ -3072,6 +3064,36 @@
         "activeMessage": "Your subscription has been cancelled. You can still use remaining credits until the end date.",
         "pendingMessage": "Your pending subscription has been cancelled.",
         "viewButton": "View Subscription"
+      }
+    },
+    "providerServicesUpdated": {
+      "title": "Your services were updated",
+      "message": "An admin updated the services you can claim. Check available requests for your new skills.",
+      "emailSubject": "Your Wengz services were updated",
+      "emailBody": {
+        "heading": "Services updated",
+        "intro": "An admin updated the services you can claim on Wengz. Browse available requests matching your skills.",
+        "viewButton": "Browse available requests"
+      }
+    },
+    "maintenanceModeEnabled": {
+      "title": "Maintenance mode enabled",
+      "message": "The platform is in maintenance mode. Only super admins can sign in until it is turned off.",
+      "emailSubject": "Wengz maintenance mode enabled",
+      "emailBody": {
+        "heading": "Maintenance mode enabled",
+        "intro": "Maintenance mode is now on. Only super admins can sign in until it is turned off.",
+        "viewButton": "Open settings"
+      }
+    },
+    "maintenanceModeDisabled": {
+      "title": "Maintenance mode disabled",
+      "message": "Maintenance mode is off. Clients and creators can sign in again.",
+      "emailSubject": "Wengz maintenance mode disabled",
+      "emailBody": {
+        "heading": "Maintenance mode disabled",
+        "intro": "Maintenance mode is off. Clients and creators can sign in again.",
+        "viewButton": "Open settings"
       }
     }
   },
