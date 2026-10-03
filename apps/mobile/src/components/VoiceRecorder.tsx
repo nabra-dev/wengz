@@ -12,6 +12,7 @@ import { t } from "../i18n";
 import { uploadFile } from "../lib/api";
 import { fileNameFromUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
+import { row, rowGap } from "../rtl";
 import { colors } from "./ui";
 import { AppText } from "./typography";
 import { VoiceNotePreview } from "./VoiceNotePreview";
@@ -240,16 +241,20 @@ export function VoiceRecorder({
   const atLimit = value.length >= maxFiles;
 
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+    <View style={{ gap: 10, alignSelf: "stretch" }}>
+      {/* Same equal-width chip row as Photos/Files — spacer (not marginEnd) for iOS row-reverse. */}
+      <View style={{ ...row(), alignItems: "stretch", alignSelf: "stretch" }}>
         <Pressable
           onPress={() => void toggleRecord()}
           disabled={busy || (!recording && atLimit)}
           style={{
-            flexDirection: "row",
+            flex: 1,
+            minWidth: 0,
+            ...row(),
+            ...rowGap(6),
             alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 12,
+            justifyContent: "center",
+            paddingHorizontal: 10,
             paddingVertical: 10,
             borderRadius: 8,
             borderWidth: 1,
@@ -264,7 +269,10 @@ export function VoiceRecorder({
             color={recording ? colors.destructive : colors.foreground}
           />
           <AppText
+            align="center"
+            numberOfLines={1}
             style={{
+              flexShrink: 1,
               color: recording ? colors.destructive : colors.foreground,
               fontFamily: fonts.medium,
               ...typeScale.sm,
@@ -274,14 +282,19 @@ export function VoiceRecorder({
           </AppText>
         </Pressable>
 
+        <View style={{ width: 8 }} />
+
         <Pressable
           onPress={() => void pickAudio()}
           disabled={busy || recording || atLimit}
           style={{
-            flexDirection: "row",
+            flex: 1,
+            minWidth: 0,
+            ...row(),
+            ...rowGap(6),
             alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 12,
+            justifyContent: "center",
+            paddingHorizontal: 10,
             paddingVertical: 10,
             borderRadius: 8,
             borderWidth: 1,
@@ -291,12 +304,26 @@ export function VoiceRecorder({
           }}
         >
           <Ionicons name="cloud-upload-outline" size={18} color={colors.foreground} />
-          <AppText style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
+          <AppText
+            align="center"
+            numberOfLines={1}
+            style={{
+              flexShrink: 1,
+              color: colors.foreground,
+              fontFamily: fonts.medium,
+              ...typeScale.sm,
+            }}
+          >
             {t("ui.voiceRecorder.uploadAudio")}
           </AppText>
         </Pressable>
 
-        {uploading ? <ActivityIndicator color={colors.yellow} /> : null}
+        {uploading ? (
+          <>
+            <View style={{ width: 8 }} />
+            <ActivityIndicator color={colors.yellow} />
+          </>
+        ) : null}
       </View>
 
       {recording ? (

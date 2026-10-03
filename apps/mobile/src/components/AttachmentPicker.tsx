@@ -10,7 +10,7 @@ import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
 import { colors } from "./ui";
-import { row } from "../rtl";
+import { row, rowGap } from "../rtl";
 import { debugOutlineStyle } from "../debug/outline";
 import { useDebugOutlineFlags } from "../debug/outline-state";
 import { OverflowProbe } from "../debug/OverflowProbe";
@@ -72,6 +72,7 @@ function ActionChip({
           flex: 1,
           minWidth: 0,
           ...row(),
+          ...rowGap(6),
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 10,
@@ -85,7 +86,7 @@ function ActionChip({
         style,
       ]}
     >
-      <Ionicons name={icon} size={18} color={colors.foreground} style={{ marginEnd: 6 }} />
+      <Ionicons name={icon} size={18} color={colors.foreground} />
       <AppText
         align="center"
         numberOfLines={1}
@@ -230,8 +231,9 @@ export function AttachmentPicker({
         ) : null}
 
         {/*
-          Do not combine width:'100%' + gap + flex:1 children — Yoga overflows the parent.
-          Use margin between chips instead.
+          Spacer View (not marginEnd): under manual RTL we use row-reverse, and
+          logical margins follow I18nManager — so marginEnd lands on the wrong side on iOS.
+          Also avoid width:'100%' + gap + flex:1 (Yoga overflow).
         */}
         <View style={{ ...row(), alignItems: "stretch", alignSelf: "stretch" }}>
           <ActionChip
@@ -239,15 +241,20 @@ export function AttachmentPicker({
             label={t("client.request.attachments.addImages")}
             onPress={() => void pickImages()}
             disabled={blocked}
-            style={{ marginEnd: 8 }}
           />
+          <View style={{ width: 8 }} />
           <ActionChip
             icon="document-attach-outline"
             label={t("client.request.attachments.addFiles")}
             onPress={() => void pickFiles()}
             disabled={blocked}
           />
-          {busy ? <ActivityIndicator color={colors.yellow} style={{ marginStart: 8 }} /> : null}
+          {busy ? (
+            <>
+              <View style={{ width: 8 }} />
+              <ActivityIndicator color={colors.yellow} />
+            </>
+          ) : null}
         </View>
 
         {hint ? (

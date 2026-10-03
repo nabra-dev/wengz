@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { changePassword, getProfile, updateProfile } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { useLocale } from "../../src/providers/locale";
-import { i18n, t, type AppLocale } from "../../src/i18n";
+import { t, type AppLocale } from "../../src/i18n";
 import {
   Button,
   Card,
@@ -49,7 +49,7 @@ function splitPhone(raw: string | null | undefined): { code: string; number: str
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
-  const { setLocale } = useLocale();
+  const { locale, setLocale } = useLocale();
   const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const [tab, setTab] = useState<Tab>("profile");
   const [name, setName] = useState("");
@@ -118,9 +118,9 @@ export default function ProfileScreen() {
   });
 
   async function toggleLocale() {
-    const locale: AppLocale = i18n.locale === "ar" ? "en" : "ar";
-    await setLocale(locale);
-    setInfo(locale.toUpperCase());
+    const next: AppLocale = locale === "ar" ? "en" : "ar";
+    await setLocale(next);
+    setInfo(next.toUpperCase());
   }
 
   if (profile.isLoading) return <Loading />;
@@ -258,7 +258,11 @@ export default function ProfileScreen() {
         </Card>
       )}
 
-      <Button label={t("common.language")} onPress={() => void toggleLocale()} variant="ghost" />
+      <Button
+        label={locale === "ar" ? "🇸🇦 العربية" : "🇺🇸 English"}
+        onPress={() => void toggleLocale()}
+        variant="ghost"
+      />
       <Button label={t("common.logout")} onPress={() => void signOut()} variant="danger" />
 
       {__DEV__ ? <DevDebugCard /> : null}

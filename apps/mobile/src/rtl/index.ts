@@ -93,6 +93,15 @@ export function row(): ViewStyle {
 }
 
 /**
+ * Space between row children. Prefer this over `marginEnd`/`marginStart` when
+ * the row may be `row-reverse` under manual RTL — logical margins follow
+ * I18nManager, not flexDirection, so they land on the wrong physical side.
+ */
+export function rowGap(size: number): ViewStyle {
+  return { gap: size };
+}
+
+/**
  * Row that stays physically left → right in every locale — for media
  * transports, timestamps and chat bubble rails. Under native RTL this has to
  * be `row-reverse` to cancel the platform mirroring.
