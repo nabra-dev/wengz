@@ -17,7 +17,7 @@ type Props = {
 /** Tab icon + label with a clear active state. */
 export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: Props) {
   return (
-    <View style={{ alignItems: "center", justifyContent: "center", minWidth: 64 }}>
+    <View style={{ alignItems: "center", justifyContent: "center", minWidth: 72, maxWidth: 96 }}>
       <View
         style={{
           width: 44,
@@ -36,12 +36,14 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
       </View>
       <AppText
         numberOfLines={1}
+        ellipsizeMode="tail"
         style={{
           marginTop: 3,
           color,
           fontFamily: focused ? fonts.semiBold : fonts.medium,
           ...typeScale.sm,
           textAlign: "center",
+          width: "100%",
         }}
       >
         {label}

@@ -1,17 +1,9 @@
 import { useRef, useState } from "react";
-import {
-  Dimensions,
-  I18nManager,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
-import { AppText } from "./typography";
+import { AppText, isRtlLocale } from "./typography";
 
 export type SelectOption = {
   value: string;
@@ -57,7 +49,7 @@ export function SelectDropdown({
 
   const windowH = Dimensions.get("window").height;
   const windowW = Dimensions.get("window").width;
-  const rtl = I18nManager.isRTL;
+  const rtl = isRtlLocale();
   const menuWidth = compact
     ? Math.min(180, windowW - 24)
     : Math.min(Math.max(anchor?.width ?? 0, 200), windowW - 24);
@@ -97,6 +89,7 @@ export function SelectDropdown({
             justifyContent: "space-between",
             gap: 8,
             opacity: disabled ? 0.5 : 1,
+            direction: rtl ? "rtl" : "ltr",
           }}
         >
           <AppText

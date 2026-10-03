@@ -13,6 +13,7 @@ import {
 import { t, i18n } from "../../../src/i18n";
 import { MediaImage } from "../../../src/components/MediaImage";
 import { RequestChat, type ChatComment } from "../../../src/components/RequestChat";
+import { VoiceNotePreview } from "../../../src/components/VoiceNotePreview";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
 import {
   Button,
@@ -53,7 +54,18 @@ function answerUrls(answer: string | string[]): string[] {
     .filter((s) => s.includes("/api/files/") || s.startsWith("http"));
 }
 
+function isAudioUrl(url: string) {
+  return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(url.split("?")[0] ?? "");
+}
+
 function FileChip({ url }: { url: string }) {
+  if (isAudioUrl(url)) {
+    return (
+      <View style={{ width: "100%", maxWidth: 360 }}>
+        <VoiceNotePreview url={url} variant="card" />
+      </View>
+    );
+  }
   if (isLikelyImageUrl(url)) {
     return (
       <MediaImage

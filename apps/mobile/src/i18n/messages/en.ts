@@ -762,6 +762,7 @@ export const en = {
   tabs: {
     home: "Home",
     requests: "Requests",
+    newRequest: "Create",
     notifications: "Alerts",
     profile: "Profile",
   },

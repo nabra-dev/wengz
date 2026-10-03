@@ -4,12 +4,13 @@ import { useLocale } from "../../src/providers/locale";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
 import { AppNavHeader } from "../../src/components/AppHeader";
+import { CenterNewRequestButton } from "../../src/components/CenterNewRequestButton";
 import { TabBarItem } from "../../src/components/TabBarItem";
 import { brandTabBarOptions } from "../../src/theme/navigation";
 
 export default function AppLayout() {
   const { ready, token } = useAuth();
-  const { locale } = useLocale();
+  const { locale, direction } = useLocale();
   if (!ready) return <Loading />;
   if (!token) return <Redirect href="/(auth)/login" />;
 
@@ -20,6 +21,11 @@ export default function AppLayout() {
         ...brandTabBarOptions,
         header: (props) => <AppNavHeader {...props} />,
         tabBarShowLabel: false,
+        // Native tabs ignore document `dir`; mirror items via RN direction.
+        tabBarStyle: {
+          ...brandTabBarOptions.tabBarStyle,
+          direction,
+        },
       }}
     >
       <Tabs.Screen
@@ -51,6 +57,14 @@ export default function AppLayout() {
               inactiveIcon="list-outline"
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="new-request"
+        options={{
+          title: t("tabs.newRequest"),
+          headerShown: false,
+          tabBarButton: () => <CenterNewRequestButton />,
         }}
       />
       <Tabs.Screen

@@ -770,6 +770,7 @@ export const ar: MessageTree = {
   tabs: {
     home: "الرئيسية",
     requests: "الطلبات",
+    newRequest: "إنشاء",
     notifications: "الإشعارات",
     profile: "الملف الشخصي",
   },

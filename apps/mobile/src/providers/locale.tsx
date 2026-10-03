@@ -51,7 +51,15 @@ export function AppLocaleProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LocaleContext.Provider value={value}>
-      <View key={locale} style={{ flex: 1 }} {...({ dir: direction, lang: locale } as object)}>
+      {/*
+        Web: `dir` flips layout. Native Expo Go often ignores I18nManager.forceRTL,
+        so we must set RN `direction` or flex rows stay LTR while text is Arabic.
+      */}
+      <View
+        key={locale}
+        style={{ flex: 1, direction }}
+        {...({ dir: direction, lang: locale } as object)}
+      >
         {children}
       </View>
     </LocaleContext.Provider>

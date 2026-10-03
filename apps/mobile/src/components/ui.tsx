@@ -16,7 +16,7 @@ import {
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
 import { t } from "../i18n";
-import { AppText, AppTextInput } from "./typography";
+import { AppText, AppTextInput, isRtlLocale } from "./typography";
 
 const c = BRAND.colors;
 
@@ -47,8 +47,12 @@ export function Screen({
   padded?: boolean;
   edges?: Edge[];
 }) {
+  const direction = isRtlLocale() ? "rtl" : "ltr";
   return (
-    <SafeAreaView style={[styles.screen, padded && styles.padded, style]} edges={edges}>
+    <SafeAreaView
+      style={[styles.screen, padded && styles.padded, { direction }, style]}
+      edges={edges}
+    >
       {children}
     </SafeAreaView>
   );
@@ -341,6 +345,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
     marginTop: 0,
+    // Follows parent `direction` so status badge sits on the start side in AR.
   },
   pageTitle: {
     color: c.foreground,

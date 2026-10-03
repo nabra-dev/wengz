@@ -10,7 +10,7 @@ import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { VoiceNotePreview } from "./VoiceNotePreview";
 import { colors } from "./ui";
-import { AppText } from "./typography";
+import { AppText, isRtlLocale } from "./typography";
 
 function isAudioUrl(url: string) {
   return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(url.split("?")[0] ?? "");
@@ -156,8 +156,10 @@ export function AttachmentPicker({
     }
   }
 
+  const direction = isRtlLocale() ? "rtl" : "ltr";
+
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 10, direction }}>
       {label ? (
         <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
           {label}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  I18nManager,
   Platform,
   Pressable,
   View,
@@ -267,7 +266,7 @@ export function RequestChat({
   const webRec = useRef<MediaRecorder | null>(null);
   const webStream = useRef<MediaStream | null>(null);
   const webChunks = useRef<BlobPart[]>([]);
-  const rtl = isRtlLocale() || I18nManager.isRTL;
+  const rtl = isRtlLocale();
 
   const thread = useMemo(
     () => buildThread(comments, user?.id, maskProviderNames),

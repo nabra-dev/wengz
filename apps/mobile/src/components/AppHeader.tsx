@@ -1,9 +1,10 @@
-import { I18nManager, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
 import { BRAND } from "../theme/brand";
 import { t } from "../i18n";
+import { isRtlLocale } from "./typography";
 
 const c = BRAND.colors;
 const LOGO_HEIGHT = 32;
@@ -29,10 +30,11 @@ type NavHeaderProps = {
  */
 export function AppNavHeader({ navigation, back }: NavHeaderProps) {
   const showBack = back != null;
-  const rtl = I18nManager.isRTL;
+  // Locale-based — do not use I18nManager.isRTL (unreliable in Expo Go).
+  const rtl = isRtlLocale();
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView edges={["top"]} style={[styles.safe, { direction: rtl ? "rtl" : "ltr" }]}>
       <View style={styles.bar}>
         <View style={styles.side}>
           {showBack ? (

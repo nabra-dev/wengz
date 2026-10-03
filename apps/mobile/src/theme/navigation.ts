@@ -1,12 +1,13 @@
-import { I18nManager, Platform } from "react-native";
+import { Platform } from "react-native";
 import { BRAND, fonts, typeScale } from "./brand";
+import { isRtlLocale } from "../components/typography";
 
 const c = BRAND.colors;
 
 /** Horizontal push — iOS default; Android uses iOS-like slide and respects RTL. */
 export function stackPushAnimation() {
   if (Platform.OS === "ios") return "default" as const;
-  return I18nManager.isRTL ? ("ios_from_left" as const) : ("ios_from_right" as const);
+  return isRtlLocale() ? ("ios_from_left" as const) : ("ios_from_right" as const);
 }
 
 /** Shared stack options — header chrome comes from `AppNavHeader`. */
@@ -65,9 +66,11 @@ export const brandTabBarOptions = {
     backgroundColor: c.card,
     borderTopColor: c.border,
     borderTopWidth: 1,
-    height: 76,
+    height: 78,
     paddingTop: 8,
     paddingBottom: 12,
+    // Center FAB hangs ~50% above the bar.
+    overflow: "visible" as const,
   },
   tabBarActiveTintColor: c.yellow,
   tabBarInactiveTintColor: c.mutedForeground,
