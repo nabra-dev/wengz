@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   addComment,
@@ -11,8 +11,8 @@ import {
   requestRevision,
 } from "../../../src/lib/api";
 import { t, i18n } from "../../../src/i18n";
-import { AttachmentPicker } from "../../../src/components/AttachmentPicker";
-import { MediaImage, MediaThumbGrid } from "../../../src/components/MediaImage";
+import { MediaImage } from "../../../src/components/MediaImage";
+import { RequestChat, type ChatComment } from "../../../src/components/RequestChat";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
 import {
   Button,
@@ -28,8 +28,6 @@ import {
   SegmentedTabs,
   StatusBadge,
   colors,
-  listContentDefaults,
-  listFillStyle,
   AppText,
 } from "../../../src/components/ui";
 import { fonts, typeScale } from "../../../src/theme/brand";
@@ -37,14 +35,7 @@ import type { AttributeResponse, ServiceAttribute } from "../../../src/types/ser
 
 type Tab = "messages" | "details";
 
-type Comment = {
-  id: string;
-  content: string;
-  type?: string;
-  createdAt?: string;
-  files?: string[];
-  user?: { name?: string | null; role?: string | null };
-};
+type Comment = ChatComment;
 
 function asAttributeResponses(raw: unknown): AttributeResponse[] {
   if (!Array.isArray(raw)) return [];
@@ -109,9 +100,6 @@ export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("messages");
-  const [message, setMessage] = useState("");
-  const [pendingFiles, setPendingFiles] = useState<string[]>([]);
-  const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -129,12 +117,10 @@ export default function RequestDetailScreen() {
   };
 
   const send = useMutation({
-    mutationFn: async (files: string[] = []) =>
-      addComment(String(id), message.trim() || (files.length ? " " : ""), files),
+    mutationFn: async (payload: { content: string; files: string[] }) =>
+      addComment(String(id), payload.content, payload.files),
     onSuccess: () => {
-      setMessage("");
-      setPendingFiles([]);
-      setPendingPreviews({});
+      setError(null);
       invalidate();
     },
     onError: (e: Error) => setError(e.message),
@@ -202,7 +188,7 @@ export default function RequestDetailScreen() {
   const attributeResponses = asAttributeResponses(request.attributeResponses);
   const comments = request.comments ?? [];
   const deliverables = comments.filter((c) => c.type === "DELIVERABLE");
-  const threadComments = comments.filter((c) => c.type !== "DELIVERABLE");
+  const canSendMessages = Boolean(request.providerId) && request.status !== "COMPLETED";
 
   const header = (
     <View>
@@ -509,95 +495,18 @@ export default function RequestDetailScreen() {
             <Muted>{t("client.requestDetail.messagingAfterClaim")}</Muted>
           </Card>
         ) : (
-          <FlatList
-            style={listFillStyle}
-            contentContainerStyle={listContentDefaults}
-            data={threadComments}
-            keyExtractor={(cmt) => cmt.id}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            alwaysBounceVertical
-            ListEmptyComponent={
-              <Card>
-                <Muted style={{ marginBottom: 0 }}>
-                  {t("client.requestDetail.messagesPlaceholder")}
-                </Muted>
-              </Card>
-            }
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderWidth: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <AppText
-                  style={{
-                    color: colors.yellow,
-                    ...typeScale.xs,
-                    fontFamily: fonts.medium,
-                    marginBottom: 4,
-                  }}
-                >
-                  {item.user?.name ?? "User"}
-                </AppText>
-                {item.content?.trim() ? (
-                  <AppText
-                    style={{ color: colors.foreground, fontFamily: fonts.regular, lineHeight: 20 }}
-                  >
-                    {item.content}
-                  </AppText>
-                ) : null}
-                {item.files?.length ? <MediaThumbGrid urls={item.files} /> : null}
-              </View>
-            )}
+          <RequestChat
+            comments={comments}
+            canSend={canSendMessages}
+            sending={send.isPending}
+            maskProviderNames
+            onError={setError}
+            onSend={async ({ content, files }) => {
+              setError(null);
+              await send.mutateAsync({ content, files });
+            }}
           />
         )}
-
-        {request.providerId && request.status !== "COMPLETED" ? (
-          <View
-            style={{
-              paddingTop: 10,
-              paddingBottom: 8,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              backgroundColor: colors.background,
-            }}
-          >
-            <AttachmentPicker
-              value={pendingFiles}
-              onChange={setPendingFiles}
-              localPreviews={pendingPreviews}
-              onLocalPreviewsChange={setPendingPreviews}
-              max={3}
-              hint={
-                pendingFiles.length
-                  ? t("requests.messages.attachmentsSendHint")
-                  : t("requests.messages.attach")
-              }
-            />
-            <Field
-              placeholder={t("client.requestDetail.messagesPlaceholder")}
-              value={message}
-              onChangeText={setMessage}
-            />
-            <Button
-              label={t("common.send")}
-              onPress={() => {
-                setError(null);
-                if (!message.trim() && pendingFiles.length === 0) return;
-                send.mutate(pendingFiles);
-              }}
-              disabled={send.isPending || (!message.trim() && pendingFiles.length === 0)}
-              variant="secondary"
-            />
-          </View>
-        ) : null}
       </KeyboardAvoidingView>
     </Screen>
   );

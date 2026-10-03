@@ -506,9 +506,10 @@ export function MessagesCard({
       </div>
 
       <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0">
-        {/* Thread — WhatsApp-like wallpaper */}
+        {/* Thread — WhatsApp-like wallpaper (ltr keeps mine=right in Arabic UI) */}
         <div
           ref={messagesContainerRef}
+          dir="ltr"
           className={cn(
             "min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-3",
             "bg-[hsl(268_28%_7%)]",
@@ -646,7 +647,7 @@ export function MessagesCard({
                           <LinkifiedText
                             text={threadComment.content}
                             className={cn(
-                              "whitespace-pre-wrap break-words",
+                              "whitespace-pre-wrap break-words [unicode-bidi:plaintext]",
                               isMine && "[&_a]:text-primary-foreground [&_a]:underline"
                             )}
                           />
@@ -717,7 +718,7 @@ export function MessagesCard({
 
             <ContactPolicyNotice text={comment} mode="strict" className="mb-2" />
 
-            <div className="flex items-end gap-1.5 sm:gap-2">
+            <div dir="ltr" className="flex items-end gap-1.5 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -745,6 +746,7 @@ export function MessagesCard({
                     resizeTextarea();
                   }}
                   rows={1}
+                  dir="auto"
                   className="max-h-32 min-h-[2.25rem] flex-1 resize-none border-0 bg-transparent px-0 py-1.5 text-sm leading-snug shadow-none focus-visible:ring-0 sm:text-[15px]"
                   disabled={addComment.isPending}
                   onKeyDown={(e) => {
