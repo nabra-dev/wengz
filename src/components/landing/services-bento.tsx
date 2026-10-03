@@ -33,6 +33,7 @@ const BENTO_IMG = {
   content: "/images/landing/bento-imgs/content.png", // 1792×2400 portrait → tall cards
   production: "/images/landing/bento-imgs/production.png", // 2189×2000
   voice: "/images/landing/bento-imgs/voice.png", // 2000×1014 wide → short cards
+  sound: "/images/landing/bento-imgs/sound.png", // 2000×1014 wide → short cards
   studio: "/images/landing/bento-imgs/studio.png", // 2000×1351
   workflow: "/images/landing/bento-imgs/workflow.png", // 2000×1351
   automation: "/images/landing/bento-imgs/automation.png", // 2000×1351
@@ -97,7 +98,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "music", // Sound
-    image: BENTO_IMG.voice,
+    image: BENTO_IMG.sound,
     icon: Music2,
     area: "music",
     imgW: 296,
