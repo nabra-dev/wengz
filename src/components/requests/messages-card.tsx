@@ -1,14 +1,13 @@
 /* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { InlineFileUpload, type UploadedFile } from "@/components/ui/file-upload";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import {
@@ -24,12 +23,13 @@ import {
   Loader2,
   MessageSquare,
   Paperclip,
+  CheckCheck,
 } from "lucide-react";
 import { showError } from "@/lib/error-handler";
 import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
 import { LinkifiedText } from "@/components/ui/linkified-text";
 import { textHasContactLeak } from "@/lib/contact-leak";
-import { cn, formatDateTime, getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
 import { useTranslations, useLocale } from "next-intl";
 import { pickSupportedAudioMime } from "@/lib/audio-recording";
@@ -69,6 +69,55 @@ interface MessagesCardProps {
   readonly variant?: "default" | "panel";
 }
 
+type ThreadItem =
+  | { kind: "day"; key: string; label: string }
+  | {
+      kind: "message";
+      comment: Comment;
+      isMine: boolean;
+      isSystem: boolean;
+      displayName: string;
+      displayImage: string | null;
+      showAvatar: boolean;
+      showName: boolean;
+      isFirstInGroup: boolean;
+      isLastInGroup: boolean;
+    };
+
+function sameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function dayKey(date: Date | string): string {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function formatMessageTime(date: Date | string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}
+
+function formatDayLabel(date: Date | string, locale: string, t: (key: string) => string): string {
+  const d = new Date(date);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (sameCalendarDay(d, today)) return t("today");
+  if (sameCalendarDay(d, yesterday)) return t("yesterday");
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(d);
+}
+
 function KindGlyph({ kind }: { readonly kind: FileKind }) {
   const cls = "h-5 w-5";
   switch (kind) {
@@ -104,11 +153,11 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
     return (
       <div
         className={cn(
-          "w-full max-w-[min(100%,20rem)] space-y-1.5 rounded-xl border p-2.5 sm:max-w-sm",
-          mine ? "border-primary-foreground/20 bg-primary/20" : "border-border bg-background/80"
+          "w-full max-w-[min(100%,18rem)] space-y-1.5 rounded-2xl p-2.5 sm:max-w-xs",
+          mine ? "bg-black/15" : "bg-black/20"
         )}
       >
-        <div className="flex items-center gap-2 text-xs opacity-80">
+        <div className="flex items-center gap-2 text-[11px] opacity-80">
           <FileAudio className="h-3.5 w-3.5" />
           <span>{t("voiceNote")}</span>
         </div>
@@ -123,17 +172,17 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full max-w-[min(100%,16rem)] overflow-hidden rounded-xl border sm:max-w-xs"
+        className="block w-full max-w-[min(100%,15rem)] overflow-hidden rounded-xl sm:max-w-[17rem]"
       >
-        <img src={url} alt={name} className="max-h-52 w-full object-cover bg-muted" />
+        <img src={url} alt={name} className="max-h-56 w-full object-cover bg-black/20" />
       </a>
     );
   }
 
   if (kind === "video") {
     return (
-      <div className="w-full max-w-[min(100%,20rem)] overflow-hidden rounded-xl border sm:max-w-sm">
-        <video src={url} controls className="max-h-52 w-full bg-muted" title={name}>
+      <div className="w-full max-w-[min(100%,18rem)] overflow-hidden rounded-xl sm:max-w-xs">
+        <video src={url} controls className="max-h-56 w-full bg-black/20" title={name}>
           <track kind="captions" />
         </video>
       </div>
@@ -146,10 +195,8 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-sm",
-        mine
-          ? "border-primary-foreground/20 bg-primary/20"
-          : "border-border bg-background/80 hover:bg-muted/60"
+        "inline-flex max-w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm",
+        mine ? "bg-black/15 hover:bg-black/25" : "bg-black/20 hover:bg-black/30"
       )}
     >
       <KindGlyph kind={kind} />
@@ -157,6 +204,76 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
       <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
     </a>
   );
+}
+
+function buildThread(
+  comments: Comment[],
+  myUserId: string | undefined,
+  locale: string,
+  t: (key: string) => string,
+  tSidebar: (key: string) => string,
+  maskProviderNames: boolean,
+  maskClientNames: boolean
+): ThreadItem[] {
+  const items: ThreadItem[] = [];
+  let lastDay: string | null = null;
+
+  comments.forEach((threadComment, index) => {
+    const key = dayKey(threadComment.createdAt);
+    if (key !== lastDay) {
+      items.push({
+        kind: "day",
+        key: `day-${key}`,
+        label: formatDayLabel(threadComment.createdAt, locale, t),
+      });
+      lastDay = key;
+    }
+
+    const isSystem = threadComment.type === "SYSTEM";
+    const isMine = Boolean(myUserId && threadComment.user?.id === myUserId);
+
+    let displayName: string;
+    let displayImage: string | null = null;
+    if (isSystem) {
+      displayName = t("system");
+    } else if (maskProviderNames && threadComment.user?.role === "PROVIDER") {
+      displayName = tSidebar("brandProviderName");
+      displayImage = "/images/logo.svg";
+    } else if (maskClientNames && threadComment.user?.role === "CLIENT") {
+      displayName = tSidebar("brandClientName");
+    } else {
+      displayName = threadComment.user.name || threadComment.user.email || "";
+      displayImage = threadComment.user.image || null;
+    }
+
+    const prev = comments[index - 1];
+    const next = comments[index + 1];
+    const sameSender = (a?: Comment, b?: Comment) => {
+      if (!a || !b) return false;
+      if (a.type === "SYSTEM" || b.type === "SYSTEM") return false;
+      return a.user?.id && b.user?.id && a.user.id === b.user.id;
+    };
+    const sameDayAs = (a?: Comment, b?: Comment) =>
+      Boolean(a && b && dayKey(a.createdAt) === dayKey(b.createdAt));
+
+    const isFirstInGroup = !sameSender(prev, threadComment) || !sameDayAs(prev, threadComment);
+    const isLastInGroup = !sameSender(threadComment, next) || !sameDayAs(threadComment, next);
+
+    items.push({
+      kind: "message",
+      comment: threadComment,
+      isMine,
+      isSystem,
+      displayName,
+      displayImage,
+      showAvatar: !isMine && !isSystem && isLastInGroup,
+      showName: !isMine && !isSystem && isFirstInGroup,
+      isFirstInGroup,
+      isLastInGroup,
+    });
+  });
+
+  return items;
 }
 
 export function MessagesCard({
@@ -184,9 +301,15 @@ export function MessagesCard({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previousLastCommentIdRef = useRef<string | null>(null);
 
   const utils = trpc.useUtils();
+
+  const thread = useMemo(
+    () => buildThread(comments, myUserId, locale, t, tSidebar, maskProviderNames, maskClientNames),
+    [comments, myUserId, locale, t, tSidebar, maskProviderNames, maskClientNames]
+  );
 
   useEffect(() => {
     const handleThreadUpdate = (event: Event) => {
@@ -213,10 +336,10 @@ export function MessagesCard({
       setComment("");
       setCommentFiles([]);
       setShowAttach(false);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
       utils.request.getById.invalidate({ id: requestId });
-      toast.success(t("messageSent"), {
-        description: t("messageSuccess"),
-      });
     },
     onError: (error: unknown) => {
       showError(error, t("messageFailed"));
@@ -293,9 +416,6 @@ export function MessagesCard({
           );
           setCommentFiles((prev) => [...prev, uploaded]);
           setShowAttach(true);
-          toast.success(t("voiceAttached"), {
-            description: t("voiceAttachedHint"),
-          });
         } catch (e) {
           showError(e, t("voiceAttachFailed"));
         } finally {
@@ -346,146 +466,235 @@ export function MessagesCard({
     if (commentFiles.length > 0) setShowAttach(true);
   }, [commentFiles.length]);
 
+  const resizeTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  };
+
   const isPanel = variant === "panel";
+  const attachmentFallback = t("attachmentFallback");
 
   return (
     <Card
       className={cn(
-        "flex flex-col overflow-hidden border-border/80 shadow-sm",
+        "flex flex-col overflow-hidden border-border/70 shadow-md",
         isPanel
-          ? // Height often overridden by RequestWorkspace on mobile for full-viewport chat
-            "h-[min(70dvh,36rem)] min-h-[22rem] lg:h-[min(75dvh,48rem)]"
+          ? "h-[min(70dvh,36rem)] min-h-[22rem] lg:h-[min(75dvh,48rem)]"
           : "min-h-[28rem] h-[min(65dvh,36rem)]"
       )}
     >
-      <CardHeader className="shrink-0 space-y-0.5 border-b bg-muted/30 px-3 py-3 sm:px-4 sm:py-3.5">
-        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          {title || t("title")}
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm line-clamp-1">
-          {description || t("description")}
-        </CardDescription>
-      </CardHeader>
+      {/* Compact chat header */}
+      <div className="shrink-0 border-b border-border/60 bg-[hsl(var(--card))] px-3 py-2.5 sm:px-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <MessageSquare className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-semibold sm:text-base">{title || t("title")}</h3>
+            <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+              {description || t("description")}
+            </p>
+          </div>
+          {comments.length > 0 ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+              {comments.length}
+            </span>
+          ) : null}
+        </div>
+      </div>
 
       <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0">
-        {/* Thread */}
+        {/* Thread — WhatsApp-like wallpaper */}
         <div
           ref={messagesContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4 space-y-3"
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-3",
+            "bg-[hsl(268_28%_7%)]",
+            "[background-image:radial-gradient(hsl(268_20%_18%_/_0.55)_1px,transparent_1px)]",
+            "[background-size:18px_18px]"
+          )}
         >
           {comments.length === 0 ? (
-            <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
-              <MessageSquare className="h-10 w-10 opacity-40" />
-              <p className="text-sm sm:text-base font-medium">{t("noMessages")}</p>
-              <p className="text-xs sm:text-sm max-w-xs">{t("noMessagesHint")}</p>
+            <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 px-6 text-center">
+              <div className="rounded-full bg-primary/15 p-4 text-primary">
+                <MessageSquare className="h-8 w-8" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground sm:text-base">
+                  {t("noMessages")}
+                </p>
+                <p className="max-w-xs text-xs text-muted-foreground sm:text-sm">
+                  {t("noMessagesHint")}
+                </p>
+              </div>
             </div>
           ) : (
-            comments.map((threadComment) => {
-              const isSystem = threadComment.type === "SYSTEM";
-              const isMine = Boolean(myUserId && threadComment.user?.id === myUserId);
-              let displayName: string;
-              let displayImage: string | null = null;
-              if (isSystem) {
-                displayName = t("system");
-              } else if (maskProviderNames && threadComment.user?.role === "PROVIDER") {
-                displayName = tSidebar("brandProviderName");
-                displayImage = "/images/logo.svg";
-              } else if (maskClientNames && threadComment.user?.role === "CLIENT") {
-                displayName = tSidebar("brandClientName");
-              } else {
-                displayName = threadComment.user.name || threadComment.user.email || "";
-                displayImage = threadComment.user.image || null;
-              }
-              const showText =
-                threadComment.content.trim().length > 0 &&
-                threadComment.content.trim() !== t("attachmentFallback");
+            <div className="flex flex-col gap-1">
+              {thread.map((item) => {
+                if (item.kind === "day") {
+                  return (
+                    <div key={item.key} className="sticky top-1 z-[1] flex justify-center py-2">
+                      <span className="rounded-full bg-[hsl(268_22%_14%_/_0.92)] px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-white/5 backdrop-blur">
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                }
 
-              if (isSystem) {
+                const {
+                  comment: threadComment,
+                  isMine,
+                  isSystem,
+                  displayName,
+                  displayImage,
+                  showAvatar,
+                  showName,
+                  isFirstInGroup,
+                  isLastInGroup,
+                } = item;
+
+                if (isSystem) {
+                  return (
+                    <div key={threadComment.id} className="flex justify-center px-2 py-1.5">
+                      <div className="max-w-[92%] rounded-lg bg-[hsl(268_22%_14%_/_0.9)] px-3 py-1.5 text-center text-[11px] leading-relaxed text-muted-foreground shadow-sm ring-1 ring-white/5 sm:text-xs">
+                        {threadComment.content}
+                      </div>
+                    </div>
+                  );
+                }
+
+                const showText =
+                  threadComment.content.trim().length > 0 &&
+                  threadComment.content.trim() !== attachmentFallback;
+                const timeLabel = formatMessageTime(threadComment.createdAt, locale);
+                const isDeliverable = threadComment.type === "DELIVERABLE";
+
                 return (
-                  <div key={threadComment.id} className="flex justify-center px-2">
-                    <div className="max-w-[90%] rounded-full bg-muted px-3 py-1.5 text-center text-xs text-muted-foreground sm:text-sm">
-                      {threadComment.content}
+                  <div
+                    key={threadComment.id}
+                    className={cn(
+                      "flex gap-1.5 px-1",
+                      isMine ? "flex-row-reverse" : "flex-row",
+                      isFirstInGroup ? "mt-2" : "mt-0.5"
+                    )}
+                  >
+                    {!isMine ? (
+                      <div className="flex w-8 shrink-0 items-end sm:w-9">
+                        {showAvatar ? (
+                          <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
+                            <AvatarImage src={displayImage || ""} />
+                            <AvatarFallback className="text-[10px]">
+                              {getInitials(displayName)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <div
+                      className={cn(
+                        "flex min-w-0 max-w-[min(100%,18.5rem)] flex-col sm:max-w-[min(100%,22rem)] md:max-w-sm",
+                        isMine ? "items-end" : "items-start"
+                      )}
+                    >
+                      {showName ? (
+                        <span className="mb-0.5 px-1 text-[11px] font-medium text-[#E0F840]/80">
+                          {displayName}
+                        </span>
+                      ) : null}
+
+                      <div
+                        className={cn(
+                          "relative w-fit max-w-full px-3 pb-1.5 pt-2 text-[13.5px] leading-relaxed shadow-sm sm:text-sm",
+                          isMine
+                            ? cn(
+                                "bg-primary text-primary-foreground",
+                                isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
+                                isFirstInGroup &&
+                                  !isLastInGroup &&
+                                  "rounded-2xl rounded-tr-md rounded-br-md",
+                                !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
+                                !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-r-md"
+                              )
+                            : cn(
+                                "bg-[hsl(268_24%_16%)] text-foreground ring-1 ring-white/5",
+                                isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
+                                isFirstInGroup &&
+                                  !isLastInGroup &&
+                                  "rounded-2xl rounded-tl-md rounded-bl-md",
+                                !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
+                                !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-l-md"
+                              )
+                        )}
+                      >
+                        {isDeliverable ? (
+                          <span
+                            className={cn(
+                              "mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              isMine
+                                ? "bg-primary-foreground/15 text-primary-foreground"
+                                : "bg-[#E0F840]/15 text-[#E0F840]"
+                            )}
+                          >
+                            {t("deliverable")}
+                          </span>
+                        ) : null}
+
+                        {showText ? (
+                          <LinkifiedText
+                            text={threadComment.content}
+                            className={cn(
+                              "whitespace-pre-wrap break-words",
+                              isMine && "[&_a]:text-primary-foreground [&_a]:underline"
+                            )}
+                          />
+                        ) : null}
+
+                        {threadComment.files.length > 0 ? (
+                          <div
+                            className={cn(
+                              "flex flex-col gap-2",
+                              showText && "mt-2",
+                              isMine ? "items-end" : "items-start"
+                            )}
+                          >
+                            {threadComment.files.map((file: string, i: number) => (
+                              <MessageFileAttachment
+                                key={`${threadComment.id}-file-${i}`}
+                                url={file}
+                                mine={isMine}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div
+                          className={cn(
+                            "mt-1 flex items-center justify-end gap-1 text-[10px] leading-none",
+                            isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                          )}
+                        >
+                          <span>{timeLabel}</span>
+                          {isMine ? (
+                            <CheckCheck className="h-3 w-3 opacity-80" aria-hidden />
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
-              }
-
-              return (
-                <div
-                  key={threadComment.id}
-                  className={cn("flex gap-2 sm:gap-3", isMine ? "flex-row-reverse" : "flex-row")}
-                >
-                  <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 mt-0.5">
-                    <AvatarImage src={displayImage || ""} />
-                    <AvatarFallback className="text-xs">{getInitials(displayName)}</AvatarFallback>
-                  </Avatar>
-
-                  <div
-                    className={cn(
-                      "min-w-0 max-w-[min(100%,20rem)] sm:max-w-[min(100%,24rem)] md:max-w-md flex flex-col gap-1",
-                      isMine ? "items-end" : "items-start"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground",
-                        isMine && "flex-row-reverse"
-                      )}
-                    >
-                      <span className="font-medium text-foreground/80">{displayName}</span>
-                      <span>{formatDateTime(threadComment.createdAt, locale)}</span>
-                      {threadComment.type === "DELIVERABLE" && (
-                        <Badge variant="secondary" className="h-5 text-[10px]">
-                          {t("deliverable")}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {showText && (
-                      <div
-                        className={cn(
-                          "rounded-2xl px-3.5 py-2.5 text-sm sm:text-[15px] leading-relaxed break-words shadow-sm",
-                          isMine
-                            ? "rounded-tr-md bg-primary text-primary-foreground"
-                            : "rounded-tl-md bg-muted text-foreground"
-                        )}
-                      >
-                        <LinkifiedText
-                          text={threadComment.content}
-                          className={cn(isMine && "[&_a]:text-primary-foreground [&_a]:underline")}
-                        />
-                      </div>
-                    )}
-
-                    {threadComment.files.length > 0 && (
-                      <div
-                        className={cn(
-                          "flex flex-col gap-2 w-full",
-                          isMine ? "items-end" : "items-start"
-                        )}
-                      >
-                        {threadComment.files.map((file: string, i: number) => (
-                          <MessageFileAttachment
-                            key={`${threadComment.id}-file-${i}`}
-                            url={file}
-                            mine={isMine}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+              })}
+            </div>
           )}
         </div>
 
-        {/* Composer */}
+        {/* Composer — WhatsApp-style bar */}
         {canSendMessages ? (
-          <div className="shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-2.5 py-2.5 sm:px-3 sm:py-3 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 border-t border-border/60 bg-[hsl(var(--card))] px-2 py-2 sm:px-3 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             {(showAttach || commentFiles.length > 0) && (
-              <div className="mb-2.5 max-h-40 overflow-y-auto rounded-xl border bg-muted/30 p-2">
+              <div className="mb-2 max-h-36 overflow-y-auto rounded-2xl border border-border/60 bg-muted/40 p-2">
                 <InlineFileUpload
                   onFilesChange={setCommentFiles}
                   maxFiles={3}
@@ -496,20 +705,27 @@ export function MessagesCard({
               </div>
             )}
 
-            {isRecording && (
-              <p className="mb-2 text-center text-xs font-medium text-destructive sm:text-sm">
+            {isRecording ? (
+              <div className="mb-2 flex items-center justify-center gap-2 rounded-full bg-destructive/15 px-3 py-1.5 text-xs font-medium text-destructive">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+                </span>
                 {t("recordingInProgress")}
-              </p>
-            )}
+              </div>
+            ) : null}
 
             <ContactPolicyNotice text={comment} mode="strict" className="mb-2" />
 
             <div className="flex items-end gap-1.5 sm:gap-2">
               <Button
                 type="button"
-                variant={showAttach || commentFiles.length > 0 ? "secondary" : "ghost"}
+                variant="ghost"
                 size="icon"
-                className="h-11 w-11 shrink-0 rounded-xl"
+                className={cn(
+                  "h-11 w-11 shrink-0 rounded-full",
+                  (showAttach || commentFiles.length > 0) && "bg-primary/15 text-primary"
+                )}
                 onClick={() => setShowAttach((v) => !v)}
                 disabled={addComment.isPending || isRecording || isUploadingVoice}
                 title={t("attach")}
@@ -519,58 +735,66 @@ export function MessagesCard({
                 <Paperclip className="h-5 w-5" />
               </Button>
 
-              <Button
-                type="button"
-                variant={isRecording ? "destructive" : "ghost"}
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-xl"
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={addComment.isPending || isUploadingVoice}
-                title={isRecording ? t("stopRecording") : t("recordVoice")}
-                aria-label={isRecording ? t("stopRecording") : t("recordVoice")}
-              >
-                {isUploadingVoice ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : isRecording ? (
-                  <Square className="h-5 w-5" />
-                ) : (
-                  <Mic className="h-5 w-5" />
-                )}
-              </Button>
+              <div className="flex min-h-11 min-w-0 flex-1 items-end rounded-[1.5rem] border border-border/70 bg-muted/40 px-3 py-1.5 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder={placeholder || t("placeholder")}
+                  value={comment}
+                  onChange={(e) => {
+                    setComment(e.target.value);
+                    resizeTextarea();
+                  }}
+                  rows={1}
+                  className="max-h-32 min-h-[2.25rem] flex-1 resize-none border-0 bg-transparent px-0 py-1.5 text-sm leading-snug shadow-none focus-visible:ring-0 sm:text-[15px]"
+                  disabled={addComment.isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendComment();
+                    }
+                  }}
+                />
+              </div>
 
-              <Textarea
-                placeholder={placeholder || t("placeholder")}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={1}
-                className="min-h-11 max-h-32 flex-1 resize-none rounded-xl px-3 py-2.5 text-sm sm:text-base leading-snug"
-                disabled={addComment.isPending}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendComment();
-                  }
-                }}
-              />
-
-              <Button
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-xl"
-                onClick={handleSendComment}
-                disabled={sendDisabled}
-                title={t("send")}
-                aria-label={t("send")}
-              >
-                {addComment.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
+              {hasContentForSend ? (
+                <Button
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-full bg-primary text-primary-foreground shadow-[0_4px_16px_rgba(105,13,212,0.35)] hover:bg-primary/90"
+                  onClick={handleSendComment}
+                  disabled={sendDisabled}
+                  title={t("send")}
+                  aria-label={t("send")}
+                >
+                  {addComment.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant={isRecording ? "destructive" : "ghost"}
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-full"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={addComment.isPending || isUploadingVoice}
+                  title={isRecording ? t("stopRecording") : t("recordVoice")}
+                  aria-label={isRecording ? t("stopRecording") : t("recordVoice")}
+                >
+                  {isUploadingVoice ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : isRecording ? (
+                    <Square className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         ) : (
-          <div className="shrink-0 border-t px-4 py-4 text-center text-sm text-muted-foreground">
+          <div className="shrink-0 border-t border-border/60 px-4 py-4 text-center text-sm text-muted-foreground">
             {t("requestCompleted")}
           </div>
         )}

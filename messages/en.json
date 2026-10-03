@@ -1614,6 +1614,8 @@
       "placeholder": "Type your message...",
       "noMessages": "No messages yet",
       "noMessagesHint": "Say hello or send a voice note — your message will show up here.",
+      "today": "Today",
+      "yesterday": "Yesterday",
       "attach": "Attach files",
       "system": "System",
       "deliverable": "Deliverable",
