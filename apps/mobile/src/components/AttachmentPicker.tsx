@@ -8,8 +8,13 @@ import { uploadFile } from "../lib/api";
 import { isLikelyImageUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
+import { VoiceNotePreview } from "./VoiceNotePreview";
 import { colors } from "./ui";
 import { AppText } from "./typography";
+
+function isAudioUrl(url: string) {
+  return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(url.split("?")[0] ?? "");
+}
 
 type Pending = {
   id: string;
@@ -255,6 +260,21 @@ export function AttachmentPicker({
           {current.map((url, index) => {
             const preview = localPreviews[url];
             const image = Boolean(preview) || isLikelyImageUrl(url);
+            const audio = isAudioUrl(url);
+
+            if (audio) {
+              return (
+                <View key={`${url}-${index}`} style={{ width: "100%" }}>
+                  <VoiceNotePreview
+                    url={url}
+                    variant="card"
+                    disabled={disabled}
+                    onRemove={disabled ? undefined : () => removeAt(index)}
+                  />
+                </View>
+              );
+            }
+
             return (
               <View
                 key={`${url}-${index}`}

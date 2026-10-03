@@ -13,18 +13,16 @@ import {
   RecordingPresets,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
-  useAudioPlayer,
-  useAudioPlayerStatus,
   useAudioRecorder,
 } from "expo-audio";
 import { t, i18n } from "../i18n";
 import { uploadFile } from "../lib/api";
-import { getAccessToken } from "../lib/auth-store";
-import { fileNameFromUrl, isLikelyImageUrl, resolveMediaUrl } from "../lib/media";
+import { fileNameFromUrl, isLikelyImageUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { useAuth } from "../providers/auth";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { MediaImage } from "./MediaImage";
+import { VoiceNotePreview } from "./VoiceNotePreview";
 import { AppText, AppTextInput, isRtlLocale } from "./typography";
 import { colors } from "./ui";
 
@@ -186,141 +184,6 @@ function bubbleRadius(isMine: boolean, isFirst: boolean, isLast: boolean) {
   };
 }
 
-async function loadAuthedMediaUri(remoteUrl: string): Promise<string> {
-  const token = await getAccessToken();
-  const res = await fetch(resolveMediaUrl(remoteUrl), {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!res.ok) throw new Error(`audio ${res.status}`);
-  const blob = await res.blob();
-  if (
-    typeof URL !== "undefined" &&
-    typeof URL.createObjectURL === "function" &&
-    Platform.OS === "web"
-  ) {
-    return URL.createObjectURL(blob);
-  }
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("Failed to read audio"));
-    };
-    reader.onerror = () => reject(new Error("Failed to read audio"));
-    reader.readAsDataURL(blob);
-  });
-}
-
-function VoiceNoteBubble({ url, mine }: { url: string; mine: boolean }) {
-  const player = useAudioPlayer();
-  const status = useAudioPlayerStatus(player);
-  const playing = status.playing;
-  const [ready, setReady] = useState(false);
-  const objectUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setReady(false);
-    (async () => {
-      try {
-        const src = await loadAuthedMediaUri(url);
-        if (cancelled) {
-          if (src.startsWith("blob:")) URL.revokeObjectURL(src);
-          return;
-        }
-        if (objectUrlRef.current?.startsWith("blob:")) {
-          URL.revokeObjectURL(objectUrlRef.current);
-        }
-        objectUrlRef.current = src.startsWith("blob:") ? src : null;
-        player.replace(src);
-        setReady(true);
-      } catch {
-        if (!cancelled) setReady(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (objectUrlRef.current?.startsWith("blob:")) {
-        URL.revokeObjectURL(objectUrlRef.current);
-      }
-      objectUrlRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when url changes
-  }, [url]);
-
-  return (
-    <Pressable
-      onPress={() => {
-        if (!ready) return;
-        if (playing) player.pause();
-        else {
-          void (async () => {
-            if (status.didJustFinish) await player.seekTo(0);
-            player.play();
-          })();
-        }
-      }}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        minWidth: 180,
-        paddingVertical: 6,
-        paddingHorizontal: 4,
-        opacity: ready ? 1 : 0.7,
-      }}
-    >
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: mine ? "rgba(0,0,0,0.18)" : "rgba(105,13,212,0.25)",
-        }}
-      >
-        {!ready ? (
-          <ActivityIndicator size="small" color={mine ? colors.yellow : colors.foreground} />
-        ) : (
-          <Ionicons
-            name={playing ? "pause" : "play"}
-            size={18}
-            color={mine ? colors.yellow : colors.foreground}
-          />
-        )}
-      </View>
-      <View style={{ flex: 1, gap: 4 }}>
-        <AppText
-          style={{
-            color: mine ? "rgba(245,247,232,0.9)" : colors.foreground,
-            fontFamily: fonts.medium,
-            ...typeScale.sm,
-          }}
-        >
-          {t("requests.messages.voiceNote")}
-        </AppText>
-        <View
-          style={{
-            height: 3,
-            borderRadius: 2,
-            backgroundColor: mine ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.12)",
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              height: 3,
-              width: `${Math.min(100, Math.max(4, (status.currentTime / (status.duration || 1)) * 100))}%`,
-              backgroundColor: mine ? colors.yellow : colors.purple,
-            }}
-          />
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 function MessageAttachment({ url, mine }: { url: string; mine: boolean }) {
   if (isAudioUrl(url)) {
     return (
@@ -331,7 +194,7 @@ function MessageAttachment({ url, mine }: { url: string; mine: boolean }) {
           backgroundColor: mine ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.22)",
         }}
       >
-        <VoiceNoteBubble url={url} mine={mine} />
+        <VoiceNotePreview url={url} mine={mine} variant="bubble" />
       </View>
     );
   }
@@ -394,7 +257,6 @@ export function RequestChat({
   maskProviderNames = true,
 }: Props) {
   const { user } = useAuth();
-  const listRef = useRef<FlatList<ThreadItem>>(null);
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
@@ -405,13 +267,14 @@ export function RequestChat({
   const webRec = useRef<MediaRecorder | null>(null);
   const webStream = useRef<MediaStream | null>(null);
   const webChunks = useRef<BlobPart[]>([]);
-  const prevLastId = useRef<string | null>(null);
   const rtl = isRtlLocale() || I18nManager.isRTL;
 
   const thread = useMemo(
     () => buildThread(comments, user?.id, maskProviderNames),
     [comments, user?.id, maskProviderNames]
   );
+  /** Newest-first for inverted FlatList — opens pinned to the latest message. */
+  const listData = useMemo(() => [...thread].reverse(), [thread]);
 
   const attachmentFallback = t("requests.messages.attachmentFallback");
   const hasContent = message.trim().length > 0 || pendingFiles.length > 0;
@@ -419,16 +282,6 @@ export function RequestChat({
   useEffect(() => {
     if (pendingFiles.length > 0) setShowAttach(true);
   }, [pendingFiles.length]);
-
-  useEffect(() => {
-    const lastId = comments.at(-1)?.id ?? null;
-    if (lastId && lastId !== prevLastId.current) {
-      prevLastId.current = lastId;
-      requestAnimationFrame(() => {
-        listRef.current?.scrollToEnd({ animated: true });
-      });
-    }
-  }, [comments]);
 
   useEffect(() => {
     return () => {
@@ -772,15 +625,14 @@ export function RequestChat({
   return (
     <View style={{ flex: 1, direction: "ltr" as const }}>
       <FlatList
-        ref={listRef}
-        data={thread}
+        data={listData}
+        inverted
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
         style={{ flex: 1, backgroundColor: "#120C1A" }}
         contentContainerStyle={{
           flexGrow: 1,
           paddingVertical: 8,
-          paddingBottom: 12,
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -794,6 +646,8 @@ export function RequestChat({
               paddingHorizontal: 28,
               paddingVertical: 48,
               gap: 12,
+              // inverted list flips empty state — un-flip it
+              transform: [{ scaleY: -1 }],
             }}
           >
             <View

@@ -332,13 +332,15 @@ const styles = StyleSheet.create({
   },
   padded: {
     paddingHorizontal: 16,
+    /** Breathing room under AppNavHeader on every tab/stack screen. */
+    paddingTop: 16,
   },
   pageHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
     marginBottom: 16,
-    marginTop: 4,
+    marginTop: 0,
   },
   pageTitle: {
     color: c.foreground,

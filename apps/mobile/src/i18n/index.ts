@@ -12,40 +12,46 @@ i18n.enableFallback = true;
 
 export type AppLocale = "en" | "ar";
 
-function syncRtl(rtl: boolean) {
-  if (Platform.OS === "web") return false;
-  I18nManager.allowRTL(true);
-  I18nManager.swapLeftAndRightInRTL(true);
-  if (I18nManager.isRTL === rtl) return false;
-  I18nManager.forceRTL(rtl);
-  return true;
+function syncRtl(rtl: boolean): void {
+  if (Platform.OS === "web") return;
+  try {
+    I18nManager.allowRTL(true);
+    I18nManager.swapLeftAndRightInRTL(true);
+    if (I18nManager.isRTL !== rtl) {
+      I18nManager.forceRTL(rtl);
+    }
+  } catch {
+    /* Expo Go / unsupported — UI RTL still works via AppText + RouterLocaleProvider */
+  }
 }
 
+/**
+ * Cold start: apply stored locale + best-effort RTL.
+ * Never reload here — Expo Go often ignores `forceRTL` across reloads, which
+ * previously called `reloadAppAsync` forever on the splash screen.
+ */
 export async function initLocale(): Promise<AppLocale> {
   const locale = await getStoredLocale();
   i18n.locale = locale;
-  await setStoredLocale(locale);
-  const rtlChanged = syncRtl(locale === "ar");
-  // Cold start with stored AR while native is still LTR — reload once so RTL sticks.
-  if (rtlChanged) {
-    await reloadAppAsync();
-  }
+  syncRtl(locale === "ar");
   return locale;
 }
 
 /**
- * Persist locale and sync native RTL. Reloads the app on native so Expo Router
- * direction, tab titles, and layout mirrors apply (forceRTL needs a restart).
+ * Persist locale and sync native RTL. Reloads once on native only when the
+ * user actually changes language (not on every cold start).
  */
 export async function applyLocale(
   locale: AppLocale,
   options?: { reload?: boolean }
 ): Promise<void> {
   const shouldReload = options?.reload ?? true;
+  const prev = await getStoredLocale();
   i18n.locale = locale;
   await setStoredLocale(locale);
   syncRtl(locale === "ar");
-  if (shouldReload && Platform.OS !== "web") {
+
+  if (shouldReload && Platform.OS !== "web" && prev !== locale) {
     await reloadAppAsync();
   }
 }

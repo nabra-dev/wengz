@@ -14,6 +14,7 @@ import { fileNameFromUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
 import { AppText } from "./typography";
+import { VoiceNotePreview } from "./VoiceNotePreview";
 
 type Props = {
   value: string[];
@@ -313,41 +314,13 @@ export function VoiceRecorder({
       ) : null}
 
       {value.map((url, index) => (
-        <View
+        <VoiceNotePreview
           key={`${url}-${index}`}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            padding: 10,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.muted,
-          }}
-        >
-          <Ionicons name="musical-notes-outline" size={20} color={colors.yellow} />
-          <AppText
-            numberOfLines={1}
-            style={{
-              flex: 1,
-              color: colors.foreground,
-              fontFamily: fonts.regular,
-              ...typeScale.sm,
-            }}
-          >
-            {fileNameFromUrl(url)}
-          </AppText>
-          {!disabled && !recording ? (
-            <Pressable onPress={() => removeAt(index)} hitSlop={8}>
-              <AppText
-                style={{ color: colors.destructive, fontFamily: fonts.medium, ...typeScale.sm }}
-              >
-                {t("client.request.attachments.remove")}
-              </AppText>
-            </Pressable>
-          ) : null}
-        </View>
+          url={url}
+          variant="card"
+          disabled={disabled || recording || uploading}
+          onRemove={disabled || recording || uploading ? undefined : () => removeAt(index)}
+        />
       ))}
     </View>
   );
