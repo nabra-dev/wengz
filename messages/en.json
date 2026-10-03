@@ -86,6 +86,8 @@
       "socialProof": "Real pros working AI on your behalf",
       "promptPlaceholder": "Tell us what you need…",
       "promptHint": "Write a short brief—we’ll route it to the right person.",
+      "working": "Getting a quick reply…",
+      "askAgain": "Ask something else",
       "uploadTooltip": "File upload is available after you sign in.",
       "submitWrongRole": "Sign in with a client account to create a request from here.",
       "promptRotate0": "I need social design that sells—not just something pretty. Who handles that?",

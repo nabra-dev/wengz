@@ -4,7 +4,7 @@ import { Link } from "@/i18n/routing";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -249,9 +249,7 @@ export default function LandingPage({
   const [heroReply, setHeroReply] = useState("");
   const [heroLoadingReply, setHeroLoadingReply] = useState(false);
   const [heroTypingReply, setHeroTypingReply] = useState(false);
-  const [isHeroReady, setIsHeroReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [promptRotateIndex, setPromptRotateIndex] = useState(0);
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -271,21 +269,6 @@ export default function LandingPage({
   const packages: Package[] = (packagesData as Package[] | undefined) ?? [];
   const showPackagesSkeleton = isPackagesLoading && packages.length === 0;
 
-  useEffect(() => {
-    // Fallback: never block hero content forever on slow networks/dev hiccups.
-    const id = setTimeout(() => setIsHeroReady(true), 3500);
-    return () => clearTimeout(id);
-  }, []);
-
-  useEffect(() => {
-    if (isHeroReady) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isHeroReady]);
-
   const getLocalizedText = (
     text: string | undefined,
     i18nObj: Record<string, string> | undefined
@@ -300,30 +283,6 @@ export default function LandingPage({
     }
     return pkg.features || [];
   };
-
-  const promptRotations = useMemo(() => {
-    const staticExamples = [
-      t("landing.hero.promptRotate0"),
-      t("landing.hero.promptRotate1"),
-      t("landing.hero.promptRotate2"),
-      t("landing.hero.promptRotate3"),
-      t("landing.hero.promptRotate4"),
-      t("landing.hero.promptRotate5"),
-      t("landing.hero.promptRotate6"),
-    ];
-    return staticExamples;
-  }, [t]);
-
-  useEffect(() => {
-    if (heroChatPhase !== "idle") return;
-    if (heroPrompt.trim().length > 0) return;
-    const len = promptRotations.length;
-    if (len === 0) return;
-    const id = setInterval(() => {
-      setPromptRotateIndex((i) => (i + 1) % len);
-    }, 4200);
-    return () => clearInterval(id);
-  }, [heroChatPhase, heroPrompt, promptRotations.length]);
 
   useEffect(() => {
     return () => {
@@ -597,28 +556,6 @@ export default function LandingPage({
         </div>
       </motion.header>
 
-      {isHeroReady ? null : (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <div className="flex flex-col items-center gap-8 sm:gap-10">
-            <span className="sr-only">{locale === "ar" ? "جاري التحميل" : "Loading"}</span>
-            <BrandLogo tone="auto" className="h-16 sm:h-24 md:h-28" />
-            <div className="flex items-center gap-3 sm:gap-4" aria-hidden>
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="landing-loader-dot h-4 w-4 rounded-full bg-gradient-to-br from-[#E0F840] to-[#690DD4] shadow-[0_0_14px_rgba(224,248,64,0.4)] sm:h-5 sm:w-5"
-                  style={{ animationDelay: `${i * 180}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
         <section className="relative isolate flex min-h-landing-screen flex-col justify-end overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
@@ -630,8 +567,6 @@ export default function LandingPage({
               priority
               sizes="100vw"
               className="object-cover object-[center_30%] scale-105 sm:object-center"
-              onLoad={() => setIsHeroReady(true)}
-              onError={() => setIsHeroReady(true)}
               aria-hidden
             />
             <div
@@ -713,9 +648,9 @@ export default function LandingPage({
                         setHeroPrompt(e.target.value);
                       }}
                       readOnly={heroChatPhase !== "idle"}
-                      placeholder=" "
+                      placeholder={t("landing.hero.promptPlaceholder")}
                       rows={2}
-                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm leading-8 text-white placeholder:text-transparent focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
+                      className={`relative z-[1] w-full resize-none bg-transparent px-3 py-2 text-sm leading-8 text-white placeholder:text-white/45 focus:outline-none focus:ring-0 read-only:cursor-default ${textDirectionClass}`}
                       onKeyDown={(e) => {
                         if (heroChatPhase !== "idle") return;
                         if (e.key === "Enter" && !e.shiftKey) {
@@ -725,68 +660,65 @@ export default function LandingPage({
                       }}
                       aria-label={t("landing.hero.promptPlaceholder")}
                     />
-                    {heroChatPhase === "idle" && !heroPrompt && promptRotations.length > 0 && (
-                      <div
-                        className={`pointer-events-none absolute inset-0 z-0 flex items-start px-3 py-2 ${textDirectionClass}`}
+                    {heroChatPhase === "awaitingReply" && heroLoadingReply ? (
+                      <p
+                        className={`px-3 pb-1 text-xs text-white/55 ${textDirectionClass}`}
+                        aria-live="polite"
                       >
-                        <AnimatePresence mode="wait">
-                          <motion.span
-                            key={promptRotateIndex}
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -6 }}
-                            transition={{ duration: 0.35 }}
-                            className="line-clamp-2 text-sm leading-8 text-white/70"
-                          >
-                            {promptRotations[promptRotateIndex % promptRotations.length]}
-                          </motion.span>
-                        </AnimatePresence>
-                      </div>
-                    )}
-                    {heroChatPhase === "awaitingReply" && heroLoadingReply && (
-                      <div
-                        className={`pointer-events-none absolute inset-0 z-[2] flex items-center justify-center gap-2 bg-black/40 px-3 backdrop-blur-[2px] ${textDirectionClass}`}
-                      >
-                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-white/60" />
-                        <span className="text-sm text-white/60">
-                          {locale === "ar" ? "جاري التفكير..." : "Thinking..."}
-                        </span>
-                      </div>
-                    )}
-                    {heroChatPhase === "error" && (
+                        {t("landing.hero.working")}
+                      </p>
+                    ) : null}
+                    {heroChatPhase === "error" ? (
                       <p
                         className={`relative z-[1] px-3 pb-2 text-sm text-red-400 ${textDirectionClass}`}
                       >
                         {locale === "ar"
-                          ? "تعذر توليد الرد. حدّث الصفحة للمحاولة مرة أخرى."
-                          : "Could not generate a reply. Refresh the page to try again."}
+                          ? "تعذر توليد الرد. جرّب مرة تانية."
+                          : "Couldn’t get a reply. Try again."}
                       </p>
-                    )}
+                    ) : null}
                   </>
                 )}
               </div>
-              <div
-                className={`flex flex-nowrap items-center justify-between gap-2 border-t border-white/15 px-1.5 pb-1 pt-2 sm:px-2 ${
-                  heroChatPhase === "idle" ? "" : "opacity-70"
-                }`}
-              >
+              <div className="flex flex-nowrap items-center justify-between gap-2 border-t border-white/15 px-1.5 pb-1 pt-2 sm:px-2">
                 <div className="group relative shrink-0">
-                  <button
-                    type="button"
-                    disabled
-                    className="cursor-not-allowed rounded-full p-1.5 text-white/40 opacity-50 sm:p-2"
-                    aria-label={t("landing.hero.uploadTooltip")}
-                  >
-                    <Plus className="h-5 w-5" />
-                  </button>
                   {heroChatPhase === "idle" ? (
-                    <span
-                      role="tooltip"
-                      className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md border border-white/15 bg-black/90 px-2.5 py-1.5 text-center text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                    <>
+                      <button
+                        type="button"
+                        disabled
+                        className="cursor-not-allowed rounded-full p-1.5 text-white/40 opacity-50 sm:p-2"
+                        aria-label={t("landing.hero.uploadTooltip")}
+                      >
+                        <Plus className="h-5 w-5" />
+                      </button>
+                      <span
+                        role="tooltip"
+                        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md border border-white/15 bg-black/90 px-2.5 py-1.5 text-center text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                      >
+                        {t("landing.hero.uploadTooltip")}
+                      </span>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typingIntervalRef.current) {
+                          clearInterval(typingIntervalRef.current);
+                          typingIntervalRef.current = null;
+                        }
+                        setHeroChatPhase("idle");
+                        setHeroPrompt("");
+                        setHeroSubmittedPrompt("");
+                        setHeroReply("");
+                        setHeroTypingReply(false);
+                        setHeroLoadingReply(false);
+                      }}
+                      className="rounded-full px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
                     >
-                      {t("landing.hero.uploadTooltip")}
-                    </span>
-                  ) : null}
+                      {t("landing.hero.askAgain")}
+                    </button>
+                  )}
                 </div>
                 <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
                   <span
