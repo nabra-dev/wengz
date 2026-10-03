@@ -1,11 +1,11 @@
 import { Text, View } from "react-native";
 import { BrandLogo } from "./BrandLogo";
-import { BRAND, fonts } from "../theme/brand";
+import { BRAND, fonts, typeScale } from "../theme/brand";
 import { colors } from "./ui";
 
 /** Shared auth / marketing identity block — logo + brand name. */
 export function AuthBrand({
-  height = 40,
+  height = 48,
   showName = false,
 }: {
   height?: number;
@@ -20,9 +20,7 @@ export function AuthBrand({
             marginTop: 12,
             color: colors.foreground,
             fontFamily: fonts.semiBold,
-            fontSize: 14,
-            letterSpacing: 2,
-            textTransform: "uppercase",
+            ...typeScale.md,
           }}
         >
           {BRAND.name}

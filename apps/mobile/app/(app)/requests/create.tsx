@@ -151,10 +151,7 @@ export default function CreateRequestScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollScreen bottomPad={footerPad + SCROLL_BOTTOM_PAD}>
-        <PageHeader
-          title={t("client.newRequest.title")}
-          description={t("client.newRequest.subtitle")}
-        />
+        <PageHeader title={t("client.newRequest.title")} />
 
         {!hasSub ? (
           <Card highlight>
@@ -212,17 +209,6 @@ export default function CreateRequestScreen() {
         {error ? <ErrorText>{error}</ErrorText> : null}
 
         <Card>
-          <Text
-            style={{
-              color: colors.foreground,
-              fontFamily: fonts.semiBold,
-              fontSize: 16,
-              marginBottom: 16,
-            }}
-          >
-            {t("client.newRequest.requestDetails")}
-          </Text>
-
           <Label required>{t("client.newRequest.fields.serviceType")}</Label>
           <Pressable
             disabled={!hasCredits}
@@ -326,7 +312,6 @@ export default function CreateRequestScreen() {
           ) : null}
 
           <Label required>{t("client.newRequest.fields.title")}</Label>
-          <Muted>{t("client.newRequest.fields.titleHint")}</Muted>
           <Field
             editable={hasCredits}
             placeholder={t("client.newRequest.fields.titlePlaceholder")}
@@ -335,7 +320,6 @@ export default function CreateRequestScreen() {
           />
 
           <Label required>{t("client.newRequest.fields.description")}</Label>
-          <Muted>{t("client.newRequest.fields.descriptionHint")}</Muted>
           <Field
             editable={hasCredits}
             placeholder={t("client.newRequest.fields.descriptionPlaceholder")}

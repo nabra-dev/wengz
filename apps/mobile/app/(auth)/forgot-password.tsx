@@ -37,7 +37,7 @@ export default function ForgotPasswordScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <AuthBrand height={36} />
+      <AuthBrand height={48} />
       <Card>
         <Label>{t("auth.forgotPassword.title")}</Label>
         <Muted>{t("auth.forgotPassword.description")}</Muted>

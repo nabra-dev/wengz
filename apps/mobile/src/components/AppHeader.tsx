@@ -5,12 +5,13 @@ import { BrandLogo } from "./BrandLogo";
 import { BRAND } from "../theme/brand";
 
 const c = BRAND.colors;
+const LOGO_HEIGHT = 32;
 
 /** Centered brand mark (kept for any title-slot usage). */
 export function AppHeaderTitle() {
   return (
     <View style={styles.titleWrap}>
-      <BrandLogo height={22} tone="yellow" />
+      <BrandLogo height={LOGO_HEIGHT} tone="yellow" />
     </View>
   );
 }
@@ -40,12 +41,12 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
               accessibilityRole="button"
               accessibilityLabel="Back"
             >
-              <Ionicons name="chevron-back" size={24} color={c.yellow} />
+              <Ionicons name="chevron-back" size={26} color={c.yellow} />
             </Pressable>
           ) : null}
         </View>
         <View style={styles.center}>
-          <BrandLogo height={22} tone="yellow" />
+          <BrandLogo height={LOGO_HEIGHT} tone="yellow" />
         </View>
         <View style={styles.side} />
       </View>
@@ -64,14 +65,14 @@ const styles = StyleSheet.create({
     backgroundColor: c.background,
   },
   bar: {
-    height: 48,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 4,
     backgroundColor: c.background,
   },
   side: {
-    width: 48,
+    width: 52,
     alignItems: "flex-start",
     justifyContent: "center",
   },

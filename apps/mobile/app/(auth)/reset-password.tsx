@@ -42,7 +42,7 @@ export default function ResetPasswordScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <AuthBrand height={36} />
+      <AuthBrand height={48} />
       <Card>
         <Label>{t("auth.resetPassword.title")}</Label>
         {error ? <ErrorText>{error}</ErrorText> : null}

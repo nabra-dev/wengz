@@ -11,11 +11,10 @@ import {
   ErrorText,
   Field,
   Label,
-  Muted,
   ScrollScreen,
   colors,
 } from "../../src/components/ui";
-import { fonts } from "../../src/theme/brand";
+import { fonts, typeScale } from "../../src/theme/brand";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -56,25 +55,20 @@ export default function LoginScreen() {
       edges={["top", "left", "right", "bottom"]}
       contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
     >
-      <AuthBrand height={40} />
+      <AuthBrand height={52} />
 
       <Card>
         <Text
           style={{
             color: colors.foreground,
             fontFamily: fonts.semiBold,
-            fontSize: 20,
+            ...typeScale.xl,
             textAlign: "center",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            marginBottom: 6,
+            marginBottom: 16,
           }}
         >
           {t("auth.login.title")}
         </Text>
-        <Muted style={{ textAlign: "center", marginBottom: 18 }}>
-          {t("auth.login.description")}
-        </Muted>
 
         {error ? <ErrorText>{error}</ErrorText> : null}
 
@@ -99,7 +93,7 @@ export default function LoginScreen() {
             <Text
               style={{
                 color: colors.purple,
-                fontSize: 12,
+                ...typeScale.sm,
                 fontFamily: fonts.medium,
                 marginBottom: 6,
               }}

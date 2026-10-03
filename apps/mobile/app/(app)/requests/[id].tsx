@@ -31,7 +31,7 @@ import {
   listContentDefaults,
   listFillStyle,
 } from "../../../src/components/ui";
-import { fonts } from "../../../src/theme/brand";
+import { fonts, typeScale } from "../../../src/theme/brand";
 import type { AttributeResponse, ServiceAttribute } from "../../../src/types/service-attributes";
 
 type Tab = "messages" | "details";
@@ -96,7 +96,7 @@ function FileChip({ url }: { url: string }) {
       <Ionicons name="document-outline" size={24} color={colors.mutedForeground} />
       <Text
         numberOfLines={2}
-        style={{ fontSize: 10, color: colors.mutedForeground, textAlign: "center" }}
+        style={{ ...typeScale.xs, color: colors.mutedForeground, textAlign: "center" }}
       >
         {fileNameFromUrl(url)}
       </Text>
@@ -286,7 +286,7 @@ export default function RequestDetailScreen() {
                     style={{
                       color: colors.mutedForeground,
                       fontFamily: fonts.medium,
-                      fontSize: 12,
+                      ...typeScale.sm,
                       marginBottom: 4,
                     }}
                   >
@@ -334,7 +334,7 @@ export default function RequestDetailScreen() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}
                 >
-                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium, fontSize: 12 }}>
+                  <Text style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.sm }}>
                     {request.provider?.name || t("requests.card.provider")}
                   </Text>
                   <View
@@ -345,7 +345,9 @@ export default function RequestDetailScreen() {
                       borderRadius: 6,
                     }}
                   >
-                    <Text style={{ color: colors.yellow, fontSize: 11, fontFamily: fonts.medium }}>
+                    <Text
+                      style={{ color: colors.yellow, ...typeScale.xs, fontFamily: fonts.medium }}
+                    >
                       {t("client.newRequest.deliverables.badge")}
                     </Text>
                   </View>
@@ -528,7 +530,7 @@ export default function RequestDetailScreen() {
                 <Text
                   style={{
                     color: colors.yellow,
-                    fontSize: 11,
+                    ...typeScale.xs,
                     fontFamily: fonts.medium,
                     marginBottom: 4,
                   }}

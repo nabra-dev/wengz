@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { t } from "../i18n";
 import { uploadFile } from "../lib/api";
 import { isLikelyImageUrl } from "../lib/media";
-import { fonts } from "../theme/brand";
+import { fonts, typeScale } from "../theme/brand";
 import { MediaImage } from "./MediaImage";
 import { colors } from "./ui";
 
@@ -153,7 +153,7 @@ export function AttachmentPicker({
   return (
     <View style={{ gap: 10 }}>
       {label ? (
-        <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, fontSize: 14 }}>
+        <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, ...typeScale.md }}>
           {label}
         </Text>
       ) : null}
@@ -176,7 +176,7 @@ export function AttachmentPicker({
           }}
         >
           <Ionicons name="image-outline" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, fontSize: 13 }}>
+          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
             {t("client.request.attachments.addImages")}
           </Text>
         </Pressable>
@@ -197,15 +197,15 @@ export function AttachmentPicker({
           }}
         >
           <Ionicons name="document-attach-outline" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, fontSize: 13 }}>
+          <Text style={{ color: colors.foreground, fontFamily: fonts.medium, ...typeScale.sm }}>
             {t("client.request.attachments.addFiles")}
           </Text>
         </Pressable>
         {busy ? <ActivityIndicator color={colors.yellow} style={{ marginLeft: 4 }} /> : null}
       </View>
 
-      {hint ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{hint}</Text> : null}
-      {error ? <Text style={{ color: colors.destructive, fontSize: 13 }}>{error}</Text> : null}
+      {hint ? <Text style={{ color: colors.mutedForeground, ...typeScale.sm }}>{hint}</Text> : null}
+      {error ? <Text style={{ color: colors.destructive, ...typeScale.sm }}>{error}</Text> : null}
 
       {(current.length > 0 || pending.length > 0) && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
@@ -236,7 +236,7 @@ export function AttachmentPicker({
                 </View>
               )}
               <View style={{ padding: 6, gap: 4 }}>
-                <Text numberOfLines={1} style={{ fontSize: 10, color: colors.mutedForeground }}>
+                <Text numberOfLines={1} style={{ ...typeScale.xs, color: colors.mutedForeground }}>
                   {p.name}
                 </Text>
                 <ActivityIndicator size="small" color={colors.yellow} />
@@ -280,14 +280,17 @@ export function AttachmentPicker({
                   </View>
                 )}
                 <View style={{ padding: 6, gap: 4 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 10, color: colors.mutedForeground }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{ ...typeScale.xs, color: colors.mutedForeground }}
+                  >
                     {fileName(url)}
                   </Text>
                   {!disabled ? (
                     <Pressable onPress={() => removeAt(index)} hitSlop={8}>
                       <Text
                         style={{
-                          fontSize: 12,
+                          ...typeScale.sm,
                           color: colors.destructive,
                           fontFamily: fonts.medium,
                         }}

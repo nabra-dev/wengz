@@ -16,7 +16,7 @@ import {
   listContentDefaults,
   listFillStyle,
 } from "../../../src/components/ui";
-import { fonts } from "../../../src/theme/brand";
+import { fonts, typeScale } from "../../../src/theme/brand";
 
 export default function RequestsScreen() {
   const q = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(50) });
@@ -43,10 +43,7 @@ export default function RequestsScreen() {
         }
         ListHeaderComponent={
           <View style={{ marginBottom: 4 }}>
-            <PageHeader
-              title={t("client.requests.title")}
-              description={t("client.requests.subtitle")}
-            />
+            <PageHeader title={t("client.requests.title")} />
             <Button
               label={t("client.requests.newRequest")}
               onPress={() => router.push("/(app)/requests/create")}
@@ -94,9 +91,8 @@ export default function RequestsScreen() {
                     style={{
                       color: colors.foreground,
                       fontFamily: fonts.medium,
-                      fontSize: 15,
+                      ...typeScale.md,
                       marginBottom: 8,
-                      lineHeight: 22,
                     }}
                     numberOfLines={2}
                   >

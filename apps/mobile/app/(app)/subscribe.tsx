@@ -21,7 +21,7 @@ import {
   listContentDefaults,
   listFillStyle,
 } from "../../src/components/ui";
-import { fonts } from "../../src/theme/brand";
+import { fonts, typeScale } from "../../src/theme/brand";
 
 export default function SubscribeScreen() {
   const qc = useQueryClient();
@@ -76,10 +76,7 @@ export default function SubscribeScreen() {
         alwaysBounceVertical
         ListHeaderComponent={
           <View>
-            <PageHeader
-              title={t("client.subscription.title")}
-              description={t("client.subscription.subtitle")}
-            />
+            <PageHeader title={t("client.subscription.title")} />
             {error ? <ErrorText>{error}</ErrorText> : null}
 
             {current ? (
@@ -136,7 +133,7 @@ export default function SubscribeScreen() {
                   style={{
                     color: colors.foreground,
                     fontFamily: fonts.semiBold,
-                    fontSize: 17,
+                    ...typeScale.lg,
                     flex: 1,
                   }}
                 >

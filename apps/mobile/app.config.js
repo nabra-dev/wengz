@@ -21,6 +21,8 @@ module.exports = {
       NSCameraUsageDescription: "Upload payment proofs and request attachments.",
       NSPhotoLibraryUsageDescription: "Attach images to requests and payment proofs.",
       NSMicrophoneUsageDescription: "Record voice notes for service requests.",
+      // Required by react-native-screens when using native statusBarStyle options.
+      UIViewControllerBasedStatusBarAppearance: true,
       // Dev: allow HTTP to LAN Next.js API from Expo Go / device.
       NSAppTransportSecurity: {
         NSAllowsLocalNetworking: true,
@@ -48,6 +50,12 @@ module.exports = {
     "expo-router",
     "expo-secure-store",
     "expo-localization",
+    [
+      "expo-av",
+      {
+        microphonePermission: "Record voice notes for service requests.",
+      },
+    ],
     // Push is limited in Expo Go (SDK 53+); full push needs a dev/EAS build.
     [
       "expo-notifications",
@@ -61,7 +69,7 @@ module.exports = {
   },
   extra: {
     router: {},
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001",
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.27:3001",
     // Set after `eas init` for push/EAS builds:
     // eas: { projectId: process.env.EAS_PROJECT_ID },
   },

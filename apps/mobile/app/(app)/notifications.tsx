@@ -18,7 +18,7 @@ import {
   listContentDefaults,
   listFillStyle,
 } from "../../src/components/ui";
-import { fonts } from "../../src/theme/brand";
+import { fonts, typeScale } from "../../src/theme/brand";
 
 export default function NotificationsScreen() {
   const qc = useQueryClient();
@@ -63,7 +63,6 @@ export default function NotificationsScreen() {
           <View>
             <PageHeader
               title={t("client.notifications.title")}
-              description={t("client.notifications.subtitle")}
               right={
                 unread > 0 ? (
                   <Button
@@ -75,13 +74,6 @@ export default function NotificationsScreen() {
                 ) : undefined
               }
             />
-            {unread > 0 ? (
-              <Muted>
-                {unread === 1
-                  ? t("client.notifications.unreadCount", { count: unread })
-                  : t("client.notifications.unreadCountPlural", { count: unread })}
-              </Muted>
-            ) : null}
           </View>
         }
         ListEmptyComponent={
@@ -108,13 +100,13 @@ export default function NotificationsScreen() {
                   flex: 1,
                   color: colors.foreground,
                   fontFamily: item.isRead ? fonts.regular : fonts.semiBold,
-                  fontSize: 14,
+                  ...typeScale.md,
                 }}
               >
                 {String(item.title)}
               </Text>
               {!item.isRead ? (
-                <Text style={{ color: colors.yellow, fontFamily: fonts.medium, fontSize: 11 }}>
+                <Text style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.xs }}>
                   {t("client.notifications.new")}
                 </Text>
               ) : null}

@@ -1,9 +1,9 @@
 import { Redirect, Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
 import { AppNavHeader } from "../../src/components/AppHeader";
+import { TabBarItem } from "../../src/components/TabBarItem";
 import { brandTabBarOptions } from "../../src/theme/navigation";
 
 export default function AppLayout() {
@@ -16,6 +16,7 @@ export default function AppLayout() {
       screenOptions={{
         ...brandTabBarOptions,
         header: (props) => <AppNavHeader {...props} />,
+        tabBarShowLabel: false,
       }}
     >
       <Tabs.Screen
@@ -23,7 +24,13 @@ export default function AppLayout() {
         options={{
           title: t("tabs.home"),
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
+            <TabBarItem
+              label={t("tabs.home")}
+              color={color}
+              focused={focused}
+              activeIcon="home"
+              inactiveIcon="home-outline"
+            />
           ),
         }}
       />
@@ -34,7 +41,13 @@ export default function AppLayout() {
           // Stack owns the header so we don't get a white status-bar strip from nesting.
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "list" : "list-outline"} size={22} color={color} />
+            <TabBarItem
+              label={t("tabs.requests")}
+              color={color}
+              focused={focused}
+              activeIcon="list"
+              inactiveIcon="list-outline"
+            />
           ),
         }}
       />
@@ -43,10 +56,12 @@ export default function AppLayout() {
         options={{
           title: t("tabs.notifications"),
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "notifications" : "notifications-outline"}
-              size={22}
+            <TabBarItem
+              label={t("tabs.notifications")}
               color={color}
+              focused={focused}
+              activeIcon="notifications"
+              inactiveIcon="notifications-outline"
             />
           ),
         }}
@@ -56,7 +71,13 @@ export default function AppLayout() {
         options={{
           title: t("tabs.profile"),
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />
+            <TabBarItem
+              label={t("tabs.profile")}
+              color={color}
+              focused={focused}
+              activeIcon="person"
+              inactiveIcon="person-outline"
+            />
           ),
         }}
       />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { View } from "react-native";
 import { changePassword, getProfile, updateProfile } from "../../src/lib/api";
 import { useAuth } from "../../src/providers/auth";
 import { applyLocale, t, type AppLocale } from "../../src/i18n";
@@ -15,8 +16,33 @@ import {
   ScrollScreen,
   SegmentedTabs,
 } from "../../src/components/ui";
+import { SelectDropdown } from "../../src/components/SelectDropdown";
 
 type Tab = "profile" | "security";
+
+const COUNTRY_OPTIONS = [
+  { value: "+20", label: "🇪🇬 +20" },
+  { value: "+966", label: "🇸🇦 +966" },
+  { value: "+971", label: "🇦🇪 +971" },
+  { value: "+1", label: "🇺🇸 +1" },
+  { value: "+44", label: "🇬🇧 +44" },
+  { value: "+33", label: "🇫🇷 +33" },
+  { value: "+49", label: "🇩🇪 +49" },
+];
+
+function splitPhone(raw: string | null | undefined): { code: string; number: string } {
+  const value = String(raw ?? "").trim();
+  if (!value) return { code: "+20", number: "" };
+  const parts = value.split(/\s+/);
+  if (parts[0]?.startsWith("+") && parts.length >= 2) {
+    return { code: parts[0], number: parts.slice(1).join("").replace(/\D/g, "") };
+  }
+  if (value.startsWith("+")) {
+    const m = value.match(/^(\+\d{1,4})(\d+)$/);
+    if (m) return { code: m[1]!, number: m[2]! };
+  }
+  return { code: "+20", number: value.replace(/\D/g, "") };
+}
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
@@ -24,6 +50,7 @@ export default function ProfileScreen() {
   const [tab, setTab] = useState<Tab>("profile");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [countryCode, setCountryCode] = useState<string>("+20");
   const [phone, setPhone] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -35,19 +62,46 @@ export default function ProfileScreen() {
     if (profile.data) {
       setName(String(profile.data.name ?? ""));
       setEmail(String(profile.data.email ?? ""));
-      setPhone(String(profile.data.phone ?? ""));
+      const split = splitPhone(typeof profile.data.phone === "string" ? profile.data.phone : "");
+      setCountryCode(split.code);
+      setPhone(split.number);
     }
   }, [profile.data]);
 
+  function buildProfileUpdates(): { name?: string; email?: string; phone?: string } | null {
+    const updates: { name?: string; email?: string; phone?: string } = {};
+    const nextName = name.trim();
+    const nextEmail = email.trim().toLowerCase();
+    const digits = phone.replace(/\D/g, "");
+    const existingName = String(profile.data?.name ?? "");
+    const existingEmail = String(profile.data?.email ?? "").toLowerCase();
+    const existingPhone = String(profile.data?.phone ?? "").trim();
+
+    if (nextName && nextName !== existingName) updates.name = nextName;
+    if (nextEmail && nextEmail !== existingEmail) updates.email = nextEmail;
+    if (digits) {
+      if (!/^\d{7,15}$/.test(digits)) {
+        throw new Error(t("auth.register.invalidPhone"));
+      }
+      const composed = `${countryCode} ${digits}`;
+      if (composed !== existingPhone) updates.phone = composed;
+    }
+
+    return Object.keys(updates).length ? updates : null;
+  }
+
   const save = useMutation({
-    mutationFn: () =>
-      updateProfile({
-        name: name.trim() || undefined,
-        email: email.trim() || undefined,
-        phone: phone.trim() || undefined,
-      }),
-    onSuccess: () => setInfo(t("profile.editProfile.successMessage")),
-    onError: (e: Error) => setError(e.message),
+    mutationFn: (updates: { name?: string; email?: string; phone?: string }) =>
+      updateProfile(updates),
+    onSuccess: () => {
+      setError(null);
+      setInfo(t("profile.editProfile.successMessage"));
+      void profile.refetch();
+    },
+    onError: (e: Error) => {
+      setInfo(null);
+      setError(e.message);
+    },
   });
 
   const pwd = useMutation({
@@ -70,8 +124,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollScreen>
-      <PageHeader title={t("client.profile.title")} description={t("client.profile.subtitle")} />
-      <Muted style={{ marginBottom: 14 }}>{String(profile.data?.email ?? "")}</Muted>
+      <PageHeader title={t("client.profile.title")} />
 
       <SegmentedTabs
         value={tab}
@@ -87,13 +140,13 @@ export default function ProfileScreen() {
 
       {tab === "profile" ? (
         <Card>
-          <Label>{t("profile.editProfile.labels.name")}</Label>
+          <Label required>{t("profile.editProfile.labels.name")}</Label>
           <Field
             placeholder={t("profile.editProfile.placeholders.name")}
             value={name}
             onChangeText={setName}
           />
-          <Label>{t("profile.editProfile.labels.email")}</Label>
+          <Label required>{t("profile.editProfile.labels.email")}</Label>
           <Field
             autoCapitalize="none"
             keyboardType="email-address"
@@ -102,11 +155,26 @@ export default function ProfileScreen() {
             onChangeText={setEmail}
           />
           <Label>{t("profile.editProfile.labels.phone")}</Label>
-          <Field
-            value={phone}
-            onChangeText={setPhone}
-            placeholder={t("profile.editProfile.placeholders.phone")}
-          />
+          <View
+            style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 12 }}
+          >
+            <SelectDropdown
+              compact
+              value={countryCode}
+              options={COUNTRY_OPTIONS}
+              onChange={setCountryCode}
+            />
+            <View style={{ flex: 1 }}>
+              <Field
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={(v) => setPhone(v.replace(/\D/g, "").slice(0, 15))}
+                placeholder={t("profile.editProfile.placeholders.phone")}
+                style={{ marginBottom: 0 }}
+              />
+            </View>
+          </View>
+          <Muted>{t("auth.register.phoneHint")}</Muted>
           <Button
             label={
               save.isPending
@@ -115,11 +183,25 @@ export default function ProfileScreen() {
             }
             onPress={() => {
               setError(null);
+              setInfo(null);
               if (!name.trim()) {
                 setError(t("client.newRequest.validation.requiredField"));
                 return;
               }
-              save.mutate();
+              if (!email.trim() || !email.includes("@")) {
+                setError(t("auth.register.invalidEmail"));
+                return;
+              }
+              try {
+                const updates = buildProfileUpdates();
+                if (!updates) {
+                  setInfo(t("profile.editProfile.successMessage"));
+                  return;
+                }
+                save.mutate(updates);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : t("common.error"));
+              }
             }}
             disabled={save.isPending}
           />

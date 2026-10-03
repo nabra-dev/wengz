@@ -16,7 +16,7 @@ import {
   StatusBadge,
   colors,
 } from "../../src/components/ui";
-import { fonts } from "../../src/theme/brand";
+import { fonts, typeScale } from "../../src/theme/brand";
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -54,10 +54,7 @@ export default function HomeScreen() {
         />
       }
     >
-      <PageHeader
-        title={t("client.dashboard.welcome", { name: firstName })}
-        description={t("client.dashboard.overview")}
-      />
+      <PageHeader title={t("client.dashboard.welcome", { name: firstName })} />
       <View style={{ marginBottom: 16 }}>
         <Button
           label={t("client.dashboard.newRequest")}
@@ -107,12 +104,10 @@ export default function HomeScreen() {
       </View>
 
       <SectionTitle>{t("client.dashboard.recentRequests.title")}</SectionTitle>
-      <Muted style={{ marginBottom: 12 }}>{t("client.dashboard.recentRequests.description")}</Muted>
 
       {(requests.data?.requests ?? []).length === 0 ? (
         <Card>
           <Muted>{t("client.dashboard.recentRequests.noRequests")}</Muted>
-          <Muted>{t("client.dashboard.recentRequests.noRequestsDescription")}</Muted>
           <Button
             label={t("client.requests.createRequest")}
             onPress={() => router.push("/(app)/requests/create")}
@@ -126,7 +121,7 @@ export default function HomeScreen() {
                 style={{
                   color: colors.foreground,
                   fontFamily: fonts.medium,
-                  fontSize: 15,
+                  ...typeScale.md,
                   marginBottom: 8,
                 }}
               >

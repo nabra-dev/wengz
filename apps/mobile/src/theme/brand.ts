@@ -26,6 +26,16 @@ export const fonts = {
   cairoBold: "Cairo_700Bold",
 } as const;
 
+/** Shared type scale — prefer these over one-off fontSize values. */
+export const typeScale = {
+  xs: { fontSize: 10, lineHeight: 14 },
+  sm: { fontSize: 12, lineHeight: 16 },
+  md: { fontSize: 13, lineHeight: 18 },
+  lg: { fontSize: 15, lineHeight: 20 },
+  xl: { fontSize: 17, lineHeight: 22 },
+  display: { fontSize: 22, lineHeight: 26 },
+} as const;
+
 export function statusStyle(status: string): { bg: string; fg: string } {
   const map: Record<string, { bg: string; fg: string }> = {
     PENDING: { bg: "rgba(245,158,11,0.15)", fg: "#FBBF24" },

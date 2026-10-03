@@ -153,7 +153,7 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
     return (
       <div
         className={cn(
-          "w-full max-w-[min(100%,18rem)] space-y-1.5 rounded-2xl p-2.5 sm:max-w-xs",
+          "w-[min(100%,18rem)] min-w-[14rem] space-y-1.5 rounded-2xl p-2.5 sm:w-72",
           mine ? "bg-black/15" : "bg-black/20"
         )}
       >

@@ -3,6 +3,7 @@ import { Field, Label, Muted, colors } from "./ui";
 import { fonts } from "../theme/brand";
 import { t, i18n } from "../i18n";
 import { AttachmentPicker } from "./AttachmentPicker";
+import { VoiceRecorder } from "./VoiceRecorder";
 import {
   localizedAttrText,
   type AttributeResponse,
@@ -34,7 +35,6 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
   return (
     <View style={{ marginTop: 8 }}>
       <Label>{t("client.newRequest.serviceQuestions.title")}</Label>
-      <Muted>{t("client.newRequest.serviceQuestions.description")}</Muted>
 
       {attributes.map((attr) => {
         const q = localizedAttrText(attr.question, attr.questionI18n, i18n.locale);
@@ -113,17 +113,23 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
                 );
               })}
 
-            {(attr.type === "file" || attr.type === "voice") && (
+            {attr.type === "file" && (
               <AttachmentPicker
                 value={fileUrls}
                 onChange={(next) => onChange(upsert(responses, attr.question, next))}
-                max={attr.type === "voice" ? 1 : 3}
+                max={attr.maxFiles ?? 3}
                 disabled={disabled}
-                hint={
-                  attr.type === "voice"
-                    ? t("requests.messages.attach")
-                    : t("profile.editProfile.helperText.maxFileSize")
-                }
+                hint={t("profile.editProfile.helperText.maxFileSize")}
+              />
+            )}
+
+            {attr.type === "voice" && (
+              <VoiceRecorder
+                value={fileUrls}
+                onChange={(next) => onChange(upsert(responses, attr.question, next))}
+                maxFiles={attr.maxFiles ?? 1}
+                maxSizeMB={attr.maxSizeMB ?? 25}
+                disabled={disabled}
               />
             )}
           </View>

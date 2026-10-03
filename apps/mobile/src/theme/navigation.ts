@@ -1,4 +1,4 @@
-import { BRAND, fonts } from "./brand";
+import { BRAND, fonts, typeScale } from "./brand";
 
 const c = BRAND.colors;
 
@@ -13,8 +13,8 @@ export const brandStackOptions = {
   headerBackTitleVisible: false,
   // Prevent native-stack from reserving a second (often white) status-bar strip.
   headerStatusBarHeight: 0,
-  statusBarStyle: "light" as const,
-  statusBarBackgroundColor: c.background,
+  // Do not set statusBarStyle here — it requires UIViewControllerBasedStatusBarAppearance=YES
+  // and crashes Expo Go (host Info.plist can't be changed). Root `<StatusBar style="light" />` handles it.
   contentStyle: {
     backgroundColor: c.background,
   },
@@ -31,7 +31,7 @@ export const brandTabBarOptions = {
   headerStatusBarHeight: 0,
   headerTitleStyle: {
     fontFamily: fonts.semiBold,
-    fontSize: 16,
+    fontSize: typeScale.md.fontSize,
   },
   sceneStyle: {
     backgroundColor: c.background,
@@ -40,15 +40,19 @@ export const brandTabBarOptions = {
     backgroundColor: c.card,
     borderTopColor: c.border,
     borderTopWidth: 1,
-    height: 68,
+    height: 76,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   tabBarActiveTintColor: c.yellow,
   tabBarInactiveTintColor: c.mutedForeground,
+  tabBarItemStyle: {
+    paddingVertical: 2,
+  },
   tabBarLabelStyle: {
     fontFamily: fonts.medium,
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: typeScale.sm.fontSize,
+    marginTop: 4,
   },
+  tabBarHideOnKeyboard: true,
 };

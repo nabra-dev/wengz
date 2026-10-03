@@ -16,10 +16,12 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
-import { BRAND, fonts, statusStyle } from "../theme/brand";
+import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
 import { i18n, t } from "../i18n";
 
 const c = BRAND.colors;
+
+export { typeScale };
 
 /** Bottom inset so content clears the tab bar / home indicator. */
 export const SCROLL_BOTTOM_PAD = 40;
@@ -320,44 +322,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 20,
-    marginTop: 8,
+    marginBottom: 16,
+    marginTop: 4,
   },
   pageTitle: {
     color: c.foreground,
-    fontSize: 22,
+    ...typeScale.xl,
     fontFamily: fonts.semiBold,
-    letterSpacing: 0.3,
-    lineHeight: 28,
   },
   pageDesc: {
     color: c.mutedForeground,
-    fontSize: 13,
-    marginTop: 6,
+    ...typeScale.sm,
+    marginTop: 4,
     fontFamily: fonts.regular,
-    lineHeight: 20,
   },
   title: {
     color: c.foreground,
-    fontSize: 24,
+    ...typeScale.xl,
     fontFamily: fonts.semiBold,
-    marginBottom: 8,
-    letterSpacing: 0.4,
+    marginBottom: 6,
   },
   muted: {
     color: c.mutedForeground,
-    fontSize: 13,
+    ...typeScale.sm,
     fontFamily: fonts.regular,
     marginBottom: 8,
-    lineHeight: 18,
   },
   label: {
     color: c.foreground,
-    fontSize: 12,
+    ...typeScale.sm,
     fontFamily: fonts.medium,
     marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
   input: {
     backgroundColor: c.card,
@@ -368,11 +363,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
-    fontSize: 15,
+    ...typeScale.md,
     fontFamily: fonts.regular,
   },
   inputMultiline: {
-    minHeight: 100,
+    minHeight: 110,
     textAlignVertical: "top",
   },
   btn: {
@@ -397,8 +392,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontFamily: fonts.semiBold,
-    fontSize: 14,
-    letterSpacing: 0.2,
+    ...typeScale.md,
   },
   btnTextOnPurple: {
     color: c.yellow,
@@ -425,22 +419,21 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: c.mutedForeground,
-    fontSize: 12,
+    ...typeScale.sm,
     fontFamily: fonts.medium,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   statValue: {
     color: c.foreground,
-    fontSize: 26,
+    ...typeScale.display,
     fontFamily: fonts.bold,
     fontVariant: ["tabular-nums"],
   },
   statHint: {
     color: c.mutedForeground,
-    fontSize: 11,
-    marginTop: 6,
+    ...typeScale.xs,
+    marginTop: 4,
     fontFamily: fonts.regular,
-    lineHeight: 16,
   },
   badge: {
     alignSelf: "flex-start",
@@ -449,7 +442,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeText: {
-    fontSize: 11,
+    ...typeScale.xs,
     fontFamily: fonts.medium,
   },
   segmentRow: {
@@ -474,7 +467,7 @@ const styles = StyleSheet.create({
   segmentLabel: {
     color: c.foreground,
     fontFamily: fonts.medium,
-    fontSize: 13,
+    ...typeScale.sm,
   },
   segmentLabelActive: {
     color: c.yellow,
@@ -489,15 +482,13 @@ const styles = StyleSheet.create({
     color: c.destructive,
     marginBottom: 10,
     fontFamily: fonts.regular,
-    fontSize: 13,
+    ...typeScale.sm,
   },
   sectionTitle: {
     color: c.mutedForeground,
-    fontSize: 12,
+    ...typeScale.sm,
     fontFamily: fonts.medium,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 6,
-    marginTop: 20,
+    marginBottom: 8,
+    marginTop: 16,
   },
 });

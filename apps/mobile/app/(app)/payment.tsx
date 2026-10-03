@@ -111,7 +111,7 @@ export default function PaymentScreen() {
   if (!subscription) {
     return (
       <ScrollScreen keyboard={false}>
-        <PageHeader title={t("client.payment.title")} description={t("client.payment.subtitle")} />
+        <PageHeader title={t("client.payment.title")} />
         <Card>
           <Text style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}>
             {t("client.payment.noPendingPayment.title")}
@@ -131,10 +131,7 @@ export default function PaymentScreen() {
     const status = String(subscription.paymentProof.status || "PENDING").toLowerCase();
     return (
       <ScrollScreen keyboard={false}>
-        <PageHeader
-          title={t("client.payment.statusTitle")}
-          description={t("client.payment.statusSubtitle")}
-        />
+        <PageHeader title={t("client.payment.statusTitle")} />
         <Card highlight>
           <Text style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 8 }}>
             {t(
@@ -170,10 +167,7 @@ export default function PaymentScreen() {
 
   return (
     <ScrollScreen>
-      <PageHeader
-        title={t("client.payment.completePayment.title")}
-        description={t("client.payment.completePayment.subtitle")}
-      />
+      <PageHeader title={t("client.payment.completePayment.title")} />
 
       <Muted>{t("client.payment.steps.method")}</Muted>
       {methods.map((m) => {

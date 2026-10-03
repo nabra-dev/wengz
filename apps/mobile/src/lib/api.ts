@@ -54,7 +54,7 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
   } catch (err) {
     const detail = err instanceof Error ? err.message : "Network request failed";
     throw new ApiError(
-      `Cannot reach API at ${REST_BASE} (${detail}). Is the Next.js server running on EXPO_PUBLIC_API_URL?`,
+      `Cannot reach API at ${REST_BASE} (${detail}). On a phone use your Mac LAN IP in EXPO_PUBLIC_API_URL (not 127.0.0.1), and keep Next.js on port 3001.`,
       0,
       "NETWORK_ERROR"
     );
@@ -73,12 +73,14 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
   }
 
   if (!res.ok) {
+    const obj = typeof data === "object" && data ? (data as Record<string, unknown>) : null;
+    const issues = Array.isArray(obj?.issues) ? (obj.issues as Array<{ message?: string }>) : [];
+    const issueMsg = issues.map((i) => i?.message).find((m) => typeof m === "string" && m.trim());
     const msg =
-      typeof data === "object" && data && "message" in data
-        ? String((data as { message: string }).message)
-        : typeof data === "object" && data && "error" in data
-          ? String((data as { error: string }).error)
-          : `Request failed (${res.status})`;
+      issueMsg ||
+      (obj && typeof obj.message === "string" ? obj.message : null) ||
+      (obj && typeof obj.error === "string" ? obj.error : null) ||
+      `Request failed (${res.status})`;
     const code = msg.includes(":") ? msg.split(":")[0] : undefined;
     throw new ApiError(msg, res.status, code);
   }
@@ -93,9 +95,19 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
 export async function uploadFile(uri: string, name: string, mimeType?: string): Promise<string> {
   const type = mimeType || "image/jpeg";
   const baseName = name?.trim() || `file-${Date.now()}`;
-  const safeName = baseName.includes(".")
-    ? baseName
-    : `${baseName}.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : type.includes("pdf") ? "pdf" : "jpg"}`;
+  const extFromMime = () => {
+    if (type.includes("png")) return "png";
+    if (type.includes("webp")) return "webp";
+    if (type.includes("pdf")) return "pdf";
+    if (type.includes("webm")) return "webm";
+    if (type.includes("m4a") || type.includes("mp4")) return "m4a";
+    if (type.includes("mpeg") || type.includes("mp3")) return "mp3";
+    if (type.includes("wav")) return "wav";
+    if (type.includes("ogg")) return "ogg";
+    if (type.startsWith("audio/")) return "m4a";
+    return "jpg";
+  };
+  const safeName = baseName.includes(".") ? baseName : `${baseName}.${extFromMime()}`;
 
   let blob: Blob;
   try {
