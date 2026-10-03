@@ -40,7 +40,7 @@ import type { PublicPackage } from "@/lib/public-packages";
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-11 w-[148px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:gap-2.5 sm:px-4">
+    <span className="inline-flex h-11 w-[168px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[200px] sm:gap-2.5 sm:px-4">
       <svg
         viewBox="0 0 24 24"
         fill="currentColor"
@@ -50,7 +50,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
         <path d="M16.365 12.052c0-1.857 1.052-2.76 1.1-2.79-.66-.97-1.69-1.1-2.05-1.12-1.1-.11-2.15.65-2.71.65-.56 0-1.43-.63-2.35-.61-1.21.02-2.33.7-2.95 1.78-1.26 2.19-.32 5.43.91 7.21.6.87 1.31 1.84 2.25 1.81.9-.04 1.24-.58 2.33-.58 1.09 0 1.39.58 2.34.56.97-.02 1.58-.88 2.17-1.76.69-1.01.97-1.99 1-2.04-.02-.01-1.9-.73-1.92-2.89-.02-1.81 1.48-2.67 1.55-2.72-.86-1.26-2.19-1.4-2.66-1.43zm-2.0-6.1c.5-.6.83-1.44.74-2.28-.71.03-1.57.47-2.08 1.07-.46.53-.86 1.38-.75 2.19.8.06 1.61-.41 2.09-.98z" />
       </svg>
       <span className="flex min-w-0 flex-col items-start leading-none">
-        <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
+        <span className="whitespace-nowrap text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
         <span className="mt-0.5 truncate text-[13px] font-semibold tracking-tight sm:text-base">
@@ -63,7 +63,7 @@ function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
 
 function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
-    <span className="inline-flex h-11 w-[148px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[180px] sm:gap-2.5 sm:px-4">
+    <span className="inline-flex h-11 w-[168px] items-center gap-2 rounded-xl border border-foreground/15 bg-foreground px-3.5 text-background shadow-[0_8px_24px_rgba(0,0,0,0.18)] sm:h-14 sm:w-[200px] sm:gap-2.5 sm:px-4">
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 shrink-0 sm:h-8 sm:w-8">
         <path
           fill="#EA4335"
@@ -83,7 +83,7 @@ function GooglePlayBadge({ eyebrow, label }: { eyebrow: string; label: string })
         />
       </svg>
       <span className="flex min-w-0 flex-col items-start leading-none">
-        <span className="text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
+        <span className="whitespace-nowrap text-[9px] font-medium tracking-wide text-background/70 sm:text-[10px]">
           {eyebrow}
         </span>
         <span className="mt-0.5 truncate text-[13px] font-semibold tracking-tight sm:text-base">
@@ -155,6 +155,7 @@ const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 const LANDING_NAV_LINKS = [
   { href: "#services", labelKey: "landing.nav.services" },
   { href: "#gallery", labelKey: "landing.nav.gallery" },
+  { href: "#gallery-videos", labelKey: "landing.nav.videos" },
   { href: "#pricing", labelKey: "landing.nav.pricing" },
 ] as const;
 

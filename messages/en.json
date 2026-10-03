@@ -69,6 +69,7 @@
       "features": "Features",
       "services": "Services",
       "gallery": "Gallery",
+      "videos": "Videos",
       "pricing": "Plans",
       "providerForm": "Provider form"
     },
@@ -103,39 +104,39 @@
       "tiles": {
         "aiImage": {
           "title": "Design",
-          "description": "A designer uses AI with craft—so your visuals actually sell"
+          "description": "Visuals that sell"
         },
         "aiVideo": {
           "title": "Video",
-          "description": "Editors pick the right tools and deliver launch-ready clips"
+          "description": "Launch-ready clips"
         },
         "apps": {
           "title": "Content",
-          "description": "Social content from an expert—not a random prompt"
+          "description": "Expert social posts"
         },
         "mcp": {
           "title": "Workflow",
-          "description": "From request to delivery—clear steps, real follow-through"
+          "description": "Request to delivery"
         },
         "flows": {
           "title": "Automation",
-          "description": "Repeat what works—fast, without the chaos"
+          "description": "Repeat what works"
         },
         "plugin": {
           "title": "Studio",
-          "description": "Brief, revise, approve—everything in one place"
+          "description": "Everything in one place"
         },
         "voiceover": {
           "title": "Voice",
-          "description": "Pros choose the right voice and tools for your brand"
+          "description": "Brand-ready voiceovers"
         },
         "music": {
           "title": "Sound",
-          "description": "Tracks and sound design that lift your work"
+          "description": "Music that fits"
         },
         "studio": {
           "title": "Full production",
-          "description": "From idea to ship—human expertise plus AI"
+          "description": "Idea to finished work"
         }
       }
     },

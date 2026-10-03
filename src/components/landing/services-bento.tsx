@@ -35,6 +35,7 @@ const BENTO_IMG = {
   voice: "/images/landing/bento-imgs/voice.png", // 2000×1014 wide → short cards
   studio: "/images/landing/bento-imgs/studio.png", // 2000×1351
   workflow: "/images/landing/bento-imgs/workflow.png", // 2000×1351
+  automation: "/images/landing/bento-imgs/automation.png", // 2000×1351
 } as const;
 
 const TILES: ServiceTile[] = [
@@ -72,7 +73,7 @@ const TILES: ServiceTile[] = [
   },
   {
     key: "flows", // Automation
-    image: BENTO_IMG.workflow,
+    image: BENTO_IMG.automation,
     icon: Workflow,
     area: "flows",
     imgW: 296,
@@ -165,7 +166,7 @@ export function ServicesBento() {
                       {title}
                     </h3>
                   </div>
-                  <p className="line-clamp-2 text-xs leading-7 text-white/60 sm:text-sm sm:leading-7">
+                  <p className="truncate text-xs leading-5 text-white/60 sm:text-sm sm:leading-6">
                     {description}
                   </p>
                 </div>
