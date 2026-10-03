@@ -6,13 +6,10 @@ test.describe("Authentication Flow", () => {
   });
 
   test("should navigate to login page", async ({ page }) => {
-    // Navigate to login
     await page.goto("/auth/login");
 
-    // Check if login form exists
     await expect(page.getByRole("heading", { name: /sign in|login/i })).toBeVisible();
 
-    // Check for email and password inputs
     const emailInput = page.getByLabel(/email/i);
     const passwordInput = page.getByLabel(/password/i);
 
@@ -23,12 +20,10 @@ test.describe("Authentication Flow", () => {
   test("should navigate to register page", async ({ page }) => {
     await page.goto("/auth/register");
 
-    // Check if register form exists
     await expect(
       page.getByRole("heading", { name: /create.*account|sign up|register/i })
     ).toBeVisible();
 
-    // Check for required form fields
     const nameInput = page.getByLabel(/name/i);
     const emailInput = page.getByLabel(/email/i);
     const passwordInput = page.getByLabel(/^password/i);
@@ -41,36 +36,57 @@ test.describe("Authentication Flow", () => {
   test("should show validation error for empty login", async ({ page }) => {
     await page.goto("/auth/login");
 
-    // Try to submit empty form
     const submitButton = page.getByRole("button", { name: /sign in|login/i });
     await submitButton.click();
 
-    // Should show validation or stay on page
     await expect(page).toHaveURL(/login/);
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto("/auth/login");
 
-    // Fill with invalid credentials
     await page.getByLabel(/email/i).fill("invalid@test.com");
     await page.getByLabel(/password/i).fill("wrongpassword");
 
-    // Submit form
     const submitButton = page.getByRole("button", { name: /sign in|login/i });
     await submitButton.click();
 
-    // Wait a bit for response
     await page.waitForTimeout(1000);
 
-    // Should show error or stay on login page
     await expect(page).toHaveURL(/login/);
+  });
+
+  test("should open forgot password from login", async ({ page }) => {
+    await page.goto("/auth/login");
+    const forgot = page.getByRole("link", { name: /forgot password/i });
+    await expect(forgot).toBeVisible();
+    await forgot.click();
+    await expect(page).toHaveURL(/forgot-password/);
+    await expect(page.getByRole("heading", { name: /forgot password/i })).toBeVisible();
+    await expect(page.getByLabel(/email/i)).toBeVisible();
+  });
+
+  test("forgot password accepts any email with generic success UX", async ({ page }) => {
+    await page.goto("/auth/forgot-password");
+    await page.getByLabel(/email/i).fill("nobody@example.com");
+    await page.getByRole("button", { name: /send reset link|send/i }).click();
+    await expect(page.getByText(/if an account exists|check your email/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  test("reset password without token shows request-new-link state", async ({ page }) => {
+    await page.goto("/auth/reset-password");
+    await expect(page.getByText(/missing or invalid|request a new/i).first()).toBeVisible();
+    const newLink = page.getByRole("link", { name: /request a new reset link|forgot/i });
+    await expect(newLink).toBeVisible();
+    await newLink.click();
+    await expect(page).toHaveURL(/forgot-password/);
   });
 
   test("should navigate between login and register", async ({ page }) => {
     await page.goto("/auth/login");
 
-    // Find and click register link
     const registerLink = page.getByRole("link", { name: /sign up|register|create account/i });
     if ((await registerLink.count()) > 0) {
       await registerLink.first().click();

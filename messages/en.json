@@ -705,7 +705,9 @@
       "createUser": "Create User",
       "actions": {
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "sendReset": "Send reset link",
+        "sendingReset": "Sending..."
       },
       "table": {
         "user": "User",
@@ -760,7 +762,9 @@
           "deactivated": "User deactivated successfully",
           "approved": "User approved successfully",
           "rejected": "User rejected",
-          "statusFailed": "Failed to update user status"
+          "statusFailed": "Failed to update user status",
+          "resetSent": "Password reset link sent",
+          "resetFailed": "Could not send password reset link"
         },
         "validation": {
           "invalidEmail": "Please enter a valid email address",

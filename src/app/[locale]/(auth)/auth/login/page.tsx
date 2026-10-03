@@ -22,6 +22,7 @@ import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-requ
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
 import { trpc } from "@/lib/trpc/client";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { loginFormSchema } from "@/lib/validations";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,8 +68,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const parsed = loginFormSchema.safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
+    });
+    if (!parsed.success) {
+      toast.error(t("loginFailed"), {
+        description: parsed.error.errors[0]?.message || t("invalidCredentials"),
+      });
+      setIsLoading(false);
+      return;
+    }
+    const { email, password } = parsed.data;
 
     try {
       const result = await signIn("credentials", {

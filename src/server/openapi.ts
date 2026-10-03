@@ -163,33 +163,6 @@ export function buildOpenApiDocument(baseUrl: string) {
             },
           },
         },
-        "/auth/change-password": {
-          post: {
-            tags: ["auth"],
-            summary: "Change current user password",
-            requestBody: {
-              required: true,
-              content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/ChangePasswordRequest" },
-                  example: { currentPassword: "oldpass", newPassword: "StrongP@ssw0rd" },
-                },
-              },
-            },
-            responses: {
-              "200": {
-                description: "Password changed",
-                content: {
-                  "application/json": {
-                    schema: { $ref: "#/components/schemas/BasicSuccess" },
-                    example: { success: true, message: "Password changed successfully" },
-                  },
-                },
-              },
-              "401": { description: "Invalid current password" },
-            },
-          },
-        },
         "/user/me": {
           get: {
             tags: ["user"],

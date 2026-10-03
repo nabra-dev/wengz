@@ -7,6 +7,9 @@ import { isStaffRole, type AppRole } from "@/lib/roles";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
+/** Precomputed bcrypt hash so missing users still pay compare cost (timing). */
+const DUMMY_PASSWORD_HASH = "$2a$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW";
+
 type UserRole = AppRole;
 
 declare module "next-auth" {
@@ -88,13 +91,10 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!user?.password) {
-          throw new Error("Invalid email or password");
-        }
+        const passwordHash = user?.password || DUMMY_PASSWORD_HASH;
+        const isPasswordValid = await bcrypt.compare(credentials.password, passwordHash);
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
+        if (!user?.password || !isPasswordValid) {
           throw new Error("Invalid email or password");
         }
 

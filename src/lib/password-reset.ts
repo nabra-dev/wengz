@@ -36,36 +36,54 @@ export async function createPasswordResetToken(
   return { rawToken, expiresAt };
 }
 
-export async function consumePasswordResetToken(
+/** Look up a still-valid unused token without consuming it. */
+export async function findValidPasswordResetToken(
   db: PrismaClient,
   rawToken: string
-): Promise<{ userId: string } | null> {
+): Promise<{ id: string; userId: string } | null> {
   const tokenHash = hashPasswordResetToken(rawToken);
   const now = new Date();
-
   const row = await db.passwordResetToken.findUnique({
     where: { tokenHash },
     select: { id: true, userId: true, expiresAt: true, usedAt: true },
   });
+  if (!row || row.usedAt || row.expiresAt <= now) return null;
+  return { id: row.id, userId: row.userId };
+}
 
-  if (!row || row.usedAt || row.expiresAt <= now) {
-    return null;
-  }
+/**
+ * Atomically consume the reset token, set the new password hash, bump
+ * passwordChangedAt, clear DB sessions, and invalidate sibling tokens.
+ */
+export async function finalizePasswordReset(
+  db: PrismaClient,
+  tokenId: string,
+  userId: string,
+  hashedPassword: string
+): Promise<boolean> {
+  const now = new Date();
+  const passwordChangedAt = now;
 
-  const used = await db.passwordResetToken.updateMany({
-    where: { id: row.id, usedAt: null, expiresAt: { gt: now } },
-    data: { usedAt: now },
+  return db.$transaction(async (tx) => {
+    const used = await tx.passwordResetToken.updateMany({
+      where: { id: tokenId, usedAt: null, expiresAt: { gt: now } },
+      data: { usedAt: now },
+    });
+    if (used.count === 0) return false;
+
+    await tx.passwordResetToken.updateMany({
+      where: { userId, usedAt: null, id: { not: tokenId } },
+      data: { usedAt: now },
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword, passwordChangedAt },
+    });
+
+    await tx.session.deleteMany({ where: { userId } });
+    return true;
   });
-
-  if (used.count === 0) return null;
-
-  // Invalidate any other outstanding tokens for this user
-  await db.passwordResetToken.updateMany({
-    where: { userId: row.userId, usedAt: null, id: { not: row.id } },
-    data: { usedAt: now },
-  });
-
-  return { userId: row.userId };
 }
 
 export function getPasswordResetBaseUrl(): string {

@@ -93,6 +93,21 @@ flowchart TB
 
 ---
 
+## Passwords and session invalidation
+
+| Concern         | Implementation                                                                                                                                                                                                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy          | Shared `passwordSchema` in `src/lib/validations.ts` — trim, **min 8 / max 128**. Used by register, creator apply, reset, profile change (`user.changePassword`), admin create user. Login accepts any non-empty password (legacy accounts).                                                                    |
+| Hashing         | `bcrypt` cost **12** everywhere passwords are written.                                                                                                                                                                                                                                                         |
+| Forgot / reset  | `src/lib/password-reset.ts` + `src/lib/issue-password-reset.ts`. Raw token emailed; **SHA-256** stored. **1h TTL**, single-use, prior unused tokens invalidated. Requires `NEXTAUTH_URL` or `NEXT_PUBLIC_APP_URL`. SMTP failure revokes unused tokens and logs; public forgot response stays enumeration-safe. |
+| Reset rules     | New password must differ from current; token consume + password write + session wipe happen in one transaction (`finalizePasswordReset`).                                                                                                                                                                      |
+| Change password | Profile Security → `user.changePassword` only (no duplicate `auth.changePassword`). User is signed out afterward.                                                                                                                                                                                              |
+| Admin support   | `admin.sendPasswordResetLink` emails a reset link for a credentials user (fails loudly if SMTP is down).                                                                                                                                                                                                       |
+| Session kill    | `User.passwordChangedAt` bumped on change/reset; JWT callback + `src/proxy.ts` `authorized` reject older tokens; DB `Session` rows deleted.                                                                                                                                                                    |
+| Login hardening | Email lowercased/trimmed; dummy bcrypt compare when user/password missing (timing); rate limits on login / forgot / reset.                                                                                                                                                                                     |
+
+---
+
 ## Internationalization
 
 - **Routing**: `src/i18n/routing.ts` — use **`Link` / `redirect` / `useRouter` / `usePathname` from `@/i18n/routing`**, not raw `next/navigation`, for locale-aware URLs (`localePrefix: "as-needed"`).

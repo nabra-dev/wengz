@@ -24,10 +24,13 @@ export function ChangePasswordForm() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const newPasswordValid = passwordSchema.safeParse(newPassword).success;
+  const passwordsMatch = newPassword === confirmPassword;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (newPassword !== confirmPassword) {
+    if (!passwordsMatch) {
       toast.error(t("validationErrors.mismatch"));
       return;
     }
@@ -54,32 +57,6 @@ export function ChangePasswordForm() {
       toast.error(message);
     }
   };
-
-  const passwordStrength = (password: string) => {
-    let strength = 0;
-    if (password.trim().length >= PASSWORD_MIN_LENGTH) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^a-zA-Z\d]/.test(password)) strength++;
-    return strength;
-  };
-
-  const strength = passwordStrength(newPassword);
-  const strengthText = [
-    t("strengthLabels.veryWeak"),
-    t("strengthLabels.weak"),
-    t("strengthLabels.fair"),
-    t("strengthLabels.good"),
-    t("strengthLabels.strong"),
-  ];
-  const strengthColor = [
-    "bg-red-500",
-    "bg-orange-500",
-    "bg-yellow-500",
-    "bg-blue-500",
-    "bg-green-500",
-  ];
 
   return (
     <Card>
@@ -142,25 +119,6 @@ export function ChangePasswordForm() {
                 {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-
-            {newPassword && (
-              <div className="space-y-1">
-                <div className="flex gap-1">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-1 flex-1 rounded ${
-                        i < strength ? strengthColor[strength - 1] : "bg-gray-200"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t("strengthText")}: {strengthText[strength - 1] || strengthText[0]}
-                </p>
-              </div>
-            )}
-
             <p className="text-xs text-muted-foreground">{t("helperText.requirements")}</p>
           </div>
 
@@ -190,7 +148,7 @@ export function ChangePasswordForm() {
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            {confirmPassword && newPassword !== confirmPassword && (
+            {confirmPassword && !passwordsMatch && (
               <p className="text-xs text-red-500">{t("helperText.mismatch")}</p>
             )}
           </div>
@@ -198,7 +156,9 @@ export function ChangePasswordForm() {
           <div className="flex justify-end pt-4">
             <Button
               type="submit"
-              disabled={changePassword.isPending || newPassword !== confirmPassword}
+              disabled={
+                changePassword.isPending || !passwordsMatch || !newPasswordValid || !currentPassword
+              }
               className="flex w-full sm:w-auto items-center justify-center gap-2"
             >
               {changePassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}

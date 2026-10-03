@@ -43,20 +43,27 @@ export const phoneWithCountryCodeSchema = z
   )
   .optional();
 
-// Login form validation
+/** Trim + lowercase before email validation (forms often include padding spaces). */
+export const normalizedEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "Email is required")
+  .email("Please enter a valid email address");
+
+// Login: do not enforce new-password policy (legacy short passwords may still exist).
 export const loginFormSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
+  email: normalizedEmailSchema,
+  password: z.string().min(1, "Password is required"),
 });
 
-// Registration form validation
+// Client registration form validation
 export const registerFormSchema = z
   .object({
     name: nameSchema,
-    email: emailSchema,
-    password: simplePasswordSchema,
-    confirmPassword: z.string(),
-    role: z.enum(["CLIENT", "PROVIDER"]),
+    email: normalizedEmailSchema,
+    password: passwordSchema,
+    confirmPassword: passwordSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",

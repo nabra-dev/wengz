@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
-import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
+import { phoneNumberOnlySchema, registerFormSchema } from "@/lib/validations";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
@@ -98,16 +98,20 @@ export default function RegisterPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
-    const email = (formData.get("email") as string).toLowerCase().trim();
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
     const phoneRaw = (formData.get("phone") as string).trim() || "";
 
-    // Validate email using emailSchema
-    const emailValidation = emailSchema.safeParse(email);
-    if (!emailValidation.success) {
-      const errorMsg = emailValidation.error.errors[0]?.message || "Invalid email";
+    const parsed = registerFormSchema.safeParse({
+      name: formData.get("name"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+    if (!parsed.success) {
+      const errorMsg =
+        parsed.error.errors[0]?.message ||
+        (parsed.error.errors[0]?.path?.[0] === "confirmPassword"
+          ? t("passwordsNotMatch")
+          : t("passwordHint"));
       setError(errorMsg);
       toast.error(t("validationError"), {
         description: errorMsg,
@@ -118,7 +122,6 @@ export default function RegisterPage() {
     // Build phone with country code if provided
     let phone: string | undefined = undefined;
     if (phoneRaw) {
-      // Validate phone number using phoneNumberOnlySchema
       const phoneValidation = phoneNumberOnlySchema.safeParse(phoneRaw);
       if (!phoneValidation.success) {
         const errorMsg = phoneValidation.error.errors[0]?.message || "Invalid phone number";
@@ -131,25 +134,8 @@ export default function RegisterPage() {
       phone = `${countryCode} ${phoneRaw}`;
     }
 
-    if (password !== confirmPassword) {
-      setError(t("passwordsNotMatch"));
-      toast.error(t("validationError"), {
-        description: t("passwordsNotMatch"),
-      });
-      return;
-    }
-
-    const passwordValidation = passwordSchema.safeParse(password);
-    if (!passwordValidation.success) {
-      const errorMsg = passwordValidation.error.errors[0]?.message || t("passwordHint");
-      setError(errorMsg);
-      toast.error(t("validationError"), {
-        description: errorMsg,
-      });
-      return;
-    }
-
-    registerMutation.mutate({ name, email, password: passwordValidation.data, phone });
+    const { name, email, password } = parsed.data;
+    registerMutation.mutate({ name, email, password, phone });
   }
 
   return (

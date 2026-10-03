@@ -24,7 +24,7 @@ The application is **bilingual (English and Arabic)** end-to-end, including mark
 
 Registration and login are **credential-based** (email/password). **Self-serve** client registration and the creator form create accounts in **PENDING** status; login is blocked until an admin approves. Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
 
-Logged-in users can **change password** from their profile Security tab. Anyone can use **forgot password** (`/auth/forgot-password`) to receive a one-time email link (1 hour TTL) and set a new password at `/auth/reset-password`.
+Logged-in users can **change password** from their profile Security tab (min **8** characters; other sessions are invalidated and the user must sign in again). Anyone can use **forgot password** (`/auth/forgot-password`) to receive a one-time email link (**1 hour** TTL) and set a new password at `/auth/reset-password`. Super admins can also **send a reset link** from Admin → Users for support.
 
 ---
 

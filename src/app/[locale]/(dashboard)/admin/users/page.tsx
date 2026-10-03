@@ -44,6 +44,7 @@ import {
   Eye,
   EyeOff,
   Edit,
+  KeyRound,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
@@ -201,9 +202,11 @@ function UserListItem({
   onActiveChange,
   onApprove,
   onReject,
+  onSendResetLink,
   isToggling,
   isApproving,
   isRejecting,
+  isSendingReset,
 }: {
   user: UserData;
   getRoleColor: (role: string) => string;
@@ -220,9 +223,11 @@ function UserListItem({
   onActiveChange: (userId: string, isActive: boolean) => void;
   onApprove: (userId: string) => void;
   onReject: (userId: string) => void;
+  onSendResetLink: (userId: string) => void;
   isToggling?: boolean;
   isApproving?: boolean;
   isRejecting?: boolean;
+  isSendingReset?: boolean;
 }): JSX.Element {
   const t = useTranslations("admin.users");
   const tCommon = useTranslations("common");
@@ -353,6 +358,18 @@ function UserListItem({
               <Edit className="h-4 w-4" />
               {t("dialog.edit.title")}
             </Button>
+            {isActive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSendResetLink(user.id)}
+                disabled={isSendingReset}
+                className="flex items-center gap-1"
+              >
+                <KeyRound className="h-4 w-4" />
+                {isSendingReset ? t("actions.sendingReset") : t("actions.sendReset")}
+              </Button>
+            )}
             <div className="flex items-center gap-2">
               <Label
                 htmlFor={`user-active-${user.id}`}
@@ -394,6 +411,7 @@ export default function AdminUsersPage() {
   } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actingUserId, setActingUserId] = useState<string | null>(null);
+  const [resetLinkUserId, setResetLinkUserId] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<{
     id: string;
     name: string | null;
@@ -483,6 +501,17 @@ export default function AdminUsersPage() {
     onError: (error) => {
       setActingUserId(null);
       toast.error(error.message || t("dialog.toast.statusFailed"));
+    },
+  });
+
+  const sendPasswordResetLink = trpc.admin.sendPasswordResetLink.useMutation({
+    onSuccess: () => {
+      setResetLinkUserId(null);
+      toast.success(t("dialog.toast.resetSent"));
+    },
+    onError: (error) => {
+      setResetLinkUserId(null);
+      toast.error(error.message || t("dialog.toast.resetFailed"));
     },
   });
 
@@ -908,9 +937,16 @@ export default function AdminUsersPage() {
                       onReject={(userId) => {
                         setConfirmReject({ id: userId, email: user.email });
                       }}
+                      onSendResetLink={(userId) => {
+                        setResetLinkUserId(userId);
+                        sendPasswordResetLink.mutate({ userId });
+                      }}
                       isToggling={togglingUserId === user.id}
                       isApproving={actingUserId === user.id && approveUser.isPending}
                       isRejecting={actingUserId === user.id && rejectUser.isPending}
+                      isSendingReset={
+                        resetLinkUserId === user.id && sendPasswordResetLink.isPending
+                      }
                     />
                   ))}
                 </div>

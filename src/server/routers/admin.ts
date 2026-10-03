@@ -19,6 +19,7 @@ import {
   sendAccountRejectedEmail,
 } from "@/lib/notifications";
 import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
+import { issuePasswordResetEmail } from "@/lib/issue-password-reset";
 import { assignFreeClientSubscription } from "@/lib/free-client-subscription";
 import {
   reviewProviderWithdrawal,
@@ -2865,6 +2866,71 @@ export const adminRouter = router({
       return {
         success: true,
         user,
+      };
+    }),
+
+  /** Support: email a password reset link to a credentials user. */
+  sendPasswordResetLink: adminProcedure
+    .input(z.object({ userId: z.string().min(1) }))
+    .output(
+      z.object({
+        success: z.boolean(),
+        message: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findFirst({
+        where: { id: input.userId, deletedAt: null },
+        select: { id: true, email: true, name: true, password: true, role: true },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      if (isSuperAdmin(user.role) && user.id !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Cannot send a reset link for another super admin",
+        });
+      }
+
+      if (!user.password) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This account has no password to reset",
+        });
+      }
+
+      const result = await issuePasswordResetEmail({
+        db: ctx.db,
+        user,
+        locale: ctx.locale,
+      });
+
+      if (result !== "sent") {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not send the reset email. Check email configuration and try again.",
+        });
+      }
+
+      logActivityAsync({
+        action: "admin.password_reset_link",
+        message: `Admin sent password reset link to ${user.email}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: user.id,
+        metadata: { targetEmail: user.email },
+      });
+
+      return {
+        success: true,
+        message: "Password reset link sent",
       };
     }),
 
