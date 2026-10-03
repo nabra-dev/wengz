@@ -157,6 +157,7 @@ export default function RequestDetailPage() {
         serviceTypeIcon={request.serviceType.icon || undefined}
         createdAt={request.createdAt}
         backUrl="/client/requests"
+        needsManualApproval={(request as any).needsManualApproval === true}
       />
 
       <RequestWorkspace

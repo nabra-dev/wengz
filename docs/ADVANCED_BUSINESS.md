@@ -97,9 +97,9 @@ Canonical happy path and side exits. Technical pointers live in `docs/ADVANCED_T
 | 9   | **Credits & expiry**         | Spend unit = remaining credits. Soft gate: `endDate >= now` on create/revision. Cron: ~day-7 warning, then deactivate + expired notify. Cancel sub = **immediate** cut-off. No staff top-up / credit refund helpers in product UI. | Dashboard + shell credits chip                 |
 | 10  | **Create request**           | Active sub; package includes service; base + attribute credits (file/voice add 0); contact-leak scan on title/desc (strict) and Q&A text (brief). Staff may create on behalf (same deduct).                                        | `/client/requests/new` → status `PENDING`      |
 | 11  | **Collaborate**              | Messaging after provider assigned; unread flags; contact-leak on messages.                                                                                                                                                         | Request detail thread                          |
-| 12  | **Delivery SLA**             | On deliver: `deliveredAt`. 1h → client reminder. 12h → `needsManualApproval` for staff (**flag only**; client UI does not surface it; no staff approve-on-behalf).                                                                 | Reminder in-app/email                          |
+| 12  | **Delivery SLA**             | On deliver: `deliveredAt`. 1h → client reminder. 12h → `needsManualApproval` (client + staff UI). PM/SA may **Approve for client** from admin request detail.                                                                      | Reminder + staff complete path                 |
 | 13  | **Revision**                 | Free allowance then paid cost (requires active sub). Feedback scanned for leaks **before** status/credit change.                                                                                                                   | `DELIVERED` ⇄ `REVISION_REQUESTED`             |
-| 14  | **Approve + settle**         | Client approve → `COMPLETED`; provider wallet hold starts (7 days). Approve does **not** require an active subscription.                                                                                                           | Provider notified                              |
+| 14  | **Approve + settle**         | Client or staff-on-behalf approve → `COMPLETED`; provider wallet hold starts (7 days). Approve does **not** require an active subscription.                                                                                        | Provider (+ client if staff) notified          |
 | 15  | **Rate**                     | Once per completed request; optional review text (leak-scanned).                                                                                                                                                                   | Reputation signal for provider                 |
 | 16  | **Notify / profile**         | In-app + email + SSE. Locale switcher updates `preferredLocale`. Currency switcher is **display-only** (USD stored; EGP presentation rate).                                                                                        | `/client/notifications`, `/client/profile`     |
 
@@ -121,7 +121,7 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 2. **Assignment** — A provider may be linked to the request (at creation or later via assign/unassign); “available” listings help providers discover unassigned work where the product supports it.
 3. **Active work (provider concurrency)** — A provider may actively work on **one** request at a time (`IN_PROGRESS` or `REVISION_REQUESTED`). Delivering frees the slot. Exception: if they have a **revision requested**, they may also start **one** additional `IN_PROGRESS` job (revision + one new). Assigned-but-not-started (`PENDING`) and `DELIVERED` (awaiting client) do not consume the slot.
 4. **Collaboration** — **Comments** support messages, system lines, and deliverable-style posts; unread flags support inbox-style UX. Free-text fields (request title/description, messages, revision feedback, deliverables) are scanned for **off-platform contact leaks** (phone/email, WhatsApp/Telegram/LinkedIn/etc. links, handles, solicitation phrases in EN/AR) — including common **obfuscation** (spaced/spoken digits, `at`/`dot` emails, `w.h.a.t.s.a.p.p`, Arabic-Indic digits) — and rejected so client–provider work stays on Wengz. **Super admins are exempt** (ops/testing). Q&A answers still allow bare phones/emails when they belong on the artwork, but block chat-app outreach. Each block writes `security.contact_leak` to **Activity** (warn); after **5** blocks in **15 minutes** the user is rate-limited (`security.contact_leak_rate_limited`) and request managers are notified. Super admins and project managers review these events on **Admin → Contact leaks** (`/admin/contact-leaks`) and can **Clear strikes** to lift a false-positive lockout (`security.contact_leak_cleared`).
-5. **Delivery approval SLA** — When work is **delivered**, `deliveredAt` is recorded. If the client has not approved within **1 hour**, they receive a reminder email/notification. If still not approved after **12 hours**, the request is flagged `needsManualApproval` for admins (label only; no auto-approve).
+5. **Delivery approval SLA** — When work is **delivered**, `deliveredAt` is recorded. If the client has not approved within **1 hour**, they receive a reminder email/notification. If still not approved after **12 hours**, the request is flagged `needsManualApproval` (visible to client and staff). **Project managers / super admins** can **Approve for client** from the admin request detail (settles provider earnings; notifies client + provider). There is no automatic approve.
 6. **Completion and reputation** — A **rating** can tie to a completed request, feeding provider quality signals.
 
 **Watchers** on a request allow additional stakeholders to follow activity where the product uses that relation.
@@ -135,7 +135,7 @@ Requests move through statuses such as **pending**, **in progress**, **delivered
 The business relies on **timely, localized** communication:
 
 - **In-app** notifications (stored per user, read/unread).
-- **Email** and **in-app** notifications, with templates that respect **locale** when invoked from server flows.
+- **Email** and **in-app** notifications localized to each **recipient’s** `preferredLocale` (not the acting staff session language).
 
 Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval reminders**, **provider earnings hold release**) are designed to run on a schedule via HTTP **cron** endpoints; see `src/app/api/cron/check-subscriptions/route.ts`, `src/app/api/cron/check-delivered-approvals/route.ts`, `src/app/api/cron/release-provider-holds/route.ts`, and your hosting provider’s scheduler.
 
@@ -160,6 +160,7 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 | Self-serve register / apply (PENDING)           |   ✓    |    ✓     |     |     |             |
 | Buy / manage subscription + payment proof       |   ✓    |          |     | ✓\* |     ✓\*     |
 | Create / revise / approve / rate requests       |   ✓    |          | ✓†  |     |     ✓†      |
+| Approve delivered on behalf of client           |        |          |  ✓  |     |      ✓      |
 | Claim / start / deliver work + wallet           |        |    ✓     |     |     |             |
 | Assign / unassign / create-on-behalf / soft-del |        |          |  ✓  |     |      ✓      |
 | Contact-leak review + clear strikes             |        |          |  ✓  |     |      ✓      |
@@ -168,7 +169,7 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 | Maintenance mode toggle                         |        |          |     |     |      ✓      |
 
 \* Review / configure only (not client purchase).  
-† Staff create-on-behalf and messaging oversight; clients still own approve/rate.  
+† Staff create-on-behalf, messaging oversight, and approve-on-behalf for stuck DELIVERED; clients still own rate.  
 ‡ Provider opens withdrawal/dispute; FM/SA reviews.
 
 ---
@@ -177,20 +178,18 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 
 Documented so product and engineering stay aligned; not every schema field is a shipped feature.
 
-| Gap                               | Notes                                                                                                                           |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Staff approve-on-behalf**       | After 12h, `needsManualApproval` is a **flag + notify** only; no admin/PM “approve for client” action. Client UI also hides it. |
-| **Request watchers**              | `RequestWatcher` exists in Prisma; no manage UI/API for adding stakeholders.                                                    |
-| **Public contact inbox vs PM**    | Contact-form notifications may target PMs, but `/admin/contacts` is **super-admin only** — grant ACL or stop notifying PMs.     |
-| **Priority pricing UI**           | Schema has per-service priority credit costs; create-request currently stores `priorityCreditCost: 0` (not client-selectable).  |
-| **Card / Fawry / Meeza rails**    | Shown as Coming soon; only bank transfer + InstaPay are live.                                                                   |
-| **WhatsApp notification channel** | Not a live outbound channel; knowledge copy must not promise it.                                                                |
-| **Object storage**                | Uploads are local disk today; remote hosts are configured for future S3/B2.                                                     |
-| **Client notification locale**    | Many client emails/in-app still use **actor** `ctx.locale` instead of the client’s `preferredLocale` on staff-driven actions.   |
-| **Credit refunds**                | No refund on staff cancel request or subscription cancel; `addCredits` helper unused.                                           |
-| **Upgrade credit carry**          | Approving a paid plan deactivates the prior active plan without moving leftover credits.                                        |
-| **Subscription cache**            | Client subscribe/cancel may leave shell credits stale until TTL or payment approve.                                             |
-| **Maintenance session eviction**  | Toggle blocks new client login; existing client JWTs keep working until expiry.                                                 |
+| Gap                               | Notes                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Request watchers**              | `RequestWatcher` exists in Prisma; no manage UI/API for adding stakeholders.                                                   |
+| **Public contact inbox vs PM**    | Contact-form notifications may target PMs, but `/admin/contacts` is **super-admin only** — grant ACL or stop notifying PMs.    |
+| **Priority pricing UI**           | Schema has per-service priority credit costs; create-request currently stores `priorityCreditCost: 0` (not client-selectable). |
+| **Card / Fawry / Meeza rails**    | Shown as Coming soon; only bank transfer + InstaPay are live.                                                                  |
+| **WhatsApp notification channel** | Not a live outbound channel; knowledge copy must not promise it.                                                               |
+| **Object storage**                | Uploads are local disk today; remote hosts are configured for future S3/B2.                                                    |
+| **Credit refunds**                | No refund on staff cancel request or subscription cancel; `addCredits` helper unused.                                          |
+| **Upgrade credit carry**          | Approving a paid plan deactivates the prior active plan without moving leftover credits.                                       |
+| **Subscription cache**            | Client subscribe/cancel may leave shell credits stale until TTL or payment approve.                                            |
+| **Maintenance session eviction**  | Toggle blocks new client login; existing client JWTs keep working until expiry.                                                |
 
 ---
 

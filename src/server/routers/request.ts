@@ -3,7 +3,6 @@ import { router, protectedProcedure, clientProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
 import { handleRevisionRequest, getRevisionInfo } from "@/lib/revision-logic";
 import { calculateAttributeCredits } from "@/lib/attribute-validation";
-import { settleCompletedRequest } from "@/lib/provider-wallet";
 import { assertAllowedUploadUrls } from "@/lib/upload-url";
 import {
   getProviderWorkload,
@@ -21,6 +20,7 @@ import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { canManageRequests } from "@/lib/roles";
 import { logRequestActivity } from "@/lib/request-activity";
 import { createServiceRequest } from "@/lib/create-request";
+import { approveDeliveredRequest } from "@/lib/approve-delivered-request";
 import { enforceNoContactLeak } from "@/lib/contact-leak-enforce";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
@@ -659,106 +659,12 @@ export const requestRouter = router({
   approve: clientProcedure
     .input(z.object({ requestId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-
-      const request = await ctx.db.request.findUnique({
-        where: { id: input.requestId },
-      });
-
-      if (!request || request.deletedAt) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Request not found",
-        });
-      }
-
-      if (request.clientId !== userId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You don't own this request",
-        });
-      }
-
-      if (request.status !== "DELIVERED") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Request must be in DELIVERED status to approve",
-        });
-      }
-
-      const approvedComment = await getTranslation(
-        ctx.locale,
-        "requests.messages.systemMessages.requestApprovedCompleted"
-      );
-
-      const updatedRequest = await ctx.db.$transaction(async (tx) => {
-        // CAS: only complete while still DELIVERED and not soft-deleted
-        const cas = await tx.request.updateMany({
-          where: {
-            id: input.requestId,
-            status: "DELIVERED",
-            deletedAt: null,
-            clientId: userId,
-          },
-          data: {
-            status: "COMPLETED",
-            completedAt: new Date(),
-            needsManualApproval: false,
-          },
-        });
-
-        if (cas.count === 0) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "Request must be in DELIVERED status to approve",
-          });
-        }
-
-        if (request.providerId) {
-          await settleCompletedRequest(tx, input.requestId);
-        }
-
-        await tx.requestComment.create({
-          data: {
-            requestId: input.requestId,
-            userId,
-            content: approvedComment,
-            type: "SYSTEM",
-          },
-        });
-
-        return tx.request.findUnique({ where: { id: input.requestId } });
-      });
-
-      // Notify provider
-      if (request.providerId) {
-        // Send realtime + email notification
-        await notifyStatusChange({
-          requestId: input.requestId,
-          userId: request.providerId,
-          oldStatus: "DELIVERED",
-          newStatus: "COMPLETED",
-          locale: ctx.locale,
-        });
-      }
-
-      logRequestActivity({
-        action: "request.approve",
+      return approveDeliveredRequest({
+        db: ctx.db,
         requestId: input.requestId,
-        actorId: userId,
+        actorId: ctx.session.user.id,
         actorRole: ctx.session.user.role,
-        message: `Request approved and completed: ${request.title}`,
-        metadata: {
-          previousStatus: "DELIVERED",
-          newStatus: "COMPLETED",
-          providerId: request.providerId,
-        },
       });
-
-      return {
-        success: true,
-        request: updatedRequest,
-      };
     }),
 
   // Add comment to request

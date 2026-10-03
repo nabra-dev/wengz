@@ -48,8 +48,22 @@ import { sendNotificationToUser } from "./sse-utils";
 import { getTranslation, normalizeAppLocale } from "./i18n-helper";
 import { logger } from "@/lib/logger";
 import { formatMoneyAmount } from "@/lib/utils";
+import { getPreferredLocaleForUser } from "@/lib/user-locale";
 
 type StaffRole = "SUPER_ADMIN" | "PROJECT_MANAGER" | "FINANCE_MANAGER";
+
+/** Resolve copy locale from the recipient user — never the actor session. */
+async function localeForUser(userId: string): Promise<"en" | "ar"> {
+  return getPreferredLocaleForUser(userId);
+}
+
+async function localeForEmail(email: string): Promise<"en" | "ar"> {
+  const row = await db.user.findFirst({
+    where: { email },
+    select: { preferredLocale: true },
+  });
+  return normalizeAppLocale(row?.preferredLocale);
+}
 
 /** Fan out to staff using each admin's preferredLocale (grouped to avoid N template builds). */
 async function notifyStaffByRoles(
@@ -117,7 +131,13 @@ interface NotificationData {
   userId: string;
   title: string;
   message: string;
-  type?: "message" | "status_change" | "assignment" | "general";
+  type?:
+    | "message"
+    | "status_change"
+    | "assignment"
+    | "general"
+    | "subscription_expiring"
+    | "subscription_expired";
   link?: string;
   /** Optional request id for clients to mark unread / refresh lists. */
   requestId?: string;
@@ -339,7 +359,8 @@ export async function notifyProviderWithdrawalReviewed(params: {
   reason: string;
   locale?: string;
 }) {
-  const { providerId, status, amountUsd, reason, locale = "en" } = params;
+  const { providerId, status, amountUsd, reason } = params;
+  const locale = await localeForUser(providerId);
   const key = status === "APPROVED" ? "withdrawalApproved" : "withdrawalRejected";
   const formattedAmount = formatMoneyAmount(amountUsd, locale);
 
@@ -407,7 +428,8 @@ export async function notifyProviderFinanceDisputeReviewed(params: {
   note: string;
   locale?: string;
 }) {
-  const { providerId, status, note, locale = "en" } = params;
+  const { providerId, status, note } = params;
+  const locale = await localeForUser(providerId);
   const statusLabel = status.replaceAll("_", " ").toLowerCase();
 
   const title = await getTranslation(locale, "notifications.financeDisputeReviewed.title");
@@ -487,7 +509,8 @@ export async function notifyNewMessage(params: {
   messagePreview: string;
   locale?: string;
 }) {
-  const { requestId, senderName, recipientId, messagePreview, locale = "en" } = params;
+  const { requestId, senderName, recipientId, messagePreview } = params;
+  const locale = await localeForUser(recipientId);
 
   // Batch both queries in parallel to avoid sequential DB calls
   const [request, user] = await Promise.all([
@@ -548,7 +571,8 @@ export async function notifyStatusChange(params: {
   newStatus: string;
   locale?: string;
 }) {
-  const { requestId, userId, oldStatus, newStatus, locale = "en" } = params;
+  const { requestId, userId, oldStatus, newStatus } = params;
+  const locale = await localeForUser(userId);
 
   // Batch both queries in parallel to avoid sequential DB calls
   const [request, user] = await Promise.all([
@@ -612,7 +636,8 @@ export async function notifyProviderAssignment(params: {
   providerName: string;
   locale?: string;
 }) {
-  const { requestId, providerId, providerName, locale = "en" } = params;
+  const { requestId, providerId, providerName } = params;
+  const locale = await localeForUser(providerId);
 
   const request = await db.request.findUnique({
     where: { id: requestId },
@@ -651,7 +676,8 @@ export async function notifyClientProviderClaimed(params: {
   providerName: string;
   locale?: string;
 }) {
-  const { requestId, clientId, providerName, locale = "en" } = params;
+  const { requestId, clientId, providerName } = params;
+  const locale = await localeForUser(clientId);
 
   const request = await db.request.findUnique({
     where: { id: requestId },
@@ -699,7 +725,8 @@ export async function notifyNewRequestAvailable(params: {
   requestTitle: string;
   locale?: string;
 }) {
-  const { providerId, requestId, serviceName, requestTitle, locale = "en" } = params;
+  const { providerId, requestId, serviceName, requestTitle } = params;
+  const locale = await localeForUser(providerId);
 
   const title = await getTranslation(locale, "notifications.newRequestAvailable.title");
   const message = await getTranslation(locale, "notifications.newRequestAvailable.message", {
@@ -736,7 +763,8 @@ export async function notifyClientRequestAccepted(params: {
   requestTitle: string;
   locale?: string;
 }) {
-  const { requestId, clientId, requestTitle, locale = "en" } = params;
+  const { requestId, clientId, requestTitle } = params;
+  const locale = await localeForUser(clientId);
 
   const title = await getTranslation(locale, "notifications.requestAccepted.title");
   const message = await getTranslation(locale, "notifications.requestAccepted.message", {
@@ -768,7 +796,8 @@ export async function notifyProviderRatingSubmitted(params: {
   rating: number;
   locale?: string;
 }) {
-  const { providerId, requestId, requestTitle, rating, locale = "en" } = params;
+  const { providerId, requestId, requestTitle, rating } = params;
+  const locale = await localeForUser(providerId);
 
   const title = await getTranslation(locale, "notifications.ratingSubmitted.title");
   const message = await getTranslation(locale, "notifications.ratingSubmitted.message", {
@@ -805,7 +834,8 @@ export async function notifyProviderUnassigned(params: {
   requestTitle: string;
   locale?: string;
 }) {
-  const { providerId, requestId, requestTitle, locale = "en" } = params;
+  const { providerId, requestId, requestTitle } = params;
+  const locale = await localeForUser(providerId);
 
   const title = await getTranslation(locale, "notifications.requestUnassigned.title");
   const message = await getTranslation(locale, "notifications.requestUnassigned.message", {
@@ -837,7 +867,8 @@ export async function notifyRequestCancelled(params: {
   role: "PROVIDER" | "CLIENT";
   locale?: string;
 }) {
-  const { userId, requestId, requestTitle, role, locale = "en" } = params;
+  const { userId, requestId, requestTitle, role } = params;
+  const locale = await localeForUser(userId);
   const link =
     role === "CLIENT" ? `/client/requests/${requestId}` : `/provider/requests/${requestId}`;
 
@@ -874,7 +905,8 @@ export async function notifyProviderEarningsHoldReleased(params: {
   amountUsd: number;
   locale?: string;
 }) {
-  const { providerId, amountUsd, locale = "en" } = params;
+  const { providerId, amountUsd } = params;
+  const locale = await localeForUser(providerId);
   const formattedAmount = formatMoneyAmount(amountUsd, locale);
 
   const title = await getTranslation(locale, "notifications.earningsHoldReleased.title");
@@ -908,7 +940,8 @@ export async function notifyClientRequestCreatedByAdmin(params: {
   requestTitle: string;
   locale?: string;
 }) {
-  const { clientId, requestId, requestTitle, locale = "en" } = params;
+  const { clientId, requestId, requestTitle } = params;
+  const locale = await localeForUser(clientId);
 
   const title = await getTranslation(locale, "notifications.requestCreatedByAdmin.title");
   const message = await getTranslation(locale, "notifications.requestCreatedByAdmin.message", {
@@ -944,7 +977,8 @@ export async function notifyRequestRestored(params: {
   role: "PROVIDER" | "CLIENT";
   locale?: string;
 }) {
-  const { userId, requestId, requestTitle, role, locale = "en" } = params;
+  const { userId, requestId, requestTitle, role } = params;
+  const locale = await localeForUser(userId);
   const link =
     role === "CLIENT" ? `/client/requests/${requestId}` : `/provider/requests/${requestId}`;
 
@@ -982,7 +1016,8 @@ export async function notifyAccountActivationChanged(params: {
   isActive: boolean;
   locale?: string;
 }) {
-  const { userId, userName, isActive, locale = "en" } = params;
+  const { userId, userName, isActive } = params;
+  const locale = await localeForUser(userId);
   const key = isActive ? "accountReactivated" : "accountDeactivated";
 
   const title = await getTranslation(locale, `notifications.${key}.title`);
@@ -1011,7 +1046,8 @@ export async function notifyClientPaymentApproved(params: {
   packageName: string;
   locale?: string;
 }) {
-  const { userId, packageName, locale = "en" } = params;
+  const { userId, packageName } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.paymentApproved.title");
   const message = await getTranslation(locale, "notifications.paymentApproved.message", {
@@ -1040,7 +1076,8 @@ export async function notifyClientPaymentRejected(params: {
   reason: string;
   locale?: string;
 }) {
-  const { userId, reason, locale = "en" } = params;
+  const { userId, reason } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.paymentRejected.title");
   const message = await getTranslation(locale, "notifications.paymentRejected.message", {
@@ -1071,7 +1108,8 @@ export async function notifyClientPaymentProofReceived(params: {
   currency: string;
   locale?: string;
 }) {
-  const { userId, packageName, amount, currency, locale = "en" } = params;
+  const { userId, packageName, amount, currency } = params;
+  const locale = await localeForUser(userId);
   const formattedAmount = formatMoneyAmount(amount, locale);
 
   const title = await getTranslation(locale, "notifications.paymentProofReceived.title");
@@ -1112,7 +1150,8 @@ export async function notifyClientSubscriptionStarted(params: {
   packageName: string;
   locale?: string;
 }) {
-  const { userId, packageName, locale = "en" } = params;
+  const { userId, packageName } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.subscriptionStarted.title");
   const message = await getTranslation(locale, "notifications.subscriptionStarted.message", {
@@ -1141,7 +1180,8 @@ export async function notifyClientSubscriptionCancelled(params: {
   wasActive: boolean;
   locale?: string;
 }) {
-  const { userId, wasActive, locale = "en" } = params;
+  const { userId, wasActive } = params;
+  const locale = await localeForUser(userId);
   const messageKey = wasActive
     ? "notifications.subscriptionCancelled.activeMessage"
     : "notifications.subscriptionCancelled.pendingMessage";
@@ -1170,7 +1210,8 @@ export async function notifyPasswordChanged(params: {
   userName: string;
   locale?: string;
 }) {
-  const { userId, userName, locale = "en" } = params;
+  const { userId, userName } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.passwordChanged.title");
   const message = await getTranslation(locale, "notifications.passwordChanged.message");
@@ -1199,7 +1240,8 @@ export async function notifyEmailChanged(params: {
   newEmail: string;
   locale?: string;
 }) {
-  const { userId, userName, oldEmail, newEmail, locale = "en" } = params;
+  const { userId, userName, oldEmail, newEmail } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.emailChanged.title");
   const message = await getTranslation(locale, "notifications.emailChanged.message", {
@@ -1262,7 +1304,8 @@ export async function notifyApprovalReminder(params: {
   clientId: string;
   locale?: string;
 }) {
-  const { requestId, clientId, locale = "en" } = params;
+  const { requestId, clientId } = params;
+  const locale = await localeForUser(clientId);
 
   const request = await db.request.findUnique({
     where: { id: requestId },
@@ -1302,14 +1345,8 @@ export async function notifySubscriptionExpiring(params: {
   remainingCredits: number;
   locale?: string;
 }) {
-  const {
-    userId,
-    packageName,
-    packageNameI18n,
-    daysRemaining,
-    remainingCredits,
-    locale = "en",
-  } = params;
+  const { userId, packageName, packageNameI18n, daysRemaining, remainingCredits } = params;
+  const locale = await localeForUser(userId);
   const localizedPackageName = resolveLocalizedPackageName({
     locale,
     packageName,
@@ -1348,7 +1385,8 @@ export async function notifySubscriptionExpired(params: {
   packageNameI18n?: Record<string, string> | null;
   locale?: string;
 }) {
-  const { userId, packageName, packageNameI18n, locale = "en" } = params;
+  const { userId, packageName, packageNameI18n } = params;
+  const locale = await localeForUser(userId);
   const localizedPackageName = resolveLocalizedPackageName({
     locale,
     packageName,
@@ -1391,7 +1429,8 @@ export async function sendWelcomeEmail(params: {
   /** When false, only the in-app welcome is created (avoids duplicate approve emails). */
   email?: boolean;
 }) {
-  const { userId, userName, userEmail, userRole, locale = "en", email = true } = params;
+  const { userId, userName, userEmail, userRole, email = true } = params;
+  const locale = await localeForUser(userId);
 
   const title = await getTranslation(locale, "notifications.welcome.title", { userName });
   const message = await getTranslation(locale, "notifications.welcome.message", { userName });
@@ -1455,9 +1494,10 @@ export async function sendApplicationReceivedEmail(params: {
 export async function sendAccountApprovedEmail(params: {
   userEmail: string;
   userName: string;
+  /** Ignored — always uses the recipient account preferredLocale. */
   locale?: string;
 }) {
-  const locale = params.locale ?? "en";
+  const locale = await localeForEmail(params.userEmail);
   const template = await getAccountApprovedEmailTemplate({
     userName: params.userName,
     locale,
@@ -1474,9 +1514,10 @@ export async function sendAccountRejectedEmail(params: {
   userEmail: string;
   userName: string;
   reason?: string | null;
+  /** Ignored — always uses the recipient account preferredLocale. */
   locale?: string;
 }) {
-  const locale = params.locale ?? "en";
+  const locale = await localeForEmail(params.userEmail);
   const template = await getAccountRejectedEmailTemplate({
     userName: params.userName,
     reason: params.reason,
@@ -1671,7 +1712,8 @@ export async function notifyProviderServicesUpdated(params: {
   providerId: string;
   locale?: string;
 }) {
-  const { providerId, locale = "en" } = params;
+  const { providerId } = params;
+  const locale = await localeForUser(providerId);
 
   const title = await getTranslation(locale, "notifications.providerServicesUpdated.title");
   const message = await getTranslation(locale, "notifications.providerServicesUpdated.message");
@@ -1729,7 +1771,8 @@ export async function notifyRoleChanged(params: {
   newRole: string;
   locale?: string;
 }) {
-  const { userId, userName, oldRole, newRole, locale = "en" } = params;
+  const { userId, userName, oldRole, newRole } = params;
+  const locale = await localeForUser(userId);
 
   const [oldRoleLabel, newRoleLabel] = await Promise.all([
     getTranslation(locale, `common.roles.${oldRole}`),

@@ -2,10 +2,11 @@
 
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { toast } from "sonner";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FileText, MessageSquare } from "lucide-react";
+import { Loader2, ArrowLeft, FileText, MessageSquare, CheckCircle } from "lucide-react";
 import { AttributeResponsesDisplay } from "@/components/client/attribute-responses-display";
 import { RequestHeader } from "@/components/requests/request-header";
 import { RequestDescription } from "@/components/requests/request-description";
@@ -14,6 +15,7 @@ import { RequestStats } from "@/components/requests/request-stats";
 import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
 import { trpc } from "@/lib/trpc/client";
+import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { calculateAttributeCredits } from "@/lib/attribute-validation";
 
@@ -22,8 +24,22 @@ export default function AdminRequestDetailPage() {
   const locale = useLocale();
   const params = useParams();
   const requestId = params?.id as string;
+  const utils = trpc.useUtils();
 
   const { data: request, isLoading } = trpc.request.getById.useQuery({ id: requestId });
+
+  const approveOnBehalf = trpc.admin.approveRequestOnBehalf.useMutation({
+    onSuccess: () => {
+      void utils.request.getById.invalidate({ id: requestId });
+      void utils.request.getAll.invalidate();
+      toast.success(t("detail.toast.approvedOnBehalf"), {
+        description: t("detail.toast.approvedOnBehalfDesc"),
+      });
+    },
+    onError: (error: unknown) => {
+      showError(error, t("detail.toast.approveOnBehalfError"));
+    },
+  });
 
   if (isLoading) {
     return (
@@ -107,6 +123,26 @@ export default function AdminRequestDetailPage() {
         backUrl="/admin/requests"
         backLabel={t("title")}
         needsManualApproval={(request as any).needsManualApproval === true}
+        actions={
+          request.status === "DELIVERED" ? (
+            <Button
+              onClick={() => {
+                if (!window.confirm(t("detail.approveOnBehalfConfirm"))) return;
+                approveOnBehalf.mutate({ requestId });
+              }}
+              disabled={approveOnBehalf.isPending}
+              className="gap-2"
+              title={t("detail.approveOnBehalfHint")}
+            >
+              {approveOnBehalf.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4" />
+              )}
+              {t("detail.approveOnBehalf")}
+            </Button>
+          ) : undefined
+        }
       />
 
       <RequestWorkspace

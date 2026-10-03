@@ -175,13 +175,15 @@ Treat this list as a **checklist**, not a complete `.env` template—verify each
 
 ## Role access (implementation pointers)
 
-| Concern               | Location                                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------------------- |
-| Role enums + path ACL | `src/lib/roles.ts` (`canManageRequests`, `canManageFinance`, `canManagePlatform`, `canAccessAdminPath`) |
-| Edge redirects        | `src/proxy.ts`                                                                                          |
-| tRPC procedures       | `src/server/trpc.ts` (`adminProcedure`, `requestManagerProcedure`, `financeManagerProcedure`, …)        |
-| Admin nav filter      | `src/app/[locale]/(dashboard)/dashboard-shell.tsx`                                                      |
-| Domain rules          | `docs/ADVANCED_BUSINESS.md` (actors, capability matrix, known gaps)                                     |
+| Concern                 | Location                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Role enums + path ACL   | `src/lib/roles.ts` (`canManageRequests`, `canManageFinance`, `canManagePlatform`, `canAccessAdminPath`)    |
+| Edge redirects          | `src/proxy.ts`                                                                                             |
+| tRPC procedures         | `src/server/trpc.ts` (`adminProcedure`, `requestManagerProcedure`, `financeManagerProcedure`, …)           |
+| Admin nav filter        | `src/app/[locale]/(dashboard)/dashboard-shell.tsx`                                                         |
+| Domain rules            | `docs/ADVANCED_BUSINESS.md` (actors, capability matrix, known gaps)                                        |
+| Recipient notify locale | `getPreferredLocaleForUser` / `localeForUser` in `src/lib/notifications/index.ts` (not actor `ctx.locale`) |
+| Staff approve delivered | `src/lib/approve-delivered-request.ts` + `admin.approveRequestOnBehalf`                                    |
 
 `staffProcedure` exists in `src/server/trpc.ts` but is unused by routers; prefer the narrower request/finance procedures.
 

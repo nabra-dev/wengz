@@ -70,6 +70,7 @@ export default function RequestsPage() {
                 href={`/client/requests/${request.id}`}
                 variant="compact"
                 showProviderAsBrand
+                needsManualApproval={request.needsManualApproval === true}
               />
             ))}
           </div>

@@ -34,6 +34,7 @@ import {
   sendProviderPayout,
   settleCompletedRequest,
 } from "@/lib/provider-wallet";
+import { approveDeliveredRequest } from "@/lib/approve-delivered-request";
 import { reviewProviderFinanceDispute } from "@/lib/finance-disputes";
 import { logActivityAsync } from "@/lib/activity-log";
 import { logRequestActivity } from "@/lib/request-activity";
@@ -2696,6 +2697,19 @@ export const adminRouter = router({
       });
 
       return result;
+    }),
+
+  /** Complete a stuck DELIVERED request when the client has not approved (ops SLA). */
+  approveRequestOnBehalf: requestManagerProcedure
+    .input(z.object({ requestId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return approveDeliveredRequest({
+        db: ctx.db,
+        requestId: input.requestId,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        onBehalfOfClient: true,
+      });
     }),
 
   // Assign request to provider

@@ -4,7 +4,13 @@
 import { sendNotificationToUser, broadcastNotification } from "./sse-utils";
 import { logger } from "@/lib/logger";
 
-type NotificationType = "message" | "status_change" | "assignment" | "general";
+type NotificationType =
+  | "message"
+  | "status_change"
+  | "assignment"
+  | "general"
+  | "subscription_expiring"
+  | "subscription_expired";
 
 interface RealtimeNotification {
   type: NotificationType;

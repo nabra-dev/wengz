@@ -18,6 +18,16 @@ export function syncUserPreferredLocale(userId: string, locale: string): void {
     });
 }
 
+/** Preferred UI locale for one user (defaults to `en`). */
+export async function getPreferredLocaleForUser(userId: string): Promise<"en" | "ar"> {
+  if (!userId) return "en";
+  const row = await db.user.findUnique({
+    where: { id: userId },
+    select: { preferredLocale: true },
+  });
+  return normalizeAppLocale(row?.preferredLocale);
+}
+
 /** Batch-load preferred locales for cron / bulk notifications. */
 export async function getPreferredLocalesByUserIds(
   userIds: string[]

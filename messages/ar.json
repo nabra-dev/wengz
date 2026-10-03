@@ -906,7 +906,15 @@
         "messagesTitle": "الرسائل",
         "messagesDesc": "تواصل مع العميل والمبدع",
         "messagesPlaceholder": "اكتب رسالتك...",
-        "messagingAfterClaim": "الرسائل متاحة بعد أن يستلم مبدع الطلب أو يُعيَّن له."
+        "messagingAfterClaim": "الرسائل متاحة بعد أن يستلم مبدع الطلب أو يُعيَّن له.",
+        "approveOnBehalf": "الموافقة نيابة عن العميل",
+        "approveOnBehalfHint": "يُكمل هذا الطلب المسلَّم إذا لم يوافق العميل. يبدأ تسوية أرباح المبدع.",
+        "approveOnBehalfConfirm": "الموافقة وإكمال هذا الطلب نيابة عن العميل؟",
+        "toast": {
+          "approvedOnBehalf": "تمت الموافقة نيابة عن العميل",
+          "approvedOnBehalfDesc": "اكتمل الطلب وبدأت تسوية المبدع.",
+          "approveOnBehalfError": "فشلت الموافقة على الطلب"
+        }
       }
     },
     "profile": {
@@ -1643,6 +1651,7 @@
         "requestAcceptedWithDelivery": "تم قبول الطلب. موعد التسليم المتوقع: {deliveryDate}",
         "providerStartedWork": "بدأ المبدع العمل على هذا الطلب. وقت التسليم المتوقع: {deliveryTime}.",
         "requestApprovedCompleted": "تمت الموافقة على الطلب واكتماله.",
+        "requestApprovedByStaff": "تمت الموافقة على الطلب واكتماله بواسطة فريق وينجز نيابةً عن العميل.",
         "revisionRequestedFree": "تم طلب مراجعة ({used}/{max} من المراجعات المجانية المستخدمة).",
         "revisionRequestedPaid": "تم طلب مراجعة مدفوعة ({cost} {creditUnit} مستخدمة).{resetNote}",
         "revisionPaidCounterReset": " أُعيد تعيين عداد المراجعات المجانية — لديك الآن {max} مراجعات مجانية.",

@@ -910,7 +910,15 @@
         "messagesTitle": "Messages",
         "messagesDesc": "Communicate with the client and creator",
         "messagesPlaceholder": "Type your message...",
-        "messagingAfterClaim": "Messaging is available after a creator claims or is assigned to this request."
+        "messagingAfterClaim": "Messaging is available after a creator claims or is assigned to this request.",
+        "approveOnBehalf": "Approve for client",
+        "approveOnBehalfHint": "Completes this delivered request when the client has not approved. Settles creator earnings.",
+        "approveOnBehalfConfirm": "Approve and complete this request on the client's behalf?",
+        "toast": {
+          "approvedOnBehalf": "Request approved for client",
+          "approvedOnBehalfDesc": "The request is completed and creator settlement has started.",
+          "approveOnBehalfError": "Failed to approve request"
+        }
       }
     },
     "profile": {
@@ -1647,6 +1655,7 @@
         "requestAcceptedWithDelivery": "Request accepted. Estimated delivery: {deliveryDate}",
         "providerStartedWork": "Creator has started working on this request. Estimated delivery: {deliveryTime}.",
         "requestApprovedCompleted": "Request approved and completed.",
+        "requestApprovedByStaff": "Request approved and completed by Wengz staff on the client's behalf.",
         "revisionRequestedFree": "Revision requested ({used}/{max} free revisions used).",
         "revisionRequestedPaid": "Paid revision requested ({cost} {creditUnit} used).{resetNote}",
         "revisionPaidCounterReset": " Free revision counter reset — you now have {max} free revisions available again.",

@@ -13,6 +13,7 @@ export type RequestActivityAction =
   | "request.deliver"
   | "request.revision"
   | "request.approve"
+  | "request.approve_on_behalf"
   | "request.message"
   | "request.rate"
   | "request.delete"
