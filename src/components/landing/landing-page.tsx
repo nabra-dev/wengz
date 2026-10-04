@@ -977,7 +977,7 @@ export default function LandingPage({
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center gap-3 opacity-55 sm:gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                   <AppStoreBadge
                     eyebrow={t("landing.cta.appStoreEyebrow")}
                     label={t("landing.cta.appStoreLabel")}
