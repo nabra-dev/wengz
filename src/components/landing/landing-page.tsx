@@ -7,13 +7,6 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
@@ -225,7 +218,6 @@ export default function LandingPage({
   const [heroReply, setHeroReply] = useState("");
   const [heroLoadingReply, setHeroLoadingReply] = useState(false);
   const [heroTypingReply, setHeroTypingReply] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const packages = initialPackages;
@@ -251,16 +243,6 @@ export default function LandingPage({
         clearInterval(typingIntervalRef.current);
       }
     };
-  }, []);
-
-  useEffect(() => {
-    const onResize = () => {
-      if (window.matchMedia("(min-width: 1024px)").matches) {
-        setMobileNavOpen(false);
-      }
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   useEffect(() => {
@@ -389,7 +371,7 @@ export default function LandingPage({
       dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Brand color ambience */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden sm:block">
         <div className="absolute -top-48 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-[#690DD4]/25 blur-3xl" />
         <div className="absolute top-32 right-[-120px] h-[480px] w-[480px] rounded-full bg-wengz-yellow-soft blur-3xl" />
       </div>
@@ -399,7 +381,7 @@ export default function LandingPage({
           {t("landing.notices.beta")}
         </div>
         <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10">
-          <div className="flex w-full min-w-0 items-center gap-1.5 rounded-full border border-border bg-background/75 px-2.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-2.5 lg:px-6">
+          <div className="relative flex w-full min-w-0 items-center gap-1.5 rounded-full border border-border bg-background/95 px-2.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] sm:gap-3 sm:px-5 sm:py-2.5 lg:bg-background/75 lg:px-6 lg:backdrop-blur-xl">
             <Link href="/" className="flex shrink-0 items-center gap-2">
               <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
             </Link>
@@ -422,100 +404,85 @@ export default function LandingPage({
             <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
               <ThemeSwitcher className="hidden min-[400px]:inline-flex" />
               <LanguageSwitcher variant="icon" />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="h-8 shrink-0 gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] transition-all hover:opacity-95 sm:h-9 sm:px-3.5 sm:text-sm"
+              <details className="group relative">
+                <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:px-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
+                  <span className="lg:hidden">{t("landing.cta.primaryShort")}</span>
+                  <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
+                  <ChevronDown
+                    className="h-3.5 w-3.5 opacity-80 transition-transform group-open:rotate-180 sm:h-4 sm:w-4"
+                    aria-hidden
+                  />
+                </summary>
+                <div className="absolute end-0 top-full z-50 mt-2 min-w-[11rem] rounded-xl border border-border bg-background p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
+                  <Link
+                    href="/auth/register"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
                   >
-                    <span className="lg:hidden">{t("landing.cta.primaryShort")}</span>
-                    <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-80 sm:h-4 sm:w-4" aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="min-w-[11rem] rounded-xl border-border bg-background/95 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.16)] backdrop-blur-xl"
+                    {t("landing.cta.asClient")}
+                  </Link>
+                  <Link
+                    href="/forms/provider"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    {t("landing.cta.asProvider")}
+                  </Link>
+                  <div className="-mx-1.5 my-1 h-px bg-border" />
+                  <Link
+                    href="/auth/login"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    {t("common.buttons.signIn")}
+                  </Link>
+                </div>
+              </details>
+              <details className="group lg:hidden">
+                <summary
+                  className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-foreground hover:bg-muted sm:h-9 sm:w-9 [&::-webkit-details-marker]:hidden"
+                  aria-label={t("landing.nav.openMenu")}
                 >
-                  <DropdownMenuItem
-                    asChild
-                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
-                  >
-                    <Link href="/auth/register">{t("landing.cta.asClient")}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    asChild
-                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
-                  >
-                    <Link href="/forms/provider">{t("landing.cta.asProvider")}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    asChild
-                    className="cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium"
-                  >
-                    <Link href="/auth/login">{t("common.buttons.signIn")}</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 rounded-full text-foreground hover:bg-muted lg:hidden sm:h-9 sm:w-9"
-                aria-expanded={mobileNavOpen}
-                aria-controls="landing-mobile-nav"
-                aria-label={mobileNavOpen ? t("landing.nav.closeMenu") : t("landing.nav.openMenu")}
-                onClick={() => setMobileNavOpen((open) => !open)}
-              >
-                {mobileNavOpen ? (
-                  <X className="h-5 w-5" aria-hidden />
-                ) : (
-                  <Menu className="h-5 w-5" aria-hidden />
-                )}
-              </Button>
+                  <Menu className="h-5 w-5 group-open:hidden" aria-hidden />
+                  <X className="hidden h-5 w-5 group-open:block" aria-hidden />
+                </summary>
+                <nav
+                  id="landing-mobile-nav"
+                  aria-label={t("landing.nav.ariaLabel")}
+                  className="absolute inset-x-0 top-full z-50 mt-3 rounded-2xl border border-border bg-background p-2 shadow-[0_12px_40px_rgba(0,0,0,0.2)]"
+                >
+                  <ul className="flex flex-col gap-0.5">
+                    {LANDING_NAV_LINKS.map((item) => (
+                      <li key={item.href}>
+                        <a
+                          href={item.href}
+                          className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                          onClick={(event) => {
+                            event.currentTarget.closest("details")?.removeAttribute("open");
+                          }}
+                        >
+                          {t(item.labelKey)}
+                        </a>
+                      </li>
+                    ))}
+                    <li className="mt-1 border-t border-border pt-1">
+                      <Link
+                        href="/auth/login"
+                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                      >
+                        {t("common.buttons.signIn")}
+                      </Link>
+                    </li>
+                    <li className="min-[400px]:hidden">
+                      <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {t("landing.nav.theme")}
+                        </span>
+                        <ThemeSwitcher />
+                      </div>
+                    </li>
+                  </ul>
+                </nav>
+              </details>
             </div>
           </div>
-
-          {mobileNavOpen ? (
-            <div id="landing-mobile-nav" className="overflow-hidden lg:hidden">
-              <nav
-                aria-label={t("landing.nav.ariaLabel")}
-                className="mt-2 rounded-2xl border border-border bg-background/90 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl"
-              >
-                <ul className="flex flex-col gap-0.5">
-                  {LANDING_NAV_LINKS.map((item) => (
-                    <li key={item.href}>
-                      <a
-                        href={item.href}
-                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                        onClick={() => setMobileNavOpen(false)}
-                      >
-                        {t(item.labelKey)}
-                      </a>
-                    </li>
-                  ))}
-                  <li className="mt-1 border-t border-border pt-1">
-                    <Link
-                      href="/auth/login"
-                      className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                      onClick={() => setMobileNavOpen(false)}
-                    >
-                      {t("common.buttons.signIn")}
-                    </Link>
-                  </li>
-                  <li className="min-[400px]:hidden">
-                    <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {t("landing.nav.theme")}
-                      </span>
-                      <ThemeSwitcher />
-                    </div>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          ) : null}
         </div>
       </header>
 
@@ -564,7 +531,7 @@ export default function LandingPage({
               </div>
             </div>
 
-            <div className="relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/30 bg-black/70 p-2.5 shadow-[0_0_0_1px_rgba(105,13,212,0.35),0_0_48px_rgba(105,13,212,0.28),0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-[box-shadow,transform,border-color] duration-300 focus-within:border-[#E0F840]/45 focus-within:shadow-[0_0_0_1px_rgba(224,248,64,0.35),0_0_56px_rgba(105,13,212,0.4),0_24px_64px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-4">
+            <div className="relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/30 bg-black/80 p-2.5 shadow-[0_0_0_1px_rgba(105,13,212,0.35),0_0_48px_rgba(105,13,212,0.28),0_24px_64px_rgba(0,0,0,0.55)] transition-[box-shadow,border-color] duration-300 focus-within:border-[#E0F840]/45 focus-within:shadow-[0_0_0_1px_rgba(224,248,64,0.35),0_0_56px_rgba(105,13,212,0.4),0_24px_64px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-4 lg:bg-black/70 lg:backdrop-blur-2xl">
               <div className="relative min-h-[4.5rem]">
                 {heroChatPhase === "showingReply" ? (
                   <div
