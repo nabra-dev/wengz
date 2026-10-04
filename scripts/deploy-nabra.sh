@@ -23,6 +23,77 @@ log() {
   printf '[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"
 }
 
+STAGING_DIST=".next-staging"
+PREVIOUS_DIST=".next-previous"
+WORKER_BACKUP=""
+WORKER_NEXT=""
+
+# Live PM2 keeps serving .next while the new build is written elsewhere.
+# public/sw.js is rewritten by next-pwa during that build, so park it and
+# put the previous worker back until the new build is the one being served.
+snapshot_workers() {
+  local dest="$1"
+  mkdir -p "$dest"
+  shopt -s nullglob
+  local files=(public/sw.js public/workbox-*.js public/worker-*.js public/fallback-*.js)
+  local f
+  for f in "${files[@]}"; do
+    cp -a "$f" "$dest/"
+  done
+  shopt -u nullglob
+}
+
+restore_workers() {
+  local src="$1"
+  [[ -d "$src" ]] || return 0
+  shopt -s nullglob
+  rm -f public/sw.js public/workbox-*.js public/worker-*.js public/fallback-*.js
+  cp -a "$src"/. public/
+  shopt -u nullglob
+}
+
+build_staging() {
+  WORKER_BACKUP="$(mktemp -d)"
+  snapshot_workers "$WORKER_BACKUP"
+
+  rm -rf "$STAGING_DIST"
+  if [[ -d .next/cache ]]; then
+    mkdir -p "$STAGING_DIST"
+    cp -a .next/cache "$STAGING_DIST/cache"
+  fi
+
+  log "Building Next.js into $STAGING_DIST (live .next stays in place)"
+  if ! NEXT_DIST_DIR="$STAGING_DIST" npm run build; then
+    restore_workers "$WORKER_BACKUP"
+    return 1
+  fi
+
+  WORKER_NEXT="$(mktemp -d)"
+  snapshot_workers "$WORKER_NEXT"
+  restore_workers "$WORKER_BACKUP"
+}
+
+swap_in_staging() {
+  rm -rf "$PREVIOUS_DIST"
+  if [[ -d .next ]]; then
+    mv .next "$PREVIOUS_DIST"
+  fi
+  mv "$STAGING_DIST" .next
+  restore_workers "$WORKER_NEXT"
+}
+
+swap_back_previous() {
+  if [[ ! -d "$PREVIOUS_DIST" ]]; then
+    return 1
+  fi
+  rm -rf .next-failed
+  mv .next .next-failed
+  mv "$PREVIOUS_DIST" .next
+  restore_workers "$WORKER_BACKUP"
+  pm2 restart "$APP_NAME" --update-env
+  pm2 save
+}
+
 file_sha() {
   sha256sum "$1" | awk '{print $1}'
 }
@@ -90,9 +161,10 @@ else
   log "Skipping db:push (schema unchanged)"
 fi
 
-# .next/cache is gitignored and survives reset — keeps rebuilds faster.
-log "Building Next.js"
-npm run build
+# Build beside the live .next, then swap. A build in place deletes the CSS
+# the running server is still sending, which blanks the site for minutes.
+build_staging
+swap_in_staging
 
 pm2 restart "$APP_NAME" --update-env
 pm2 save
@@ -101,8 +173,16 @@ log "Waiting for health check: $HEALTH_URL"
 sleep 2
 
 if ! curl -fsS --max-time 15 "$HEALTH_URL" >/dev/null; then
-  log "ERROR: health check failed — rolling back to $PREV_SHA"
+  log "ERROR: health check failed — restoring previous build ($PREV_SHA)"
   git reset --hard "$PREV_SHA"
+  if swap_back_previous; then
+    sleep 2
+    if curl -fsS --max-time 15 "$HEALTH_URL" >/dev/null; then
+      log "Rollback succeeded; still on $PREV_SHA"
+      exit 1
+    fi
+    log "Previous build did not pass health — rebuilding $PREV_SHA"
+  fi
 
   LOCK_SHA="$(file_sha package-lock.json)"
   PREV_LOCK_SHA="$(cat "$LOCKFILE_HASH_FILE" 2>/dev/null || true)"
@@ -113,12 +193,13 @@ if ! curl -fsS --max-time 15 "$HEALTH_URL" >/dev/null; then
     node scripts/prisma-generate.mjs --for-build
   fi
 
-  npm run build
+  build_staging
+  swap_in_staging
   pm2 restart "$APP_NAME" --update-env
   pm2 save
   sleep 2
   if curl -fsS --max-time 15 "$HEALTH_URL" >/dev/null; then
-    log "Rollback succeeded; still on $PREV_SHA"
+    log "Rollback rebuild succeeded; still on $PREV_SHA"
   else
     log "CRITICAL: rollback health check also failed"
   fi

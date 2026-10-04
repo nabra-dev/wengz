@@ -110,8 +110,12 @@ const securityHeaders = [
   // { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
+/** Staging builds must not replace the directory the live process is serving. */
+const distDir = process.env.NEXT_DIST_DIR === ".next-staging" ? ".next-staging" : ".next";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir,
   reactStrictMode: false,
   // Use webpack since next-pwa requires it
   turbopack: {},

@@ -9,8 +9,8 @@ Automated deploys run on every push to `main` (and via **Actions → CI and Depl
    - `git fetch` + `reset --hard origin/main`
    - `npm ci` **only if** `package-lock.json` changed
    - `db:push` **only if** `prisma/schema.prisma` changed
-   - `npm run build` (reuses `.next/cache` when present)
-   - `pm2 restart` + health check; rollback on failure
+   - `npm run build` into `.next-staging` (reuses `.next/cache`), then swap onto `.next` and restart
+   - `pm2 restart` + health check; restore the previous build on failure
    - logs: `/var/log/nabra-deploy.log`
 
 App secrets stay in `/var/www/nabra-ai-system/.env` on the VPS. GitHub only needs SSH access.
