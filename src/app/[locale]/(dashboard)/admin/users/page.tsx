@@ -30,7 +30,7 @@ import { EditUserDialog } from "@/components/admin/edit-user-dialog";
 import { ProviderDetailsDialog } from "@/components/admin/provider-details-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDateTime, getInitials } from "@/lib/utils";
 import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
 import { toast } from "sonner";
 import {
@@ -258,7 +258,7 @@ function UserListItem({
               <Badge variant="destructive">{t("badges.rejected")}</Badge>
             )}
             <span className="text-xs text-muted-foreground">
-              {t("table.joined")} {formatDate(user.createdAt, locale)}
+              {t("table.joined")} {formatDateTime(user.createdAt, locale)}
             </span>
           </div>
         </div>

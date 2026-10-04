@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDateTime, getInitials } from "@/lib/utils";
 import { ExternalLink, FileText, Link2, Mail, Phone, UserRound } from "lucide-react";
 
 type ServiceType = { id: string; name: string; nameI18n?: Record<string, string> };
@@ -105,7 +105,7 @@ export function ProviderDetailsDialog({ user }: { user: ProviderDetailsUser }): 
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {t("table.joined")} {formatDate(user.createdAt, locale)}
+                {t("table.joined")} {formatDateTime(user.createdAt, locale)}
               </p>
             </div>
           </div>
