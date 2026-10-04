@@ -22,26 +22,26 @@ import { cn } from "@/lib/utils";
 /** Only inject GTM when explicitly configured — no hardcoded fallback. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
-/** Weights the UI sets (400–700). preload is off so they do not outrank the hero image. */
+/** Weights the UI sets (400–700), subset woff2. preload is off so they do not outrank the hero. */
 const unbounded = localFont({
   src: [
     {
-      path: "../../../public/fonts/Unbounded-Regular.ttf",
+      path: "../../../public/fonts/Unbounded-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/Unbounded-Medium.ttf",
+      path: "../../../public/fonts/Unbounded-Medium.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/Unbounded-SemiBold.ttf",
+      path: "../../../public/fonts/Unbounded-SemiBold.woff2",
       weight: "600",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/Unbounded-Bold.ttf",
+      path: "../../../public/fonts/Unbounded-Bold.woff2",
       weight: "700",
       style: "normal",
     },
@@ -56,22 +56,22 @@ const unbounded = localFont({
 const ibmPlexSansArabic = localFont({
   src: [
     {
-      path: "../../../public/fonts/IBMPlexSansArabic-Regular.ttf",
+      path: "../../../public/fonts/IBMPlexSansArabic-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/IBMPlexSansArabic-Medium.ttf",
+      path: "../../../public/fonts/IBMPlexSansArabic-Medium.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/IBMPlexSansArabic-SemiBold.ttf",
+      path: "../../../public/fonts/IBMPlexSansArabic-SemiBold.woff2",
       weight: "600",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/IBMPlexSansArabic-Bold.ttf",
+      path: "../../../public/fonts/IBMPlexSansArabic-Bold.woff2",
       weight: "700",
       style: "normal",
     },

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
+import { DeferredFillImage } from "@/components/landing/deferred-image";
 import { useTranslations } from "next-intl";
 import {
   Image as ImageIcon,
@@ -144,7 +144,7 @@ export function ServicesBento() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.04, duration: 0.4 }}
                 className={cn(
-                  "group relative min-h-[160px] overflow-hidden rounded-2xl border border-border sm:rounded-3xl lg:min-h-0",
+                  "group relative min-h-[160px] overflow-hidden rounded-2xl border border-border bg-zinc-950 sm:rounded-3xl lg:min-h-0",
                   tile.area === "image" || tile.area === "apps"
                     ? "sm:min-h-[320px]"
                     : tile.area === "video"
@@ -152,10 +152,9 @@ export function ServicesBento() {
                       : "sm:min-h-[180px]"
                 )}
               >
-                <Image
+                <DeferredFillImage
                   src={tile.image}
                   alt={title}
-                  fill
                   unoptimized
                   sizes={`(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${tile.imgW}px`}
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
@@ -164,9 +163,9 @@ export function ServicesBento() {
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
                   <div className="mb-1.5 flex items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-white/90" />
-                    <h3 className="text-sm font-semibold leading-6 text-white sm:text-base sm:leading-7">
+                    <h2 className="text-sm font-semibold leading-6 text-white sm:text-base sm:leading-7">
                       {title}
-                    </h3>
+                    </h2>
                   </div>
                   <p className="line-clamp-2 text-xs leading-5 text-white/60 sm:line-clamp-1 sm:text-sm sm:leading-6">
                     {description}

@@ -86,7 +86,7 @@ export function LazyGalleryVideo({
         playsInline
         loop={loop}
         preload="metadata"
-        poster={poster}
+        poster={shouldLoad ? poster : undefined}
         tabIndex={-1}
         onClick={onClick}
         onLoadedMetadata={onLoadedMetadata}

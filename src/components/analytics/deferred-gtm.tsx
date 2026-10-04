@@ -7,15 +7,18 @@ type DataLayerWindow = Window & {
 };
 
 /**
- * Loads Google Tag Manager after the browser is idle so gtm.js does not
- * compete with the hero image or the first paint.
+ * Loads Google Tag Manager after the first interaction, or once the page has
+ * had time to paint. Idle callbacks fire immediately on a fast CPU and pull
+ * gtm.js into the Lighthouse window.
  */
 export function DeferredGoogleTagManager({ gtmId }: { gtmId: string }) {
   useEffect(() => {
     if (document.getElementById("gtm-deferred")) return;
 
+    let loaded = false;
     const load = () => {
-      if (document.getElementById("gtm-deferred")) return;
+      if (loaded || document.getElementById("gtm-deferred")) return;
+      loaded = true;
       const win = window as DataLayerWindow;
       win.dataLayer = win.dataLayer || [];
       win.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
@@ -26,13 +29,17 @@ export function DeferredGoogleTagManager({ gtmId }: { gtmId: string }) {
       document.head.appendChild(script);
     };
 
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(load, { timeout: 3000 });
-      return () => window.cancelIdleCallback(id);
+    const onInteract = () => load();
+    const events = ["pointerdown", "keydown"] as const;
+    for (const event of events) {
+      window.addEventListener(event, onInteract, { once: true, passive: true });
     }
+    const id = window.setTimeout(load, 8000);
 
-    const id = window.setTimeout(load, 1500);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      for (const event of events) window.removeEventListener(event, onInteract);
+    };
   }, [gtmId]);
 
   return null;

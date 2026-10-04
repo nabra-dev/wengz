@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { Link } from "@/i18n/routing";
+import { DeferredFillImage } from "@/components/landing/deferred-image";
 import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -60,12 +60,11 @@ export function InfoSection() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
-          className="relative mx-auto aspect-[4/5] max-h-[360px] w-full max-w-md overflow-hidden rounded-2xl sm:max-h-[480px] sm:max-w-none sm:rounded-3xl lg:aspect-auto lg:max-h-none lg:min-h-[560px] lg:h-full"
+          className="relative mx-auto aspect-[4/5] max-h-[360px] w-full max-w-md overflow-hidden rounded-2xl bg-zinc-950 sm:max-h-[480px] sm:max-w-none sm:rounded-3xl lg:aspect-auto lg:max-h-none lg:min-h-[560px] lg:h-full"
         >
-          <Image
+          <DeferredFillImage
             src="/images/landing/workflow.webp"
             alt={t("imageAlt")}
-            fill
             unoptimized
             sizes="(max-width: 1024px) 100vw, 451px"
             className="object-cover object-center"

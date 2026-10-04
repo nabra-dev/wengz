@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { DeferredImage } from "@/components/landing/deferred-image";
 import { useMarqueePause } from "@/components/landing/use-marquee-pause";
 
 /** Featured Works — two rows; `/images/landing/gallery/{n}.webp` for n = 1..31 */
@@ -35,11 +35,11 @@ function MarqueeRow({
                 className="group relative aspect-[4/5] w-[38vw] max-w-[11rem] shrink-0 overflow-hidden rounded-lg border border-border transition-all duration-300 hover:-translate-y-1 hover:border-foreground/20 hover:shadow-[0_18px_70px_rgba(0,0,0,0.35)] sm:w-44 sm:max-w-none sm:rounded-xl md:w-48"
               >
                 <div className="pointer-events-none absolute inset-0 z-[1] opacity-0 transition-opacity group-hover:opacity-100 bg-[linear-gradient(135deg,rgba(105,13,212,0.18),transparent_45%),linear-gradient(315deg,rgba(224,248,64,0.16),transparent_45%)]" />
-                <Image
+                <DeferredImage
                   src={GALLERY_IMAGE_SRC(n)}
                   alt=""
-                  width={448}
-                  height={560}
+                  width={400}
+                  height={500}
                   unoptimized
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
