@@ -169,13 +169,6 @@ export function ContactFormPage() {
         return;
       }
 
-      if (!cvFile?.url) {
-        toast.error(t("forms.toast.errorTitle"), {
-          description: t("forms.provider.cvRequired"),
-        });
-        return;
-      }
-
       const result = await registerProvider.mutateAsync({
         name,
         email,
@@ -184,7 +177,7 @@ export function ContactFormPage() {
         phone: `${countryCode} ${phoneInput}`,
         website,
         message,
-        cvUrl: cvFile.url,
+        cvUrl: cvFile?.url ?? "",
         serviceIds,
       });
 
@@ -398,82 +391,6 @@ export function ContactFormPage() {
                       disabled={busy}
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="cv" className="text-sm font-medium">
-                      {t("forms.provider.cvLabel")}
-                      <span className="ms-1 text-destructive" aria-hidden>
-                        *
-                      </span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t("forms.provider.cvHint", { maxSize: PROVIDER_CV_MAX_MB })}
-                    </p>
-                    <input
-                      ref={cvInputRef}
-                      id="cv"
-                      name="cv"
-                      type="file"
-                      accept={PROVIDER_CV_ACCEPT_ATTR}
-                      className="sr-only"
-                      disabled={busy || cvUploading}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void uploadCv(file);
-                      }}
-                    />
-                    {cvFile ? (
-                      <div className="flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-border/70 bg-background/70 px-4 py-5">
-                        <button
-                          type="button"
-                          className="flex min-w-0 flex-1 items-center gap-3 text-start transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                          disabled={busy || cvUploading}
-                          onClick={() => cvInputRef.current?.click()}
-                          aria-label={t("forms.provider.cvChoose")}
-                        >
-                          <FileText className="h-5 w-5 shrink-0 text-[#690DD4]" />
-                          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                            {cvFile.filename}
-                          </span>
-                        </button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          disabled={busy || cvUploading}
-                          onClick={() => setCvFile(null)}
-                          aria-label={t("forms.provider.cvRemove")}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 px-4 py-8 text-center transition-colors hover:border-primary/55 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={busy || cvUploading}
-                        onClick={() => cvInputRef.current?.click()}
-                      >
-                        {cvUploading ? (
-                          <>
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
-                              {t("forms.provider.cvUploading")}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              <FileText className="h-6 w-6" />
-                            </span>
-                            <span className="text-sm font-semibold text-primary">
-                              {t("forms.provider.cvChoose")}
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -550,10 +467,87 @@ export function ContactFormPage() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="cv" className="text-sm font-medium">
+                    {t("forms.provider.cvLabel")}
+                    <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+                      ({t("forms.provider.cvOptional")})
+                    </span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("forms.provider.cvHint", { maxSize: PROVIDER_CV_MAX_MB })}
+                  </p>
+                  <input
+                    ref={cvInputRef}
+                    id="cv"
+                    name="cv"
+                    type="file"
+                    accept={PROVIDER_CV_ACCEPT_ATTR}
+                    className="sr-only"
+                    disabled={busy || cvUploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadCv(file);
+                    }}
+                  />
+                  {cvFile ? (
+                    <div className="flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-border/70 bg-background/70 px-4 py-5">
+                      <button
+                        type="button"
+                        className="flex min-w-0 flex-1 items-center gap-3 text-start transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        disabled={busy || cvUploading}
+                        onClick={() => cvInputRef.current?.click()}
+                        aria-label={t("forms.provider.cvChoose")}
+                      >
+                        <FileText className="h-5 w-5 shrink-0 text-[#690DD4]" />
+                        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                          {cvFile.filename}
+                        </span>
+                      </button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        disabled={busy || cvUploading}
+                        onClick={() => setCvFile(null)}
+                        aria-label={t("forms.provider.cvRemove")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 px-4 py-8 text-center transition-colors hover:border-primary/55 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={busy || cvUploading}
+                      onClick={() => cvInputRef.current?.click()}
+                    >
+                      {cvUploading ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {t("forms.provider.cvUploading")}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <FileText className="h-6 w-6" />
+                          </span>
+                          <span className="text-sm font-semibold text-primary">
+                            {t("forms.provider.cvChoose")}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
                 <div className="border-t border-border/60 pt-5">
                   <Button
                     type="submit"
-                    disabled={busy || servicesLoading || services.length === 0 || !cvFile}
+                    disabled={busy || servicesLoading || services.length === 0}
                     size="lg"
                     className="h-12 w-full rounded-xl bg-[#690DD4] text-base font-semibold text-[#E0F840] shadow-[0_10px_32px_rgba(105,13,212,0.32)] transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_40px_rgba(105,13,212,0.4)] sm:h-11"
                   >
