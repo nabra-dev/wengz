@@ -28,15 +28,15 @@ type ServiceTile = {
 
 /** Intrinsic pixel sizes (for Next/Image + cover crop inside fixed card tracks). */
 const BENTO_IMG = {
-  design: "/images/landing/bento-imgs/design.png", // 1000×1784 portrait → tall cards
-  video: "/images/landing/bento-imgs/video.png", // 2000×1672
-  content: "/images/landing/bento-imgs/content.png", // 1792×2400 portrait → tall cards
-  production: "/images/landing/bento-imgs/production.png", // 2189×2000
-  voice: "/images/landing/bento-imgs/voice.png", // 2000×1014 wide → short cards
-  sound: "/images/landing/bento-imgs/sound.png", // 2000×1014 wide → short cards
-  studio: "/images/landing/bento-imgs/studio.png", // 2000×1351
-  workflow: "/images/landing/bento-imgs/workflow.png", // 2000×1351
-  automation: "/images/landing/bento-imgs/automation.png", // 2000×1351
+  design: "/images/landing/bento-imgs/design.webp",
+  video: "/images/landing/bento-imgs/video.webp",
+  content: "/images/landing/bento-imgs/content.webp",
+  production: "/images/landing/bento-imgs/production.webp",
+  voice: "/images/landing/bento-imgs/voice.webp",
+  sound: "/images/landing/bento-imgs/sound.webp",
+  studio: "/images/landing/bento-imgs/studio.webp",
+  workflow: "/images/landing/bento-imgs/workflow.webp",
+  automation: "/images/landing/bento-imgs/automation.webp",
 } as const;
 
 const TILES: ServiceTile[] = [
@@ -119,12 +119,12 @@ export function ServicesBento() {
   return (
     <section
       id="services"
-      className="relative w-full scroll-mt-28 bg-background px-4 py-12 sm:scroll-mt-32 sm:px-6 sm:py-20 lg:px-10"
+      className="landing-deferred-section relative w-full scroll-mt-28 bg-background px-4 py-12 sm:scroll-mt-32 sm:px-6 sm:py-20 lg:px-10"
       aria-label={t("ariaLabel")}
     >
       <div className="mx-auto max-w-[1400px]">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
@@ -139,7 +139,7 @@ export function ServicesBento() {
               <motion.div
                 key={tile.key}
                 data-area={tile.area}
-                initial={{ opacity: 0, y: 16 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.04, duration: 0.4 }}
@@ -156,6 +156,7 @@ export function ServicesBento() {
                   src={tile.image}
                   alt={title}
                   fill
+                  unoptimized
                   sizes={`(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${tile.imgW}px`}
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                 />

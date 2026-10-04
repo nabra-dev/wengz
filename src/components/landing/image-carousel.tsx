@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Sparkles, Zap } from "lucide-react";
 
 const CAROUSEL_IMAGES = Array.from({ length: 31 }, (_, i) => ({
   id: i + 1,
-  src: `/images/landing/gallery/${i + 1}.jpg`,
+  src: `/images/landing/gallery/${i + 1}.webp`,
   alt: `Portfolio image ${i + 1}`,
 }));
 

@@ -276,11 +276,16 @@
     will-change: transform;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .animate-landing-marquee,
-    .animate-landing-marquee-reverse {
-      animation: none;
-    }
+  .is-marquee-offscreen .animate-landing-marquee,
+  .is-marquee-offscreen .animate-landing-marquee-reverse,
+  .is-marquee-hover .animate-landing-marquee,
+  .is-marquee-hover .animate-landing-marquee-reverse {
+    animation-play-state: paused;
+  }
+
+  .landing-deferred-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
   }
 
   /*

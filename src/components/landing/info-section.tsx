@@ -13,10 +13,10 @@ export function InfoSection() {
   const isRTL = locale === "ar";
 
   return (
-    <section className="relative w-full bg-background px-4 py-12 sm:px-6 sm:py-24 lg:px-10">
+    <section className="landing-deferred-section relative w-full bg-background px-4 py-12 sm:px-6 sm:py-24 lg:px-10">
       <div className="mx-auto grid max-w-[1400px] items-center gap-8 lg:grid-cols-[1.35fr_0.85fr] lg:gap-14">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
@@ -30,7 +30,7 @@ export function InfoSection() {
             {COLUMN_KEYS.map((key, index) => (
               <motion.div
                 key={key}
-                initial={{ opacity: 0, y: 14 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.08 * index, duration: 0.4 }}
@@ -56,19 +56,19 @@ export function InfoSection() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={false}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
           className="relative mx-auto aspect-[4/5] max-h-[360px] w-full max-w-md overflow-hidden rounded-2xl sm:max-h-[480px] sm:max-w-none sm:rounded-3xl lg:aspect-auto lg:max-h-none lg:min-h-[560px] lg:h-full"
         >
           <Image
-            src="/images/landing/workflow.png"
+            src="/images/landing/workflow.webp"
             alt={t("imageAlt")}
             fill
+            unoptimized
             sizes="(max-width: 1024px) 100vw, 451px"
             className="object-cover object-center"
-            priority={false}
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
         </motion.div>

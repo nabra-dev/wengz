@@ -1,8 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Link } from "@/i18n/routing";
-import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
@@ -29,15 +28,24 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
-import { ServicesBento } from "@/components/landing/services-bento";
-import { ImageMarquee } from "@/components/landing/image-marquee";
-import { VideoMarquee } from "@/components/landing/video-marquee";
-import { InfoSection } from "@/components/landing/info-section";
+import { HeroImage } from "@/components/landing/hero-image";
 import type { PublicPackage } from "@/lib/public-packages";
 import { cn } from "@/lib/utils";
+
+const ServicesBento = dynamic(() =>
+  import("@/components/landing/services-bento").then((mod) => mod.ServicesBento)
+);
+const ImageMarquee = dynamic(() =>
+  import("@/components/landing/image-marquee").then((mod) => mod.ImageMarquee)
+);
+const VideoMarquee = dynamic(() =>
+  import("@/components/landing/video-marquee").then((mod) => mod.VideoMarquee)
+);
+const InfoSection = dynamic(() =>
+  import("@/components/landing/info-section").then((mod) => mod.InfoSection)
+);
 
 function AppStoreBadge({ eyebrow, label }: { eyebrow: string; label: string }) {
   return (
@@ -123,38 +131,6 @@ const FONT_SIZES = {
     small: "text-xs leading-6 text-muted-foreground sm:text-sm sm:leading-7",
   },
 } as const;
-
-interface Package {
-  id: string;
-  name: string;
-  nameI18n?: Record<string, string>;
-  price: number;
-  credits: number;
-  durationDays: number;
-  description?: string;
-  descriptionI18n?: Record<string, string>;
-  features: string[];
-  featuresI18n?: Record<string, string[]>;
-  sortOrder: number;
-  isFeatured?: boolean;
-  services: Array<{
-    serviceType: {
-      id: string;
-      name: string;
-      nameI18n?: Record<string, string>;
-      icon: string | null;
-    };
-  }>;
-}
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.5 },
-  },
-};
 
 const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 
@@ -252,22 +228,7 @@ export default function LandingPage({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const heroReplyScrollRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const {
-    data: packagesData,
-    isLoading: isPackagesLoading,
-    isError: isPackagesError,
-  } = trpc.admin.getPublicPackages.useQuery(undefined, {
-    initialData: initialPackages,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 60,
-    refetchOnWindowFocus: true,
-    refetchOnMount: initialPackages.length === 0,
-    retry: 2,
-  });
-
-  const packages: Package[] = (packagesData as Package[] | undefined) ?? [];
-  const showPackagesSkeleton = isPackagesLoading && packages.length === 0;
+  const packages = initialPackages;
 
   const getLocalizedText = (
     text: string | undefined,
@@ -277,7 +238,7 @@ export default function LandingPage({
     return i18nObj[locale] || text || "";
   };
 
-  const getPackageFeatures = (pkg: Package) => {
+  const getPackageFeatures = (pkg: PublicPackage) => {
     if (pkg.featuresI18n?.[locale]) {
       return pkg.featuresI18n[locale];
     }
@@ -433,12 +394,7 @@ export default function LandingPage({
         <div className="absolute top-32 right-[-120px] h-[480px] w-[480px] rounded-full bg-wengz-yellow-soft blur-3xl" />
       </div>
 
-      <motion.header
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]"
-      >
+      <header className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="mx-auto mb-1.5 max-w-2xl px-4 text-center text-[11px] leading-snug text-muted-foreground sm:mb-2 sm:truncate sm:px-6 sm:text-xs sm:leading-normal">
           {t("landing.notices.beta")}
         </div>
@@ -521,70 +477,53 @@ export default function LandingPage({
             </div>
           </div>
 
-          <AnimatePresence>
-            {mobileNavOpen ? (
-              <motion.div
-                id="landing-mobile-nav"
-                initial={{ opacity: 0, y: -8, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -8, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden lg:hidden"
+          {mobileNavOpen ? (
+            <div id="landing-mobile-nav" className="overflow-hidden lg:hidden">
+              <nav
+                aria-label={t("landing.nav.ariaLabel")}
+                className="mt-2 rounded-2xl border border-border bg-background/90 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl"
               >
-                <nav
-                  aria-label={t("landing.nav.ariaLabel")}
-                  className="mt-2 rounded-2xl border border-border bg-background/90 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl"
-                >
-                  <ul className="flex flex-col gap-0.5">
-                    {LANDING_NAV_LINKS.map((item) => (
-                      <li key={item.href}>
-                        <a
-                          href={item.href}
-                          className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                          onClick={() => setMobileNavOpen(false)}
-                        >
-                          {t(item.labelKey)}
-                        </a>
-                      </li>
-                    ))}
-                    <li className="mt-1 border-t border-border pt-1">
-                      <Link
-                        href="/auth/login"
+                <ul className="flex flex-col gap-0.5">
+                  {LANDING_NAV_LINKS.map((item) => (
+                    <li key={item.href}>
+                      <a
+                        href={item.href}
                         className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                         onClick={() => setMobileNavOpen(false)}
                       >
-                        {t("common.buttons.signIn")}
-                      </Link>
+                        {t(item.labelKey)}
+                      </a>
                     </li>
-                    <li className="min-[400px]:hidden">
-                      <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {t("landing.nav.theme")}
-                        </span>
-                        <ThemeSwitcher />
-                      </div>
-                    </li>
-                  </ul>
-                </nav>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+                  ))}
+                  <li className="mt-1 border-t border-border pt-1">
+                    <Link
+                      href="/auth/login"
+                      className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      {t("common.buttons.signIn")}
+                    </Link>
+                  </li>
+                  <li className="min-[400px]:hidden">
+                    <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {t("landing.nav.theme")}
+                      </span>
+                      <ThemeSwitcher />
+                    </div>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          ) : null}
         </div>
-      </motion.header>
+      </header>
 
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
         <section className="relative isolate flex min-h-landing-screen flex-col overflow-hidden pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:pb-14 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
           <div className="pointer-events-none absolute inset-0 z-0 min-h-0 overflow-hidden">
-            <Image
-              src="/images/hero.png"
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-[center_30%] scale-105 sm:object-center"
-              aria-hidden
-            />
+            <HeroImage />
             <div
               className={cn(
                 "absolute inset-0 from-black/70 via-black/45 to-black/15 sm:via-black/40 sm:to-black/10",
@@ -610,35 +549,22 @@ export default function LandingPage({
           <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-4 sm:px-6 lg:px-10">
             <div className="pointer-events-none absolute inset-x-4 top-0 bottom-0 z-[1] flex items-center pb-[11.5rem] pt-4 sm:inset-x-6 sm:pb-48 sm:pt-6 lg:inset-x-10 lg:pb-44 lg:pt-0 xl:inset-x-10 [@media(max-height:640px)]:relative [@media(max-height:640px)]:inset-auto [@media(max-height:640px)]:pointer-events-auto [@media(max-height:640px)]:mt-6 [@media(max-height:640px)]:block [@media(max-height:640px)]:pb-0 [@media(max-height:640px)]:pt-0">
               <div className={`pointer-events-auto max-w-md sm:max-w-lg ${textDirectionClass}`}>
-                <motion.h1
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 }}
-                  className={`${FONT_SIZES.hero.title} text-white`}
-                >
+                <h1 className={`${FONT_SIZES.hero.title} text-white`}>
                   {t("landing.hero.titleBefore")}
                   <span className="bg-gradient-to-r from-[#690DD4] to-[#E0F840] bg-clip-text text-transparent">
                     {t("landing.hero.titleHighlight")}
                   </span>
                   {t("landing.hero.titleAfter")}
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.12 }}
+                </h1>
+                <p
                   className={`mt-2 max-w-sm sm:mt-3 ${FONT_SIZES.hero.subtitle} text-white/70 [@media(max-height:700px)]:line-clamp-3`}
                 >
                   {t("landing.hero.subtitle")}
-                </motion.p>
+                </p>
               </div>
             </div>
 
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/30 bg-black/70 p-2.5 shadow-[0_0_0_1px_rgba(105,13,212,0.35),0_0_48px_rgba(105,13,212,0.28),0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-[box-shadow,transform,border-color] duration-300 focus-within:border-[#E0F840]/45 focus-within:shadow-[0_0_0_1px_rgba(224,248,64,0.35),0_0_56px_rgba(105,13,212,0.4),0_24px_64px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-4"
-            >
+            <div className="relative z-10 mx-auto mt-auto w-full min-w-0 max-w-3xl rounded-2xl border border-white/30 bg-black/70 p-2.5 shadow-[0_0_0_1px_rgba(105,13,212,0.35),0_0_48px_rgba(105,13,212,0.28),0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-[box-shadow,transform,border-color] duration-300 focus-within:border-[#E0F840]/45 focus-within:shadow-[0_0_0_1px_rgba(224,248,64,0.35),0_0_56px_rgba(105,13,212,0.4),0_24px_64px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-4">
               <div className="relative min-h-[4.5rem]">
                 {heroChatPhase === "showingReply" ? (
                   <div
@@ -762,7 +688,7 @@ export default function LandingPage({
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -789,13 +715,7 @@ export default function LandingPage({
           </div>
 
           <div className="relative z-10 mx-auto grid max-w-[1400px] items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-10">
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.5 }}
-              className={textDirectionClass}
-            >
+            <div className={textDirectionClass}>
               <p className="mb-4 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-wengz-yellow-muted">
                 {t("landing.forms.eyebrow")}
               </p>
@@ -818,15 +738,9 @@ export default function LandingPage({
                   </Link>
                 </Button>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.ol
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className={`flex flex-col gap-0 border-t border-border ${textDirectionClass}`}
-            >
+            <ol className={`flex flex-col gap-0 border-t border-border ${textDirectionClass}`}>
               {PROVIDER_BENEFIT_KEYS.map((key, index) => (
                 <li
                   key={key}
@@ -845,7 +759,7 @@ export default function LandingPage({
                   </div>
                 </li>
               ))}
-            </motion.ol>
+            </ol>
           </div>
         </section>
 
@@ -859,13 +773,7 @@ export default function LandingPage({
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(224,248,64,0.07),transparent_50%)]"
           />
           <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10">
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.45 }}
-              className="mx-auto mb-12 max-w-2xl text-center sm:mb-16"
-            >
+            <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-16">
               <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-5`}>
                 {t("landing.pricing.heading")}
               </h2>
@@ -873,38 +781,23 @@ export default function LandingPage({
               <p className="mt-5 text-sm font-medium leading-7 text-wengz-yellow sm:text-base sm:leading-8">
                 {t("landing.pricing.freeTrialNote")}
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid w-full grid-cols-1 items-stretch gap-5 overflow-visible sm:gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-7">
-              {showPackagesSkeleton && (
-                <div className="col-span-full flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              {!showPackagesSkeleton && isPackagesError && (
-                <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
-                  {t("landing.pricing.loadError")}
-                </p>
-              )}
-              {!showPackagesSkeleton && !isPackagesError && packages.length === 0 && (
+              {packages.length === 0 && (
                 <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
                   {t("landing.pricing.empty")}
                 </p>
               )}
-              {!showPackagesSkeleton &&
-                packages.length > 0 &&
-                packages.map((pkg, index) => {
+              {packages.length > 0 &&
+                packages.map((pkg) => {
                   const featured = Boolean(pkg.isFeatured);
                   const description = getLocalizedText(pkg.description, pkg.descriptionI18n);
                   const features = getPackageFeatures(pkg);
 
                   return (
-                    <motion.div
+                    <div
                       key={pkg.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-40px" }}
-                      transition={{ delay: index * 0.06, duration: 0.4 }}
                       className={cn(
                         "relative flex overflow-visible",
                         featured && "xl:-mt-3 xl:mb-[-0.75rem]"
@@ -986,61 +879,53 @@ export default function LandingPage({
                           <Link href="/auth/register">{t("landing.pricing.cta")}</Link>
                         </Button>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
-              {!showPackagesSkeleton && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ delay: packages.length * 0.06, duration: 0.4 }}
-                  className="relative flex"
-                >
-                  <div className="relative flex h-full w-full flex-col rounded-[1.75rem] border border-dashed border-[#690DD4]/40 bg-background/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#690DD4]/65 sm:p-7">
-                    <div className="mb-5 flex min-h-[1.75rem] items-center">
-                      <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
-                        {t("landing.pricing.custom.name")}
-                      </h3>
-                    </div>
-
-                    <div className="mb-5">
-                      <div className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                        {t("landing.pricing.custom.priceLabel")}
-                      </div>
-                      <p className="mt-2 text-sm font-medium text-muted-foreground">
-                        {t("landing.pricing.custom.creditsLabel")}
-                      </p>
-                    </div>
-
-                    <p className="mb-5 text-sm leading-6 text-muted-foreground">
-                      {t("landing.pricing.custom.description")}
-                    </p>
-
-                    <ul className="mb-7 flex flex-1 flex-col gap-2.5">
-                      {(t.raw("landing.pricing.custom.features") as string[]).map(
-                        (feature, featureIdx) => (
-                          <li
-                            key={`custom-pkg-${featureIdx}`}
-                            className="flex items-start gap-2.5 text-sm leading-6 text-foreground/90"
-                          >
-                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#690DD4]" aria-hidden />
-                            <span>{feature}</span>
-                          </li>
-                        )
-                      )}
-                    </ul>
-
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="mt-auto h-11 w-full rounded-full border-border bg-transparent text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      <Link href="/contact">{t("landing.pricing.custom.cta")}</Link>
-                    </Button>
+              <div className="relative flex">
+                <div className="relative flex h-full w-full flex-col rounded-[1.75rem] border border-dashed border-[#690DD4]/40 bg-background/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#690DD4]/65 sm:p-7">
+                  <div className="mb-5 flex min-h-[1.75rem] items-center">
+                    <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                      {t("landing.pricing.custom.name")}
+                    </h3>
                   </div>
-                </motion.div>
-              )}
+
+                  <div className="mb-5">
+                    <div className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      {t("landing.pricing.custom.priceLabel")}
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-muted-foreground">
+                      {t("landing.pricing.custom.creditsLabel")}
+                    </p>
+                  </div>
+
+                  <p className="mb-5 text-sm leading-6 text-muted-foreground">
+                    {t("landing.pricing.custom.description")}
+                  </p>
+
+                  <ul className="mb-7 flex flex-1 flex-col gap-2.5">
+                    {(t.raw("landing.pricing.custom.features") as string[]).map(
+                      (feature, featureIdx) => (
+                        <li
+                          key={`custom-pkg-${featureIdx}`}
+                          className="flex items-start gap-2.5 text-sm leading-6 text-foreground/90"
+                        >
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#690DD4]" aria-hidden />
+                          <span>{feature}</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-auto h-11 w-full rounded-full border-border bg-transparent text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    <Link href="/contact">{t("landing.pricing.custom.cta")}</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1049,13 +934,7 @@ export default function LandingPage({
         <section className="relative w-full border-t border-border bg-background py-12 sm:py-24 md:py-32">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(105,13,212,0.10),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(224,248,64,0.06),transparent_55%)]" />
           <div className="container relative z-10 mx-auto max-w-2xl px-4 sm:px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={scaleIn}
-              className="text-center"
-            >
+            <div className="text-center">
               <h2 className={`${FONT_SIZES.sectionTitle.primary} mb-4 text-foreground sm:mb-6`}>
                 {t("landing.cta.heading")}
               </h2>
@@ -1063,13 +942,7 @@ export default function LandingPage({
                 {t("landing.cta.subheading")}
               </p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
-              >
+              <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
                 <Button
                   asChild
                   className="h-11 w-full rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-8 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(105,13,212,0.25)] hover:opacity-95 sm:w-auto sm:px-10"
@@ -1083,15 +956,9 @@ export default function LandingPage({
                 >
                   <Link href="#pricing">{t("landing.cta.viewPlans")}</Link>
                 </Button>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                className="mt-12 flex flex-col items-center gap-5 sm:mt-14 sm:gap-6"
-              >
+              <div className="mt-12 flex flex-col items-center gap-5 sm:mt-14 sm:gap-6">
                 <div className="flex w-full max-w-sm items-center gap-2 sm:gap-3">
                   <span
                     className="h-px min-w-4 flex-1 bg-gradient-to-r from-transparent to-wengz-yellow-line"
@@ -1120,19 +987,13 @@ export default function LandingPage({
                     label={t("landing.cta.googlePlayLabel")}
                   />
                 </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      <motion.footer
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 overflow-hidden border-t border-border bg-background"
-      >
+      <footer className="relative z-10 overflow-hidden border-t border-border bg-background">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(105,13,212,0.10),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(224,248,64,0.07),transparent_45%)]"
@@ -1151,13 +1012,7 @@ export default function LandingPage({
                 </p>
                 <ul className="flex flex-wrap items-center gap-2">
                   {FOOTER_SOCIAL.map((item, index) => (
-                    <motion.li
-                      key={item.key}
-                      initial={{ opacity: 0, y: 8 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.05 * index, duration: 0.35 }}
-                    >
+                    <li key={item.key}>
                       <a
                         href={item.href}
                         target="_blank"
@@ -1167,7 +1022,7 @@ export default function LandingPage({
                       >
                         <SocialIcon name={item.key} />
                       </a>
-                    </motion.li>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -1265,7 +1120,7 @@ export default function LandingPage({
             </div>
           </div>
         </div>
-      </motion.footer>
+      </footer>
     </div>
   );
 }

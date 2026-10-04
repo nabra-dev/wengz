@@ -1,61 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { useMarqueePause } from "@/components/landing/use-marquee-pause";
 
-/** Featured Works — two rows; `/images/landing/gallery/{n}.jpg` for n = 1..31 */
+/** Featured Works — two rows; `/images/landing/gallery/{n}.webp` for n = 1..31 */
 const GALLERY_IMAGE_ROW_A = Array.from({ length: 16 }, (_, i) => i + 1);
 const GALLERY_IMAGE_ROW_B = Array.from({ length: 15 }, (_, i) => i + 17);
-const GALLERY_IMAGE_SRC = (n: number) => `/images/landing/gallery/${n}.jpg`;
-
-const ROW_SPEEDS = [0.4, 0.35] as const;
+const GALLERY_IMAGE_SRC = (n: number) => `/images/landing/gallery/${n}.webp`;
 
 function MarqueeRow({
   indices,
   reverse = false,
-  speed,
+  duration,
 }: {
   indices: number[];
   reverse?: boolean;
-  speed: number;
+  duration: string;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef(0);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    let raf = 0;
-    let primed = false;
-    const tick = () => {
-      const half = track.scrollWidth / 2;
-      if (half > 0 && !primed) {
-        if (reverse) offsetRef.current = -half;
-        primed = true;
-      }
-
-      if (reverse) {
-        offsetRef.current += speed;
-        if (half > 0 && offsetRef.current >= 0) offsetRef.current -= half;
-      } else {
-        offsetRef.current -= speed;
-        if (half > 0 && Math.abs(offsetRef.current) >= half) offsetRef.current += half;
-      }
-
-      track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`;
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [reverse, speed]);
-
   return (
     <div className="relative w-full overflow-hidden py-1" dir="ltr">
-      <div ref={trackRef} className="flex w-max gap-3 will-change-transform sm:gap-4 md:gap-5">
+      <div
+        className={`flex w-max gap-3 sm:gap-4 md:gap-5 ${
+          reverse ? "animate-landing-marquee-reverse" : "animate-landing-marquee"
+        }`}
+        style={{ ["--landing-marquee-duration" as string]: duration }}
+      >
         {[0, 1].map((strip) => (
           <div key={`imgstrip-${strip}`} className="flex shrink-0 gap-3 sm:gap-4 md:gap-5">
             {indices.map((n) => (
@@ -67,9 +38,10 @@ function MarqueeRow({
                 <Image
                   src={GALLERY_IMAGE_SRC(n)}
                   alt=""
-                  fill
-                  sizes="(max-width: 640px) 40vw, 12rem"
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  width={448}
+                  height={560}
+                  unoptimized
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               </div>
             ))}
@@ -83,9 +55,11 @@ function MarqueeRow({
 /** Dual-row infinite image marquees (featured work). */
 export function ImageMarquee() {
   const t = useTranslations("landing.gallery.images");
+  const sectionRef = useMarqueePause<HTMLElement>();
 
   return (
     <section
+      ref={sectionRef}
       id="gallery"
       className="relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32"
       aria-label={t("heading")}
@@ -114,8 +88,8 @@ export function ImageMarquee() {
         transition={{ duration: 0.5 }}
         className="flex flex-col gap-8 sm:gap-10"
       >
-        <MarqueeRow indices={GALLERY_IMAGE_ROW_A} speed={ROW_SPEEDS[0]} />
-        <MarqueeRow indices={GALLERY_IMAGE_ROW_B} reverse speed={ROW_SPEEDS[1]} />
+        <MarqueeRow indices={GALLERY_IMAGE_ROW_A} duration="140s" />
+        <MarqueeRow indices={GALLERY_IMAGE_ROW_B} reverse duration="160s" />
       </motion.div>
     </section>
   );

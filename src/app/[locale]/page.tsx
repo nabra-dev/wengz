@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LandingServiceJsonLd } from "@/components/seo/json-ld";
 import { LandingClient } from "@/components/landing/landing-client";
+import { HERO_AVIF_SRCSET, HERO_SIZES } from "@/components/landing/hero-image";
 import { buildPageMetadata } from "@/lib/seo";
 import { getPublicPackages } from "@/lib/public-packages";
 
@@ -30,6 +31,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
+      <link
+        rel="preload"
+        as="image"
+        href="/images/hero/hero-1080.avif"
+        imageSrcSet={HERO_AVIF_SRCSET}
+        imageSizes={HERO_SIZES}
+        type="image/avif"
+        fetchPriority="high"
+      />
       <LandingServiceJsonLd locale={locale} />
       <LandingClient initialPackages={initialPackages} />
     </>

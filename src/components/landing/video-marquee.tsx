@@ -1,38 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { Volume2, VolumeX } from "lucide-react";
 import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
+import { useMarqueePause } from "@/components/landing/use-marquee-pause";
 
 /** `/images/landing/{n}.mp4` for n = 1..14 */
 const GALLERY_VIDEO_INDICES = Array.from({ length: 14 }, (_, i) => i + 1);
-
-const MARQUEE_SPEED_PX = 0.45;
 
 /** Infinite horizontal video strip — play on hover; click to unmute; only one at a time. */
 export function VideoMarquee() {
   const locale = useLocale();
   const t = useTranslations("landing.gallery.videos");
-  const trackRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useMarqueePause<HTMLElement>();
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const marqueePausedRef = useRef(false);
-  const offsetRef = useRef(0);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [unmutedKey, setUnmutedKey] = useState<string | null>(null);
-
-  const galleryRefCallbacks = useRef<Record<string, (el: HTMLVideoElement | null) => void>>({});
+  const [hoverPaused, setHoverPaused] = useState(false);
 
   const setGalleryVideoRef = useCallback((idx: number, strip: 0 | 1) => {
     const key = `${idx}-${strip}`;
-    if (!galleryRefCallbacks.current[key]) {
-      galleryRefCallbacks.current[key] = (el: HTMLVideoElement | null) => {
-        if (el) videoRefs.current[key] = el;
-        else delete videoRefs.current[key];
-      };
-    }
-    return galleryRefCallbacks.current[key];
+    return (el: HTMLVideoElement | null) => {
+      if (el) videoRefs.current[key] = el;
+      else delete videoRefs.current[key];
+    };
   }, []);
 
   const resetAllVideos = useCallback((exceptKey?: string) => {
@@ -49,7 +42,6 @@ export function VideoMarquee() {
       const el = videoRefs.current[key];
       if (!el) return;
       resetAllVideos(key);
-      // Browsers only allow autoplay when muted; sound unlocks on click.
       el.muted = true;
       el.defaultMuted = true;
       void el.play().catch(() => {
@@ -57,7 +49,7 @@ export function VideoMarquee() {
       });
       setActiveKey(key);
       setUnmutedKey(null);
-      marqueePausedRef.current = true;
+      setHoverPaused(true);
     },
     [resetAllVideos]
   );
@@ -69,14 +61,9 @@ export function VideoMarquee() {
       el.currentTime = 0;
       el.muted = true;
     }
-    setActiveKey((current) => {
-      if (current === key) {
-        marqueePausedRef.current = false;
-        return null;
-      }
-      return current;
-    });
+    setActiveKey((current) => (current === key ? null : current));
     setUnmutedKey((current) => (current === key ? null : current));
+    setHoverPaused(false);
   }, []);
 
   const toggleMute = useCallback((key: string) => {
@@ -102,31 +89,13 @@ export function VideoMarquee() {
     setUnmutedKey(null);
   }, []);
 
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    let raf = 0;
-    const tick = () => {
-      if (!marqueePausedRef.current) {
-        offsetRef.current -= MARQUEE_SPEED_PX;
-        const half = track.scrollWidth / 2;
-        if (half > 0 && Math.abs(offsetRef.current) >= half) {
-          offsetRef.current += half;
-        }
-        track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
   return (
     <section
+      ref={sectionRef}
       id="gallery-videos"
-      className="relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32"
+      className={`relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32 ${
+        hoverPaused ? "is-marquee-hover" : ""
+      }`}
     >
       <div className="container px-4 sm:px-6">
         <motion.div
@@ -153,7 +122,10 @@ export function VideoMarquee() {
         className="mt-8 w-full"
       >
         <div className="relative w-full overflow-hidden py-1" dir="ltr">
-          <div ref={trackRef} className="flex w-max gap-3 will-change-transform sm:gap-4 md:gap-5">
+          <div
+            className="flex w-max animate-landing-marquee gap-3 sm:gap-4 md:gap-5"
+            style={{ ["--landing-marquee-duration" as string]: "110s" }}
+          >
             {[0, 1].map((strip) => (
               <div key={`vstrip-${strip}`} className="flex shrink-0 gap-3 sm:gap-4 md:gap-5">
                 {GALLERY_VIDEO_INDICES.map((idx) => {

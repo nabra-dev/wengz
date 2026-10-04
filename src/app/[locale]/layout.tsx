@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import localFont from "next/font/local";
-import { GoogleTagManager } from "@next/third-parties/google";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
@@ -12,6 +11,7 @@ import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { ThemeProvider, type Theme } from "@/components/providers/theme-provider";
 import { DisplayCurrencyProvider } from "@/components/providers/display-currency-provider";
 import { SiteJsonLd } from "@/components/seo/json-ld";
+import { DeferredGoogleTagManager } from "@/components/analytics/deferred-gtm";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
 import { brandName, buildPageMetadata } from "@/lib/seo";
 import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
@@ -22,19 +22,9 @@ import { cn } from "@/lib/utils";
 /** Only inject GTM when explicitly configured — no hardcoded fallback. */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
-/** English UI — Unbounded from `/public/fonts`. */
+/** Weights the UI sets (400–700). preload is off so they do not outrank the hero image. */
 const unbounded = localFont({
   src: [
-    {
-      path: "../../../public/fonts/Unbounded-ExtraLight.ttf",
-      weight: "200",
-      style: "normal",
-    },
-    {
-      path: "../../../public/fonts/Unbounded-Light.ttf",
-      weight: "300",
-      style: "normal",
-    },
     {
       path: "../../../public/fonts/Unbounded-Regular.ttf",
       weight: "400",
@@ -55,40 +45,16 @@ const unbounded = localFont({
       weight: "700",
       style: "normal",
     },
-    {
-      path: "../../../public/fonts/Unbounded-ExtraBold.ttf",
-      weight: "800",
-      style: "normal",
-    },
-    {
-      path: "../../../public/fonts/Unbounded-Black.ttf",
-      weight: "900",
-      style: "normal",
-    },
   ],
   variable: "--font-unbounded",
   display: "swap",
+  preload: false,
   fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
 });
 
-/** Arabic system font — IBM Plex Sans Arabic from `/public/fonts`. */
+/** Arabic UI — same weight cut as Unbounded. */
 const ibmPlexSansArabic = localFont({
   src: [
-    {
-      path: "../../../public/fonts/IBMPlexSansArabic-Thin.ttf",
-      weight: "100",
-      style: "normal",
-    },
-    {
-      path: "../../../public/fonts/IBMPlexSansArabic-ExtraLight.ttf",
-      weight: "200",
-      style: "normal",
-    },
-    {
-      path: "../../../public/fonts/IBMPlexSansArabic-Light.ttf",
-      weight: "300",
-      style: "normal",
-    },
     {
       path: "../../../public/fonts/IBMPlexSansArabic-Regular.ttf",
       weight: "400",
@@ -112,6 +78,7 @@ const ibmPlexSansArabic = localFont({
   ],
   variable: "--font-cairo",
   display: "swap",
+  preload: false,
   fallback: ["Tahoma", "Arial", "sans-serif"],
 });
 
@@ -168,7 +135,6 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dir} className={cn(fontClass, initialTheme)} suppressHydrationWarning>
-      {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
       <head>
         {/* Critical: keep one brand mark visible even if the main CSS bundle fails to load after deploy. */}
         <style
@@ -180,9 +146,21 @@ export default async function LocaleLayout({
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <SiteJsonLd locale={locale} />
+        {GTM_ID ? (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        ) : null}
         <ThemeProvider initialTheme={initialTheme}>
           <DisplayCurrencyProvider>
             <NextIntlClientProvider locale={locale} messages={messages}>
+              {GTM_ID ? <DeferredGoogleTagManager gtmId={GTM_ID} /> : null}
               {GTM_ID ? <GtmPageView /> : null}
               <DeploymentRecovery />
               <LocaleHtmlUpdater locale={locale} />
