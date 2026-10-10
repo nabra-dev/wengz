@@ -481,8 +481,11 @@
   },
   "auth": {
     "login": {
+      "badge": "Welcome back",
       "title": "Sign In",
       "description": "Enter your credentials to sign in to your account",
+      "subtitle": "Access your Wengz workspace — requests, credits, and deliveries in one place.",
+      "asideNote": "New accounts need admin approval before the first sign-in.",
       "emailLabel": "Email",
       "emailPlaceholder": "name@example.com",
       "passwordLabel": "Password",
@@ -535,8 +538,12 @@
       "errorFallback": "Could not reset password. Please try again."
     },
     "register": {
+      "badge": "Client signup",
       "title": "Create an account",
       "description": "Enter your details — an admin will approve before you can sign in",
+      "subtitle": "Join as a client to buy credit packages and open service requests. An admin reviews every new account.",
+      "asideCreator": "Want to create for clients instead?",
+      "asideCreatorCta": "Apply as a creator",
       "nameLabel": "Full Name",
       "namePlaceholder": "John Doe",
       "nameHint": "Required",

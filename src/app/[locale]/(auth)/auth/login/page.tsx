@@ -3,25 +3,17 @@
 import { useState, useEffect } from "react";
 import { signIn, getSession, useSession } from "next-auth/react";
 import { Link, useRouter } from "@/i18n/routing";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { Loader2, LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthFormShell, authFieldClass } from "@/components/auth/auth-form-shell";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
 import { trpc } from "@/lib/trpc/client";
-import { BrandLogo } from "@/components/brand/brand-logo";
 import { loginFormSchema } from "@/lib/validations";
 
 export default function LoginPage() {
@@ -49,16 +41,14 @@ export default function LoginPage() {
     }
   }, [status, session, router, locale, continuePath]);
 
-  // Show loading state while checking authentication
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
       </div>
     );
   }
 
-  // Don't render login form if already authenticated
   if (status === "authenticated") {
     return null;
   }
@@ -128,28 +118,29 @@ export default function LoginPage() {
         return;
       }
 
-      // Get the updated session to determine user role
-      const session = await getSession();
+      const nextSession = await getSession();
 
       toast.success(t("welcomeBack"), {
         description: t("successLogin"),
       });
 
       const afterLoginContinue = parseContinuePath(searchParams?.get("continue") ?? null);
-      if (session?.user?.role === "CLIENT" && afterLoginContinue === CONTINUE_NEW_REQUEST_PATH) {
+      if (
+        nextSession?.user?.role === "CLIENT" &&
+        afterLoginContinue === CONTINUE_NEW_REQUEST_PATH
+      ) {
         globalThis.location.href = `/${locale}/client/requests/new`;
         return;
       }
 
-      // Redirect based on user role with full page reload to ensure proper session initialization
-      if (isStaffRole(session?.user?.role)) {
-        globalThis.location.href = `/${locale}${getStaffHomePath(session?.user?.role)}`;
-      } else if (session?.user?.role === "PROVIDER") {
+      if (isStaffRole(nextSession?.user?.role)) {
+        globalThis.location.href = `/${locale}${getStaffHomePath(nextSession?.user?.role)}`;
+      } else if (nextSession?.user?.role === "PROVIDER") {
         globalThis.location.href = `/${locale}/provider`;
       } else {
         globalThis.location.href = `/${locale}/client`;
       }
-    } catch (err) {
+    } catch {
       toast.error(t("error"), {
         description: t("errorMessage"),
       });
@@ -158,77 +149,105 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <AuthFormShell
+      badge={
+        <>
+          <LogIn className="h-3.5 w-3.5 text-primary" aria-hidden />
+          {t("badge")}
+        </>
+      }
+      title={t("title")}
+      subtitle={t("subtitle")}
+      asideExtras={
+        <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/50 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ShieldCheck className="h-4 w-4" aria-hidden />
+          </span>
+          <p className="text-sm leading-relaxed text-muted-foreground">{t("asideNote")}</p>
+        </div>
+      }
     >
-      <Card>
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <motion.div whileHover={{ scale: 1.1 }}>
-                <BrandLogo className="h-10" priority />
-              </motion.div>
+      <form onSubmit={onSubmit} className="space-y-5">
+        {appState?.maintenanceMode && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            {t("maintenanceNote")}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="email">
+            {t("emailLabel")}
+            <span className="ms-1 text-destructive" aria-hidden>
+              *
+            </span>
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder={t("emailPlaceholder")}
+            required
+            disabled={isLoading}
+            className={authFieldClass}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="password">
+              {t("passwordLabel")}
+              <span className="ms-1 text-destructive" aria-hidden>
+                *
+              </span>
+            </Label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {t("forgotPassword")}
             </Link>
           </div>
-          <CardTitle className="text-2xl text-center font-semibold uppercase tracking-wide">
-            {t("title")}
-          </CardTitle>
-          <CardDescription className="text-center">{t("description")}</CardDescription>
-        </CardHeader>
-        <form onSubmit={onSubmit}>
-          <CardContent className="space-y-4">
-            {appState?.maintenanceMode && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-                {t("maintenanceNote")}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("emailLabel")} *</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder={t("emailPlaceholder")}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="password">{t("passwordLabel")} *</Label>
-                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
-                  {t("forgotPassword")}
-                </Link>
-              </div>
-              <Input id="password" name="password" type="password" required disabled={isLoading} />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <motion.div className="w-full" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? t("signingIn") : t("signInButton")}
-              </Button>
-            </motion.div>
-            {/*
-            <p className="text-sm text-muted-foreground text-center">
-              {t("noAccount")}{" "}
-              <Link
-                href={
-                  continuePath
-                    ? `/auth/register?continue=${encodeURIComponent(continuePath)}`
-                    : "/auth/register"
-                }
-                className="text-primary hover:underline"
-              >
-                {t("signUp")}
-              </Link>
-            </p>
-            */}
-          </CardFooter>
-        </form>
-      </Card>
-    </motion.div>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            disabled={isLoading}
+            className={authFieldClass}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="h-12 w-full gap-2 rounded-xl text-sm font-semibold"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              {t("signingIn")}
+            </>
+          ) : (
+            t("signInButton")
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {t("noAccount")}{" "}
+          <Link
+            href={
+              continuePath
+                ? `/auth/register?continue=${encodeURIComponent(continuePath)}`
+                : "/auth/register"
+            }
+            className="font-medium text-primary hover:underline"
+          >
+            {t("signUp")}
+          </Link>
+        </p>
+      </form>
+    </AuthFormShell>
   );
 }

@@ -38,7 +38,7 @@ export function PhoneCountrySelect({
     <Select value={value} onValueChange={onValueChange} disabled={disabled} dir="ltr">
       <SelectTrigger
         className={cn(
-          "h-12 w-[9.5rem] shrink-0 gap-2 rounded-xl border-border/70 bg-background/80 px-3 shadow-sm focus:ring-2 focus:ring-primary/20 [&>span]:line-clamp-none",
+          "h-12 w-[7.25rem] shrink-0 gap-1.5 rounded-xl border-border/70 bg-background/80 px-2 shadow-sm focus:ring-2 focus:ring-primary/20 [&>span]:line-clamp-none sm:w-[9.5rem] sm:gap-2 sm:px-3",
           triggerClassName
         )}
       >
@@ -48,7 +48,7 @@ export function PhoneCountrySelect({
         align="start"
         position="popper"
         className={cn(
-          "z-[100] min-w-[17rem] overflow-hidden rounded-xl border-border/70 p-1 shadow-xl",
+          "z-[100] min-w-[min(17rem,calc(100vw-2rem))] overflow-hidden rounded-xl border-border/70 p-1 shadow-xl",
           className
         )}
       >

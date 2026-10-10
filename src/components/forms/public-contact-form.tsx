@@ -139,7 +139,7 @@ export function PublicContactForm() {
         <div className="absolute bottom-0 end-[-80px] h-[320px] w-[320px] rounded-full bg-[#E0F840]/10 blur-3xl" />
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-12 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))]">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-16 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))]">
         <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/95 shadow-xl ring-1 ring-primary/10">
           <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary/70 to-[#E0F840]/50" />
 

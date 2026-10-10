@@ -49,6 +49,7 @@ export function LandingNavLink({
 
 export function LandingHeader() {
   const t = useTranslations();
+  const pathname = usePathname() || "/";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -79,12 +80,12 @@ export function LandingHeader() {
           <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             <ThemeSwitcher className="hidden min-[400px]:inline-flex" />
             <LanguageSwitcher variant="icon" />
-            <details className="group relative">
-              <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:px-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
-                <span className="lg:hidden">{t("landing.cta.primaryShort")}</span>
+            <details key={`cta-${pathname}`} className="group relative">
+              <summary className="flex h-8 max-w-[9.5rem] cursor-pointer list-none items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:max-w-none sm:px-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
+                <span className="truncate lg:hidden">{t("landing.cta.primaryShort")}</span>
                 <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
                 <ChevronDown
-                  className="h-3.5 w-3.5 opacity-80 transition-transform group-open:rotate-180 sm:h-4 sm:w-4"
+                  className="h-3.5 w-3.5 shrink-0 opacity-80 transition-transform group-open:rotate-180 sm:h-4 sm:w-4"
                   aria-hidden
                 />
               </summary>
@@ -110,7 +111,7 @@ export function LandingHeader() {
                 </Link>
               </div>
             </details>
-            <details className="group lg:hidden">
+            <details key={`nav-${pathname}`} className="group lg:hidden">
               <summary
                 className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-foreground hover:bg-muted sm:h-9 sm:w-9 [&::-webkit-details-marker]:hidden"
                 aria-label={t("landing.nav.openMenu")}

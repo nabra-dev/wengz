@@ -5,31 +5,18 @@ import { useSession } from "next-auth/react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AuthFormShell, authFieldClass } from "@/components/auth/auth-form-shell";
+import { PhoneCountrySelect } from "@/components/forms/phone-country-select";
 import { trpc } from "@/lib/trpc/client";
 import { phoneNumberOnlySchema, registerFormSchema } from "@/lib/validations";
-import { BrandLogo } from "@/components/brand/brand-logo";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,10 +24,10 @@ export default function RegisterPage() {
   const { data: session, status } = useSession();
   const [error, setError] = useState("");
   const t = useTranslations("auth.register");
+  const tFields = useTranslations("forms.fields");
   const searchParams = useSearchParams();
   const continueAfterAuth = parseContinuePath(searchParams?.get("continue") ?? null);
 
-  // All hooks must be called before any conditional returns
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
       toast.success(t("accountCreated"), {
@@ -63,7 +50,6 @@ export default function RegisterPage() {
   const [countryCode, setCountryCode] = useState("+20");
   const [phoneInput, setPhoneInput] = useState("");
 
-  // Redirect if already logged in
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
     if (session.user.role === "CLIENT" && continueAfterAuth === CONTINUE_NEW_REQUEST_PATH) {
@@ -79,16 +65,14 @@ export default function RegisterPage() {
     }
   }, [status, session, router, locale, continueAfterAuth]);
 
-  // Show loading state while checking authentication
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
       </div>
     );
   }
 
-  // Don't render register form if already authenticated
   if (status === "authenticated") {
     return null;
   }
@@ -119,12 +103,11 @@ export default function RegisterPage() {
       return;
     }
 
-    // Build phone with country code if provided
     let phone: string | undefined = undefined;
     if (phoneRaw) {
       const phoneValidation = phoneNumberOnlySchema.safeParse(phoneRaw);
       if (!phoneValidation.success) {
-        const errorMsg = phoneValidation.error.errors[0]?.message || "Invalid phone number";
+        const errorMsg = phoneValidation.error.errors[0]?.message || t("invalidPhone");
         setError(errorMsg);
         toast.error(t("validationError"), {
           description: errorMsg,
@@ -138,138 +121,170 @@ export default function RegisterPage() {
     registerMutation.mutate({ name, email, password, phone });
   }
 
+  const busy = registerMutation.isPending;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <AuthFormShell
+      badge={
+        <>
+          <UserPlus className="h-3.5 w-3.5 text-primary" aria-hidden />
+          {t("badge")}
+        </>
+      }
+      title={t("title")}
+      subtitle={t("subtitle")}
+      asideExtras={
+        <Link
+          href="/forms/provider"
+          className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/50 px-4 py-3.5 transition-colors hover:border-primary/30 hover:bg-background/80"
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">{t("asideCreator")}</span>
+            <span className="mt-0.5 block text-sm text-muted-foreground group-hover:text-foreground">
+              {t("asideCreatorCta")}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 opacity-50 rtl:rotate-180" aria-hidden />
+        </Link>
+      }
     >
-      <Card>
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <motion.div whileHover={{ scale: 1.1 }}>
-                <BrandLogo className="h-10" priority />
-              </motion.div>
-            </Link>
+      <form onSubmit={onSubmit} className="space-y-5">
+        {error ? (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
           </div>
-          <CardTitle className="text-2xl text-center font-semibold uppercase tracking-wide">
-            {t("title")}
-          </CardTitle>
-          <CardDescription className="text-center">{t("description")}</CardDescription>
-        </CardHeader>
-        <form onSubmit={onSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="name">{t("nameLabel")} *</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder={t("namePlaceholder")}
-                required
-                disabled={registerMutation.isPending}
-              />
-              <p className="text-xs text-muted-foreground">{t("nameHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("emailLabel")} *</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder={t("emailPlaceholder")}
-                required
-                disabled={registerMutation.isPending}
-              />
-              <p className="text-xs text-muted-foreground">{t("emailHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("phoneLabel")}</Label>
-              <div className="flex rtl:flex-row-reverse gap-2">
-                <Select
-                  value={countryCode}
-                  onValueChange={setCountryCode}
-                  disabled={registerMutation.isPending}
-                >
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="+20">🇪🇬 +20</SelectItem>
-                    <SelectItem value="+966">🇸🇦 +966</SelectItem>
-                    <SelectItem value="+971">🇦🇪 +971</SelectItem>
-                    <SelectItem value="+965">🇰🇼 +965</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder={t("phonePlaceholder")}
-                  disabled={registerMutation.isPending}
-                  value={phoneInput}
-                  onChange={(e) => {
-                    const value = e.target.value.replaceAll(/\D/g, "");
-                    setPhoneInput(value);
-                  }}
-                  pattern="\d{7,15}"
-                  title="Phone number must be 7-15 digits"
-                  className="flex-1"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{t("phoneHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t("passwordLabel")} *</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                disabled={registerMutation.isPending}
-              />
-              <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t("confirmPasswordLabel")} *</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                disabled={registerMutation.isPending}
-              />
-              <p className="text-xs text-muted-foreground">{t("confirmPasswordHint")}</p>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <motion.div className="w-full" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-              <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                {registerMutation.isPending ? t("creatingAccount") : t("createAccountButton")}
-              </Button>
-            </motion.div>
-            <p className="text-sm text-muted-foreground text-center">
-              {t("haveAccount")}{" "}
-              <Link
-                href={
-                  continueAfterAuth
-                    ? `/auth/login?continue=${encodeURIComponent(continueAfterAuth)}`
-                    : "/auth/login"
-                }
-                className="text-primary hover:underline"
-              >
-                {t("signInLink")}
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
-    </motion.div>
+        ) : null}
+
+        <div className="space-y-2">
+          <Label htmlFor="name">
+            {t("nameLabel")}
+            <span className="ms-1 text-destructive" aria-hidden>
+              *
+            </span>
+          </Label>
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            placeholder={t("namePlaceholder")}
+            required
+            disabled={busy}
+            className={authFieldClass}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">
+            {t("emailLabel")}
+            <span className="ms-1 text-destructive" aria-hidden>
+              *
+            </span>
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder={t("emailPlaceholder")}
+            required
+            disabled={busy}
+            className={authFieldClass}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">{t("phoneLabel")}</Label>
+          <div className="flex gap-2.5 rtl:flex-row-reverse">
+            <PhoneCountrySelect
+              value={countryCode}
+              onValueChange={setCountryCode}
+              disabled={busy}
+            />
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder={tFields("phonePlaceholder")}
+              disabled={busy}
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value.replaceAll(/\D/g, ""))}
+              pattern="\d{7,15}"
+              className={cn(authFieldClass, "min-w-0 flex-1 text-base tabular-nums")}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">{t("phoneHint")}</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="password">
+              {t("passwordLabel")}
+              <span className="ms-1 text-destructive" aria-hidden>
+                *
+              </span>
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              disabled={busy}
+              className={authFieldClass}
+            />
+            <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">
+              {t("confirmPasswordLabel")}
+              <span className="ms-1 text-destructive" aria-hidden>
+                *
+              </span>
+            </Label>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              disabled={busy}
+              className={authFieldClass}
+            />
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          disabled={busy}
+          className="h-12 w-full gap-2 rounded-xl text-sm font-semibold"
+        >
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              {t("creatingAccount")}
+            </>
+          ) : (
+            t("createAccountButton")
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {t("haveAccount")}{" "}
+          <Link
+            href={
+              continueAfterAuth
+                ? `/auth/login?continue=${encodeURIComponent(continueAfterAuth)}`
+                : "/auth/login"
+            }
+            className="font-medium text-primary hover:underline"
+          >
+            {t("signInLink")}
+          </Link>
+        </p>
+      </form>
+    </AuthFormShell>
   );
 }

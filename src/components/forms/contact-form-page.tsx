@@ -212,7 +212,7 @@ export function ContactFormPage() {
         <div className="absolute bottom-0 left-[-120px] h-[360px] w-[360px] rounded-full bg-[#690DD4]/8 blur-3xl" />
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-12 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-16 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))]">
         <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/95 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-sm ring-1 ring-[#690DD4]/12">
           <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#690DD4]/80 to-[#E0F840]/55" />
 
