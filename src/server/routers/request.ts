@@ -22,6 +22,7 @@ import { logRequestActivity } from "@/lib/request-activity";
 import { createServiceRequest } from "@/lib/create-request";
 import { approveDeliveredRequest } from "@/lib/approve-delivered-request";
 import { enforceNoContactLeak } from "@/lib/contact-leak-enforce";
+import { providerCanViewClientIdentity } from "@/lib/client-identity";
 import type { ServiceAttribute, AttributeResponse } from "@/types/service-attributes";
 
 /**
@@ -340,6 +341,75 @@ export const requestRouter = router({
         revisionInfo,
         commentsTruncated: !isProviderBrowsing && request.comments.length >= 100,
       } as any;
+    }),
+
+  /**
+   * Approved delivery history for a client (URL refs only).
+   * Visible to PM/SA and providers with an assigned or available job for that client.
+   */
+  getClientIdentity: protectedProcedure
+    .input(
+      z.object({
+        clientId: z.string(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(24),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const role = ctx.session.user.role;
+
+      if (canManageRequests(role)) {
+        // allowed
+      } else if (role === "PROVIDER") {
+        const allowed = await providerCanViewClientIdentity(ctx.db, userId, input.clientId);
+        if (!allowed) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have access to this client identity",
+          });
+        }
+      } else {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have access to this client identity",
+        });
+      }
+
+      const items = await ctx.db.clientIdentityAsset.findMany({
+        where: { clientId: input.clientId },
+        take: input.limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          fileUrl: true,
+          createdAt: true,
+          serviceType: {
+            select: {
+              id: true,
+              name: true,
+              nameI18n: true,
+              icon: true,
+            },
+          },
+          sourceRequest: {
+            select: {
+              id: true,
+              title: true,
+              completedAt: true,
+            },
+          },
+        },
+      });
+
+      let nextCursor: string | undefined;
+      if (items.length > input.limit) {
+        const next = items.pop();
+        nextCursor = next?.id;
+      }
+
+      return { items, nextCursor };
     }),
 
   // Provider accepts a request

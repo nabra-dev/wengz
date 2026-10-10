@@ -46,6 +46,7 @@ model User {
   clientRequests      Request[]               @relation("ClientRequests")
   providerRequests    Request[]               @relation("ProviderRequests")
   comments            RequestComment[]
+  identityAssets      ClientIdentityAsset[]   @relation("ClientIdentityAssets")
   sessions            Session[]
   watchedRequests     RequestWatcher[]
   activityLogs        ActivityLog[]
@@ -178,6 +179,7 @@ model ServiceType {
   financeLedger            ProviderFinanceLedger[]
   providers                ProviderProfile[]       @relation("ProviderServices")
   packages                 PackageService[]
+  identityAssets           ClientIdentityAsset[]
 
   @@index([deletedAt])
   @@index([isActive, deletedAt])
@@ -310,6 +312,7 @@ model Request {
   comments                RequestComment[]
   watchers                RequestWatcher[]
   providerFinance         ProviderFinanceLedger?
+  identityAssets          ClientIdentityAsset[]
 
   @@index([clientId, status])
   @@index([clientId, createdAt]) // For client dashboard pagination
@@ -319,6 +322,26 @@ model Request {
   @@index([status, deliveredAt]) // For delivered-approval SLA cron scans
   @@index([deletedAt])
   @@index([serviceTypeId])
+}
+
+/// Index of final approved delivery files for a client (URL refs only — no file copy).
+/// Populated from the latest DELIVERABLE comment when a request becomes COMPLETED.
+model ClientIdentityAsset {
+  id              String         @id @default(cuid())
+  clientId        String
+  sourceRequestId String
+  sourceCommentId String?
+  fileUrl         String
+  serviceTypeId   String
+  createdAt       DateTime       @default(now())
+  client          User           @relation("ClientIdentityAssets", fields: [clientId], references: [id], onDelete: Cascade)
+  sourceRequest   Request        @relation(fields: [sourceRequestId], references: [id], onDelete: Cascade)
+  sourceComment   RequestComment? @relation(fields: [sourceCommentId], references: [id], onDelete: SetNull)
+  serviceType     ServiceType    @relation(fields: [serviceTypeId], references: [id])
+
+  @@unique([clientId, fileUrl])
+  @@index([clientId, createdAt])
+  @@index([sourceRequestId])
 }
 
 model ProviderWallet {
@@ -421,17 +444,18 @@ model ProviderFinanceDispute {
 }
 
 model RequestComment {
-  id        String      @id @default(cuid())
-  requestId String
-  userId    String
-  content   String
-  type      CommentType @default(MESSAGE)
-  files     String[]    @default([])
-  isRead    Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  request   Request     @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String                @id @default(cuid())
+  requestId      String
+  userId         String
+  content        String
+  type           CommentType           @default(MESSAGE)
+  files          String[]              @default([])
+  isRead         Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  request        Request               @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identityAssets ClientIdentityAsset[]
 
   @@index([requestId, createdAt])
 }

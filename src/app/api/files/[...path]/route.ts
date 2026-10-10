@@ -3,7 +3,11 @@ import { getRequestSession } from "@/lib/request-session";
 import { open, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
-import { existsRequestFile, shouldAllowUnclaimedPendingFiles } from "@/lib/file-access";
+import {
+  existsClientIdentityFile,
+  existsRequestFile,
+  shouldAllowUnclaimedPendingFiles,
+} from "@/lib/file-access";
 import { logger } from "@/lib/logger";
 import { canManageFinance, canManageRequests, isSuperAdmin } from "@/lib/roles";
 import { contentTypeFromFilename } from "@/lib/upload-limits";
@@ -156,6 +160,7 @@ async function anyGranted(checks: Promise<boolean>[]): Promise<boolean> {
  * - any signed-in user when the file is another user's profile photo
  * - request participants (client, assigned provider, watchers)
  * - providers browsing unclaimed PENDING jobs (attachments + attribute media)
+ * - providers / PM / SA for client-identity indexed delivery files
  * - users who can see a record that references the file
  */
 async function canAccessFile(userId: string, role: string, key: string): Promise<boolean> {
@@ -194,6 +199,7 @@ async function canAccessFile(userId: string, role: string, key: string): Promise
       allowUnclaimedPending: shouldAllowUnclaimedPendingFiles(role),
     })
   );
+  checks.push(existsClientIdentityFile(key, url, { userId, role }));
 
   const allowed = await anyGranted(checks);
   setCachedAcl(userId, key, allowed);

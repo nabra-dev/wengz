@@ -1714,6 +1714,15 @@
       "badge": "Deliverable",
       "filesLabel": "{count, plural, one {1 file} other {# files}}"
     },
+    "clientIdentity": {
+      "button": "Client identity",
+      "title": "Client identity",
+      "description": "Approved delivery files from previous completed requests. Use these to match the client’s brand.",
+      "descriptionNamed": "Approved delivery files for {name}. Use these to match their brand.",
+      "empty": "No approved identity files yet for this client.",
+      "assetCount": "{count, plural, one {# file} other {# files}}",
+      "loadMore": "Load more"
+    },
     "card": {
       "freeRevision": "Free",
       "paidRevision": "Paid",

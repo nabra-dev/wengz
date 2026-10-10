@@ -14,6 +14,7 @@ import { RequestSidebar } from "@/components/requests/request-sidebar";
 import { RequestStats } from "@/components/requests/request-stats";
 import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
+import { ClientIdentitySheet } from "@/components/requests/client-identity-sheet";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -124,24 +125,29 @@ export default function AdminRequestDetailPage() {
         backLabel={t("title")}
         needsManualApproval={(request as any).needsManualApproval === true}
         actions={
-          request.status === "DELIVERED" ? (
-            <Button
-              onClick={() => {
-                if (!window.confirm(t("detail.approveOnBehalfConfirm"))) return;
-                approveOnBehalf.mutate({ requestId });
-              }}
-              disabled={approveOnBehalf.isPending}
-              className="gap-2"
-              title={t("detail.approveOnBehalfHint")}
-            >
-              {approveOnBehalf.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              {t("detail.approveOnBehalf")}
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {request.clientId ? (
+              <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
+            ) : null}
+            {request.status === "DELIVERED" ? (
+              <Button
+                onClick={() => {
+                  if (!window.confirm(t("detail.approveOnBehalfConfirm"))) return;
+                  approveOnBehalf.mutate({ requestId });
+                }}
+                disabled={approveOnBehalf.isPending}
+                className="gap-2"
+                title={t("detail.approveOnBehalfHint")}
+              >
+                {approveOnBehalf.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                {t("detail.approveOnBehalf")}
+              </Button>
+            ) : null}
+          </div>
         }
       />
 

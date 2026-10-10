@@ -5,6 +5,7 @@ import { notifyStatusChange } from "@/lib/notifications";
 import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { getPreferredLocaleForUser } from "@/lib/user-locale";
 import { logRequestActivity } from "@/lib/request-activity";
+import { indexClientIdentityFromRequest } from "@/lib/client-identity";
 
 type Db = PrismaClient;
 
@@ -86,6 +87,12 @@ export async function approveDeliveredRequest(params: {
         content: approvedComment,
         type: "SYSTEM",
       },
+    });
+
+    await indexClientIdentityFromRequest(tx, {
+      clientId: request.clientId,
+      requestId,
+      serviceTypeId: request.serviceTypeId,
     });
 
     return tx.request.findUnique({ where: { id: requestId } });

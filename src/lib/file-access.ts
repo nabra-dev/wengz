@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { ROLES } from "@/lib/roles";
+import { ROLES, canManageRequests } from "@/lib/roles";
 import type { AttributeResponse, ServiceAttribute } from "@/types/service-attributes";
 import { collectAttributeMediaUrls } from "@/lib/attribute-validation";
+import { providerCanViewClientIdentity } from "@/lib/client-identity";
 
 export type RequestFileAccessOptions = {
   /** Restrict to requests this user participates in (or may browse as available). */
@@ -118,4 +119,33 @@ export async function existsRequestFile(
 /** Whether this role should get the available-job (unclaimed PENDING) file grant. */
 export function shouldAllowUnclaimedPendingFiles(role: string): boolean {
   return role === ROLES.PROVIDER;
+}
+
+/**
+ * Whether a client-identity indexed file is visible to the viewer.
+ * PM/SA: any identity asset. Provider: only when assigned to or browsing an
+ * available PENDING job for that client.
+ */
+export async function existsClientIdentityFile(
+  key: string,
+  url: string,
+  viewer: { userId: string; role: string }
+): Promise<boolean> {
+  const asset = await db.clientIdentityAsset.findFirst({
+    where: {
+      OR: [{ fileUrl: url }, { fileUrl: key }, { fileUrl: `/api/files/${key}` }],
+    },
+    select: { clientId: true },
+  });
+  if (!asset) return false;
+
+  if (canManageRequests(viewer.role)) {
+    return true;
+  }
+
+  if (viewer.role !== ROLES.PROVIDER) {
+    return false;
+  }
+
+  return providerCanViewClientIdentity(db, viewer.userId, asset.clientId);
 }

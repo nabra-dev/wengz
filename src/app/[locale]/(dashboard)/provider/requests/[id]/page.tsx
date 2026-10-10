@@ -18,6 +18,7 @@ import { RequestSidebar } from "@/components/requests/request-sidebar";
 import { RequestStats } from "@/components/requests/request-stats";
 import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
+import { ClientIdentitySheet } from "@/components/requests/client-identity-sheet";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -263,6 +264,11 @@ export default function ProviderRequestDetailPage() {
         createdAt={request.createdAt}
         backUrl="/provider/my-requests"
         backLabel={t("backToMyRequests")}
+        actions={
+          request.clientId ? (
+            <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
+          ) : undefined
+        }
       />
 
       <RequestWorkspace

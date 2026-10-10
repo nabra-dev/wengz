@@ -11,6 +11,7 @@ import { AttributeResponsesDisplay } from "@/components/client/attribute-respons
 import { RequestHeader } from "@/components/requests/request-header";
 import { RequestDescription } from "@/components/requests/request-description";
 import { RequestSidebar } from "@/components/requests/request-sidebar";
+import { ClientIdentitySheet } from "@/components/requests/client-identity-sheet";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -125,9 +126,14 @@ export default function AvailableJobDetailPage() {
         createdAt={request.createdAt}
         backUrl="/provider/available"
         actions={
-          <Button size="lg" onClick={handleClaim} disabled={claimRequest.isPending}>
-            {claimRequest.isPending ? t("claiming") : t("claimJob")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {request.clientId ? (
+              <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
+            ) : null}
+            <Button size="lg" onClick={handleClaim} disabled={claimRequest.isPending}>
+              {claimRequest.isPending ? t("claiming") : t("claimJob")}
+            </Button>
+          </div>
         }
       />
 
