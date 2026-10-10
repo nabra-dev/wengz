@@ -19,6 +19,7 @@
     "test:all": "npm run test:ci && npm run test:e2e",
     "db:push": "prisma db push --accept-data-loss",
     "db:seed": "tsx prisma/seed.ts",
+    "db:safe-reset": "tsx scripts/prod-safe-reset-seed.ts",
     "db:studio": "prisma studio",
     "db:generate": "node scripts/prisma-generate.mjs",
     "db:migrate": "prisma migrate dev",

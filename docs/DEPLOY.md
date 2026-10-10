@@ -301,6 +301,69 @@ Or, if you already have shell access:
 ssh root@72.62.181.253 '/usr/local/bin/deploy-nabra.sh'
 ```
 
+## Safe production DB reset (keep PENDING)
+
+Destructive. Use only when you intend to wipe **all** business data and **non-pending** users, then reseed catalog + staff/demo accounts.
+
+**Preserved:** users with `approvalStatus = PENDING` (and their `ProviderProfile`).  
+**Destroyed:** APPROVED / REJECTED users, requests, subscriptions, payments, wallets, notifications, etc.  
+**Uploads:** `storage/` on disk is left alone (pending CV paths stay valid).
+
+### How it works
+
+Orchestrator: [`scripts/prod-safe-reset-seed.ts`](../scripts/prod-safe-reset-seed.ts) (`npm run db:safe-reset`).
+
+1. Dual gates: `CONFIRM_PROD_RESET=RESET` and `KEEP_PENDING_MODE=1` and `NODE_ENV=production`
+2. Turn on `maintenance_mode`
+3. Export PENDING users → `/var/backups/nabra/<timestamp>/pending-users.json`
+4. Full `pg_dump` → `full.sql.gz` + sha256 (refuses wipe if dump too small)
+5. Stop PM2; generate new `SEED_ADMIN_PASSWORD` + `SEED_DEMO_PASSWORD`; update VPS `.env`
+6. `prisma db push --force-reset` → `npm run db:seed`
+7. Restore PENDING; verify counts/catalog; `redis-cli FLUSHDB`
+8. Write credentials to `/var/backups/nabra/<timestamp>/credentials.txt` (`chmod 600`) — **not** printed to logs
+9. Start PM2; turn maintenance off
+
+If verify fails after wipe, the script **auto-restores** the dump, starts PM2, and **leaves maintenance on**.
+
+### GitHub Actions
+
+**Actions → Reset DB and Seed (safe) → Run workflow**
+
+| Input            | Required value |
+| ---------------- | -------------- |
+| `confirm`        | `RESET`        |
+| `confirm_phrase` | `KEEP_PENDING` |
+
+Workflow syncs VPS to `origin/main` then runs `npm run db:safe-reset`. After success, SSH and read the credentials file into your password manager:
+
+```bash
+ssh -i ./nabra-gha-deploy -o IdentitiesOnly=yes root@72.62.181.253 \
+  'ls -lt /var/backups/nabra | head; latest=$(ls -td /var/backups/nabra/*/ | head -1); sudo cat "$latest/credentials.txt"'
+```
+
+### Manual SSH (same script)
+
+```bash
+ssh -i ./nabra-gha-deploy -o IdentitiesOnly=yes root@72.62.181.253
+cd /var/www/nabra-ai-system
+git fetch && git reset --hard origin/main
+set -a && source .env && set +a
+export NODE_ENV=production CONFIRM_PROD_RESET=RESET KEEP_PENDING_MODE=1
+npm run db:safe-reset
+```
+
+### Manual rollback
+
+```bash
+# pick the dump from the run’s backup dir
+gunzip -c /var/backups/nabra/<timestamp>/full.sql.gz | \
+  sudo -u postgres psql -d nabra_ai_system
+# or use the app DB user with PGPASSWORD from .env
+pm2 restart nabra-ai-system --update-env
+```
+
+Do **not** use raw `npx prisma db push --force-reset` + `npm run db:seed` on production — that deletes PENDING users and skips backup/verify.
+
 ## Notes
 
 - Until Prisma migration files exist, deploy uses `npm run db:push` (`--accept-data-loss`). That is required for intentional column drops (e.g. removing `hasWhatsapp`). Switch the script to `npm run db:migrate:deploy` when migrations are committed.

@@ -38,6 +38,7 @@ async function main() {
   console.log("🧹 Cleaned existing data");
 
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const demoPasswordEnv = process.env.SEED_DEMO_PASSWORD;
   if (!adminPassword) {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
@@ -45,6 +46,11 @@ async function main() {
       );
     }
     console.warn("⚠️  SEED_ADMIN_PASSWORD not set — using development-only default password");
+  }
+  if (process.env.NODE_ENV === "production" && !demoPasswordEnv) {
+    throw new Error(
+      "SEED_DEMO_PASSWORD env var is required to seed demo users in production (use npm run db:safe-reset)"
+    );
   }
   const hashedAdminPassword = await bcrypt.hash(adminPassword || "DevOnly!ChangeMe123", 12);
 
@@ -1185,8 +1191,8 @@ async function main() {
   console.log("⚙️  Seeded finance, payment, and maintenance settings");
   console.log(`   creditPriceUsd=0.008 commission=0% minWithdrawal=1 withdrawalFee=0`);
 
-  // ─── Sample users (all roles) — local/demo only ────────────────────────────
-  const demoPasswordPlain = process.env.SEED_DEMO_PASSWORD || "SeedDemo!ChangeMe123";
+  // ─── Sample users (all roles) ──────────────────────────────────────────────
+  const demoPasswordPlain = demoPasswordEnv || "SeedDemo!ChangeMe123";
   const hashedDemoPassword = await bcrypt.hash(demoPasswordPlain, 12);
   const approvedAt = new Date();
 
