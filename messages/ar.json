@@ -71,6 +71,7 @@
       "gallery": "المعرض",
       "videos": "الفيديوهات",
       "pricing": "الباقات",
+      "contact": "تواصل معنا",
       "providerForm": "نموذج المبدعين",
       "theme": "المظهر"
     },
@@ -106,40 +107,40 @@
       "ariaLabel": "عرض الخدمات",
       "tiles": {
         "aiImage": {
-          "title": "تصميم",
+          "title": "التصميم الإبداعي",
           "description": "تصاميم تبيع"
         },
         "aiVideo": {
-          "title": "فيديو",
+          "title": "إنتاج الفيديو",
           "description": "مقاطع جاهزة للإطلاق"
         },
         "apps": {
-          "title": "محتوى",
+          "title": "المحتوى الإبداعي",
           "description": "محتوى سوشيال باحتراف"
         },
         "mcp": {
-          "title": "سير العمل",
+          "title": "إدارة سير العمل",
           "description": "من الطلب للتسليم"
         },
         "flows": {
-          "title": "أتمتة",
+          "title": "الاتوميشن",
           "description": "نكرّر اللي ينجح"
         },
         "plugin": {
-          "title": "الاستوديو",
-          "description": "كل حاجة في مكان واحد"
+          "title": "العرض التقديمي",
+          "description": "شرائح توصل الرسالة"
         },
         "voiceover": {
-          "title": "صوت",
+          "title": "التعليق الصوتي",
           "description": "فويس أوفر جاهز"
         },
         "music": {
-          "title": "صوتيات",
-          "description": "موسيقى تناسب شغلك"
+          "title": "الإنتاج الصوتي",
+          "description": "صوت يناسب القصة"
         },
         "studio": {
-          "title": "إنتاج كامل",
-          "description": "من الفكرة للنتيجة"
+          "title": "ستوري بورد",
+          "description": "مشاهد مخططة قبل الإنتاج"
         }
       }
     },
@@ -238,11 +239,16 @@
     "gallery": {
       "videos": {
         "heading": "شغل طالع من خبرة + AI",
-        "subheading": "نتائج حقيقية—مش تجارب برومبت"
+        "subheading": "نتائج حقيقية—مش تجارب برومبت",
+        "lightboxLabel": "فيديوهات مختارة",
+        "openItem": "فتح الفيديو بملء الشاشة"
       },
       "images": {
         "heading": "مختارات من أعمالنا",
-        "subheading": "لما الخبير يمسك الأدوات الصح"
+        "subheading": "لما الخبير يمسك الأدوات الصح",
+        "lightboxLabel": "معرض الأعمال",
+        "openItem": "فتح الصورة بملء الشاشة",
+        "itemAlt": "عمل مختار {n}"
       }
     },
     "stats": {
@@ -294,6 +300,7 @@
       "explore": "استكشف",
       "company": "الشركة",
       "socialLabel": "تابع وينجز",
+      "whatsapp": "واتساب",
       "instagram": "إنستغرام",
       "facebook": "فيسبوك",
       "tiktok": "تيك توك",
@@ -304,6 +311,7 @@
       "creators": "انضم كمبدع",
       "getStarted": "ابدأ الآن",
       "email": "info@wengz.tech",
+      "phone": "+20 101 824 9632",
       "copyright": "© {year} وينجز. جميع الحقوق محفوظة."
     }
   },
@@ -328,6 +336,13 @@
       "email": "البريد الإلكتروني",
       "phone": "رقم الهاتف",
       "phoneInvalid": "أدخل رقم هاتف صالح (7–15 رقماً)",
+      "phonePlaceholder": "1xxxxxxxxx",
+      "countries": {
+        "eg": "مصر",
+        "sa": "السعودية",
+        "ae": "الإمارات",
+        "kw": "الكويت"
+      },
       "password": "كلمة المرور",
       "confirmPassword": "تأكيد كلمة المرور",
       "passwordsNotMatch": "كلمتا المرور غير متطابقتين",
@@ -377,6 +392,7 @@
       "title": "تواصل مع وينجز",
       "subtitle": "أرسل رسالتك وسنرد خلال يوم إلى يومي عمل. تفضّل البريد؟ راسلنا في أي وقت على info@wengz.tech.",
       "emailLabel": "راسلنا",
+      "whatsappLabel": "واتساب",
       "responseTime": "وقت الرد المعتاد: يوم إلى يومي عمل",
       "quickLinks": "روابط سريعة",
       "ctaRegister": "إنشاء حساب عميل",

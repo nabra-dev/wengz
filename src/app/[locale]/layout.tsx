@@ -13,6 +13,7 @@ import { DisplayCurrencyProvider } from "@/components/providers/display-currency
 import { SiteJsonLd } from "@/components/seo/json-ld";
 import { DeferredGoogleTagManager } from "@/components/analytics/deferred-gtm";
 import { GtmPageView } from "@/components/analytics/gtm-page-view";
+import { FloatingWhatsApp } from "@/components/marketing/floating-whatsapp";
 import { brandName, buildPageMetadata } from "@/lib/seo";
 import { pickPublicMessages } from "@/lib/i18n/message-namespaces";
 import { DeploymentRecovery } from "@/components/system/deployment-recovery";
@@ -165,6 +166,7 @@ export default async function LocaleLayout({
               <DeploymentRecovery />
               <LocaleHtmlUpdater locale={locale} />
               {children}
+              <FloatingWhatsApp />
               <Toaster position="top-right" richColors closeButton />
               <PWAInstallPrompt />
             </NextIntlClientProvider>

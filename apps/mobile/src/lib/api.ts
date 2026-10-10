@@ -31,6 +31,8 @@ async function buildHeaders(auth: boolean, isForm: boolean): Promise<HeadersInit
   return headers;
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /** Call OpenAPI REST bridge: `/api/rest/<path>` */
 export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const auth = opts.auth !== false;
@@ -39,6 +41,9 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
   const url = path.startsWith("http")
     ? path
     : `${REST_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   let res: Response;
   try {
@@ -50,14 +55,26 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
         : opts.body !== undefined
           ? JSON.stringify(opts.body)
           : undefined,
+      signal: controller.signal,
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "Network request failed";
+    const aborted =
+      (err instanceof Error && err.name === "AbortError") ||
+      (typeof DOMException !== "undefined" &&
+        err instanceof DOMException &&
+        err.name === "AbortError");
+    const detail = aborted
+      ? `timed out after ${REQUEST_TIMEOUT_MS / 1000}s`
+      : err instanceof Error
+        ? err.message
+        : "Network request failed";
     throw new ApiError(
       `Cannot reach API at ${REST_BASE} (${detail}). On a phone use your Mac LAN IP in EXPO_PUBLIC_API_URL (not 127.0.0.1), and keep Next.js on port 3001.`,
       0,
       "NETWORK_ERROR"
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   if (res.status === 401 && auth) {

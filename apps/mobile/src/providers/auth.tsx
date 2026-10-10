@@ -8,6 +8,7 @@ import {
   type StoredUser,
 } from "../lib/auth-store";
 import { mobileLogin } from "../lib/api";
+import { hasCompletedOnboarding } from "../lib/onboarding";
 import { registerForPush } from "../lib/push";
 
 type AuthState = {
@@ -51,7 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearSession();
     setToken(null);
     setUser(null);
-    router.replace("/(auth)/welcome");
+    const seen = await hasCompletedOnboarding();
+    router.replace(seen ? "/(auth)/welcome" : "/(auth)/onboarding");
   }, []);
 
   const refreshUser = useCallback(async () => {

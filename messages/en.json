@@ -71,6 +71,7 @@
       "gallery": "Gallery",
       "videos": "Videos",
       "pricing": "Plans",
+      "contact": "Contact us",
       "providerForm": "Creator form",
       "theme": "Theme"
     },
@@ -126,20 +127,20 @@
           "description": "Repeat what works"
         },
         "plugin": {
-          "title": "Studio",
-          "description": "Everything in one place"
+          "title": "Presentation",
+          "description": "Slides that land the message"
         },
         "voiceover": {
-          "title": "Voice",
+          "title": "Voice Over",
           "description": "Brand-ready voiceovers"
         },
         "music": {
-          "title": "Sound",
-          "description": "Music that fits"
+          "title": "Sound Design",
+          "description": "Audio that fits the story"
         },
         "studio": {
-          "title": "Full production",
-          "description": "Idea to finished work"
+          "title": "Storyboard",
+          "description": "Scenes planned before production"
         }
       }
     },
@@ -238,11 +239,16 @@
     "gallery": {
       "videos": {
         "heading": "Work from craft + AI",
-        "subheading": "Real outcomes—not prompt experiments"
+        "subheading": "Real outcomes—not prompt experiments",
+        "lightboxLabel": "Featured videos",
+        "openItem": "Open video fullscreen"
       },
       "images": {
         "heading": "Featured work",
-        "subheading": "When the right pro picks the right tools"
+        "subheading": "When the right pro picks the right tools",
+        "lightboxLabel": "Featured work gallery",
+        "openItem": "Open image fullscreen",
+        "itemAlt": "Featured work {n}"
       }
     },
     "stats": {
@@ -298,6 +304,7 @@
       "explore": "Explore",
       "company": "Company",
       "socialLabel": "Follow Wengz",
+      "whatsapp": "WhatsApp",
       "instagram": "Instagram",
       "facebook": "Facebook",
       "tiktok": "TikTok",
@@ -308,6 +315,7 @@
       "creators": "Join as a creator",
       "getStarted": "Get started",
       "email": "info@wengz.tech",
+      "phone": "+20 101 824 9632",
       "copyright": "© {year} Wengz. All rights reserved."
     }
   },
@@ -332,6 +340,13 @@
       "email": "Email",
       "phone": "Phone",
       "phoneInvalid": "Enter a valid phone number (7–15 digits)",
+      "phonePlaceholder": "1xxxxxxxxx",
+      "countries": {
+        "eg": "Egypt",
+        "sa": "Saudi Arabia",
+        "ae": "United Arab Emirates",
+        "kw": "Kuwait"
+      },
       "password": "Password",
       "confirmPassword": "Confirm password",
       "passwordsNotMatch": "Passwords do not match",
@@ -381,6 +396,7 @@
       "title": "Contact Wengz",
       "subtitle": "Send a message and we’ll get back within 1–2 business days. Prefer email? Reach us anytime at info@wengz.tech.",
       "emailLabel": "Email us",
+      "whatsappLabel": "WhatsApp",
       "responseTime": "Typical reply time: 1–2 business days",
       "quickLinks": "Quick links",
       "ctaRegister": "Create a client account",

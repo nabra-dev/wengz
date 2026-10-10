@@ -4,20 +4,13 @@ import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, FileText, Loader2, Sparkles, X } from "lucide-react";
-import { Link } from "@/i18n/routing";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PhoneCountrySelect } from "@/components/forms/phone-country-select";
+import { LandingHeader } from "@/components/landing/landing-header";
 import { cn } from "@/lib/utils";
-import { BrandLogo } from "@/components/brand/brand-logo";
 import { trpc } from "@/lib/trpc/client";
 import { emailSchema, passwordSchema, phoneNumberOnlySchema } from "@/lib/validations";
 import {
@@ -211,25 +204,15 @@ export function ContactFormPage() {
 
   return (
     <div className="relative min-h-screen bg-background">
+      <LandingHeader />
+
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
         <div className="absolute -top-40 left-1/2 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-[#690DD4]/16 blur-3xl" />
         <div className="absolute top-1/4 right-[-140px] h-[420px] w-[420px] rounded-full bg-[#E0F840]/12 blur-3xl" />
         <div className="absolute bottom-0 left-[-120px] h-[360px] w-[360px] rounded-full bg-[#690DD4]/8 blur-3xl" />
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-8 pb-16 sm:px-6 sm:py-12 md:py-16">
-        <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-card/70 px-4 py-3.5 shadow-sm backdrop-blur-md sm:mb-10 sm:px-5">
-          <Link href="/" className="flex min-w-0 items-center gap-2">
-            <BrandLogo className="h-7 shrink-0 sm:h-8" />
-          </Link>
-          <Link
-            href="/"
-            className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {t("notFound.backHome")}
-          </Link>
-        </div>
-
+      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-12 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))] md:pb-16">
         <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/95 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-sm ring-1 ring-[#690DD4]/12">
           <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#690DD4]/80 to-[#E0F840]/55" />
 
@@ -316,24 +299,18 @@ export function ContactFormPage() {
                         *
                       </span>
                     </Label>
-                    <div className="flex rtl:flex-row-reverse gap-2">
-                      <Select value={countryCode} onValueChange={setCountryCode} disabled={busy}>
-                        <SelectTrigger className="h-12 w-[110px] rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="+20">🇪🇬 +20</SelectItem>
-                          <SelectItem value="+966">🇸🇦 +966</SelectItem>
-                          <SelectItem value="+971">🇦🇪 +971</SelectItem>
-                          <SelectItem value="+965">🇰🇼 +965</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex gap-2.5 rtl:flex-row-reverse">
+                      <PhoneCountrySelect
+                        value={countryCode}
+                        onValueChange={setCountryCode}
+                        disabled={busy}
+                      />
                       <Input
                         id="phone"
                         name="phone"
                         type="tel"
                         required
-                        className={cn(fieldClass, "flex-1")}
+                        className={cn(fieldClass, "min-w-0 flex-1 text-base tabular-nums")}
                         autoComplete="tel"
                         inputMode="tel"
                         value={phoneInput}
@@ -342,6 +319,7 @@ export function ContactFormPage() {
                         }}
                         pattern="\d{7,15}"
                         disabled={busy}
+                        placeholder={t("forms.fields.phonePlaceholder")}
                       />
                     </div>
                   </div>

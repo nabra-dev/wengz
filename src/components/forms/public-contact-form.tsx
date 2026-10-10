@@ -16,8 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PhoneCountrySelect } from "@/components/forms/phone-country-select";
+import { LandingHeader } from "@/components/landing/landing-header";
+import { WHATSAPP_DISPLAY, WHATSAPP_HREF } from "@/components/marketing/floating-whatsapp";
 import { cn } from "@/lib/utils";
-import { BrandLogo } from "@/components/brand/brand-logo";
 import { emailSchema, phoneNumberOnlySchema } from "@/lib/validations";
 
 const fieldClass =
@@ -34,7 +36,6 @@ export function PublicContactForm() {
   const tFields = useTranslations("forms.fields");
   const tToast = useTranslations("forms.toast");
   const tActions = useTranslations("forms.actions");
-  const tCommon = useTranslations("common");
 
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -131,24 +132,14 @@ export function PublicContactForm() {
 
   return (
     <div className="relative min-h-screen bg-background">
+      <LandingHeader />
+
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
         <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-primary/12 blur-3xl" />
         <div className="absolute bottom-0 end-[-80px] h-[320px] w-[320px] rounded-full bg-[#E0F840]/10 blur-3xl" />
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-8 pb-16 sm:px-6 sm:py-12">
-        <header className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-card/70 px-4 py-3.5 shadow-sm backdrop-blur-md sm:mb-10 sm:px-5">
-          <Link href="/" className="flex min-w-0 items-center gap-2">
-            <BrandLogo className="h-7 shrink-0 sm:h-8" />
-          </Link>
-          <Link
-            href="/"
-            className="shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {tCommon("buttons.backHome")}
-          </Link>
-        </header>
-
+      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-[calc(5.75rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pb-12 sm:pt-[calc(7rem+env(safe-area-inset-top,0px))]">
         <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/95 shadow-xl ring-1 ring-primary/10">
           <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary/70 to-[#E0F840]/50" />
 
@@ -175,6 +166,28 @@ export function PublicContactForm() {
                     <span className="block text-sm font-medium">{t("emailLabel")}</span>
                     <span className="mt-0.5 block truncate text-sm text-muted-foreground group-hover:text-foreground">
                       info@wengz.tech
+                    </span>
+                  </span>
+                </a>
+
+                <a
+                  href={WHATSAPP_HREF}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-3 rounded-2xl border border-border/60 bg-background/50 p-4 transition-colors hover:border-[#25D366]/40 hover:bg-background/80"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#25D366]/15 text-[#1ebe57]">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-4 w-4">
+                      <path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.59 2 2.15 6.44 2.15 11.89c0 1.75.46 3.45 1.32 4.95L2.05 22l5.3-1.39a9.84 9.84 0 0 0 4.69 1.19h.01c5.45 0 9.89-4.44 9.89-9.89 0-2.64-1.03-5.12-2.89-6.99Zm-7.01 15.22h-.01a8.17 8.17 0 0 1-4.16-1.14l-.3-.18-3.14.82.84-3.06-.2-.31a8.16 8.16 0 0 1-1.26-4.37c0-4.52 3.68-8.2 8.21-8.2 2.19 0 4.25.86 5.8 2.41a8.15 8.15 0 0 1 2.4 5.8c0 4.52-3.68 8.2-8.18 8.2Zm4.49-6.13c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.25-.63.8-.78.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.43.06-.65.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.16 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.17.21-.58.21-1.07.14-1.17-.06-.11-.23-.18-.48-.3Z" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">{t("whatsappLabel")}</span>
+                    <span
+                      className="mt-0.5 block truncate text-sm tabular-nums text-muted-foreground group-hover:text-foreground"
+                      dir="ltr"
+                    >
+                      {WHATSAPP_DISPLAY}
                     </span>
                   </span>
                 </a>
@@ -255,65 +268,54 @@ export function PublicContactForm() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        {tFields("phone")}
-                        <span className="ms-1 text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </Label>
-                      <div className="flex gap-2 rtl:flex-row-reverse">
-                        <Select
-                          value={countryCode}
-                          onValueChange={setCountryCode}
-                          disabled={loading}
-                        >
-                          <SelectTrigger className="h-12 w-[110px] rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+20">🇪🇬 +20</SelectItem>
-                            <SelectItem value="+966">🇸🇦 +966</SelectItem>
-                            <SelectItem value="+971">🇦🇪 +971</SelectItem>
-                            <SelectItem value="+965">🇰🇼 +965</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          required
-                          inputMode="tel"
-                          autoComplete="tel"
-                          disabled={loading}
-                          className={cn(fieldClass, "flex-1")}
-                          value={phoneInput}
-                          onChange={(e) => setPhoneInput(e.target.value.replaceAll(/\D/g, ""))}
-                          pattern="\d{7,15}"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="topic">{t("topicLabel")}</Label>
-                      <Select
-                        value={topic}
-                        onValueChange={(v) => setTopic(v as Topic)}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      {tFields("phone")}
+                      <span className="ms-1 text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </Label>
+                    <div className="flex gap-2.5 rtl:flex-row-reverse">
+                      <PhoneCountrySelect
+                        value={countryCode}
+                        onValueChange={setCountryCode}
                         disabled={loading}
-                      >
-                        <SelectTrigger id="topic" className={cn(fieldClass, "w-full")}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TOPICS.map((key) => (
-                            <SelectItem key={key} value={key}>
-                              {t(`topics.${key}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        required
+                        inputMode="tel"
+                        autoComplete="tel"
+                        disabled={loading}
+                        className={cn(fieldClass, "min-w-0 flex-1 text-base tabular-nums")}
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value.replaceAll(/\D/g, ""))}
+                        pattern="\d{7,15}"
+                        placeholder={tFields("phonePlaceholder")}
+                      />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="topic">{t("topicLabel")}</Label>
+                    <Select
+                      value={topic}
+                      onValueChange={(v) => setTopic(v as Topic)}
+                      disabled={loading}
+                    >
+                      <SelectTrigger id="topic" className={cn(fieldClass, "w-full")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TOPICS.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {t(`topics.${key}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -336,7 +338,7 @@ export function PublicContactForm() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-12 w-full gap-2 rounded-xl text-sm font-semibold sm:w-auto sm:min-w-[180px]"
+                    className="h-12 w-full gap-2 rounded-xl text-sm font-semibold"
                   >
                     {loading ? (
                       <>

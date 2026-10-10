@@ -22,6 +22,34 @@ export const en = {
     },
   },
   auth: {
+    onboarding: {
+      skip: "Skip",
+      next: "Next",
+      getStarted: "Get started",
+      credits: {
+        title: "Credits that power your work",
+        body: "Pick a plan, spend credits on design, content, and production — track everything in one place.",
+        highlights: {
+          a: "Flexible plans",
+          b: "Design & video",
+          c: "Track spend",
+        },
+      },
+      creators: {
+        title: "Creators who get it done",
+        body: "We match your request to trusted creators. Follow progress, review delivery, and request revisions when you need them.",
+        highlights: {
+          a: "Smart match",
+          b: "Live progress",
+          c: "Easy revisions",
+        },
+      },
+      works: {
+        title: "See what Wengz ships",
+        body: "Browse real client work — design, video, and more — then start your own request.",
+        seeGallery: "View gallery on web",
+      },
+    },
     welcome: {
       headline: "Your creative work, managed",
       tagline: "Request services, track delivery, and manage credits — all in one place.",

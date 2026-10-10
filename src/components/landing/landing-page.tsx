@@ -7,23 +7,17 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import {
-  Check,
-  ChevronDown,
-  Loader2,
-  Plus,
-  ArrowUp,
-  LayoutGrid,
-  ArrowUpRight,
-  Menu,
-  X,
-} from "lucide-react";
+import { Check, Loader2, Plus, ArrowUp, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { setPendingRequestDescription } from "@/lib/landing-request-draft";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { HeroImage } from "@/components/landing/hero-image";
+import {
+  LANDING_NAV_LINKS,
+  LandingHeader,
+  LandingNavLink,
+} from "@/components/landing/landing-header";
+import { WHATSAPP_HREF } from "@/components/marketing/floating-whatsapp";
 import type { PublicPackage } from "@/lib/public-packages";
 import { cn } from "@/lib/utils";
 
@@ -127,14 +121,12 @@ const FONT_SIZES = {
 
 const PROVIDER_BENEFIT_KEYS = ["portfolio", "review", "deliver"] as const;
 
-const LANDING_NAV_LINKS = [
-  { href: "#services", labelKey: "landing.nav.services" },
-  { href: "#gallery", labelKey: "landing.nav.gallery" },
-  { href: "#gallery-videos", labelKey: "landing.nav.videos" },
-  { href: "#pricing", labelKey: "landing.nav.pricing" },
-] as const;
-
 const FOOTER_SOCIAL = [
+  {
+    key: "whatsapp" as const,
+    href: "https://wa.me/201018249632",
+    labelKey: "landing.footer.whatsapp",
+  },
   {
     key: "instagram" as const,
     href: "https://www.instagram.com/wengz.ai",
@@ -168,6 +160,13 @@ function FooterCopyright({ label }: { label: string }) {
 
 function SocialIcon({ name }: { name: (typeof FOOTER_SOCIAL)[number]["key"] }) {
   const common = "h-[18px] w-[18px]";
+  if (name === "whatsapp") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={common}>
+        <path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.59 2 2.15 6.44 2.15 11.89c0 1.75.46 3.45 1.32 4.95L2.05 22l5.3-1.39a9.84 9.84 0 0 0 4.69 1.19h.01c5.45 0 9.89-4.44 9.89-9.89 0-2.64-1.03-5.12-2.89-6.99Zm-7.01 15.22h-.01a8.17 8.17 0 0 1-4.16-1.14l-.3-.18-3.14.82.84-3.06-.2-.31a8.16 8.16 0 0 1-1.26-4.37c0-4.52 3.68-8.2 8.21-8.2 2.19 0 4.25.86 5.8 2.41a8.15 8.15 0 0 1 2.4 5.8c0 4.52-3.68 8.2-8.18 8.2Zm4.49-6.13c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.25-.63.8-.78.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.43.06-.65.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.16 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.17.21-.58.21-1.07.14-1.17-.06-.11-.23-.18-.48-.3Z" />
+      </svg>
+    );
+  }
   if (name === "instagram") {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden className={common}>
@@ -376,115 +375,7 @@ export default function LandingPage({
         <div className="absolute top-32 right-[-120px] h-[480px] w-[480px] rounded-full bg-wengz-yellow-soft blur-3xl" />
       </div>
 
-      <header className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <div className="mx-auto mb-1.5 max-w-2xl px-4 text-center text-[11px] leading-snug text-muted-foreground sm:mb-2 sm:truncate sm:px-6 sm:text-xs sm:leading-normal">
-          {t("landing.notices.beta")}
-        </div>
-        <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10">
-          <div className="relative flex w-full min-w-0 items-center gap-1.5 rounded-full border border-border bg-background/95 px-2.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.12)] sm:gap-3 sm:px-5 sm:py-2.5 lg:bg-background/75 lg:px-6 lg:backdrop-blur-xl">
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <BrandLogo tone="auto" className="h-6 sm:h-7 md:h-8" priority />
-            </Link>
-
-            <nav
-              aria-label={t("landing.nav.ariaLabel")}
-              className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex"
-            >
-              {LANDING_NAV_LINKS.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-full px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:px-3.5"
-                >
-                  {t(item.labelKey)}
-                </a>
-              ))}
-            </nav>
-
-            <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
-              <ThemeSwitcher className="hidden min-[400px]:inline-flex" />
-              <LanguageSwitcher variant="icon" />
-              <details className="group relative">
-                <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:px-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
-                  <span className="lg:hidden">{t("landing.cta.primaryShort")}</span>
-                  <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
-                  <ChevronDown
-                    className="h-3.5 w-3.5 opacity-80 transition-transform group-open:rotate-180 sm:h-4 sm:w-4"
-                    aria-hidden
-                  />
-                </summary>
-                <div className="absolute end-0 top-full z-50 mt-2 min-w-[11rem] rounded-xl border border-border bg-background p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
-                  <Link
-                    href="/auth/register"
-                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    {t("landing.cta.asClient")}
-                  </Link>
-                  <Link
-                    href="/forms/provider"
-                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    {t("landing.cta.asProvider")}
-                  </Link>
-                  <div className="-mx-1.5 my-1 h-px bg-border" />
-                  <Link
-                    href="/auth/login"
-                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    {t("common.buttons.signIn")}
-                  </Link>
-                </div>
-              </details>
-              <details className="group lg:hidden">
-                <summary
-                  className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-foreground hover:bg-muted sm:h-9 sm:w-9 [&::-webkit-details-marker]:hidden"
-                  aria-label={t("landing.nav.openMenu")}
-                >
-                  <Menu className="h-5 w-5 group-open:hidden" aria-hidden />
-                  <X className="hidden h-5 w-5 group-open:block" aria-hidden />
-                </summary>
-                <nav
-                  id="landing-mobile-nav"
-                  aria-label={t("landing.nav.ariaLabel")}
-                  className="absolute inset-x-0 top-full z-50 mt-3 rounded-2xl border border-border bg-background p-2 shadow-[0_12px_40px_rgba(0,0,0,0.2)]"
-                >
-                  <ul className="flex flex-col gap-0.5">
-                    {LANDING_NAV_LINKS.map((item) => (
-                      <li key={item.href}>
-                        <a
-                          href={item.href}
-                          className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
-                          onClick={(event) => {
-                            event.currentTarget.closest("details")?.removeAttribute("open");
-                          }}
-                        >
-                          {t(item.labelKey)}
-                        </a>
-                      </li>
-                    ))}
-                    <li className="mt-1 border-t border-border pt-1">
-                      <Link
-                        href="/auth/login"
-                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
-                      >
-                        {t("common.buttons.signIn")}
-                      </Link>
-                    </li>
-                    <li className="min-[400px]:hidden">
-                      <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {t("landing.nav.theme")}
-                        </span>
-                        <ThemeSwitcher />
-                      </div>
-                    </li>
-                  </ul>
-                </nav>
-              </details>
-            </div>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       <main className="relative z-10">
         {/* Hero — full-bleed visual + left headline + glass prompt */}
@@ -1002,12 +893,12 @@ export default function LandingPage({
               <ul className="flex flex-col gap-2.5 text-sm">
                 {LANDING_NAV_LINKS.map((item) => (
                   <li key={item.href}>
-                    <a
+                    <LandingNavLink
                       href={item.href}
                       className="text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {t(item.labelKey)}
-                    </a>
+                    </LandingNavLink>
                   </li>
                 ))}
                 <li>
@@ -1064,6 +955,17 @@ export default function LandingPage({
                     className="text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {t("landing.footer.email")}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={WHATSAPP_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    dir="ltr"
+                  >
+                    {t("landing.footer.phone")}
                   </a>
                 </li>
               </ul>

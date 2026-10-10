@@ -1,16 +1,17 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { Volume2, VolumeX } from "lucide-react";
+import { GalleryLightbox, type GalleryLightboxItem } from "@/components/landing/gallery-lightbox";
 import { LazyGalleryVideo } from "@/components/landing/lazy-gallery-video";
 import { useMarqueePause } from "@/components/landing/use-marquee-pause";
 
 /** `/images/landing/{n}.mp4` for n = 1..14 */
 const GALLERY_VIDEO_INDICES = Array.from({ length: 14 }, (_, i) => i + 1);
 
-/** Infinite horizontal video strip — play on hover; click to unmute; only one at a time. */
+/** Infinite horizontal video strip — play on hover; click opens fullscreen swiper. */
 export function VideoMarquee() {
   const locale = useLocale();
   const t = useTranslations("landing.gallery.videos");
@@ -19,6 +20,17 @@ export function VideoMarquee() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [unmutedKey, setUnmutedKey] = useState<string | null>(null);
   const [hoverPaused, setHoverPaused] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const items = useMemo<GalleryLightboxItem[]>(
+    () =>
+      GALLERY_VIDEO_INDICES.map((idx) => ({
+        type: "video" as const,
+        src: `/images/landing/${idx}.mp4`,
+        poster: `/images/landing/video-thumbs/${idx}.webp`,
+      })),
+    []
+  );
 
   const setGalleryVideoRef = useCallback((idx: number, strip: 0 | 1) => {
     const key = `${idx}-${strip}`;
@@ -39,6 +51,7 @@ export function VideoMarquee() {
 
   const playOnHover = useCallback(
     (key: string) => {
+      if (lightboxIndex != null) return;
       const el = videoRefs.current[key];
       if (!el) return;
       resetAllVideos(key);
@@ -51,7 +64,7 @@ export function VideoMarquee() {
       setUnmutedKey(null);
       setHoverPaused(true);
     },
-    [resetAllVideos]
+    [lightboxIndex, resetAllVideos]
   );
 
   const stopOnLeave = useCallback((key: string) => {
@@ -89,12 +102,24 @@ export function VideoMarquee() {
     setUnmutedKey(null);
   }, []);
 
+  const openLightbox = useCallback(
+    (idx: number) => {
+      resetAllVideos();
+      setActiveKey(null);
+      setUnmutedKey(null);
+      setHoverPaused(false);
+      const index = GALLERY_VIDEO_INDICES.indexOf(idx);
+      if (index >= 0) setLightboxIndex(index);
+    },
+    [resetAllVideos]
+  );
+
   return (
     <section
       ref={sectionRef}
       id="gallery-videos"
       className={`relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32 ${
-        hoverPaused ? "is-marquee-hover" : ""
+        hoverPaused || lightboxIndex != null ? "is-marquee-hover" : ""
       }`}
     >
       <div className="container px-4 sm:px-6">
@@ -154,7 +179,7 @@ export function VideoMarquee() {
                           videoRef={setGalleryVideoRef(idx, strip as 0 | 1)}
                           muted
                           loop
-                          onClick={() => toggleMute(key)}
+                          onClick={() => openLightbox(idx)}
                         />
                         <button
                           type="button"
@@ -193,6 +218,17 @@ export function VideoMarquee() {
           </div>
         </div>
       </motion.div>
+
+      <GalleryLightbox
+        open={lightboxIndex != null}
+        onOpenChange={(open) => {
+          if (!open) setLightboxIndex(null);
+        }}
+        items={items}
+        index={lightboxIndex ?? 0}
+        onIndexChange={(next) => setLightboxIndex(next)}
+        label={t("lightboxLabel")}
+      />
     </section>
   );
 }

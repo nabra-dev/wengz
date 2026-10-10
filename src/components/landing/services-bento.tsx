@@ -11,7 +11,8 @@ import {
   Music2,
   Workflow,
   Plug,
-  Sparkles,
+  Presentation,
+  Film,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
@@ -81,15 +82,15 @@ const TILES: ServiceTile[] = [
     imgH: 324,
   },
   {
-    key: "plugin", // Studio
+    key: "plugin", // Presentation
     image: BENTO_IMG.studio,
-    icon: Sparkles,
+    icon: Presentation,
     area: "plugin",
     imgW: 296,
     imgH: 140,
   },
   {
-    key: "voiceover", // Voice
+    key: "voiceover", // Voice Over
     image: BENTO_IMG.voice,
     icon: Mic2,
     area: "voice",
@@ -97,7 +98,7 @@ const TILES: ServiceTile[] = [
     imgH: 150,
   },
   {
-    key: "music", // Sound
+    key: "music", // Sound Design
     image: BENTO_IMG.sound,
     icon: Music2,
     area: "music",
@@ -105,9 +106,9 @@ const TILES: ServiceTile[] = [
     imgH: 150,
   },
   {
-    key: "studio", // Full production
+    key: "studio", // Storyboard
     image: BENTO_IMG.production,
-    icon: Clapperboard,
+    icon: Film,
     area: "studio",
     imgW: 296,
     imgH: 324,

@@ -1,23 +1,30 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { DeferredImage } from "@/components/landing/deferred-image";
+import { GalleryLightbox, type GalleryLightboxItem } from "@/components/landing/gallery-lightbox";
 import { useMarqueePause } from "@/components/landing/use-marquee-pause";
 
 /** Featured Works — two rows; `/images/landing/gallery/{n}.webp` for n = 1..31 */
 const GALLERY_IMAGE_ROW_A = Array.from({ length: 16 }, (_, i) => i + 1);
 const GALLERY_IMAGE_ROW_B = Array.from({ length: 15 }, (_, i) => i + 17);
 const GALLERY_IMAGE_SRC = (n: number) => `/images/landing/gallery/${n}.webp`;
+const ALL_GALLERY_INDICES = [...GALLERY_IMAGE_ROW_A, ...GALLERY_IMAGE_ROW_B];
 
 function MarqueeRow({
   indices,
   reverse = false,
   duration,
+  onOpen,
+  openLabel,
 }: {
   indices: number[];
   reverse?: boolean;
   duration: string;
+  onOpen: (n: number) => void;
+  openLabel: string;
 }) {
   return (
     <div className="relative w-full overflow-hidden py-1" dir="ltr">
@@ -30,8 +37,11 @@ function MarqueeRow({
         {[0, 1].map((strip) => (
           <div key={`imgstrip-${strip}`} className="flex shrink-0 gap-3 sm:gap-4 md:gap-5">
             {indices.map((n) => (
-              <div
+              <button
                 key={`landing-img-${n}-${strip}`}
+                type="button"
+                onClick={() => onOpen(n)}
+                aria-label={openLabel}
                 className="group relative aspect-[4/5] w-[38vw] max-w-[11rem] shrink-0 overflow-hidden rounded-lg border border-border transition-all duration-300 hover:-translate-y-1 hover:border-foreground/20 hover:shadow-[0_18px_70px_rgba(0,0,0,0.35)] sm:w-44 sm:max-w-none sm:rounded-xl md:w-48"
               >
                 <div className="pointer-events-none absolute inset-0 z-[1] opacity-0 transition-opacity group-hover:opacity-100 bg-[linear-gradient(135deg,rgba(105,13,212,0.18),transparent_45%),linear-gradient(315deg,rgba(224,248,64,0.16),transparent_45%)]" />
@@ -43,7 +53,7 @@ function MarqueeRow({
                   unoptimized
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
-              </div>
+              </button>
             ))}
           </div>
         ))}
@@ -56,12 +66,30 @@ function MarqueeRow({
 export function ImageMarquee() {
   const t = useTranslations("landing.gallery.images");
   const sectionRef = useMarqueePause<HTMLElement>();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const items = useMemo<GalleryLightboxItem[]>(
+    () =>
+      ALL_GALLERY_INDICES.map((n) => ({
+        type: "image" as const,
+        src: GALLERY_IMAGE_SRC(n),
+        alt: t("itemAlt", { n }),
+      })),
+    [t]
+  );
+
+  const openAt = (n: number) => {
+    const idx = ALL_GALLERY_INDICES.indexOf(n);
+    if (idx >= 0) setLightboxIndex(idx);
+  };
 
   return (
     <section
       ref={sectionRef}
       id="gallery"
-      className="relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32"
+      className={`relative w-full scroll-mt-28 overflow-hidden border-t border-border bg-background py-16 sm:scroll-mt-32 sm:py-24 md:py-32 ${
+        lightboxIndex != null ? "is-marquee-hover" : ""
+      }`}
       aria-label={t("heading")}
     >
       <div className="container px-4 sm:px-6">
@@ -88,9 +116,31 @@ export function ImageMarquee() {
         transition={{ duration: 0.5 }}
         className="flex flex-col gap-8 sm:gap-10"
       >
-        <MarqueeRow indices={GALLERY_IMAGE_ROW_A} duration="140s" />
-        <MarqueeRow indices={GALLERY_IMAGE_ROW_B} reverse duration="160s" />
+        <MarqueeRow
+          indices={GALLERY_IMAGE_ROW_A}
+          duration="140s"
+          onOpen={openAt}
+          openLabel={t("openItem")}
+        />
+        <MarqueeRow
+          indices={GALLERY_IMAGE_ROW_B}
+          reverse
+          duration="160s"
+          onOpen={openAt}
+          openLabel={t("openItem")}
+        />
       </motion.div>
+
+      <GalleryLightbox
+        open={lightboxIndex != null}
+        onOpenChange={(open) => {
+          if (!open) setLightboxIndex(null);
+        }}
+        items={items}
+        index={lightboxIndex ?? 0}
+        onIndexChange={(next) => setLightboxIndex(next)}
+        label={t("lightboxLabel")}
+      />
     </section>
   );
 }
