@@ -13,6 +13,8 @@ export const ar: MessageTree = {
     logout: "تسجيل الخروج",
     language: "اللغة",
     credits: "الكريدت",
+    showPassword: "إظهار كلمة المرور",
+    hidePassword: "إخفاء كلمة المرور",
     requestStatus: {
       PENDING: "قيد الانتظار",
       IN_PROGRESS: "قيد التنفيذ",

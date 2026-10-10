@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { AuthCompactCard, authFieldClass } from "@/components/auth/auth-form-shell";
 import { trpc } from "@/lib/trpc/client";
@@ -75,9 +75,8 @@ export default function ResetPasswordPage() {
               *
             </span>
           </Label>
-          <Input
+          <PasswordInput
             id="newPassword"
-            type="password"
             autoComplete="new-password"
             required
             value={newPassword}
@@ -93,9 +92,8 @@ export default function ResetPasswordPage() {
               *
             </span>
           </Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             required
             value={confirmPassword}

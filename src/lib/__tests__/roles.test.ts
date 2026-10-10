@@ -3,6 +3,8 @@ import {
   canManageFinance,
   canManagePlatform,
   canManageRequests,
+  canManageServices,
+  canManageUsers,
   getRoleChangeBlockReason,
   getStaffHomePath,
   isAssignableRole,
@@ -22,9 +24,15 @@ describe("roles access helpers", () => {
     expect(isSuperAdmin("PROJECT_MANAGER")).toBe(false);
   });
 
-  it("scopes request and finance capabilities", () => {
+  it("scopes request, users, services, and finance capabilities", () => {
     expect(canManageRequests("PROJECT_MANAGER")).toBe(true);
     expect(canManageRequests("FINANCE_MANAGER")).toBe(false);
+    expect(canManageUsers("PROJECT_MANAGER")).toBe(true);
+    expect(canManageUsers("FINANCE_MANAGER")).toBe(false);
+    expect(canManageUsers("SUPER_ADMIN")).toBe(true);
+    expect(canManageServices("PROJECT_MANAGER")).toBe(true);
+    expect(canManageServices("FINANCE_MANAGER")).toBe(false);
+    expect(canManageServices("SUPER_ADMIN")).toBe(true);
     expect(canManageFinance("FINANCE_MANAGER")).toBe(true);
     expect(canManageFinance("PROJECT_MANAGER")).toBe(false);
     expect(canManagePlatform("SUPER_ADMIN")).toBe(true);
@@ -40,11 +48,15 @@ describe("roles access helpers", () => {
   it("gates admin paths by role", () => {
     expect(canAccessAdminPath("PROJECT_MANAGER", "admin")).toBe(false);
     expect(canAccessAdminPath("PROJECT_MANAGER", "admin/requests")).toBe(true);
+    expect(canAccessAdminPath("PROJECT_MANAGER", "admin/users")).toBe(true);
+    expect(canAccessAdminPath("PROJECT_MANAGER", "admin/services")).toBe(true);
+    expect(canAccessAdminPath("PROJECT_MANAGER", "admin/packages")).toBe(false);
     expect(canAccessAdminPath("PROJECT_MANAGER", "admin/finance")).toBe(false);
     expect(canAccessAdminPath("FINANCE_MANAGER", "admin/finance")).toBe(true);
     expect(canAccessAdminPath("FINANCE_MANAGER", "admin/payments")).toBe(true);
     expect(canAccessAdminPath("FINANCE_MANAGER", "admin/settings")).toBe(true);
     expect(canAccessAdminPath("FINANCE_MANAGER", "admin/users")).toBe(false);
+    expect(canAccessAdminPath("FINANCE_MANAGER", "admin/services")).toBe(false);
     expect(canAccessAdminPath("SUPER_ADMIN", "admin/users")).toBe(true);
     expect(canAccessAdminPath("CLIENT", "admin/requests")).toBe(false);
   });

@@ -34,7 +34,7 @@ Wengz is a **bilingual (en/ar) service marketplace**: clients buy **credit packa
 |-----|-------------------|
 | Client | `clientProcedure` → `/client` |
 | Provider | `providerProcedure` → `/provider` |
-| PM | `requestManagerProcedure` → `/admin/requests` |
+| PM | `requestManagerProcedure` / `userManagerProcedure` / `servicesManagerProcedure` → `/admin/requests`, `/admin/users`, `/admin/services` |
 | FM | `financeManagerProcedure` → `/admin/finance` |
 | SA | `adminProcedure` (+ all) → `/admin` |
 

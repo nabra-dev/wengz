@@ -47,6 +47,10 @@
       "LOW": "Low",
       "MEDIUM": "Medium",
       "HIGH": "High"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password"
     }
   },
   "wengz": {
@@ -742,7 +746,13 @@
         "approve": "Approve",
         "reject": "Reject",
         "sendReset": "Send reset link",
-        "sendingReset": "Sending..."
+        "sendingReset": "Sending...",
+        "exportExcel": "Export Excel",
+        "exporting": "Exporting..."
+      },
+      "export": {
+        "success": "Users exported ({count})",
+        "error": "Failed to export users"
       },
       "table": {
         "user": "User",
@@ -866,7 +876,8 @@
         "revisionRequested": "Revision Requested",
         "completed": "Completed",
         "cancelled": "Cancelled",
-        "needsManualApproval": "Needs manual approval"
+        "needsManualApproval": "Needs manual approval",
+        "deleted": "Deleted"
       },
       "table": {
         "noRequests": "No requests found",
@@ -876,10 +887,18 @@
         "view": "View Details",
         "assignProvider": "Assign Creator",
         "delete": "Delete Request",
-        "createRequest": "Create Request"
+        "restore": "Restore Request",
+        "createRequest": "Create Request",
+        "exportExcel": "Export Excel",
+        "exporting": "Exporting..."
+      },
+      "export": {
+        "success": "Requests exported ({count})",
+        "error": "Failed to export requests"
       },
       "confirmations": {
-        "delete": "Delete \"{title}\"? This action cannot be undone."
+        "delete": "Delete \"{title}\"? The request will be cancelled and can be restored later.",
+        "restore": "Restore \"{title}\"?"
       },
       "assignDialog": {
         "title": "Assign Creator",

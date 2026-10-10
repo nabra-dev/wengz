@@ -12,7 +12,14 @@ import {
   sessionFromBearerToken,
 } from "@/lib/mobile-auth";
 import { syncUserPreferredLocale } from "@/lib/user-locale";
-import { canManageFinance, canManageRequests, isStaffRole, isSuperAdmin } from "@/lib/roles";
+import {
+  canManageFinance,
+  canManageRequests,
+  canManageServices,
+  canManageUsers,
+  isStaffRole,
+  isSuperAdmin,
+} from "@/lib/roles";
 import { revalidateSessionUser } from "@/lib/session-user-cache";
 import { measurePerformance } from "@/lib/performance";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
@@ -127,7 +134,7 @@ function withFreshRole(
   };
 }
 
-// Super admin only — platform catalog, users, maintenance, activity
+// Super admin only — platform catalog, maintenance, activity
 const enforceUserIsAdmin = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -179,6 +186,44 @@ const enforceUserCanManageRequests = t.middleware(async ({ ctx, next }) => {
 export const requestManagerProcedure = t.procedure
   .use(performanceMiddleware)
   .use(enforceUserCanManageRequests);
+
+/** Super admin or project manager — user directory. */
+const enforceUserCanManageUsers = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (!canManageUsers(freshUser.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be a project manager or super admin to access this resource",
+    });
+  }
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
+});
+
+export const userManagerProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserCanManageUsers);
+
+/** Super admin or project manager — service types catalog. */
+const enforceUserCanManageServices = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  const freshUser = await revalidateSessionUser(ctx.session.user.id);
+  if (!canManageServices(freshUser.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be a project manager or super admin to access this resource",
+    });
+  }
+  return next(withFreshRole({ session: ctx.session }, freshUser.role));
+});
+
+export const servicesManagerProcedure = t.procedure
+  .use(performanceMiddleware)
+  .use(enforceUserCanManageServices);
 
 /** Super admin or finance manager — payments, wallets, finance settings. */
 const enforceUserCanManageFinance = t.middleware(async ({ ctx, next }) => {

@@ -42,6 +42,8 @@ import {
   canManageFinance,
   canManagePlatform,
   canManageRequests,
+  canManageServices,
+  canManageUsers,
   getStaffHomePath,
   isStaffRole,
 } from "@/lib/roles";
@@ -78,7 +80,7 @@ const adminNavConfig = [
     icon: LayoutDashboard,
     access: "platform" as const,
   },
-  { href: "/admin/users", labelKey: "admin.users", icon: Users, access: "platform" as const },
+  { href: "/admin/users", labelKey: "admin.users", icon: Users, access: "users" as const },
   {
     href: "/admin/requests",
     labelKey: "admin.requests",
@@ -132,7 +134,7 @@ const adminNavConfig = [
     href: "/admin/services",
     labelKey: "admin.services",
     icon: Settings,
-    access: "platform" as const,
+    access: "services" as const,
   },
   {
     href: "/admin/settings",
@@ -149,6 +151,8 @@ function canSeeAdminNavItem(
 ) {
   if (access === "staff") return isStaffRole(role);
   if (access === "requests") return canManageRequests(role);
+  if (access === "users") return canManageUsers(role);
+  if (access === "services") return canManageServices(role);
   if (access === "finance") return canManageFinance(role);
   if (access === "settings") return canManagePlatform(role) || canManageFinance(role);
   return canManagePlatform(role);

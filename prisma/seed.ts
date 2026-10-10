@@ -5,8 +5,6 @@ import bcrypt from "bcryptjs";
  * Seed catalog mirrored from production (https://wengz.tech).
  * Includes: service types (+ attributes), packages (incl. free + inactive),
  * finance settings, payment instructions, and maintenance mode.
- *
- * Free plan credits default to 500 (prod had 5; product override).
  */
 const prisma = new PrismaClient();
 
@@ -62,7 +60,7 @@ async function main() {
 
   console.log("👤 Created admin:", admin.email);
 
-  // ─── Service types (from wengz.tech) ───────────────────────────────────────
+  // ─── Service types (mirrored from production wengz.tech) ─────────────────
 
   const socialMediaDesign = await prisma.serviceType.create({
     data: {
@@ -83,7 +81,7 @@ async function main() {
       resetFreeRevisionsOnPaid: true,
       maxDeliveryMinutes: 60,
       isActive: true,
-      sortOrder: 1,
+      sortOrder: 0,
       attributes: [
         {
           type: "file",
@@ -128,65 +126,290 @@ async function main() {
         },
         {
           type: "text",
-          helpText:
-            "e.g. brand website or store name to print on the design (not for contacting the provider)",
+          helpText: "e.g. phone number: 123456789",
           question: "What should we add for communication on the design?",
           required: true,
-          placeholder: "e.g. website URL or brand handle to show on the artwork",
+          placeholder: "e.g. Mobile number - WhatsApp - Instagram - Website",
           helpTextI18n: {
-            ar: "مثال: موقع العلامة أو اسم المتجر للطباعة على التصميم (وليس للتواصل مع المبدع)",
-            en: "e.g. brand website or store name to print on the design (not for contacting the provider)",
+            ar: "e.g. phone number: 123456789",
+            en: "e.g. phone number: 123456789",
           },
           questionI18n: {
             ar: "ماذا نضيف للتواصل على التصميم؟",
             en: "What should we add for communication on the design?",
           },
           placeholderI18n: {
-            ar: "مثال: رابط الموقع أو اسم العلامة للظهور على التصميم",
-            en: "e.g. website URL or brand handle to show on the artwork",
+            ar: "e.g. Mobile number - WhatsApp - Instagram - Website",
+            en: "e.g. Mobile number - WhatsApp - Instagram - Website",
           },
         },
         {
-          type: "textarea",
-          question: "The Text of Visual?",
+          type: "select",
+          options: ["عمل تصميم واحد ", "عمل 3 تصاميم", "عمل 6 تصاميم "],
+          question: "Increasing numbers",
           required: true,
           placeholder: "e.g. عرض الـ 50% خلال 10 أيام",
           questionI18n: {
-            ar: "ما هو النص على التصميم",
-            en: "The Text of Visual?",
+            ar: "ما عدد التصميمات ",
+            en: "Increasing numbers",
           },
+          optionsWithCost: [
+            {
+              value: "عمل تصميم واحد ",
+              creditCost: 0,
+            },
+            {
+              value: "عمل 3 تصاميم",
+              creditCost: 500,
+            },
+            {
+              value: "عمل 6 تصاميم ",
+              creditCost: 1500,
+            },
+          ],
           placeholderI18n: {
             ar: "e.g. عرض الـ 50% خلال 10 أيام",
             en: "e.g. عرض الـ 50% خلال 10 أيام",
-          },
-        },
-        {
-          type: "file",
-          maxFiles: 8,
-          question: "Upload Reference for designs or styles ",
-          required: false,
-          maxSizeMB: 100,
-          questionI18n: {
-            ar: "ارفع مرجعاً للتصاميم أو الستايل ",
-            en: "Upload Reference for designs or styles ",
           },
         },
       ],
     } as any,
   });
 
-  const reelVideo = await prisma.serviceType.create({
+  const contentCreation = await prisma.serviceType.create({
     data: {
-      name: "Reel Video (5-10 sec)",
+      name: "Content Creation ",
       nameI18n: {
-        ar: "ريل فيديو (5-10 ثانية)",
-        en: "Reel Video (5-10 sec)",
+        ar: "صناعة المحتوى",
+        en: "Content Creation ",
+      },
+      description: "Professional Monthly Content Plan",
+      descriptionI18n: {
+        ar: "خطة محتوى شهرية احترافية",
+        en: "Professional Monthly Content Plan",
+      },
+      icon: "🎭",
+      creditCost: 500,
+      maxFreeRevisions: 1,
+      paidRevisionCost: 100,
+      resetFreeRevisionsOnPaid: true,
+      maxDeliveryMinutes: 243,
+      isActive: true,
+      sortOrder: 1,
+      attributes: [
+        {
+          type: "textarea",
+          question: "Brief about Your project?",
+          required: true,
+          questionI18n: {
+            ar: "نبذة عن مشروعك؟",
+            en: "Brief about Your project?",
+          },
+        },
+        {
+          type: "textarea",
+          question: "what is your monthly objective? ",
+          required: true,
+          questionI18n: {
+            ar: "ما هو هدفك خلال الشهر؟",
+            en: "what is your monthly objective? ",
+          },
+        },
+        {
+          type: "text",
+          question: "what is your brand characteristics?",
+          required: true,
+          placeholder: "e.g. friendly - luxury - formal - youthful - .....",
+          questionI18n: {
+            ar: "ما هي شخصية علامتك التجارية؟",
+            en: "what is your brand characteristics?",
+          },
+          placeholderI18n: {
+            ar: "ودود - فورمال - شبابي - ......",
+            en: "e.g. friendly - luxury - formal - youthful - .....",
+          },
+        },
+        {
+          type: "textarea",
+          question: "Who is your Target Audience?",
+          required: true,
+          questionI18n: {
+            ar: "من هو جمهوركم المستهدف ؟",
+            en: "Who is your Target Audience?",
+          },
+        },
+        {
+          type: "text",
+          question: "what data should be added for communication?",
+          required: true,
+          questionI18n: {
+            ar: "ما هي البيانات التي ينبغي إضافتها لأغراض التواصل؟",
+            en: "what data should be added for communication?",
+          },
+        },
+        {
+          type: "textarea",
+          question: "How does the purchasing process work?",
+          required: true,
+          questionI18n: {
+            ar: "كيف تتم عملية الشراء؟",
+            en: "How does the purchasing process work?",
+          },
+        },
+        {
+          type: "text",
+          question: "In which country do you work?",
+          required: true,
+          questionI18n: {
+            ar: "في أي دولة تعمل؟",
+            en: "In which country do you work?",
+          },
+        },
+        {
+          type: "select",
+          options: ["3", "7", "12"],
+          question: "How many posts do you want?",
+          required: true,
+          questionI18n: {
+            ar: "عدد البوستات التي تريدها؟",
+            en: "How many posts do you want?",
+          },
+          optionsWithCost: [
+            {
+              value: "3",
+              creditCost: 0,
+            },
+            {
+              value: "7",
+              creditCost: 250,
+            },
+            {
+              value: "12",
+              creditCost: 500,
+            },
+          ],
+        },
+      ],
+    } as any,
+  });
+
+  const logoDesign = await prisma.serviceType.create({
+    data: {
+      name: "Logo Design",
+      nameI18n: {
+        ar: "تصميم لوجو",
+        en: "Logo Design",
+      },
+      description: "Professional logo design for your brand",
+      descriptionI18n: {
+        ar: "تصميم شعار احترافي لعلامتك التجارية",
+        en: "Professional logo design for your brand",
+      },
+      icon: "🖌️",
+      creditCost: 1000,
+      maxFreeRevisions: 1,
+      paidRevisionCost: 250,
+      resetFreeRevisionsOnPaid: true,
+      maxDeliveryMinutes: 480,
+      isActive: true,
+      sortOrder: 2,
+      attributes: [
+        {
+          type: "text",
+          question: "How would you describe your brand's personality?",
+          required: true,
+          placeholder: "e.g. Formal - Friendly - Bold - Calm - Youthful - Luxurious",
+          questionI18n: {
+            ar: "كيف تصف شخصية علامتك التجارية؟",
+            en: "How would you describe your brand's personality?",
+          },
+          placeholderI18n: {
+            ar: "رسمية - ودودة - جريئة - هادئة - شبابية - فاخرة",
+            en: "e.g. Formal - Friendly - Bold - Calm - Youthful - Luxurious",
+          },
+        },
+        {
+          type: "text",
+          question: "Do you have any colors you prefer to use or avoid?",
+          required: true,
+          questionI18n: {
+            ar: "هل لديك ألوان تفضل استخدامها أو تجنبها؟",
+            en: "Do you have any colors you prefer to use or avoid?",
+          },
+        },
+      ],
+    } as any,
+  });
+
+  const businessPresentation = await prisma.serviceType.create({
+    data: {
+      name: "business Presentation",
+      nameI18n: {
+        ar: "عرض تقديمي للشركات",
+        en: "business Presentation",
+      },
+      description: "business Presentation",
+      descriptionI18n: {
+        ar: "عرض تقديمي للاعمال",
+        en: "business Presentation",
+      },
+      icon: "💼",
+      creditCost: 1000,
+      maxFreeRevisions: 1,
+      paidRevisionCost: 250,
+      resetFreeRevisionsOnPaid: true,
+      maxDeliveryMinutes: 480,
+      isActive: true,
+      sortOrder: 3,
+      attributes: [
+        {
+          min: 1,
+          type: "number",
+          question: "Total number of pages",
+          required: true,
+          creditImpact: 100,
+          questionI18n: {
+            ar: "إجمالي عدد الصفحات ",
+            en: "Total number of pages",
+          },
+          includedQuantity: 5,
+        },
+        {
+          type: "textarea",
+          question: "Drop your text",
+          required: true,
+          questionI18n: {
+            ar: "ضع النص هنا",
+            en: "Drop your text",
+          },
+        },
+        {
+          type: "file",
+          maxFiles: 8,
+          question: "Upload your logo or brand identity ",
+          required: true,
+          maxSizeMB: 100,
+          questionI18n: {
+            ar: "ارفق اللوجو أو ملف الهوية البصرية",
+            en: "Upload your logo or brand identity ",
+          },
+        },
+      ],
+    } as any,
+  });
+
+  const aiReelVideos = await prisma.serviceType.create({
+    data: {
+      name: " Ai Reel Videos (10-15 sec)",
+      nameI18n: {
+        ar: " AI ريل فيديو (10-15 ثانية)",
+        en: " Ai Reel Videos (10-15 sec)",
       },
       description:
-        "Short video reels for social media (5-10 seconds base, +250 credits per additional 10 seconds)",
+        "Short video reels for social media (10-15 seconds base, +250 credits per additional 10 seconds)",
       descriptionI18n: {
-        ar: "ريلز قصيرة لمنصات التواصل الاجتماعي (5-10 ثوان أساسي، +5 كريدت لكل 10 ثوان إضافية)",
-        en: "Short video reels for social media (5-10 seconds base, +250 credits per additional 10 seconds)",
+        ar: "ريلز قصيرة لمنصات التواصل الاجتماعي (10-15 ثوان أساسي، +250 كريدت لكل 10 ثوان إضافية)",
+        en: "Short video reels for social media (10-15 seconds base, +250 credits per additional 10 seconds)",
       },
       icon: "🎬",
       creditCost: 1000,
@@ -195,7 +418,7 @@ async function main() {
       resetFreeRevisionsOnPaid: true,
       maxDeliveryMinutes: 480,
       isActive: true,
-      sortOrder: 2,
+      sortOrder: 4,
       attributes: [
         {
           type: "select",
@@ -298,124 +521,19 @@ async function main() {
     } as any,
   });
 
-  const logoDesign = await prisma.serviceType.create({
+  const videoEditing = await prisma.serviceType.create({
     data: {
-      name: "Logo Design",
+      name: "Video editing",
       nameI18n: {
-        ar: "تصميم لوجو",
-        en: "Logo Design",
+        ar: "تحرير فيديوهات ",
+        en: "Video editing",
       },
-      description: "Professional logo design for your brand",
+      description: "Editing client-provided video footage (15–30 seconds).",
       descriptionI18n: {
-        ar: "تصميم شعار احترافي لعلامتك التجارية",
-        en: "Professional logo design for your brand",
+        ar: "تحرير لقطات الفيديو المقدمة من العميل (15–30 ثانية).",
+        en: "Editing client-provided video footage (15–30 seconds).",
       },
-      icon: "🖌️",
-      creditCost: 1000,
-      maxFreeRevisions: 1,
-      paidRevisionCost: 250,
-      resetFreeRevisionsOnPaid: true,
-      maxDeliveryMinutes: 480,
-      isActive: true,
-      sortOrder: 3,
-      attributes: [
-        {
-          type: "text",
-          question: "How would you describe your brand's personality?",
-          required: true,
-          placeholder: "e.g. Formal - Friendly - Bold - Calm - Youthful - Luxurious",
-          questionI18n: {
-            ar: "كيف تصف شخصية علامتك التجارية؟",
-            en: "How would you describe your brand's personality?",
-          },
-          placeholderI18n: {
-            ar: "رسمية - ودودة - جريئة - هادئة - شبابية - فاخرة",
-            en: "e.g. Formal - Friendly - Bold - Calm - Youthful - Luxurious",
-          },
-        },
-        {
-          type: "text",
-          question: "Do you have any colors you prefer to use or avoid?",
-          required: true,
-          questionI18n: {
-            ar: "هل لديك ألوان تفضل استخدامها أو تجنبها؟",
-            en: "Do you have any colors you prefer to use or avoid?",
-          },
-        },
-      ],
-    } as any,
-  });
-
-  const voiceOver = await prisma.serviceType.create({
-    data: {
-      name: "Voice Over",
-      nameI18n: {
-        ar: "أداء صوتي (عربي)",
-        en: "Voice Over",
-      },
-      description: "Professional Arabic and English voice over for videos",
-      descriptionI18n: {
-        ar: "أداء صوتي احترافي باللغة العربية للفيديوهات",
-        en: "Professional Arabic and English voice over for videos",
-      },
-      icon: "🎵",
-      creditCost: 250,
-      maxFreeRevisions: 1,
-      paidRevisionCost: 84,
-      resetFreeRevisionsOnPaid: true,
-      maxDeliveryMinutes: 480,
-      isActive: true,
-      sortOrder: 4,
-      attributes: [
-        {
-          type: "text",
-          helpText: "e.g. enthusiasm - formal - luxury tone ",
-          question: "What is the Tone of Voice?",
-          required: true,
-          helpTextI18n: {
-            ar: "مثال: حماسي - فورمال - فاخر",
-            en: "e.g. enthusiasm - formal - luxury tone ",
-          },
-          questionI18n: {
-            ar: "ما هي نبرة الصوت؟",
-            en: "What is the Tone of Voice?",
-          },
-        },
-        {
-          type: "textarea",
-          question: "Drop your script ",
-          required: true,
-          questionI18n: {
-            ar: "اكتب السكريبت",
-            en: "Drop your script ",
-          },
-        },
-        {
-          type: "textarea",
-          question: "Language and Dialect?",
-          required: true,
-          questionI18n: {
-            ar: "اللغة و اللهجة؟",
-            en: "Language and Dialect?",
-          },
-        },
-      ],
-    } as any,
-  });
-
-  const businessPresentation = await prisma.serviceType.create({
-    data: {
-      name: "business Presentation",
-      nameI18n: {
-        ar: "عرض تقديمي للشركات",
-        en: "business Presentation",
-      },
-      description: "business Presentation",
-      descriptionI18n: {
-        ar: "عرض تقديمي للاعمال",
-        en: "business Presentation",
-      },
-      icon: "💼",
+      icon: "🎬",
       creditCost: 1000,
       maxFreeRevisions: 1,
       paidRevisionCost: 250,
@@ -425,120 +543,43 @@ async function main() {
       sortOrder: 5,
       attributes: [
         {
-          min: 1,
-          type: "number",
-          question: "Total number of pages",
-          required: true,
-          creditImpact: 1,
-          questionI18n: {
-            ar: "إجمالي عدد الصفحات ",
-            en: "Total number of pages",
-          },
-          includedQuantity: 20,
-        },
-      ],
-    } as any,
-  });
-
-  const animation2D = await prisma.serviceType.create({
-    data: {
-      name: "2D Animation Video",
-      nameI18n: {
-        ar: "فيديو انيميشن 2D",
-        en: "2D Animation Video",
-      },
-      description:
-        "2D animation video (1,000 credits for the first 10 seconds; +500 credits for every additional 10 seconds))",
-      descriptionI18n: {
-        ar: "فيديو انيميشن 2D (1000 كريدت لأول 10 ثوان، +500 كريدت لكل 10 ثوان إضافية)",
-        en: "2D animation video (1,000 credits for the first 10 seconds; +500 credits for every additional 10 seconds))",
-      },
-      icon: "🎬",
-      creditCost: 1000,
-      maxFreeRevisions: 1,
-      paidRevisionCost: 2,
-      resetFreeRevisionsOnPaid: true,
-      maxDeliveryMinutes: 480,
-      isActive: true,
-      sortOrder: 6,
-      attributes: [
-        {
           type: "select",
-          options: ["0", "1", "2", "3", "4", "5", "", ""],
-          question: "How many additional 10-second segments?",
-          required: false,
-          creditImpact: 10,
+          options: ["اعلاني ", "بيعي ", "انتشار "],
+          question: "What is the primary goal of using video?",
+          required: true,
+          placeholder: "What text do I need for the video?",
           questionI18n: {
-            ar: "كم عدد المقاطع الإضافية (10 ثوان لكل مقطع)؟",
-            en: "How many additional 10-second segments?",
+            ar: "ما الهدف الاساسي في استخدام الفيديو ",
+            en: "What is the primary goal of using video?",
           },
           optionsWithCost: [
             {
-              value: "0",
-              creditCost: 10,
-            },
-            {
-              value: "1",
-              creditCost: 10,
-            },
-            {
-              value: "2",
-              creditCost: 10,
-            },
-            {
-              value: "3",
-              creditCost: 10,
-            },
-            {
-              value: "4",
-              creditCost: 10,
-            },
-            {
-              value: "5",
-              creditCost: 10,
-            },
-            {
-              value: "",
+              value: "اعلاني ",
               creditCost: 0,
             },
             {
-              value: "",
+              value: "بيعي ",
+              creditCost: 0,
+            },
+            {
+              value: "انتشار ",
               creditCost: 0,
             },
           ],
-        },
-        {
-          type: "textarea",
-          question: "Who is your Target Audience?",
-          required: true,
-          questionI18n: {
-            ar: "من هو الجمهور المستهدف؟",
-            en: "Who is your Target Audience?",
+          placeholderI18n: {
+            ar: "What text do I need for the video?",
+            en: "What text do I need for the video?",
           },
         },
         {
           type: "file",
-          maxFiles: 8,
-          question: "Upload your logo or Brand guideline ",
+          maxFiles: 5,
+          question: "قم برفع ملفات التصوير ",
           required: true,
-          maxSizeMB: 100,
+          maxSizeMB: 50,
           questionI18n: {
-            ar: "قم برفع اللوجو أو ملف الهوية",
-            en: "Upload your logo or Brand guideline ",
-          },
-        },
-        {
-          type: "textarea",
-          question: "Do you need Voice over?",
-          required: false,
-          placeholder: "If yes, drop your script",
-          questionI18n: {
-            ar: "هل تحتاج إلى تعليق صوتي؟",
-            en: "Do you need Voice over?",
-          },
-          placeholderI18n: {
-            ar: "إذا كانت الإجابة بنعم، يرجى تزويدنا بالسكريبت",
-            en: "If yes, drop your script",
+            ar: "",
+            en: "قم برفع ملفات التصوير ",
           },
         },
       ],
@@ -565,11 +606,11 @@ async function main() {
       resetFreeRevisionsOnPaid: true,
       maxDeliveryMinutes: 480,
       isActive: true,
-      sortOrder: 7,
+      sortOrder: 6,
       attributes: [
         {
           type: "select",
-          options: ["0", "1", "2", "3", "4", "5", ""],
+          options: ["10", "20 Sec", "30 Sec", "40 Sec", "50 Sec", "60 Sec"],
           question: "How many additional 10-second segments?",
           required: false,
           creditImpact: 15,
@@ -579,32 +620,28 @@ async function main() {
           },
           optionsWithCost: [
             {
-              value: "0",
-              creditCost: 15,
-            },
-            {
-              value: "1",
-              creditCost: 15,
-            },
-            {
-              value: "2",
-              creditCost: 15,
-            },
-            {
-              value: "3",
-              creditCost: 15,
-            },
-            {
-              value: "4",
-              creditCost: 15,
-            },
-            {
-              value: "5",
-              creditCost: 15,
-            },
-            {
-              value: "",
+              value: "10",
               creditCost: 0,
+            },
+            {
+              value: "20 Sec",
+              creditCost: 250,
+            },
+            {
+              value: "30 Sec",
+              creditCost: 250,
+            },
+            {
+              value: "40 Sec",
+              creditCost: 250,
+            },
+            {
+              value: "50 Sec",
+              creditCost: 250,
+            },
+            {
+              value: "60 Sec",
+              creditCost: 250,
             },
           ],
         },
@@ -646,21 +683,175 @@ async function main() {
     } as any,
   });
 
-  console.log("🎨 Created 7 service types");
+  const animation2D = await prisma.serviceType.create({
+    data: {
+      name: "2D Animation Video",
+      nameI18n: {
+        ar: "فيديو انيميشن 2D",
+        en: "2D Animation Video",
+      },
+      description:
+        "2D animation video (1,000 credits for the first 10 seconds; +500 credits for every additional 10 seconds))",
+      descriptionI18n: {
+        ar: "فيديو انيميشن 2D (1000 كريدت لأول 10 ثوان، +500 كريدت لكل 10 ثوان إضافية)",
+        en: "2D animation video (1,000 credits for the first 10 seconds; +500 credits for every additional 10 seconds))",
+      },
+      icon: "🎬",
+      creditCost: 1000,
+      maxFreeRevisions: 1,
+      paidRevisionCost: 2,
+      resetFreeRevisionsOnPaid: true,
+      maxDeliveryMinutes: 480,
+      isActive: true,
+      sortOrder: 7,
+      attributes: [
+        {
+          type: "select",
+          options: ["0", "10 Sec", "20 Sec", "30 Sec", "40 Sec", "60 Sec"],
+          question: "How many additional 10-second segments?",
+          required: false,
+          creditImpact: 10,
+          questionI18n: {
+            ar: "كم عدد المقاطع الإضافية (10 ثوان لكل مقطع)؟",
+            en: "How many additional 10-second segments?",
+          },
+          optionsWithCost: [
+            {
+              value: "0",
+              creditCost: 0,
+            },
+            {
+              value: "10 Sec",
+              creditCost: 500,
+            },
+            {
+              value: "20 Sec",
+              creditCost: 500,
+            },
+            {
+              value: "30 Sec",
+              creditCost: 500,
+            },
+            {
+              value: "40 Sec",
+              creditCost: 500,
+            },
+            {
+              value: "60 Sec",
+              creditCost: 500,
+            },
+          ],
+        },
+        {
+          type: "textarea",
+          question: "Who is your Target Audience?",
+          required: true,
+          questionI18n: {
+            ar: "من هو الجمهور المستهدف؟",
+            en: "Who is your Target Audience?",
+          },
+        },
+        {
+          type: "file",
+          maxFiles: 8,
+          question: "Upload your logo or Brand guideline ",
+          required: true,
+          maxSizeMB: 100,
+          questionI18n: {
+            ar: "قم برفع اللوجو أو ملف الهوية",
+            en: "Upload your logo or Brand guideline ",
+          },
+        },
+        {
+          type: "textarea",
+          question: "Do you need Voice over?",
+          required: false,
+          placeholder: "If yes, drop your script",
+          questionI18n: {
+            ar: "هل تحتاج إلى تعليق صوتي؟",
+            en: "Do you need Voice over?",
+          },
+          placeholderI18n: {
+            ar: "إذا كانت الإجابة بنعم، يرجى تزويدنا بالسكريبت",
+            en: "If yes, drop your script",
+          },
+        },
+      ],
+    } as any,
+  });
 
-  // ─── Packages (from wengz.tech) ───────────────────────────────────────────
+  const voiceOver = await prisma.serviceType.create({
+    data: {
+      name: "Voice Over",
+      nameI18n: {
+        ar: "أداء صوتي",
+        en: "Voice Over",
+      },
+      description: "Professional  voice over for videos",
+      descriptionI18n: {
+        ar: "أداء صوتي احترافي  للفيديوهات ",
+        en: "Professional  voice over for videos",
+      },
+      icon: "🎵",
+      creditCost: 250,
+      maxFreeRevisions: 1,
+      paidRevisionCost: 84,
+      resetFreeRevisionsOnPaid: true,
+      maxDeliveryMinutes: 480,
+      isActive: true,
+      sortOrder: 8,
+      attributes: [
+        {
+          type: "text",
+          helpText: "e.g. enthusiasm - formal - luxury tone ",
+          question: "What is the Tone of Voice?",
+          required: true,
+          helpTextI18n: {
+            ar: "مثال: حماسي - فورمال - فاخر",
+            en: "e.g. enthusiasm - formal - luxury tone ",
+          },
+          questionI18n: {
+            ar: "ما هي نبرة الصوت؟",
+            en: "What is the Tone of Voice?",
+          },
+        },
+        {
+          type: "textarea",
+          question: "Drop your script ",
+          required: true,
+          questionI18n: {
+            ar: "اكتب السكريبت",
+            en: "Drop your script ",
+          },
+        },
+        {
+          type: "textarea",
+          question: "Language and Dialect?",
+          required: true,
+          questionI18n: {
+            ar: "اللغة و اللهجة؟",
+            en: "Language and Dialect?",
+          },
+        },
+      ],
+    } as any,
+  });
+
+  console.log("🎨 Created 9 service types");
+
+  // ─── Packages (mirrored from production wengz.tech) ───────────────────────
 
   const freePackage = await prisma.package.create({
     data: {
       name: "Free Plan",
       nameI18n: {
-        en: "Free Plan",
         ar: "الخطة المجانية",
+        en: "Free Plan",
       },
       description: "Basic free plan for all new users with 500 credits valid for 14 days",
       descriptionI18n: {
-        en: "Basic free plan for all new users with 500 credits valid for 14 days",
         ar: "خطة مجانية أساسية لجميع المستخدمين الجدد مع 500 كريدت صالحة لمدة 14 يومًا",
+        en: "Basic free plan for all new users with 500 credits valid for 14 days",
       },
       features: [],
       price: 0,
@@ -725,12 +916,13 @@ async function main() {
   await prisma.packageService.createMany({
     data: [
       { packageId: package1.id, serviceId: socialMediaDesign.id },
-      { packageId: package1.id, serviceId: reelVideo.id },
-      { packageId: package1.id, serviceId: voiceOver.id },
+      { packageId: package1.id, serviceId: contentCreation.id },
       { packageId: package1.id, serviceId: logoDesign.id },
       { packageId: package1.id, serviceId: businessPresentation.id },
-      { packageId: package1.id, serviceId: animation2D.id },
+      { packageId: package1.id, serviceId: aiReelVideos.id },
       { packageId: package1.id, serviceId: animation3D.id },
+      { packageId: package1.id, serviceId: animation2D.id },
+      { packageId: package1.id, serviceId: voiceOver.id },
     ],
   });
   console.log(
@@ -779,11 +971,11 @@ async function main() {
         ],
       },
       price: 80,
-      credits: 10000,
+      credits: 11000,
       durationDays: 30,
       isActive: true,
       isFreePackage: false,
-      isFeatured: true,
+      isFeatured: false,
       supportAllServices: true,
       sortOrder: 2,
     } as any,
@@ -791,8 +983,8 @@ async function main() {
   await prisma.packageService.createMany({
     data: [
       { packageId: package2.id, serviceId: socialMediaDesign.id },
-      { packageId: package2.id, serviceId: reelVideo.id },
       { packageId: package2.id, serviceId: logoDesign.id },
+      { packageId: package2.id, serviceId: aiReelVideos.id },
       { packageId: package2.id, serviceId: voiceOver.id },
     ],
   });
@@ -845,11 +1037,11 @@ async function main() {
         ],
       },
       price: 160,
-      credits: 20000,
+      credits: 23000,
       durationDays: 30,
       isActive: true,
       isFreePackage: false,
-      isFeatured: false,
+      isFeatured: true,
       supportAllServices: true,
       sortOrder: 3,
     } as any,
@@ -857,9 +1049,12 @@ async function main() {
   await prisma.packageService.createMany({
     data: [
       { packageId: package3.id, serviceId: socialMediaDesign.id },
-      { packageId: package3.id, serviceId: reelVideo.id },
+      { packageId: package3.id, serviceId: contentCreation.id },
       { packageId: package3.id, serviceId: logoDesign.id },
       { packageId: package3.id, serviceId: businessPresentation.id },
+      { packageId: package3.id, serviceId: aiReelVideos.id },
+      { packageId: package3.id, serviceId: animation3D.id },
+      { packageId: package3.id, serviceId: animation2D.id },
       { packageId: package3.id, serviceId: voiceOver.id },
     ],
   });
@@ -927,11 +1122,11 @@ async function main() {
   await prisma.packageService.createMany({
     data: [
       { packageId: package4.id, serviceId: socialMediaDesign.id },
-      { packageId: package4.id, serviceId: reelVideo.id },
       { packageId: package4.id, serviceId: logoDesign.id },
       { packageId: package4.id, serviceId: businessPresentation.id },
-      { packageId: package4.id, serviceId: animation2D.id },
+      { packageId: package4.id, serviceId: aiReelVideos.id },
       { packageId: package4.id, serviceId: animation3D.id },
+      { packageId: package4.id, serviceId: animation2D.id },
       { packageId: package4.id, serviceId: voiceOver.id },
     ],
   });
@@ -940,7 +1135,6 @@ async function main() {
     package4.name,
     `(${package4.credits} cr / ${package4.price} / ${package4.durationDays}d)`
   );
-
   // ─── Dashboard / system settings (from wengz.tech) ───────────────────────
 
   await prisma.systemSettings.createMany({
@@ -1065,12 +1259,14 @@ async function main() {
           supportedServices: {
             connect: [
               { id: socialMediaDesign.id },
-              { id: reelVideo.id },
+              { id: contentCreation.id },
               { id: logoDesign.id },
-              { id: voiceOver.id },
               { id: businessPresentation.id },
-              { id: animation2D.id },
+              { id: aiReelVideos.id },
+              { id: videoEditing.id },
               { id: animation3D.id },
+              { id: animation2D.id },
+              { id: voiceOver.id },
             ],
           },
         },
@@ -1098,9 +1294,10 @@ async function main() {
   console.log("(Override demo password with SEED_DEMO_PASSWORD; admin with SEED_ADMIN_PASSWORD)");
   console.log("\n📦 Free Plan: 500 credits / 14 days / $0");
   console.log(
-    "📦 Basic: 5,000 cr / $40 | Standard: 10,000 cr / $80 (featured) | Premium: 20,000 cr / $160"
+    "📦 Basic: 5,000 cr / $40 | Standard: 11,000 cr / $80 | Premium: 23,000 cr / $160 (featured)"
   );
   console.log("📦 Package 4 Unlimited: 45 cr / $500 [inactive]");
+  console.log("🎨 Services: 9 (incl. Content Creation, Ai Reel, Video editing)");
   console.log("💵 Finance: $0.008/credit, 0% commission");
 }
 

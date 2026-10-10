@@ -12,6 +12,8 @@ export const en = {
     logout: "Sign Out",
     language: "Language",
     credits: "Credits",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
     requestStatus: {
       PENDING: "Pending",
       IN_PROGRESS: "In Progress",

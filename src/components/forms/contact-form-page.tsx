@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, FileText, Loader2, Sparkles, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -330,10 +331,9 @@ export function ContactFormPage() {
                         *
                       </span>
                     </Label>
-                    <Input
+                    <PasswordInput
                       id="password"
                       name="password"
-                      type="password"
                       required
                       className={fieldClass}
                       autoComplete="new-password"
@@ -347,10 +347,9 @@ export function ContactFormPage() {
                         *
                       </span>
                     </Label>
-                    <Input
+                    <PasswordInput
                       id="confirmPassword"
                       name="confirmPassword"
-                      type="password"
                       required
                       className={fieldClass}
                       autoComplete="new-password"

@@ -16,13 +16,13 @@ The application is **bilingual (English and Arabic)** end-to-end, including mark
 
 ## Actors and permissions
 
-| Role                | Typical use                                                                                      | Access (conceptual)                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Client**          | Buys packages, creates and tracks requests, messages, rates completed work                       | Client dashboard: subscriptions, payment proof, requests, notifications, profile                                                                        |
-| **Provider**        | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile                                                                         |
-| **Project manager** | Oversees client–provider requests and contact-leak moderation                                    | Admin: requests (list, assign/unassign, create-on-behalf, soft-delete/restore), contact leaks, messaging oversight, notifications, profile              |
-| **Finance manager** | Handles money flows only                                                                         | Admin: finance (wallets, withdrawals, disputes, payouts), payments (proof review), subscriptions list, finance/payment settings, notifications, profile |
-| **Super admin**     | Full platform control                                                                            | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity, contacts, contact leaks                               |
+| Role                | Typical use                                                                                      | Access (conceptual)                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Client**          | Buys packages, creates and tracks requests, messages, rates completed work                       | Client dashboard: subscriptions, payment proof, requests, notifications, profile                                                                                    |
+| **Provider**        | Sees assigned or available work, delivers outputs, collaborates on threads, requests withdrawals | Provider dashboard: my requests, available jobs, wallet, notifications, profile                                                                                     |
+| **Project manager** | Oversees client–provider requests, users, services, and contact-leak moderation                  | Admin: users, services, requests (list, assign/unassign, create-on-behalf, soft-delete/restore, export), contact leaks, messaging oversight, notifications, profile |
+| **Finance manager** | Handles money flows only                                                                         | Admin: finance (wallets, withdrawals, disputes, payouts), payments (proof review), subscriptions list, finance/payment settings, notifications, profile             |
+| **Super admin**     | Full platform control                                                                            | Full admin dashboard: users, services, packages, requests, payments, finance, settings, activity, contacts, contact leaks                                           |
 
 Registration and login are **credential-based** (email/password). **Self-serve** client registration and the creator form create accounts in **PENDING** status; login is blocked until an admin approves. Role is fixed per user account and enforced both in the **edge layer** (route protection) and in **tRPC** (procedure-level middleware: `adminProcedure` for super admin, `requestManagerProcedure`, `financeManagerProcedure`, plus shared helpers in `src/lib/roles.ts`).
 
@@ -168,7 +168,9 @@ For legal, finance, and DPA details, extend this document in your own wiki; the 
 | Assign / unassign / create-on-behalf / soft-del |        |          |  ✓  |     |      ✓      |
 | Contact-leak review + clear strikes             |        |          |  ✓  |     |      ✓      |
 | Withdrawals / disputes / payouts / finance set. |        |    ✓‡    |     |  ✓  |      ✓      |
-| Users, packages, services, activity, contacts   |        |          |     |     |      ✓      |
+| Users (list / approve / create / edit)          |        |          |  ✓  |     |      ✓      |
+| Services (catalog / attributes)                 |        |          |  ✓  |     |      ✓      |
+| Packages, activity, contacts                    |        |          |     |     |      ✓      |
 | Maintenance mode toggle                         |        |          |     |     |      ✓      |
 
 \* Review / configure only (not client purchase).  

@@ -42,13 +42,16 @@ import {
   CheckCircle,
   Star,
   Settings,
-  Eye,
-  EyeOff,
   Edit,
   KeyRound,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
+import { downloadBase64File } from "@/lib/download-base64-file";
+import { showError } from "@/lib/error-handler";
+import { PasswordInput } from "@/components/ui/password-input";
 
 type UserRole = AssignableRole | "SUPER_ADMIN";
 type ManagedUserRole = AssignableRole;
@@ -351,6 +354,7 @@ function UserListItem({
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin.users");
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -380,7 +384,6 @@ export default function AdminUsersPage() {
     providerRequestCount: number;
   } | null>(null);
   const [selectedProviderServices, setSelectedProviderServices] = useState<string[]>([]);
-  const [showPassword, setShowPassword] = useState(false);
 
   // Form state for creating user
   const [newUser, setNewUser] = useState({
@@ -484,6 +487,20 @@ export default function AdminUsersPage() {
     onError: (error) => {
       setActingUserId(null);
       toast.error(error.message || t("dialog.toast.statusFailed"));
+    },
+  });
+
+  const exportUsers = trpc.admin.exportUsers.useMutation({
+    onSuccess: (data) => {
+      downloadBase64File({
+        base64: data.base64,
+        fileName: data.fileName,
+        contentType: data.contentType,
+      });
+      toast.success(t("export.success", { count: data.rowCount }));
+    },
+    onError: (error) => {
+      showError(error, t("export.error"));
     },
   });
 
@@ -600,164 +617,178 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              {t("createUser")}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t("dialog.create.title")}</DialogTitle>
-              <DialogDescription>{t("dialog.create.description")}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t("dialog.fields.name")} *</Label>
-                <Input
-                  id="name"
-                  placeholder={t("dialog.fields.name")}
-                  value={newUser.name}
-                  onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("dialog.fields.email")} *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, email: e.target.value.toLowerCase().trim() }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t("dialog.fields.phone")}</Label>
-                <div className="flex rtl:flex-row-reverse gap-2">
-                  <Select
-                    value={newUser.countryCode}
-                    onValueChange={(value) =>
-                      setNewUser((prev) => ({ ...prev, countryCode: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="+20">🇪🇬 +20</SelectItem>
-                      <SelectItem value="+965">🇰🇼 +965</SelectItem>
-                      <SelectItem value="+966">🇸🇦 +966</SelectItem>
-                      <SelectItem value="+971">🇦🇪 +971</SelectItem>
-                    </SelectContent>
-                  </Select>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            disabled={exportUsers.isPending}
+            onClick={() =>
+              exportUsers.mutate({
+                search: search || undefined,
+                role: roleFilter === "all" ? undefined : (roleFilter as UserRole),
+                status: statusFilter,
+                locale: locale === "ar" ? "ar" : "en",
+              })
+            }
+          >
+            {exportUsers.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {exportUsers.isPending ? t("actions.exporting") : t("actions.exportExcel")}
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                {t("createUser")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t("dialog.create.title")}</DialogTitle>
+                <DialogDescription>{t("dialog.create.description")}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">{t("dialog.fields.name")} *</Label>
                   <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="123456789"
-                    value={newUser.phone}
-                    onChange={(e) => {
-                      const value = e.target.value.replaceAll(/\D/g, "");
-                      setNewUser((prev) => ({ ...prev, phone: value }));
-                    }}
-                    pattern="[0-9]{7,15}"
-                    title="Phone number must be 7-15 digits"
-                    className="flex-1"
+                    id="name"
+                    placeholder={t("dialog.fields.name")}
+                    value={newUser.name}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t("dialog.fields.password")} *</Label>
-                <div className="relative">
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("dialog.fields.email")} *</Label>
                   <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={newUser.email}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({
+                        ...prev,
+                        email: e.target.value.toLowerCase().trim(),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">{t("dialog.fields.phone")}</Label>
+                  <div className="flex rtl:flex-row-reverse gap-2">
+                    <Select
+                      value={newUser.countryCode}
+                      onValueChange={(value) =>
+                        setNewUser((prev) => ({ ...prev, countryCode: value }))
+                      }
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="+20">🇪🇬 +20</SelectItem>
+                        <SelectItem value="+965">🇰🇼 +965</SelectItem>
+                        <SelectItem value="+966">🇸🇦 +966</SelectItem>
+                        <SelectItem value="+971">🇦🇪 +971</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="123456789"
+                      value={newUser.phone}
+                      onChange={(e) => {
+                        const value = e.target.value.replaceAll(/\D/g, "");
+                        setNewUser((prev) => ({ ...prev, phone: value }));
+                      }}
+                      pattern="[0-9]{7,15}"
+                      title="Phone number must be 7-15 digits"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t("dialog.fields.password")} *</Label>
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder={t("dialog.fields.password")}
                     aria-label={t("dialog.fields.password")}
                     value={newUser.password}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
+                    showLabel={t("dialog.fields.showPassword")}
+                    hideLabel={t("dialog.fields.hidePassword")}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute end-0 top-0 h-full px-3"
-                    aria-label={
-                      showPassword
-                        ? t("dialog.fields.hidePassword")
-                        : t("dialog.fields.showPassword")
-                    }
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">{t("dialog.fields.role")} *</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(value: ManagedUserRole) =>
-                    setNewUser((prev) => ({ ...prev, role: value, supportedServiceIds: [] }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ASSIGNABLE_ROLES.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option === "CLIENT"
-                          ? t("filters.client")
-                          : option === "PROVIDER"
-                            ? t("filters.provider")
-                            : option === "PROJECT_MANAGER"
-                              ? t("filters.projectManager")
-                              : t("filters.financeManager")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {newUser.role === "PROVIDER" && serviceTypes && (
                 <div className="space-y-2">
-                  <Label>{t("dialog.fields.services")}</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {t("dialog.fields.selectServices")}
-                  </p>
-                  <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
-                    {serviceTypes.map((service: any) => (
-                      <ServiceCheckboxItem
-                        key={service.id}
-                        service={service}
-                        checked={newUser.supportedServiceIds.includes(service.id)}
-                        onChange={(checked) => handleServiceToggle(service.id, checked)}
-                        idPrefix="service"
-                      />
-                    ))}
-                    {serviceTypes.length === 0 && (
-                      <p className="text-sm text-muted-foreground">No services available</p>
-                    )}
-                  </div>
+                  <Label htmlFor="role">{t("dialog.fields.role")} *</Label>
+                  <Select
+                    value={newUser.role}
+                    onValueChange={(value: ManagedUserRole) =>
+                      setNewUser((prev) => ({ ...prev, role: value, supportedServiceIds: [] }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ASSIGNABLE_ROLES.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option === "CLIENT"
+                            ? t("filters.client")
+                            : option === "PROVIDER"
+                              ? t("filters.provider")
+                              : option === "PROJECT_MANAGER"
+                                ? t("filters.projectManager")
+                                : t("filters.financeManager")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              <Button className="w-full" onClick={handleCreateUser} disabled={createUser.isPending}>
-                {createUser.isPending ? t("dialog.buttons.creating") : t("dialog.buttons.create")}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+                {newUser.role === "PROVIDER" && serviceTypes && (
+                  <div className="space-y-2">
+                    <Label>{t("dialog.fields.services")}</Label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t("dialog.fields.selectServices")}
+                    </p>
+                    <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
+                      {serviceTypes.map((service: any) => (
+                        <ServiceCheckboxItem
+                          key={service.id}
+                          service={service}
+                          checked={newUser.supportedServiceIds.includes(service.id)}
+                          onChange={(checked) => handleServiceToggle(service.id, checked)}
+                          idPrefix="service"
+                        />
+                      ))}
+                      {serviceTypes.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No services available</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  onClick={handleCreateUser}
+                  disabled={createUser.isPending}
+                >
+                  {createUser.isPending ? t("dialog.buttons.creating") : t("dialog.buttons.create")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats Cards */}

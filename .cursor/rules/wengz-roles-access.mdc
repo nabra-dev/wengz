@@ -10,9 +10,11 @@ Canon: `docs/ADVANCED_BUSINESS.md` (actors + capability matrix) · helpers: `src
 
 ## Capability helpers
 
-- `canManageRequests` → SA | PM — requests, contact-leaks, create/assign/approve-on-behalf
+- `canManageRequests` → SA | PM — requests, contact-leaks, create/assign/approve-on-behalf, soft-delete/restore
+- `canManageUsers` → SA | PM — Admin → Users (list, approve/reject, create/edit, activate)
+- `canManageServices` → SA | PM — Admin → Services (catalog, attributes, reorder)
 - `canManageFinance` → SA | FM — payments, finance, subscriptions, finance/payment settings
-- `canManagePlatform` → SA only — users, packages, services, activity, contacts, maintenance
+- `canManagePlatform` → SA only — packages, activity, contacts, maintenance
 - `canAccessAdminPath(role, path)` — shared by proxy + admin layout
 
 ## tRPC procedures (`src/server/trpc.ts`)
@@ -21,6 +23,8 @@ Canon: `docs/ADVANCED_BUSINESS.md` (actors + capability matrix) · helpers: `src
 |-----------|-----|
 | `adminProcedure` | SUPER_ADMIN |
 | `requestManagerProcedure` | SA \| PM |
+| `userManagerProcedure` | SA \| PM |
+| `servicesManagerProcedure` | SA \| PM |
 | `financeManagerProcedure` | SA \| FM |
 | `providerProcedure` | PROVIDER \| SA |
 | `clientProcedure` | CLIENT \| SA |
@@ -34,5 +38,5 @@ PM → `/admin/requests` · FM → `/admin/finance` · SA → `/admin` · Provid
 
 1. Gate the **route** in `canAccessAdminPath` if new section.
 2. Gate the **procedure** with the correct middleware.
-3. Add **nav** entry in `adminNavConfig` with the right `access` tag (`platform` | `requests` | `finance` | `settings` | `staff`).
+3. Add **nav** entry in `adminNavConfig` with the right `access` tag (`platform` | `users` | `services` | `requests` | `finance` | `settings` | `staff`).
 4. Update capability matrix in `docs/ADVANCED_BUSINESS.md` if product scope changes.

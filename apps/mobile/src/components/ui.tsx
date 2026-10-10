@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,6 +15,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
 import { t } from "../i18n";
 import { AppText, AppTextInput } from "./typography";
@@ -178,6 +179,41 @@ export function Label({ children, required }: { children: React.ReactNode; requi
 
 export function Field(props: TextInputProps) {
   const { outlines } = useDebugOutlineFlags();
+  const [visible, setVisible] = useState(false);
+  const isPassword = props.secureTextEntry === true;
+
+  if (isPassword) {
+    return (
+      <View style={styles.passwordWrap}>
+        <AppTextInput
+          placeholderTextColor={c.mutedForeground}
+          {...props}
+          secureTextEntry={!visible}
+          style={[
+            styles.input,
+            styles.passwordInput,
+            props.multiline && styles.inputMultiline,
+            outlines ? { borderWidth: 1, borderColor: "rgba(255,170,0,0.9)" } : null,
+            props.style,
+          ]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={visible ? t("common.hidePassword") : t("common.showPassword")}
+          hitSlop={8}
+          onPress={() => setVisible((prev) => !prev)}
+          style={styles.passwordToggle}
+        >
+          <Ionicons
+            name={visible ? "eye-off-outline" : "eye-outline"}
+            size={20}
+            color={c.mutedForeground}
+          />
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <AppTextInput
       placeholderTextColor={c.mutedForeground}
@@ -443,6 +479,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
     ...typeScale.md,
+  },
+  passwordWrap: {
+    position: "relative",
+    marginBottom: 12,
+  },
+  passwordInput: {
+    marginBottom: 0,
+    paddingEnd: 44,
+  },
+  passwordToggle: {
+    position: "absolute",
+    end: 10,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 36,
   },
   inputMultiline: {
     minHeight: 110,

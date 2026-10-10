@@ -47,6 +47,10 @@
       "LOW": "منخفضة",
       "MEDIUM": "متوسطة",
       "HIGH": "عالية"
+    },
+    "password": {
+      "show": "إظهار كلمة المرور",
+      "hide": "إخفاء كلمة المرور"
     }
   },
   "wengz": {
@@ -738,7 +742,13 @@
         "approve": "موافقة",
         "reject": "رفض",
         "sendReset": "إرسال رابط إعادة التعيين",
-        "sendingReset": "جاري الإرسال..."
+        "sendingReset": "جاري الإرسال...",
+        "exportExcel": "تصدير Excel",
+        "exporting": "جاري التصدير..."
+      },
+      "export": {
+        "success": "تم تصدير المستخدمين ({count})",
+        "error": "فشل تصدير المستخدمين"
       },
       "table": {
         "user": "المستخدم",
@@ -862,7 +872,8 @@
         "revisionRequested": "طلب مراجعة",
         "completed": "مكتمل",
         "cancelled": "ملغي",
-        "needsManualApproval": "يحتاج موافقة يدوية"
+        "needsManualApproval": "يحتاج موافقة يدوية",
+        "deleted": "محذوف"
       },
       "table": {
         "noRequests": "لم يتم العثور على طلبات",
@@ -872,10 +883,18 @@
         "view": "عرض التفاصيل",
         "assignProvider": "تعيين مبدع",
         "delete": "حذف الطلب",
-        "createRequest": "إنشاء طلب"
+        "restore": "استعادة الطلب",
+        "createRequest": "إنشاء طلب",
+        "exportExcel": "تصدير Excel",
+        "exporting": "جاري التصدير..."
+      },
+      "export": {
+        "success": "تم تصدير الطلبات ({count})",
+        "error": "فشل تصدير الطلبات"
       },
       "confirmations": {
-        "delete": "حذف \"{title}\"؟ لا يمكن التراجع عن هذا الإجراء."
+        "delete": "حذف \"{title}\"؟ سيتم إلغاء الطلب ويمكن استعادته لاحقاً.",
+        "restore": "استعادة \"{title}\"؟"
       },
       "assignDialog": {
         "title": "تعيين مبدع",

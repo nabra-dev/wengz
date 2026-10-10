@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2, LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { AuthFormShell, authFieldClass } from "@/components/auth/auth-form-shell";
 import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-request-draft";
@@ -208,10 +209,9 @@ export default function LoginPage() {
               {t("forgotPassword")}
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
             disabled={isLoading}

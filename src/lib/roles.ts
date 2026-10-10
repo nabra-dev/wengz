@@ -97,12 +97,22 @@ export function canManageRequests(role: string | null | undefined): boolean {
   return role === ROLES.SUPER_ADMIN || role === ROLES.PROJECT_MANAGER;
 }
 
+/** User directory: list, approve/reject, create/edit, activate. */
+export function canManageUsers(role: string | null | undefined): boolean {
+  return role === ROLES.SUPER_ADMIN || role === ROLES.PROJECT_MANAGER;
+}
+
+/** Service types catalog (create/edit/reorder/attributes). */
+export function canManageServices(role: string | null | undefined): boolean {
+  return role === ROLES.SUPER_ADMIN || role === ROLES.PROJECT_MANAGER;
+}
+
 /** Payments, wallets, withdrawals, finance settings. */
 export function canManageFinance(role: string | null | undefined): boolean {
   return role === ROLES.SUPER_ADMIN || role === ROLES.FINANCE_MANAGER;
 }
 
-/** Users, catalog, packages, activity, maintenance, full settings. */
+/** Packages, activity, contacts, maintenance, full settings. */
 export function canManagePlatform(role: string | null | undefined): boolean {
   return role === ROLES.SUPER_ADMIN;
 }
@@ -146,6 +156,14 @@ export function canAccessAdminPath(
     return canManageRequests(role);
   }
 
+  if (section === "users") {
+    return canManageUsers(role);
+  }
+
+  if (section === "services") {
+    return canManageServices(role);
+  }
+
   if (section === "finance" || section === "payments" || section === "subscriptions") {
     return canManageFinance(role);
   }
@@ -156,6 +174,6 @@ export function canAccessAdminPath(
     return canManagePlatform(role) || canManageFinance(role);
   }
 
-  // users, packages, services, activity, and anything else → super admin only
+  // packages, activity, contacts, and anything else → super admin only
   return canManagePlatform(role);
 }

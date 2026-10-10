@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { AuthFormShell, authFieldClass } from "@/components/auth/auth-form-shell";
 import { PhoneCountrySelect } from "@/components/forms/phone-country-select";
@@ -226,10 +227,9 @@ export default function RegisterPage() {
                 *
               </span>
             </Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               required
               disabled={busy}
@@ -244,10 +244,9 @@ export default function RegisterPage() {
                 *
               </span>
             </Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               autoComplete="new-password"
               required
               disabled={busy}

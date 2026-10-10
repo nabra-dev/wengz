@@ -1,12 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, FileText, MessageSquare, CheckCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Loader2,
+  ArrowLeft,
+  FileText,
+  MessageSquare,
+  CheckCircle,
+  UserPlus,
+  Trash,
+  RotateCcw,
+} from "lucide-react";
 import { AttributeResponsesDisplay } from "@/components/client/attribute-responses-display";
 import { RequestHeader } from "@/components/requests/request-header";
 import { RequestDescription } from "@/components/requests/request-description";
@@ -15,6 +26,7 @@ import { RequestStats } from "@/components/requests/request-stats";
 import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
 import { ClientIdentitySheet } from "@/components/requests/client-identity-sheet";
+import { AssignProviderDialog } from "@/components/admin/assign-provider-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
@@ -24,8 +36,12 @@ export default function AdminRequestDetailPage() {
   const t = useTranslations("admin.requests");
   const locale = useLocale();
   const params = useParams();
+  const router = useRouter();
   const requestId = params?.id as string;
   const utils = trpc.useUtils();
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
 
   const { data: request, isLoading } = trpc.request.getById.useQuery({ id: requestId });
 
@@ -39,6 +55,29 @@ export default function AdminRequestDetailPage() {
     },
     onError: (error: unknown) => {
       showError(error, t("detail.toast.approveOnBehalfError"));
+    },
+  });
+
+  const deleteRequest = trpc.admin.deleteRequest.useMutation({
+    onSuccess: () => {
+      setConfirmDelete(false);
+      void utils.admin.getAllRequests.invalidate();
+      router.push("/admin/requests");
+    },
+    onError: (error: unknown) => {
+      showError(error, t("actions.delete"));
+    },
+  });
+
+  const restoreRequest = trpc.admin.restoreRequest.useMutation({
+    onSuccess: () => {
+      setConfirmRestore(false);
+      void utils.request.getById.invalidate({ id: requestId });
+      void utils.admin.getAllRequests.invalidate();
+      toast.success(t("actions.restore"));
+    },
+    onError: (error: unknown) => {
+      showError(error, t("actions.restore"));
     },
   });
 
@@ -81,6 +120,8 @@ export default function AdminRequestDetailPage() {
     }
     return existing;
   })();
+
+  const isDeleted = Boolean((request as { deletedAt?: string | Date | null }).deletedAt);
 
   const chatPanel = request.provider ? (
     <MessagesCard
@@ -129,7 +170,13 @@ export default function AdminRequestDetailPage() {
             {request.clientId ? (
               <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
             ) : null}
-            {request.status === "DELIVERED" ? (
+            {!isDeleted && request.status !== "COMPLETED" && request.status !== "CANCELLED" ? (
+              <Button variant="outline" onClick={() => setAssignDialogOpen(true)} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                {t("actions.assignProvider")}
+              </Button>
+            ) : null}
+            {!isDeleted && request.status === "DELIVERED" ? (
               <Button
                 onClick={() => {
                   if (!window.confirm(t("detail.approveOnBehalfConfirm"))) return;
@@ -147,6 +194,27 @@ export default function AdminRequestDetailPage() {
                 {t("detail.approveOnBehalf")}
               </Button>
             ) : null}
+            {isDeleted ? (
+              <Button
+                variant="outline"
+                onClick={() => setConfirmRestore(true)}
+                disabled={restoreRequest.isPending}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                {t("actions.restore")}
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={() => setConfirmDelete(true)}
+                disabled={deleteRequest.isPending}
+                className="gap-2"
+              >
+                <Trash className="h-4 w-4" />
+                {t("actions.delete")}
+              </Button>
+            )}
           </div>
         }
       />
@@ -192,6 +260,60 @@ export default function AdminRequestDetailPage() {
           </>
         }
         chat={chatPanel}
+      />
+
+      <AssignProviderDialog
+        request={{
+          id: request.id,
+          title: request.title,
+          status: request.status,
+          serviceType: {
+            id: request.serviceType.id,
+            name: resolveLocalizedText(
+              (request.serviceType as any).nameI18n,
+              locale,
+              request.serviceType.name
+            ),
+          },
+          provider: request.provider
+            ? {
+                id: request.provider.id,
+                name: request.provider.name,
+                email: request.provider.email,
+              }
+            : null,
+        }}
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        onAssigned={() => {
+          void utils.request.getById.invalidate({ id: requestId });
+          void utils.admin.getAllRequests.invalidate();
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={t("actions.delete")}
+        description={t("confirmations.delete", { title: request.title })}
+        confirmLabel={t("actions.delete")}
+        variant="destructive"
+        loading={deleteRequest.isPending}
+        onConfirm={() => {
+          deleteRequest.mutate({ requestId });
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmRestore}
+        onOpenChange={setConfirmRestore}
+        title={t("actions.restore")}
+        description={t("confirmations.restore", { title: request.title })}
+        confirmLabel={t("actions.restore")}
+        loading={restoreRequest.isPending}
+        onConfirm={() => {
+          restoreRequest.mutate({ requestId });
+        }}
       />
     </div>
   );

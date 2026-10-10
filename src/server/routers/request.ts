@@ -29,15 +29,16 @@ import type { ServiceAttribute, AttributeResponse } from "@/types/service-attrib
  * Validates request access based on user role
  */
 function validateRequestAccess(userId: string, role: string, request: any) {
+  // Staff may open soft-deleted requests to restore / audit them.
+  if (canManageRequests(role)) {
+    return;
+  }
+
   if (request.deletedAt) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Request not found",
     });
-  }
-
-  if (canManageRequests(role)) {
-    return;
   }
 
   if (role === "CLIENT" && request.clientId !== userId) {

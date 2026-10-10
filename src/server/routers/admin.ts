@@ -6,8 +6,16 @@ import {
   financeManagerProcedure,
   publicProcedure,
   requestManagerProcedure,
+  servicesManagerProcedure,
+  userManagerProcedure,
 } from "@/server/trpc";
 import { ASSIGNABLE_ROLES, ALL_ROLES, getRoleChangeBlockReason, isSuperAdmin } from "@/lib/roles";
+import {
+  buildRequestsExcel,
+  buildUsersExcel,
+  EXPORT_MAX_ROWS,
+  normalizeExportLocale,
+} from "@/lib/admin-excel-export";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
 import {
@@ -1640,7 +1648,7 @@ export const adminRouter = router({
     }),
 
   // Get all users
-  getUsers: adminProcedure
+  getUsers: userManagerProcedure
     .meta({
       openapi: { method: "GET", path: "/admin/users", tags: ["admin"], summary: "List users" },
     })
@@ -1749,6 +1757,104 @@ export const adminRouter = router({
       };
     }),
 
+  exportUsers: userManagerProcedure
+    .input(
+      z
+        .object({
+          role: z.enum(ALL_ROLES).optional(),
+          search: z.string().optional(),
+          status: z
+            .enum(["all", "active", "inactive", "pending", "rejected", "approved"])
+            .optional(),
+          locale: z.enum(["en", "ar"]).optional(),
+        })
+        .optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      const where: Prisma.UserWhereInput = {};
+
+      if (input?.role) {
+        where.role = input.role;
+      }
+
+      if (input?.search) {
+        where.OR = [
+          { name: { contains: input.search, mode: "insensitive" } },
+          { email: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+
+      const status = input?.status ?? "active";
+      if (status === "active" || status === "approved") {
+        where.deletedAt = null;
+        where.approvalStatus = "APPROVED";
+      } else if (status === "pending") {
+        where.deletedAt = null;
+        where.approvalStatus = "PENDING";
+      } else if (status === "rejected") {
+        where.deletedAt = null;
+        where.approvalStatus = "REJECTED";
+      } else if (status === "inactive") {
+        where.deletedAt = { not: null };
+      }
+
+      const [users, ratingAvgs] = await Promise.all([
+        ctx.db.user.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            approvalStatus: true,
+            rejectionReason: true,
+            createdAt: true,
+            deletedAt: true,
+            providerProfile: {
+              select: {
+                supportedServices: {
+                  select: { id: true, name: true, nameI18n: true },
+                },
+              },
+            },
+            _count: {
+              select: {
+                clientRequests: true,
+                providerRequests: true,
+                clientSubscriptions: true,
+              },
+            },
+          },
+          take: EXPORT_MAX_ROWS,
+          orderBy: { createdAt: "desc" },
+        }),
+        ctx.db.rating.groupBy({
+          by: ["providerId"],
+          _avg: { rating: true },
+        }),
+      ]);
+
+      const avgByProvider = new Map(ratingAvgs.map((row) => [row.providerId, row._avg.rating]));
+      const locale = normalizeExportLocale(input?.locale ?? ctx.locale);
+
+      return buildUsersExcel({
+        locale,
+        users: users.map((user) => ({
+          ...user,
+          averageRating: avgByProvider.get(user.id) ?? null,
+          providerProfile: user.providerProfile
+            ? {
+                supportedServices: user.providerProfile.supportedServices.map((service) => ({
+                  name: service.name,
+                  nameI18n: (service.nameI18n as Record<string, string> | null) ?? null,
+                })),
+              }
+            : null,
+        })),
+      });
+    }),
+
   // Get all requests
   getAllRequests: requestManagerProcedure
     .input(
@@ -1764,15 +1870,20 @@ export const adminRouter = router({
               "CANCELLED",
             ])
             .optional(),
+          deleted: z.enum(["exclude", "only", "include"]).default("exclude"),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
-      const where: Prisma.RequestWhereInput = {
-        deletedAt: null,
-      };
+      const where: Prisma.RequestWhereInput = {};
+      const deleted = input?.deleted ?? "exclude";
+      if (deleted === "exclude") {
+        where.deletedAt = null;
+      } else if (deleted === "only") {
+        where.deletedAt = { not: null };
+      }
 
       if (input?.status) {
         where.status = input.status;
@@ -1801,8 +1912,93 @@ export const adminRouter = router({
       };
     }),
 
+  exportRequests: requestManagerProcedure
+    .input(
+      z
+        .object({
+          status: z
+            .enum([
+              "PENDING",
+              "IN_PROGRESS",
+              "DELIVERED",
+              "REVISION_REQUESTED",
+              "COMPLETED",
+              "CANCELLED",
+            ])
+            .optional(),
+          deleted: z.enum(["exclude", "only", "include"]).default("exclude"),
+          needsManualApproval: z.boolean().optional(),
+          search: z.string().optional(),
+          locale: z.enum(["en", "ar"]).optional(),
+        })
+        .optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      const where: Prisma.RequestWhereInput = {};
+      const deleted = input?.deleted ?? "exclude";
+      if (deleted === "exclude") {
+        where.deletedAt = null;
+      } else if (deleted === "only") {
+        where.deletedAt = { not: null };
+      }
+
+      if (input?.status) {
+        where.status = input.status;
+      }
+
+      if (input?.needsManualApproval === true) {
+        where.needsManualApproval = true;
+      }
+
+      if (input?.search) {
+        const q = input.search.trim();
+        if (q) {
+          where.OR = [
+            { title: { contains: q, mode: "insensitive" } },
+            { client: { name: { contains: q, mode: "insensitive" } } },
+            { client: { email: { contains: q, mode: "insensitive" } } },
+          ];
+        }
+      }
+
+      const requests = await ctx.db.request.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          creditCost: true,
+          needsManualApproval: true,
+          createdAt: true,
+          updatedAt: true,
+          deliveredAt: true,
+          completedAt: true,
+          client: { select: { name: true, email: true } },
+          provider: { select: { name: true, email: true } },
+          serviceType: { select: { name: true, nameI18n: true } },
+        },
+        take: EXPORT_MAX_ROWS,
+        orderBy: { createdAt: "desc" },
+      });
+
+      const locale = normalizeExportLocale(input?.locale ?? ctx.locale);
+
+      return buildRequestsExcel({
+        locale,
+        requests: requests.map((request) => ({
+          ...request,
+          serviceType: request.serviceType
+            ? {
+                name: request.serviceType.name,
+                nameI18n: (request.serviceType.nameI18n as Record<string, string> | null) ?? null,
+              }
+            : null,
+        })),
+      });
+    }),
+
   // Create service type
-  createServiceType: adminProcedure
+  createServiceType: servicesManagerProcedure
     .input(
       z.object({
         name: z.string().min(1),
@@ -1864,7 +2060,7 @@ export const adminRouter = router({
     }),
 
   // Update service type
-  updateServiceType: adminProcedure
+  updateServiceType: servicesManagerProcedure
     .input(
       z.object({
         id: z.string(),
@@ -1907,7 +2103,7 @@ export const adminRouter = router({
     }),
 
   // Set service type active / inactive
-  setServiceTypeActive: adminProcedure
+  setServiceTypeActive: servicesManagerProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const serviceType = await ctx.db.serviceType.findUnique({
@@ -1938,7 +2134,7 @@ export const adminRouter = router({
     }),
 
   // Reorder service type within the current filter; keeps create-request order in sync
-  reorderServiceType: adminProcedure
+  reorderServiceType: servicesManagerProcedure
     .input(
       z.object({
         id: z.string(),
@@ -2215,7 +2411,7 @@ export const adminRouter = router({
     }),
 
   // Get all service types
-  getServiceTypes: adminProcedure
+  getServiceTypes: servicesManagerProcedure
     .input(
       z
         .object({
@@ -2292,7 +2488,7 @@ export const adminRouter = router({
     }),
 
   // Update user role
-  updateUserRole: adminProcedure
+  updateUserRole: userManagerProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -2864,7 +3060,7 @@ export const adminRouter = router({
     }),
 
   // Create new user
-  createUser: adminProcedure
+  createUser: userManagerProcedure
     .input(
       z.object({
         name: z.string().min(1),
@@ -2944,7 +3140,7 @@ export const adminRouter = router({
     }),
 
   /** Support: email a password reset link to a credentials user. */
-  sendPasswordResetLink: adminProcedure
+  sendPasswordResetLink: userManagerProcedure
     .input(z.object({ userId: z.string().min(1) }))
     .output(
       z.object({
@@ -3009,7 +3205,7 @@ export const adminRouter = router({
     }),
 
   // Update provider supported services
-  updateProviderServices: adminProcedure
+  updateProviderServices: userManagerProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -3060,7 +3256,7 @@ export const adminRouter = router({
     }),
 
   // Get provider with their supported services
-  getProviderDetails: adminProcedure
+  getProviderDetails: userManagerProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
@@ -3090,7 +3286,7 @@ export const adminRouter = router({
     }),
 
   // Set user active / inactive (inactive uses soft-delete)
-  setUserActive: adminProcedure
+  setUserActive: userManagerProcedure
     .input(z.object({ userId: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
@@ -3138,7 +3334,7 @@ export const adminRouter = router({
       };
     }),
 
-  approveUser: adminProcedure
+  approveUser: userManagerProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
@@ -3223,7 +3419,7 @@ export const adminRouter = router({
       };
     }),
 
-  rejectUser: adminProcedure
+  rejectUser: userManagerProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -3400,8 +3596,8 @@ export const adminRouter = router({
       };
     }),
 
-  // Update user profile (admin only - name, email, phone, role)
-  updateUser: adminProcedure
+  // Update user profile (name, email, phone, role)
+  updateUser: userManagerProcedure
     .input(
       z.object({
         userId: z.string(),
