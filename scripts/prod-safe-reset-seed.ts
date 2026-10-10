@@ -364,22 +364,21 @@ function pgDump(db: ReturnType<typeof parseDatabaseUrl>, dumpPath: string) {
     ],
     { env }
   );
+  // Omit encoding so stdout is a Buffer (Node rejects encoding: "buffer").
   const gz = spawnSync("gzip", ["-c"], {
-    input: sql,
-    encoding: "buffer",
+    input: Buffer.from(sql, "utf8"),
     maxBuffer: 512 * 1024 * 1024,
   });
   if (gz.status !== 0) {
     fail(`gzip failed: ${gz.stderr?.toString() || "unknown"}`);
   }
-  writeFileSync(dumpPath, gz.stdout as Buffer, { mode: 0o600 });
+  const gzBuf = Buffer.isBuffer(gz.stdout) ? gz.stdout : Buffer.from(gz.stdout ?? "");
+  writeFileSync(dumpPath, gzBuf, { mode: 0o600 });
   const size = statSync(dumpPath).size;
   if (size < MIN_DUMP_BYTES) {
     fail(`dump too small (${size} bytes < ${MIN_DUMP_BYTES})`);
   }
-  const sha = createHash("sha256")
-    .update(gz.stdout as Buffer)
-    .digest("hex");
+  const sha = createHash("sha256").update(gzBuf).digest("hex");
   writeFileSync(`${dumpPath}.sha256`, `${sha}  ${dumpPath}\n`, { mode: 0o600 });
   log(`dump ok (${size} bytes, sha256=${sha.slice(0, 12)}…)`);
 }
@@ -387,18 +386,18 @@ function pgDump(db: ReturnType<typeof parseDatabaseUrl>, dumpPath: string) {
 function pgRestoreFromGzip(db: ReturnType<typeof parseDatabaseUrl>, dumpPath: string) {
   log(`ROLLBACK: restoring ${dumpPath}`);
   const gunzip = spawnSync("gunzip", ["-c", dumpPath], {
-    encoding: "buffer",
     maxBuffer: 512 * 1024 * 1024,
   });
   if (gunzip.status !== 0) {
     fail(`gunzip failed during rollback: ${gunzip.stderr?.toString() || "unknown"}`);
   }
+  const sqlBuf = Buffer.isBuffer(gunzip.stdout) ? gunzip.stdout : Buffer.from(gunzip.stdout ?? "");
   const env = { ...process.env, PGPASSWORD: db.password };
   const psql = spawnSync(
     "psql",
     ["-h", db.host, "-p", db.port, "-U", db.user, "-d", db.database, "-v", "ON_ERROR_STOP=1"],
     {
-      input: gunzip.stdout as Buffer,
+      input: sqlBuf,
       env,
       encoding: "utf8",
       maxBuffer: 512 * 1024 * 1024,
