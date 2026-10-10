@@ -4,15 +4,16 @@ import { useAuth } from "../src/providers/auth";
 import { Loading } from "../src/components/ui";
 import { hasCompletedOnboarding } from "../src/lib/onboarding";
 
+/** Cold-start gate: app → onboarding (once) → welcome → login. */
 export default function Index() {
   const { ready, token } = useAuth();
-  const [gate, setGate] = useState<"loading" | "onboarding" | "welcome">("loading");
+  const [seenOnboarding, setSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (token) return;
     let cancelled = false;
     void hasCompletedOnboarding().then((done) => {
-      if (!cancelled) setGate(done ? "welcome" : "onboarding");
+      if (!cancelled) setSeenOnboarding(done);
     });
     return () => {
       cancelled = true;
@@ -21,7 +22,7 @@ export default function Index() {
 
   if (!ready) return <Loading />;
   if (token) return <Redirect href="/(app)" />;
-  if (gate === "loading") return <Loading />;
-  if (gate === "onboarding") return <Redirect href="/(auth)/onboarding" />;
+  if (seenOnboarding === null) return <Loading />;
+  if (!seenOnboarding) return <Redirect href="/(auth)/onboarding" />;
   return <Redirect href="/(auth)/welcome" />;
 }
