@@ -65,6 +65,7 @@ export default function MyRequestsPage() {
                   createdAt={request.createdAt}
                   serviceType={request.serviceType}
                   client={request.client}
+                  maskClientName
                   commentCount={request._count.comments}
                   href={`/provider/requests/${request.id}`}
                   variant="compact"

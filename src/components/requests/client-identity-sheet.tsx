@@ -22,7 +22,6 @@ import type { LocalizedText } from "@/types/i18n";
 
 interface ClientIdentitySheetProps {
   readonly clientId: string;
-  readonly clientName?: string | null;
 }
 
 type IdentityAsset = {
@@ -73,7 +72,7 @@ function prettyFilename(name: string = "") {
   return result;
 }
 
-export function ClientIdentitySheet({ clientId, clientName }: ClientIdentitySheetProps) {
+export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
   const t = useTranslations("requests.clientIdentity");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
@@ -131,9 +130,7 @@ export function ClientIdentitySheet({ clientId, clientName }: ClientIdentityShee
       <SheetContent side={sheetSide} className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{t("title")}</SheetTitle>
-          <SheetDescription>
-            {clientName ? t("descriptionNamed", { name: clientName }) : t("description")}
-          </SheetDescription>
+          <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">

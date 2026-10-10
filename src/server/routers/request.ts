@@ -314,13 +314,17 @@ export const requestRouter = router({
 
       const commentsChronological = [...request.comments].reverse();
 
-      // Providers viewing an unassigned pending request must not see client PII.
-      const isProviderBrowsing = role === "PROVIDER" && request.providerId !== userId;
-      const visibleRequest = isProviderBrowsing
+      // Providers must not see client PII (name/email); use generic "Client" in UI.
+      const isProvider = role === "PROVIDER";
+      const isProviderBrowsing = isProvider && request.providerId !== userId;
+      const redactedClient = request.client
+        ? { id: request.client.id, name: null, email: null, image: null }
+        : request.client;
+      const visibleRequest = isProvider
         ? {
             ...request,
-            client: { ...request.client, email: null },
-            comments: [],
+            client: redactedClient,
+            comments: isProviderBrowsing ? [] : commentsChronological,
           }
         : {
             ...request,

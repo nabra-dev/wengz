@@ -264,11 +264,7 @@ export default function ProviderRequestDetailPage() {
         createdAt={request.createdAt}
         backUrl="/provider/my-requests"
         backLabel={t("backToMyRequests")}
-        actions={
-          request.clientId ? (
-            <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
-          ) : undefined
-        }
+        actions={request.clientId ? <ClientIdentitySheet clientId={request.clientId} /> : undefined}
       />
 
       <RequestWorkspace

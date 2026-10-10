@@ -32,6 +32,8 @@ interface RequestCardProps {
   readonly actions?: React.ReactNode;
   readonly variant?: "compact" | "detailed";
   readonly showProviderAsBrand?: boolean;
+  /** Show generic "Client" label instead of name/email (provider views). */
+  readonly maskClientName?: boolean;
   readonly needsManualApproval?: boolean;
   /** Show a unread/new indicator circle next to the title. */
   readonly unread?: boolean;
@@ -54,6 +56,7 @@ export function RequestCard({
   actions,
   variant = "compact",
   showProviderAsBrand = false,
+  maskClientName = false,
   needsManualApproval = false,
   unread = false,
 }: RequestCardProps) {
@@ -65,6 +68,7 @@ export function RequestCard({
   const providerDisplayName = showProviderAsBrand
     ? tSidebar("brandProviderName")
     : provider?.name || provider?.email;
+  const clientDisplayName = maskClientName ? tCard("client") : client?.name || client?.email;
 
   const content = (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3 sm:gap-4">
@@ -124,7 +128,13 @@ export function RequestCard({
           </span>
           {client && (
             <span className="truncate">
-              <strong>{tCard("client")}:</strong> {client.name || client.email}
+              {maskClientName ? (
+                clientDisplayName
+              ) : (
+                <>
+                  <strong>{tCard("client")}:</strong> {clientDisplayName}
+                </>
+              )}
             </span>
           )}
           {provider && (

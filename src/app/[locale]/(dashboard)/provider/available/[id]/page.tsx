@@ -127,9 +127,7 @@ export default function AvailableJobDetailPage() {
         backUrl="/provider/available"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {request.clientId ? (
-              <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
-            ) : null}
+            {request.clientId ? <ClientIdentitySheet clientId={request.clientId} /> : null}
             <Button size="lg" onClick={handleClaim} disabled={claimRequest.isPending}>
               {claimRequest.isPending ? t("claiming") : t("claimJob")}
             </Button>

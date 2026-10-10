@@ -167,9 +167,7 @@ export default function AdminRequestDetailPage() {
         needsManualApproval={(request as any).needsManualApproval === true}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {request.clientId ? (
-              <ClientIdentitySheet clientId={request.clientId} clientName={request.client?.name} />
-            ) : null}
+            {request.clientId ? <ClientIdentitySheet clientId={request.clientId} /> : null}
             {!isDeleted && request.status !== "COMPLETED" && request.status !== "CANCELLED" ? (
               <Button variant="outline" onClick={() => setAssignDialogOpen(true)} className="gap-2">
                 <UserPlus className="h-4 w-4" />

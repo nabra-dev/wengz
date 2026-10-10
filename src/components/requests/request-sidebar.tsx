@@ -24,6 +24,8 @@ interface RequestSidebarProps {
   readonly currentRevisionCount?: number;
   readonly totalRevisions?: number;
   readonly maskProviderNameForClient?: boolean;
+  /** Show generic "Client" instead of name/email (provider views). */
+  readonly maskClientName?: boolean;
   readonly revisionInfo?: {
     freeRevisionsRemaining: number;
     maxFree: number;
@@ -79,10 +81,12 @@ export function RequestSidebar({
   currentRevisionCount,
   totalRevisions,
   maskProviderNameForClient,
+  maskClientName = false,
   revisionInfo,
 }: RequestSidebarProps) {
   const t = useTranslations("requests.sidebar");
   const locale = useLocale();
+  const clientLabel = t("client");
 
   return (
     <div className="space-y-6">
@@ -90,17 +94,25 @@ export function RequestSidebar({
       {client && (
         <Card>
           <CardHeader>
-            <CardTitle>{t("client")}</CardTitle>
+            <CardTitle>{clientLabel}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarImage src={client.image || ""} />
-                <AvatarFallback>{getInitials(client.name || client.email || "")}</AvatarFallback>
+                {!maskClientName && <AvatarImage src={client.image || ""} />}
+                <AvatarFallback>
+                  {getInitials(
+                    maskClientName ? clientLabel : client.name || client.email || clientLabel
+                  )}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{client.name || t("noName")}</p>
-                {client.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
+                <p className="font-medium">
+                  {maskClientName ? clientLabel : client.name || t("noName")}
+                </p>
+                {!maskClientName && client.email && (
+                  <p className="text-sm text-muted-foreground">{client.email}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -164,7 +176,7 @@ export function RequestSidebar({
               <p className="font-medium">{formatDateTime(updatedAt, locale)}</p>
             </div>
           )}
-              {estimatedDelivery && (
+          {estimatedDelivery && (
             <DeliveryCountdown estimatedDelivery={estimatedDelivery} t={t} locale={locale} />
           )}
           {completedAt && (

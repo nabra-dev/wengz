@@ -220,10 +220,19 @@ export const providerRouter = router({
         skip: input?.cursor ? 1 : 0,
       });
 
+      // Providers must not see client PII — keep id only for identity sheet ACL.
+      const sanitized = requests.map((request) => ({
+        ...request,
+        client: request.client
+          ? { id: request.client.id, name: null, image: null }
+          : request.client,
+      }));
+
       // Use stored credit cost from database
       return {
-        requests,
-        nextCursor: requests.length === (input?.limit || 20) ? (requests.at(-1)?.id ?? null) : null,
+        requests: sanitized,
+        nextCursor:
+          sanitized.length === (input?.limit || 20) ? (sanitized.at(-1)?.id ?? null) : null,
       };
     }),
 
@@ -275,10 +284,18 @@ export const providerRouter = router({
         skip: input?.cursor ? 1 : 0,
       });
 
+      const sanitized = requests.map((request) => ({
+        ...request,
+        client: request.client
+          ? { id: request.client.id, name: null, email: null, image: null }
+          : request.client,
+      }));
+
       // Use stored credit cost from database
       return {
-        requests,
-        nextCursor: requests.length === (input?.limit || 20) ? (requests.at(-1)?.id ?? null) : null,
+        requests: sanitized,
+        nextCursor:
+          sanitized.length === (input?.limit || 20) ? (sanitized.at(-1)?.id ?? null) : null,
       };
     }),
 
