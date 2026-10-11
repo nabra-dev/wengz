@@ -7,10 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { trpc } from "@/lib/trpc/client";
 import { useRealtimeNotifications } from "@/components/providers/notification-provider";
 import { formatDateTime } from "@/lib/utils";
 import { Bell, Check } from "lucide-react";
+
+const NOTIFICATIONS_PAGE_SIZE = 20;
 
 export default function AdminNotificationsPage() {
   const t = useTranslations("admin.notificationsPage");
@@ -18,8 +22,18 @@ export default function AdminNotificationsPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { refreshUnreadCount } = useRealtimeNotifications();
+  const { page, offset, pageSize, setPage } = useListPage({
+    pageSize: NOTIFICATIONS_PAGE_SIZE,
+  });
 
-  const { data: notifications, isLoading } = trpc.notification.getAll.useQuery();
+  const {
+    data: notifications,
+    isLoading,
+    isFetching,
+  } = trpc.notification.getAll.useQuery({
+    limit: pageSize,
+    offset,
+  });
 
   const markAsRead = trpc.notification.markAsRead.useMutation({
     onSuccess: () => {
@@ -162,6 +176,14 @@ export default function AdminNotificationsPage() {
                   </div>
                 )
               )}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={notifications?.total ?? 0}
+                hasMore={notifications?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

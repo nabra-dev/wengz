@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
@@ -150,6 +152,8 @@ function hasCompletePayout(payout: PayoutDetails | null) {
   return Boolean(payout.eWalletNumber?.trim());
 }
 
+const FINANCE_LIST_PAGE_SIZE = 50;
+
 function withdrawalBadgeVariant(status: WithdrawalStatus) {
   if (status === "APPROVED") return "default" as const;
   if (status === "REJECTED") return "destructive" as const;
@@ -164,6 +168,33 @@ export default function AdminFinancePage() {
   const [selectedProviderId, setSelectedProviderId] = useState<string | undefined>();
   const [withdrawalFilter, setWithdrawalFilter] = useState<"PENDING" | "ALL">("PENDING");
   const [disputeFilter, setDisputeFilter] = useState<"OPEN" | "ALL">("OPEN");
+  const {
+    page: walletsPage,
+    offset: walletsOffset,
+    pageSize: walletsPageSize,
+    setPage: setWalletsPage,
+  } = useListPage({ param: "walletsPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  const {
+    page: ledgerPage,
+    offset: ledgerOffset,
+    pageSize: ledgerPageSize,
+    setPage: setLedgerPage,
+    resetPage: resetLedgerPage,
+  } = useListPage({ param: "ledgerPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  const {
+    page: withdrawalsPage,
+    offset: withdrawalsOffset,
+    pageSize: withdrawalsPageSize,
+    setPage: setWithdrawalsPage,
+    resetPage: resetWithdrawalsPage,
+  } = useListPage({ param: "withdrawalsPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  const {
+    page: disputesPage,
+    offset: disputesOffset,
+    pageSize: disputesPageSize,
+    setPage: setDisputesPage,
+    resetPage: resetDisputesPage,
+  } = useListPage({ param: "disputesPage", pageSize: FINANCE_LIST_PAGE_SIZE });
   const [reviewTarget, setReviewTarget] = useState<WithdrawalRow | null>(null);
   const [reviewReason, setReviewReason] = useState("");
   const [reviewImageUrl, setReviewImageUrl] = useState<string | null>(null);
@@ -173,22 +204,40 @@ export default function AdminFinancePage() {
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
 
-  const { data: finance, isLoading: financeLoading } = trpc.admin.getFinanceOverview.useQuery({
-    limit: 100,
+  const {
+    data: finance,
+    isLoading: financeLoading,
+    isFetching: financeFetching,
+  } = trpc.admin.getFinanceOverview.useQuery({
+    limit: walletsPageSize,
+    offset: walletsOffset,
   });
-  const { data: ledgerData, isLoading: ledgerLoading } =
-    trpc.admin.getProviderFinanceLedger.useQuery({
-      providerId: selectedProviderId,
-      limit: 50,
-    });
-  const { data: withdrawalsData, isLoading: withdrawalsLoading } =
-    trpc.admin.getWithdrawals.useQuery({
-      status: withdrawalFilter === "PENDING" ? "PENDING" : undefined,
-      limit: 50,
-    });
-  const { data: disputesData, isLoading: disputesLoading } = trpc.admin.getFinanceDisputes.useQuery({
+  const {
+    data: ledgerData,
+    isLoading: ledgerLoading,
+    isFetching: ledgerFetching,
+  } = trpc.admin.getProviderFinanceLedger.useQuery({
+    providerId: selectedProviderId,
+    limit: ledgerPageSize,
+    offset: ledgerOffset,
+  });
+  const {
+    data: withdrawalsData,
+    isLoading: withdrawalsLoading,
+    isFetching: withdrawalsFetching,
+  } = trpc.admin.getWithdrawals.useQuery({
+    status: withdrawalFilter === "PENDING" ? "PENDING" : undefined,
+    limit: withdrawalsPageSize,
+    offset: withdrawalsOffset,
+  });
+  const {
+    data: disputesData,
+    isLoading: disputesLoading,
+    isFetching: disputesFetching,
+  } = trpc.admin.getFinanceDisputes.useQuery({
     status: disputeFilter === "OPEN" ? undefined : "ALL",
-    limit: 50,
+    limit: disputesPageSize,
+    offset: disputesOffset,
   });
   const disputes = useMemo(() => {
     const rows = (disputesData?.disputes ?? []) as FinanceDisputeRow[];
@@ -209,9 +258,7 @@ export default function AdminFinancePage() {
 
   const reviewMutation = trpc.admin.reviewWithdrawal.useMutation({
     onSuccess: (_data, variables) => {
-      showSuccess(
-        variables.status === "APPROVED" ? t("toast.approved") : t("toast.rejected")
-      );
+      showSuccess(variables.status === "APPROVED" ? t("toast.approved") : t("toast.rejected"));
       setReviewTarget(null);
       setReviewReason("");
       setReviewImageUrl(null);
@@ -366,7 +413,10 @@ export default function AdminFinancePage() {
           </div>
           <Tabs
             value={withdrawalFilter}
-            onValueChange={(value) => setWithdrawalFilter(value as "PENDING" | "ALL")}
+            onValueChange={(value) => {
+              setWithdrawalFilter(value as "PENDING" | "ALL");
+              resetWithdrawalsPage();
+            }}
           >
             <TabsList>
               <TabsTrigger value="PENDING">{t("withdrawals.filterPending")}</TabsTrigger>
@@ -415,13 +465,9 @@ export default function AdminFinancePage() {
                     </TableCell>
                     <TableCell>{formatCurrency(entry.amountUsd)}</TableCell>
                     <TableCell>{formatCurrency(entry.feeUsd ?? 0)}</TableCell>
-                    <TableCell>
-                      {formatCurrency(entry.amountUsd - (entry.feeUsd ?? 0))}
-                    </TableCell>
+                    <TableCell>{formatCurrency(entry.amountUsd - (entry.feeUsd ?? 0))}</TableCell>
                     <TableCell>{t(`methods.${entry.payoutMethod}`)}</TableCell>
-                    <TableCell className="max-w-xs text-sm">
-                      {formatDestination(entry)}
-                    </TableCell>
+                    <TableCell className="max-w-xs text-sm">{formatDestination(entry)}</TableCell>
                     <TableCell>
                       <Badge variant={withdrawalBadgeVariant(entry.status)}>
                         {t(`withdrawStatus.${entry.status}`)}
@@ -468,6 +514,14 @@ export default function AdminFinancePage() {
               </TableBody>
             </Table>
           ) : null}
+          <OffsetPagination
+            page={withdrawalsPage}
+            pageSize={withdrawalsPageSize}
+            total={withdrawalsData?.total ?? 0}
+            hasMore={withdrawalsData?.hasMore}
+            onPageChange={setWithdrawalsPage}
+            isFetching={withdrawalsFetching}
+          />
         </CardContent>
       </Card>
 
@@ -479,7 +533,10 @@ export default function AdminFinancePage() {
           </div>
           <Tabs
             value={disputeFilter}
-            onValueChange={(value) => setDisputeFilter(value as "OPEN" | "ALL")}
+            onValueChange={(value) => {
+              setDisputeFilter(value as "OPEN" | "ALL");
+              resetDisputesPage();
+            }}
           >
             <TabsList>
               <TabsTrigger value="OPEN">{t("disputes.filterOpen")}</TabsTrigger>
@@ -523,8 +580,7 @@ export default function AdminFinancePage() {
                     : t("disputes.withdrawalTarget", {
                         amount: formatCurrency(entry.withdrawal?.amountUsd ?? 0),
                       });
-                  const canReview =
-                    entry.status === "OPEN" || entry.status === "UNDER_REVIEW";
+                  const canReview = entry.status === "OPEN" || entry.status === "UNDER_REVIEW";
                   return (
                     <TableRow key={entry.id}>
                       <TableCell>
@@ -543,9 +599,7 @@ export default function AdminFinancePage() {
                       <TableCell className="max-w-xs text-sm text-muted-foreground">
                         {entry.adminNote || "—"}
                       </TableCell>
-                      <TableCell>
-                        {new Date(entry.createdAt).toLocaleDateString(locale)}
-                      </TableCell>
+                      <TableCell>{new Date(entry.createdAt).toLocaleDateString(locale)}</TableCell>
                       <TableCell>
                         {canReview && (
                           <Button
@@ -565,6 +619,14 @@ export default function AdminFinancePage() {
               </TableBody>
             </Table>
           ) : null}
+          <OffsetPagination
+            page={disputesPage}
+            pageSize={disputesPageSize}
+            total={disputesData?.total ?? 0}
+            hasMore={disputesData?.hasMore}
+            onPageChange={setDisputesPage}
+            isFetching={disputesFetching}
+          />
         </CardContent>
       </Card>
 
@@ -604,7 +666,15 @@ export default function AdminFinancePage() {
                       <div className="text-xs text-muted-foreground">{wallet.provider.email}</div>
                     </TableCell>
                     <TableCell className="max-w-xs text-sm">
-                      {formatDestination(wallet.payout ?? { payoutMethod: null, accountHolder: null, bankName: null, bankAccount: null, eWalletNumber: null })}
+                      {formatDestination(
+                        wallet.payout ?? {
+                          payoutMethod: null,
+                          accountHolder: null,
+                          bankName: null,
+                          bankAccount: null,
+                          eWalletNumber: null,
+                        }
+                      )}
                     </TableCell>
                     <TableCell>{formatCurrency(wallet.balanceUsd)}</TableCell>
                     <TableCell>{formatCurrency(wallet.heldUsd)}</TableCell>
@@ -613,17 +683,16 @@ export default function AdminFinancePage() {
                     <TableCell>{wallet.requestCount}</TableCell>
                     <TableCell className="flex flex-wrap gap-2">
                       <Button
-                        variant={
-                          selectedProviderId === wallet.provider.id ? "default" : "outline"
-                        }
+                        variant={selectedProviderId === wallet.provider.id ? "default" : "outline"}
                         size="sm"
-                        onClick={() =>
+                        onClick={() => {
                           setSelectedProviderId(
                             selectedProviderId === wallet.provider.id
                               ? undefined
                               : wallet.provider.id
-                          )
-                        }
+                          );
+                          resetLedgerPage();
+                        }}
                       >
                         {selectedProviderId === wallet.provider.id
                           ? t("wallets.showAll")
@@ -634,9 +703,7 @@ export default function AdminFinancePage() {
                         variant="outline"
                         onClick={() => {
                           setPayoutTarget(wallet);
-                          setPayoutAmount(
-                            wallet.balanceUsd > 0 ? String(wallet.balanceUsd) : ""
-                          );
+                          setPayoutAmount(wallet.balanceUsd > 0 ? String(wallet.balanceUsd) : "");
                           setPayoutReason("");
                         }}
                       >
@@ -648,6 +715,14 @@ export default function AdminFinancePage() {
               </TableBody>
             </Table>
           )}
+          <OffsetPagination
+            page={walletsPage}
+            pageSize={walletsPageSize}
+            total={finance?.total ?? 0}
+            hasMore={finance?.hasMore}
+            onPageChange={setWalletsPage}
+            isFetching={financeFetching}
+          />
         </CardContent>
       </Card>
 
@@ -755,6 +830,14 @@ export default function AdminFinancePage() {
               </TableBody>
             </Table>
           )}
+          <OffsetPagination
+            page={ledgerPage}
+            pageSize={ledgerPageSize}
+            total={ledgerData?.total ?? 0}
+            hasMore={ledgerData?.hasMore}
+            onPageChange={setLedgerPage}
+            isFetching={ledgerFetching}
+          />
         </CardContent>
       </Card>
 
@@ -776,7 +859,9 @@ export default function AdminFinancePage() {
           {reviewTarget && (
             <div className="space-y-3 text-sm">
               <p>
-                <span className="font-medium">{reviewTarget.provider.name || reviewTarget.provider.email}</span>
+                <span className="font-medium">
+                  {reviewTarget.provider.name || reviewTarget.provider.email}
+                </span>
                 {" · "}
                 {formatCurrency(reviewTarget.amountUsd)}
                 {(reviewTarget.feeUsd ?? 0) > 0 && (
@@ -823,11 +908,7 @@ export default function AdminFinancePage() {
           <DialogFooter className="gap-2">
             <Button
               variant="destructive"
-              disabled={
-                reviewMutation.isPending ||
-                !reviewReason.trim() ||
-                !reviewImageUrl
-              }
+              disabled={reviewMutation.isPending || !reviewReason.trim() || !reviewImageUrl}
               onClick={() => {
                 if (!reviewTarget || !reviewImageUrl) return;
                 reviewMutation.mutate({
@@ -841,11 +922,7 @@ export default function AdminFinancePage() {
               {reviewMutation.isPending ? t("review.submitting") : t("review.reject")}
             </Button>
             <Button
-              disabled={
-                reviewMutation.isPending ||
-                !reviewReason.trim() ||
-                !reviewImageUrl
-              }
+              disabled={reviewMutation.isPending || !reviewReason.trim() || !reviewImageUrl}
               onClick={() => {
                 if (!reviewTarget || !reviewImageUrl) return;
                 reviewMutation.mutate({

@@ -8,6 +8,8 @@ import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import {
   Select,
   SelectContent,
@@ -45,35 +47,33 @@ type Subscription = {
   };
 };
 
+const SUBS_PAGE_SIZE = 50;
+
 export default function AdminSubscriptionsPage() {
   const t = useTranslations("admin.subscriptions");
   const locale = useLocale();
   const formatCurrency = useFormatCurrency();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({
+    pageSize: SUBS_PAGE_SIZE,
+  });
 
-  const { data, isLoading } = trpc.admin.getAllSubscriptions.useQuery({
+  const { data, isLoading, isFetching } = trpc.admin.getAllSubscriptions.useQuery({
     status:
       statusFilter === "all" ? undefined : (statusFilter as "active" | "expired" | "cancelled"),
+    search: searchQuery.trim() || undefined,
+    limit: pageSize,
+    offset,
   });
 
   const subscriptions: Subscription[] = data?.subscriptions || [];
-
-  const filteredSubscriptions = subscriptions.filter((sub) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      sub.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sub.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sub.package.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
-  const stats = {
-    total: subscriptions.length,
-    active: subscriptions.filter((s) => s.isActive && new Date(s.endDate) >= new Date()).length,
-    expired: subscriptions.filter((s) => new Date(s.endDate) < new Date()).length,
-    cancelled: subscriptions.filter((s) => s.cancelledAt !== null).length,
-    totalRevenue: subscriptions.reduce((sum, s) => sum + s.package.price, 0),
+  const stats = data?.stats ?? {
+    total: 0,
+    active: 0,
+    expired: 0,
+    cancelled: 0,
+    totalRevenue: 0,
   };
 
   if (isLoading) {
@@ -135,7 +135,7 @@ export default function AdminSubscriptionsPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue}</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
           </CardContent>
         </Card>
       </div>
@@ -154,12 +154,21 @@ export default function AdminSubscriptionsPage() {
                   type="text"
                   placeholder={t("filters.searchPlaceholder")}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    resetPage();
+                  }}
                   className="w-full ps-10 pe-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                resetPage();
+              }}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={t("filters.status")} />
               </SelectTrigger>
@@ -177,10 +186,10 @@ export default function AdminSubscriptionsPage() {
       {/* Subscriptions List */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("list.title", { count: filteredSubscriptions.length })}</CardTitle>
+          <CardTitle>{t("list.title", { count: data?.total ?? subscriptions.length })}</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredSubscriptions.length === 0 ? (
+          {subscriptions.length === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium">{t("empty.title")}</h3>
@@ -192,7 +201,7 @@ export default function AdminSubscriptionsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredSubscriptions.map((sub) => {
+              {subscriptions.map((sub) => {
                 const isExpired = new Date(sub.endDate) < new Date();
                 const isCancelled = sub.cancelledAt !== null;
                 const isActive = sub.isActive && !isExpired && !isCancelled;
@@ -259,6 +268,14 @@ export default function AdminSubscriptionsPage() {
                   </div>
                 );
               })}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={data?.total ?? 0}
+                hasMore={data?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

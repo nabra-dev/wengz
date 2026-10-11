@@ -169,11 +169,17 @@ export const providerRouter = router({
       z
         .object({
           limit: z.number().min(1).max(50).default(20),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
-    .output(z.object({ requests: z.array(z.any()), nextCursor: z.string().nullable() }))
+    .output(
+      z.object({
+        requests: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -195,7 +201,8 @@ export const providerRouter = router({
       if (supportedServiceIds.length === 0) {
         return {
           requests: [],
-          nextCursor: null,
+          total: 0,
+          hasMore: false,
         };
       }
 
@@ -206,19 +213,23 @@ export const providerRouter = router({
         serviceTypeId: { in: supportedServiceIds },
       };
 
-      const requests = await ctx.db.request.findMany({
-        where: whereClause,
-        include: {
-          client: {
-            select: { id: true, name: true, image: true },
+      const limit = input?.limit || 20;
+      const offset = input?.offset || 0;
+      const [requests, total] = await Promise.all([
+        ctx.db.request.findMany({
+          where: whereClause,
+          include: {
+            client: {
+              select: { id: true, name: true, image: true },
+            },
+            serviceType: true,
           },
-          serviceType: true,
-        },
-        orderBy: { createdAt: "asc" },
-        take: input?.limit || 20,
-        cursor: input?.cursor ? { id: input.cursor } : undefined,
-        skip: input?.cursor ? 1 : 0,
-      });
+          orderBy: { createdAt: "asc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.request.count({ where: whereClause }),
+      ]);
 
       // Providers must not see client PII — keep id only for identity sheet ACL.
       const sanitized = requests.map((request) => ({
@@ -231,8 +242,8 @@ export const providerRouter = router({
       // Use stored credit cost from database
       return {
         requests: sanitized,
-        nextCursor:
-          sanitized.length === (input?.limit || 20) ? (sanitized.at(-1)?.id ?? null) : null,
+        total,
+        hasMore: offset + sanitized.length < total,
       };
     }),
 
@@ -253,11 +264,17 @@ export const providerRouter = router({
             .enum(["IN_PROGRESS", "DELIVERED", "REVISION_REQUESTED", "COMPLETED"])
             .optional(),
           limit: z.number().min(1).max(50).default(20),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
-    .output(z.object({ requests: z.array(z.any()), nextCursor: z.string().nullable() }))
+    .output(
+      z.object({
+        requests: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -266,23 +283,27 @@ export const providerRouter = router({
         where.status = input.status;
       }
 
-      const requests = await ctx.db.request.findMany({
-        where,
-        include: {
-          client: {
-            select: { id: true, name: true, email: true, image: true },
+      const limit = input?.limit || 20;
+      const offset = input?.offset || 0;
+      const [requests, total] = await Promise.all([
+        ctx.db.request.findMany({
+          where,
+          include: {
+            client: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            serviceType: true,
+            rating: true,
+            _count: {
+              select: { comments: true },
+            },
           },
-          serviceType: true,
-          rating: true,
-          _count: {
-            select: { comments: true },
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: input?.limit || 20,
-        cursor: input?.cursor ? { id: input.cursor } : undefined,
-        skip: input?.cursor ? 1 : 0,
-      });
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.request.count({ where }),
+      ]);
 
       const sanitized = requests.map((request) => ({
         ...request,
@@ -294,8 +315,8 @@ export const providerRouter = router({
       // Use stored credit cost from database
       return {
         requests: sanitized,
-        nextCursor:
-          sanitized.length === (input?.limit || 20) ? (sanitized.at(-1)?.id ?? null) : null,
+        total,
+        hasMore: offset + sanitized.length < total,
       };
     }),
 
@@ -314,6 +335,10 @@ export const providerRouter = router({
         .object({
           startDate: z.date().optional(),
           endDate: z.date().optional(),
+          ledgerLimit: z.number().min(1).max(100).default(20),
+          ledgerOffset: z.number().min(0).default(0),
+          withdrawalLimit: z.number().min(1).max(100).default(20),
+          withdrawalOffset: z.number().min(0).default(0),
         })
         .optional()
     )
@@ -333,6 +358,8 @@ export const providerRouter = router({
         period: z.object({ start: z.date(), end: z.date() }),
         requests: z.array(z.any()),
         ledger: z.array(z.any()),
+        ledgerTotal: z.number(),
+        ledgerHasMore: z.boolean(),
         payout: z
           .object({
             payoutMethod: z.enum(["BANK", "E_WALLET"]).nullable(),
@@ -343,6 +370,8 @@ export const providerRouter = router({
           })
           .nullable(),
         withdrawals: z.array(z.any()),
+        withdrawalTotal: z.number(),
+        withdrawalHasMore: z.boolean(),
         hasPendingWithdrawal: z.boolean(),
         withdrawalSettings: z.object({
           minWithdrawalUsd: z.number(),
@@ -357,8 +386,22 @@ export const providerRouter = router({
       // settlements remain visible while balance still includes them.
       const startDate = input?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = input?.endDate || new Date();
+      const ledgerLimit = input?.ledgerLimit ?? 20;
+      const ledgerOffset = input?.ledgerOffset ?? 0;
+      const withdrawalLimit = input?.withdrawalLimit ?? 20;
+      const withdrawalOffset = input?.withdrawalOffset ?? 0;
 
-      const [wallet, ledger, periodAgg, profile, withdrawals, financeSettings] = await Promise.all([
+      const [
+        wallet,
+        ledger,
+        ledgerTotal,
+        periodAgg,
+        profile,
+        withdrawals,
+        withdrawalTotal,
+        financeSettings,
+        pendingWithdrawalCount,
+      ] = await Promise.all([
         ctx.db.providerWallet.findUnique({
           where: { providerId: userId },
         }),
@@ -396,8 +439,10 @@ export const providerRouter = router({
             },
           },
           orderBy: { settledAt: "desc" },
-          take: 100,
+          take: ledgerLimit,
+          skip: ledgerOffset,
         }),
+        ctx.db.providerFinanceLedger.count({ where: { providerId: userId } }),
         ctx.db.providerFinanceLedger.aggregate({
           where: {
             providerId: userId,
@@ -442,9 +487,14 @@ export const providerRouter = router({
             },
           },
           orderBy: { createdAt: "desc" },
-          take: 50,
+          take: withdrawalLimit,
+          skip: withdrawalOffset,
         }),
+        ctx.db.withdrawalRequest.count({ where: { providerId: userId } }),
         getFinanceSettings(ctx.db),
+        ctx.db.withdrawalRequest.count({
+          where: { providerId: userId, status: "PENDING" },
+        }),
       ]);
 
       const completedRequests = ledger.map((entry) => ({
@@ -483,6 +533,8 @@ export const providerRouter = router({
         },
         requests: completedRequests,
         ledger,
+        ledgerTotal,
+        ledgerHasMore: ledgerOffset + ledger.length < ledgerTotal,
         payout: profile
           ? {
               payoutMethod: profile.payoutMethod,
@@ -493,7 +545,9 @@ export const providerRouter = router({
             }
           : null,
         withdrawals,
-        hasPendingWithdrawal: withdrawals.some((item) => item.status === "PENDING"),
+        withdrawalTotal,
+        withdrawalHasMore: withdrawalOffset + withdrawals.length < withdrawalTotal,
+        hasPendingWithdrawal: pendingWithdrawalCount > 0,
         withdrawalSettings: {
           minWithdrawalUsd: financeSettings.minWithdrawalUsd,
           withdrawalFeeUsd: financeSettings.withdrawalFeeUsd,
@@ -503,11 +557,20 @@ export const providerRouter = router({
 
   // Get completed requests that have not yet been settled into a wallet.
   getUnsettledCompletedRequests: providerProcedure
-    .output(z.array(z.any()))
-    .query(async ({ ctx }) => {
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          cursor: z.string().optional(),
+        })
+        .optional()
+    )
+    .output(z.object({ requests: z.array(z.any()), nextCursor: z.string().nullable() }))
+    .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      const limit = input?.limit ?? 50;
 
-      return ctx.db.request.findMany({
+      const requests = await ctx.db.request.findMany({
         where: {
           providerId: userId,
           status: "COMPLETED",
@@ -516,7 +579,19 @@ export const providerRouter = router({
         include: {
           serviceType: true,
         },
+        orderBy: { completedAt: "desc" },
+        take: limit + 1,
+        cursor: input?.cursor ? { id: input.cursor } : undefined,
+        skip: input?.cursor ? 1 : 0,
       });
+
+      const hasMore = requests.length > limit;
+      const page = hasMore ? requests.slice(0, limit) : requests;
+
+      return {
+        requests: page,
+        nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
+      };
     }),
 
   // Get recent reviews

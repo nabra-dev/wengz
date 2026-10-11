@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { trpc } from "@/lib/trpc/client";
 import { useRealtimeNotifications } from "@/components/providers/notification-provider";
 import { formatDateTime } from "@/lib/utils";
 import { Bell, Check } from "lucide-react";
+
+const NOTIFICATIONS_PAGE_SIZE = 20;
 
 export default function ProviderNotificationsPage() {
   const router = useRouter();
@@ -18,7 +22,17 @@ export default function ProviderNotificationsPage() {
   const locale = useLocale();
   const utils = trpc.useUtils();
   const { refreshUnreadCount } = useRealtimeNotifications();
-  const { data: notifications, isLoading } = trpc.notification.getAll.useQuery();
+  const { page, offset, pageSize, setPage } = useListPage({
+    pageSize: NOTIFICATIONS_PAGE_SIZE,
+  });
+  const {
+    data: notifications,
+    isLoading,
+    isFetching,
+  } = trpc.notification.getAll.useQuery({
+    limit: pageSize,
+    offset,
+  });
 
   const markAsRead = trpc.notification.markAsRead.useMutation({
     onSuccess: () => {
@@ -163,6 +177,14 @@ export default function ProviderNotificationsPage() {
                   </div>
                 )
               )}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={notifications?.total ?? 0}
+                hasMore={notifications?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

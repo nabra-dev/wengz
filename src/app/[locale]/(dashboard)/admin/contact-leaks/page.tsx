@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { trpc } from "@/lib/trpc/client";
 import { ExternalLink, ShieldAlert, ShieldOff } from "lucide-react";
 
@@ -66,13 +68,13 @@ export default function AdminContactLeaksPage() {
   const locale = useLocale();
   const utils = trpc.useUtils();
   const [filter, setFilter] = useState<LeakFilter>("all");
-  const [cursor, setCursor] = useState<string | undefined>();
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({ pageSize: 50 });
   const [clearingUserId, setClearingUserId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching } = trpc.admin.getContactLeakEvents.useQuery({
     filter,
-    limit: 50,
-    cursor,
+    limit: pageSize,
+    offset,
   });
 
   const clearStrikes = trpc.admin.clearContactLeakStrikes.useMutation({
@@ -162,7 +164,7 @@ export default function AdminContactLeaksPage() {
           <Tabs
             value={filter}
             onValueChange={(value) => {
-              setCursor(undefined);
+              resetPage();
               setFilter(value as LeakFilter);
             }}
           >
@@ -294,23 +296,14 @@ export default function AdminContactLeaksPage() {
                 </TableBody>
               </Table>
 
-              <div className="mt-4 flex justify-end gap-2">
-                {cursor ? (
-                  <Button variant="outline" size="sm" onClick={() => setCursor(undefined)}>
-                    {t("newest")}
-                  </Button>
-                ) : null}
-                {data?.nextCursor ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isFetching}
-                    onClick={() => setCursor(data.nextCursor ?? undefined)}
-                  >
-                    {t("loadMore")}
-                  </Button>
-                ) : null}
-              </div>
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={data?.total ?? 0}
+                hasMore={data?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </>
           ) : null}
         </CardContent>

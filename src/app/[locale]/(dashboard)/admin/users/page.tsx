@@ -52,6 +52,8 @@ import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
 import { downloadBase64File } from "@/lib/download-base64-file";
 import { showError } from "@/lib/error-handler";
 import { PasswordInput } from "@/components/ui/password-input";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 
 type UserRole = AssignableRole | "SUPER_ADMIN";
 type ManagedUserRole = AssignableRole;
@@ -352,12 +354,17 @@ function UserListItem({
   );
 }
 
+const USERS_PAGE_SIZE = 50;
+
 export default function AdminUsersPage() {
   const t = useTranslations("admin.users");
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({
+    pageSize: USERS_PAGE_SIZE,
+  });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -396,10 +403,16 @@ export default function AdminUsersPage() {
     supportedServiceIds: [] as string[],
   });
 
-  const { data: users, isLoading } = trpc.admin.getUsers.useQuery({
+  const {
+    data: users,
+    isLoading,
+    isFetching,
+  } = trpc.admin.getUsers.useQuery({
     search: search || undefined,
     role: roleFilter === "all" ? undefined : (roleFilter as UserRole),
     status: statusFilter,
+    limit: pageSize,
+    offset,
   });
 
   const { data: serviceTypes } = trpc.admin.getServiceTypes.useQuery({ status: "all" });
@@ -842,11 +855,20 @@ export default function AdminUsersPage() {
               <Input
                 placeholder={t("search")}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  resetPage();
+                }}
                 className="ps-10"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select
+              value={roleFilter}
+              onValueChange={(value) => {
+                setRoleFilter(value);
+                resetPage();
+              }}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={t("filters.role")} />
               </SelectTrigger>
@@ -875,7 +897,10 @@ export default function AdminUsersPage() {
         <CardContent>
           <Tabs
             value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+            onValueChange={(value) => {
+              setStatusFilter(value as StatusFilter);
+              resetPage();
+            }}
           >
             <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
               <TabsTrigger value="all">{t("filters.all")}</TabsTrigger>
@@ -938,6 +963,14 @@ export default function AdminUsersPage() {
                       }
                     />
                   ))}
+                  <OffsetPagination
+                    page={page}
+                    pageSize={pageSize}
+                    total={users?.total ?? 0}
+                    hasMore={users?.hasMore}
+                    onPageChange={setPage}
+                    isFetching={isFetching}
+                  />
                 </div>
               )}
             </TabsContent>

@@ -20,11 +20,17 @@ export const notificationRouter = router({
         .object({
           unreadOnly: z.boolean().default(false),
           limit: z.number().min(1).max(100).default(20),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
-    .output(z.object({ notifications: z.array(z.any()), nextCursor: z.string().nullable() }))
+    .output(
+      z.object({
+        notifications: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -33,18 +39,22 @@ export const notificationRouter = router({
         where.isRead = false;
       }
 
-      const notifications = await ctx.db.notification.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: input?.limit || 20,
-        cursor: input?.cursor ? { id: input.cursor } : undefined,
-        skip: input?.cursor ? 1 : 0,
-      });
+      const limit = input?.limit || 20;
+      const offset = input?.offset || 0;
+      const [notifications, total] = await Promise.all([
+        ctx.db.notification.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.notification.count({ where }),
+      ]);
 
       return {
         notifications,
-        nextCursor:
-          notifications.length === (input?.limit || 20) ? (notifications.at(-1)?.id ?? null) : null,
+        total,
+        hasMore: offset + notifications.length < total,
       };
     }),
 

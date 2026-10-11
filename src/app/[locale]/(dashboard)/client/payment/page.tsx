@@ -37,6 +37,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/ui/file-upload";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate } from "@/lib/utils";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
@@ -299,7 +301,15 @@ function TransactionsSection({ locale }: { locale: string }) {
   const t = useTranslations("client.transactions");
   const tAdmin = useTranslations("admin.payments");
   const formatCurrency = useFormatCurrency();
-  const { data: transactions, isLoading } = trpc.subscription.getTransactionHistory.useQuery();
+  const { page, offset, pageSize, setPage } = useListPage({
+    param: "txPage",
+    pageSize: 20,
+  });
+  const { data, isLoading, isFetching } = trpc.subscription.getTransactionHistory.useQuery({
+    limit: pageSize,
+    offset,
+  });
+  const transactions = data?.transactions;
 
   if (isLoading) {
     return (
@@ -392,6 +402,14 @@ function TransactionsSection({ locale }: { locale: string }) {
               </CardContent>
             </Card>
           ))}
+          <OffsetPagination
+            page={page}
+            pageSize={pageSize}
+            total={data?.total ?? 0}
+            hasMore={data?.hasMore}
+            onPageChange={setPage}
+            isFetching={isFetching}
+          />
         </div>
       ) : (
         <Card>

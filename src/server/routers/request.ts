@@ -160,14 +160,15 @@ export const requestRouter = router({
             ])
             .optional(),
           limit: z.number().min(1).max(100).default(20),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .output(
       z.object({
         requests: z.array(z.any()),
-        nextCursor: z.string().nullable(),
+        total: z.number(),
+        hasMore: z.boolean(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -213,25 +214,30 @@ export const requestRouter = router({
         where.status = input.status;
       }
 
-      const requests = await ctx.db.request.findMany({
-        where: { ...where, deletedAt: null },
-        include: {
-          client: {
-            select: { id: true, name: true, email: true, image: true },
+      const limit = input?.limit || 20;
+      const offset = input?.offset || 0;
+      const listWhere = { ...where, deletedAt: null };
+      const [requests, total] = await Promise.all([
+        ctx.db.request.findMany({
+          where: listWhere,
+          include: {
+            client: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            provider: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            serviceType: true,
+            _count: {
+              select: { comments: true },
+            },
           },
-          provider: {
-            select: { id: true, name: true, email: true, image: true },
-          },
-          serviceType: true,
-          _count: {
-            select: { comments: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: input?.limit || 20,
-        cursor: input?.cursor ? { id: input.cursor } : undefined,
-        skip: input?.cursor ? 1 : 0,
-      });
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.request.count({ where: listWhere }),
+      ]);
 
       // Providers browsing unassigned pending requests must not see client PII.
       const sanitized =
@@ -244,7 +250,8 @@ export const requestRouter = router({
       // Use stored credit cost (no need to recalculate, preserves historical costs)
       return {
         requests: sanitized,
-        nextCursor: requests.length === (input?.limit || 20) ? (requests.at(-1)?.id ?? null) : null,
+        total,
+        hasMore: offset + sanitized.length < total,
       };
     }),
 
@@ -356,7 +363,7 @@ export const requestRouter = router({
     .input(
       z.object({
         clientId: z.string(),
-        cursor: z.string().optional(),
+        offset: z.number().min(0).default(0),
         limit: z.number().min(1).max(50).default(24),
       })
     )
@@ -381,40 +388,42 @@ export const requestRouter = router({
         });
       }
 
-      const items = await ctx.db.clientIdentityAsset.findMany({
-        where: { clientId: input.clientId },
-        take: input.limit + 1,
-        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        select: {
-          id: true,
-          fileUrl: true,
-          createdAt: true,
-          serviceType: {
-            select: {
-              id: true,
-              name: true,
-              nameI18n: true,
-              icon: true,
+      const where = { clientId: input.clientId };
+      const [items, total] = await Promise.all([
+        ctx.db.clientIdentityAsset.findMany({
+          where,
+          take: input.limit,
+          skip: input.offset,
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          select: {
+            id: true,
+            fileUrl: true,
+            createdAt: true,
+            serviceType: {
+              select: {
+                id: true,
+                name: true,
+                nameI18n: true,
+                icon: true,
+              },
+            },
+            sourceRequest: {
+              select: {
+                id: true,
+                title: true,
+                completedAt: true,
+              },
             },
           },
-          sourceRequest: {
-            select: {
-              id: true,
-              title: true,
-              completedAt: true,
-            },
-          },
-        },
-      });
+        }),
+        ctx.db.clientIdentityAsset.count({ where }),
+      ]);
 
-      let nextCursor: string | undefined;
-      if (items.length > input.limit) {
-        const next = items.pop();
-        nextCursor = next?.id;
-      }
-
-      return { items, nextCursor };
+      return {
+        items,
+        total,
+        hasMore: input.offset + items.length < total,
+      };
     }),
 
   // Provider accepts a request

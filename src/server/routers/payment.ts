@@ -195,30 +195,54 @@ export const paymentRouter = router({
         summary: "List pending payments (admin)",
       },
     })
-    .input(z.void())
-    .output(z.array(z.any()))
-    .query(async ({ ctx }) => {
-      return ctx.db.paymentProof.findMany({
-        where: {
-          status: PaymentStatus.PENDING,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional()
+    )
+    .output(
+      z.object({
+        payments: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const where = { status: PaymentStatus.PENDING };
+      const [payments, total] = await Promise.all([
+        ctx.db.paymentProof.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            subscription: {
+              include: {
+                package: true,
+              },
             },
           },
-          subscription: {
-            include: {
-              package: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-        take: 100,
-      });
+          orderBy: { createdAt: "asc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.paymentProof.count({ where }),
+      ]);
+
+      return {
+        payments,
+        total,
+        hasMore: offset + payments.length < total,
+      };
     }),
 
   // Get all payments with filters (admin)
@@ -235,48 +259,53 @@ export const paymentRouter = router({
       z.object({
         status: z.nativeEnum(PaymentStatus).optional(),
         limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().optional(),
+        offset: z.number().min(0).default(0),
       })
     )
-    .output(z.object({ payments: z.array(z.any()), nextCursor: z.string().nullable() }))
+    .output(
+      z.object({
+        payments: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
-      const payments = await ctx.db.paymentProof.findMany({
-        where: input.status ? { status: input.status } : undefined,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+      const where = input.status ? { status: input.status } : undefined;
+      const [payments, total] = await Promise.all([
+        ctx.db.paymentProof.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            subscription: {
+              include: {
+                package: true,
+              },
+            },
+            reviewer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-          subscription: {
-            include: {
-              package: true,
-            },
-          },
-          reviewer: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-        take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
-        orderBy: { createdAt: "desc" },
-      });
-
-      let nextCursor: typeof input.cursor | undefined = undefined;
-      if (payments.length > input.limit) {
-        const nextItem = payments.pop();
-        nextCursor = nextItem!.id;
-      }
+          take: input.limit,
+          skip: input.offset,
+          orderBy: { createdAt: "desc" },
+        }),
+        ctx.db.paymentProof.count({ where }),
+      ]);
 
       return {
         payments,
-        nextCursor: nextCursor ?? null,
+        total,
+        hasMore: input.offset + payments.length < total,
       };
     }),
 

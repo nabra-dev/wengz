@@ -795,7 +795,7 @@ export function buildOpenApiDocument(baseUrl: string) {
                 description: "OK",
                 content: {
                   "application/json": {
-                    schema: { type: "array", items: { $ref: "#/components/schemas/PaymentProof" } },
+                    schema: { $ref: "#/components/schemas/PaymentListResponse" },
                   },
                 },
               },

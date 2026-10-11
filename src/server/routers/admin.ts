@@ -716,25 +716,57 @@ export const adminRouter = router({
       z
         .object({
           status: z.enum(["active", "expired", "cancelled", "all"]).optional(),
+          search: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
         })
         .optional()
     )
-    .output(z.object({ subscriptions: z.array(z.any()), total: z.number(), hasMore: z.boolean() }))
+    .output(
+      z.object({
+        subscriptions: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+        stats: z.object({
+          total: z.number(),
+          active: z.number(),
+          expired: z.number(),
+          cancelled: z.number(),
+          totalRevenue: z.number(),
+        }),
+      })
+    )
     .query(async ({ ctx, input }) => {
+      const now = new Date();
       const where: Prisma.ClientSubscriptionWhereInput = {};
 
       if (input?.status === "active") {
         where.isActive = true;
-        where.endDate = { gte: new Date() };
+        where.endDate = { gte: now };
       } else if (input?.status === "expired") {
-        where.endDate = { lt: new Date() };
+        where.endDate = { lt: now };
       } else if (input?.status === "cancelled") {
         where.cancelledAt = { not: null };
       }
 
-      const [subscriptions, total] = await Promise.all([
+      const search = input?.search?.trim();
+      if (search) {
+        where.OR = [
+          { user: { name: { contains: search, mode: "insensitive" } } },
+          { user: { email: { contains: search, mode: "insensitive" } } },
+          { package: { name: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+
+      const [
+        subscriptions,
+        total,
+        allCount,
+        activeCount,
+        expiredCount,
+        cancelledCount,
+        revenueAgg,
+      ] = await Promise.all([
         ctx.db.clientSubscription.findMany({
           where,
           include: {
@@ -746,12 +778,34 @@ export const adminRouter = router({
           orderBy: { createdAt: "desc" },
         }),
         ctx.db.clientSubscription.count({ where }),
+        ctx.db.clientSubscription.count(),
+        ctx.db.clientSubscription.count({
+          where: { isActive: true, endDate: { gte: now } },
+        }),
+        ctx.db.clientSubscription.count({
+          where: { endDate: { lt: now } },
+        }),
+        ctx.db.clientSubscription.count({
+          where: { cancelledAt: { not: null } },
+        }),
+        ctx.db.$queryRaw<[{ total: number | null }]>`
+            SELECT COALESCE(SUM(p.price), 0)::float AS total
+            FROM "ClientSubscription" cs
+            INNER JOIN "Package" p ON p.id = cs."packageId"
+          `,
       ]);
 
       return {
         subscriptions,
         total,
         hasMore: (input?.offset || 0) + subscriptions.length < total,
+        stats: {
+          total: allCount,
+          active: activeCount,
+          expired: expiredCount,
+          cancelled: cancelledCount,
+          totalRevenue: Number(revenueAgg[0]?.total ?? 0),
+        },
       };
     }),
 
@@ -836,13 +890,15 @@ export const adminRouter = router({
       z
         .object({
           limit: z.number().min(1).max(100).default(50),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .output(z.any())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const providerWhere = { role: "PROVIDER" as const, deletedAt: null };
       const [
         ledgerTotals,
         walletTotals,
@@ -876,10 +932,7 @@ export const adminRouter = router({
           },
         }),
         ctx.db.user.findMany({
-          where: {
-            role: "PROVIDER",
-            deletedAt: null,
-          },
+          where: providerWhere,
           select: {
             id: true,
             name: true,
@@ -903,8 +956,8 @@ export const adminRouter = router({
             },
           },
           orderBy: { createdAt: "desc" },
-          take: limit + 1,
-          ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+          take: limit,
+          skip: offset,
         }),
         ctx.db.request.count({
           where: {
@@ -918,17 +971,11 @@ export const adminRouter = router({
         }),
         loadFinanceSettings(ctx.db),
         ctx.db.user.count({
-          where: { role: "PROVIDER", deletedAt: null },
+          where: providerWhere,
         }),
       ]);
 
-      let nextCursor: string | null = null;
-      const page = providers.length > limit ? providers.slice(0, limit) : providers;
-      if (providers.length > limit) {
-        nextCursor = page.at(-1)?.id ?? null;
-      }
-
-      const providerWallets = page.map((provider) => ({
+      const providerWallets = providers.map((provider) => ({
         provider: {
           id: provider.id,
           name: provider.name,
@@ -980,7 +1027,8 @@ export const adminRouter = router({
           providerCount,
         },
         providerWallets,
-        nextCursor,
+        total: providerCount,
+        hasMore: offset + providerWallets.length < providerCount,
       };
     }),
 
@@ -998,54 +1046,65 @@ export const adminRouter = router({
         .object({
           providerId: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .output(z.any())
     .query(async ({ ctx, input }) => {
       const where = input?.providerId ? { providerId: input.providerId } : {};
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
 
-      const ledger = await ctx.db.providerFinanceLedger.findMany({
-        where,
-        include: {
-          provider: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
+      const [ledger, total] = await Promise.all([
+        ctx.db.providerFinanceLedger.findMany({
+          where,
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
             },
-          },
-          request: {
-            select: {
-              id: true,
-              title: true,
-              status: true,
-              creditCost: true,
-              completedAt: true,
-              client: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
+            request: {
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                creditCost: true,
+                completedAt: true,
+                client: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
                 },
               },
             },
-          },
-          serviceType: {
-            select: {
-              id: true,
-              name: true,
-              nameI18n: true,
-              icon: true,
+            serviceType: {
+              select: {
+                id: true,
+                name: true,
+                nameI18n: true,
+                icon: true,
+              },
             },
           },
-        },
-        orderBy: { settledAt: "desc" },
-        take: input?.limit ?? 50,
-      });
+          orderBy: { settledAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.providerFinanceLedger.count({ where }),
+      ]);
 
-      return { ledger };
+      return {
+        ledger,
+        total,
+        hasMore: offset + ledger.length < total,
+      };
     }),
 
   getWithdrawals: financeManagerProcedure
@@ -1063,38 +1122,50 @@ export const adminRouter = router({
           status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
           providerId: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .output(z.any())
     .query(async ({ ctx, input }) => {
-      const withdrawals = await ctx.db.withdrawalRequest.findMany({
-        where: {
-          ...(input?.status ? { status: input.status } : {}),
-          ...(input?.providerId ? { providerId: input.providerId } : {}),
-        },
-        include: {
-          provider: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const where = {
+        ...(input?.status ? { status: input.status } : {}),
+        ...(input?.providerId ? { providerId: input.providerId } : {}),
+      };
+      const [withdrawals, total] = await Promise.all([
+        ctx.db.withdrawalRequest.findMany({
+          where,
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+            reviewedBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-          reviewedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-        take: input?.limit ?? 50,
-      });
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.withdrawalRequest.count({ where }),
+      ]);
 
-      return { withdrawals };
+      return {
+        withdrawals,
+        total,
+        hasMore: offset + withdrawals.length < total,
+      };
     }),
 
   reviewWithdrawal: financeManagerProcedure
@@ -1175,45 +1246,63 @@ export const adminRouter = router({
       z
         .object({
           status: z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ALL"]).optional(),
-          limit: z.number().min(1).max(100).optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
-    .output(z.object({ disputes: z.array(z.any()) }))
+    .output(
+      z.object({
+        disputes: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const status = input?.status && input.status !== "ALL" ? input.status : undefined;
-      const disputes = await ctx.db.providerFinanceDispute.findMany({
-        where: status ? { status } : undefined,
-        include: {
-          provider: {
-            select: { id: true, name: true, email: true },
-          },
-          ledger: {
-            select: {
-              id: true,
-              providerAmountUsd: true,
-              providerCredits: true,
-              status: true,
-              request: { select: { id: true, title: true } },
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const where = status ? { status } : undefined;
+      const [disputes, total] = await Promise.all([
+        ctx.db.providerFinanceDispute.findMany({
+          where,
+          include: {
+            provider: {
+              select: { id: true, name: true, email: true },
+            },
+            ledger: {
+              select: {
+                id: true,
+                providerAmountUsd: true,
+                providerCredits: true,
+                status: true,
+                request: { select: { id: true, title: true } },
+              },
+            },
+            withdrawal: {
+              select: {
+                id: true,
+                amountUsd: true,
+                amountCredits: true,
+                status: true,
+              },
+            },
+            reviewedBy: {
+              select: { id: true, name: true, email: true },
             },
           },
-          withdrawal: {
-            select: {
-              id: true,
-              amountUsd: true,
-              amountCredits: true,
-              status: true,
-            },
-          },
-          reviewedBy: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-        take: input?.limit ?? 50,
-      });
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.providerFinanceDispute.count({ where }),
+      ]);
 
-      return { disputes };
+      return {
+        disputes,
+        total,
+        hasMore: offset + disputes.length < total,
+      };
     }),
 
   reviewFinanceDispute: financeManagerProcedure
@@ -1405,14 +1494,15 @@ export const adminRouter = router({
           entityType: z.string().optional(),
           entityId: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .output(
       z.object({
         logs: z.array(z.any()),
-        nextCursor: z.string().nullable(),
+        total: z.number(),
+        hasMore: z.boolean(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -1432,26 +1522,28 @@ export const adminRouter = router({
       if (input?.entityType) where.entityType = input.entityType;
       if (input?.entityId) where.entityId = input.entityId;
 
-      const logs = await ctx.db.activityLog.findMany({
-        where,
-        include: {
-          actor: {
-            select: { id: true, name: true, email: true, role: true },
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const [logs, total] = await Promise.all([
+        ctx.db.activityLog.findMany({
+          where,
+          include: {
+            actor: {
+              select: { id: true, name: true, email: true, role: true },
+            },
           },
-        },
-        orderBy: { createdAt: "desc" },
-        take: (input?.limit ?? 50) + 1,
-        cursor: input?.cursor ? { id: input.cursor } : undefined,
-        skip: input?.cursor ? 1 : 0,
-      });
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.activityLog.count({ where }),
+      ]);
 
-      let nextCursor: string | null = null;
-      if (logs.length > (input?.limit ?? 50)) {
-        const next = logs.pop();
-        nextCursor = next?.id ?? null;
-      }
-
-      return { logs, nextCursor };
+      return {
+        logs,
+        total,
+        hasMore: offset + logs.length < total,
+      };
     }),
 
   // Contact-leak security events for request managers / super admins
@@ -1470,7 +1562,7 @@ export const adminRouter = router({
           filter: z.enum(["all", "blocked", "rate_limited"]).default("all"),
           actorId: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
@@ -1492,12 +1584,14 @@ export const adminRouter = router({
             blocked: z.boolean(),
           })
         ),
-        nextCursor: z.string().nullable(),
+        total: z.number(),
+        hasMore: z.boolean(),
       })
     )
     .query(async ({ ctx, input }) => {
       const filter = input?.filter ?? "all";
       const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
       const now = new Date();
       const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -1514,7 +1608,7 @@ export const adminRouter = router({
         ...(input?.actorId ? { actorId: input.actorId } : {}),
       };
 
-      const [blockedLast24h, rateLimitedLast24h, totalLast7d, uniqueActorRows, events] =
+      const [blockedLast24h, rateLimitedLast24h, totalLast7d, uniqueActorRows, events, total] =
         await Promise.all([
           ctx.db.activityLog.count({
             where: {
@@ -1551,17 +1645,11 @@ export const adminRouter = router({
               },
             },
             orderBy: { createdAt: "desc" },
-            take: limit + 1,
-            cursor: input?.cursor ? { id: input.cursor } : undefined,
-            skip: input?.cursor ? 1 : 0,
+            take: limit,
+            skip: offset,
           }),
+          ctx.db.activityLog.count({ where }),
         ]);
-
-      let nextCursor: string | null = null;
-      if (events.length > limit) {
-        const next = events.pop();
-        nextCursor = next?.id ?? null;
-      }
 
       const actorIds = new Set<string>();
       for (const row of uniqueActorRows) {
@@ -1589,7 +1677,8 @@ export const adminRouter = router({
         },
         events,
         strikeStates,
-        nextCursor,
+        total,
+        hasMore: offset + events.length < total,
       };
     }),
 
@@ -1665,7 +1754,13 @@ export const adminRouter = router({
         })
         .optional()
     )
-    .output(z.object({ users: z.array(z.any()), total: z.number() }))
+    .output(
+      z.object({
+        users: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const where: any = {};
 
@@ -1871,6 +1966,8 @@ export const adminRouter = router({
             ])
             .optional(),
           deleted: z.enum(["exclude", "only", "include"]).default("exclude"),
+          needsManualApproval: z.boolean().optional(),
+          search: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
         })
@@ -1889,26 +1986,63 @@ export const adminRouter = router({
         where.status = input.status;
       }
 
-      const [requests, total] = await Promise.all([
-        ctx.db.request.findMany({
-          where,
-          include: {
-            client: { select: { id: true, name: true, email: true } },
-            provider: { select: { id: true, name: true, email: true } },
-            serviceType: true,
-          },
-          take: input?.limit || 50,
-          skip: input?.offset || 0,
-          orderBy: { createdAt: "desc" },
-        }),
-        ctx.db.request.count({ where }),
-      ]);
+      if (input?.needsManualApproval === true) {
+        where.needsManualApproval = true;
+      }
+
+      const search = input?.search?.trim();
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: "insensitive" } },
+          { client: { name: { contains: search, mode: "insensitive" } } },
+          { client: { email: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+
+      const baseDeletedWhere: Prisma.RequestWhereInput =
+        deleted === "exclude"
+          ? { deletedAt: null }
+          : deleted === "only"
+            ? { deletedAt: { not: null } }
+            : {};
+
+      const [requests, total, pendingCount, inProgressCount, completedCount, allCount] =
+        await Promise.all([
+          ctx.db.request.findMany({
+            where,
+            include: {
+              client: { select: { id: true, name: true, email: true } },
+              provider: { select: { id: true, name: true, email: true } },
+              serviceType: true,
+            },
+            take: input?.limit || 50,
+            skip: input?.offset || 0,
+            orderBy: { createdAt: "desc" },
+          }),
+          ctx.db.request.count({ where }),
+          ctx.db.request.count({
+            where: { ...baseDeletedWhere, status: "PENDING" },
+          }),
+          ctx.db.request.count({
+            where: { ...baseDeletedWhere, status: "IN_PROGRESS" },
+          }),
+          ctx.db.request.count({
+            where: { ...baseDeletedWhere, status: "COMPLETED" },
+          }),
+          ctx.db.request.count({ where: baseDeletedWhere }),
+        ]);
 
       // Use stored credit cost from database
       return {
         requests,
         total,
         hasMore: (input?.offset || 0) + requests.length < total,
+        stats: {
+          total: allCount,
+          pending: pendingCount,
+          inProgress: inProgressCount,
+          completed: completedCount,
+        },
       };
     }),
 
@@ -3745,30 +3879,32 @@ export const adminRouter = router({
         .object({
           status: z.enum(["NEW", "READ", "ARCHIVED"]).optional(),
           limit: z.number().min(1).max(100).default(50),
-          cursor: z.string().optional(),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
       const where = {
         ...(input?.status ? { status: input.status } : {}),
       };
 
-      const rows = await ctx.db.contactMessage.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: limit + 1,
-        ...(input?.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-      });
+      const [messages, total] = await Promise.all([
+        ctx.db.contactMessage.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.contactMessage.count({ where }),
+      ]);
 
-      let nextCursor: string | null = null;
-      if (rows.length > limit) {
-        const next = rows.pop();
-        nextCursor = next?.id ?? null;
-      }
-
-      return { messages: rows, nextCursor };
+      return {
+        messages,
+        total,
+        hasMore: offset + messages.length < total,
+      };
     }),
 
   getContactMessage: adminProcedure

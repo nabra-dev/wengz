@@ -227,14 +227,28 @@ export function cancelSubscription(subscriptionId: string) {
   });
 }
 
-export function getTransactionHistory() {
-  return apiRequest<Record<string, unknown>[]>("/subscription/transactions");
+export function getTransactionHistory(limit = 20, offset = 0) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return apiRequest<{
+    transactions: Record<string, unknown>[];
+    total: number;
+    hasMore: boolean;
+  }>(`/subscription/transactions?${params.toString()}`);
 }
 
-export function getRequests(limit = 50) {
-  return apiRequest<{ requests: Record<string, unknown>[]; nextCursor: string | null }>(
-    `/request/list?limit=${limit}`
-  );
+export function getRequests(limit = 50, offset = 0) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return apiRequest<{
+    requests: Record<string, unknown>[];
+    total: number;
+    hasMore: boolean;
+  }>(`/request/list?${params.toString()}`);
 }
 
 export function getRequest(id: string) {
@@ -255,10 +269,16 @@ export function markCommentsRead(requestId: string) {
   });
 }
 
-export function getNotifications(limit = 40) {
-  return apiRequest<{ notifications: Record<string, unknown>[]; nextCursor: string | null }>(
-    `/notification?limit=${limit}`
-  );
+export function getNotifications(limit = 40, offset = 0) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return apiRequest<{
+    notifications: Record<string, unknown>[];
+    total: number;
+    hasMore: boolean;
+  }>(`/notification?${params.toString()}`);
 }
 
 export function markNotificationRead(id: string) {

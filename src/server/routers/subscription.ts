@@ -440,30 +440,51 @@ export const subscriptionRouter = router({
         summary: "Get transaction history",
       },
     })
-    .input(z.void())
-    .output(z.array(z.any()))
-    .query(async ({ ctx }) => {
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(20),
+          offset: z.number().min(0).default(0),
+        })
+        .optional()
+    )
+    .output(
+      z.object({
+        transactions: z.array(z.any()),
+        total: z.number(),
+        hasMore: z.boolean(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      const limit = input?.limit ?? 20;
+      const offset = input?.offset ?? 0;
+      const where = { userId };
 
-      const subscriptions = await ctx.db.clientSubscription.findMany({
-        where: { userId },
-        include: {
-          package: true,
-          paymentProof: {
-            include: {
-              reviewer: {
-                select: {
-                  name: true,
-                  email: true,
+      const [subscriptions, total] = await Promise.all([
+        ctx.db.clientSubscription.findMany({
+          where,
+          include: {
+            package: true,
+            paymentProof: {
+              include: {
+                reviewer: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        ctx.db.clientSubscription.count({ where }),
+      ]);
 
-      return subscriptions.map((sub: any) => ({
+      const transactions = subscriptions.map((sub: any) => ({
         id: sub.id,
         type: "subscription" as const,
         packageName: sub.package.name,
@@ -494,5 +515,11 @@ export const subscriptionRouter = router({
             }
           : null,
       }));
+
+      return {
+        transactions,
+        total,
+        hasMore: offset + transactions.length < total,
+      };
     }),
 });

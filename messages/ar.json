@@ -48,6 +48,15 @@
       "MEDIUM": "متوسطة",
       "HIGH": "عالية"
     },
+    "pagination": {
+      "loadMore": "تحميل المزيد",
+      "newest": "الأحدث",
+      "previous": "السابق",
+      "next": "التالي",
+      "showing": "عرض {from}–{to} من {total}",
+      "pageOf": "صفحة {page} من {pageCount}",
+      "hasMore": "عرض {count} من المزيد"
+    },
     "password": {
       "show": "إظهار كلمة المرور",
       "hide": "إخفاء كلمة المرور"

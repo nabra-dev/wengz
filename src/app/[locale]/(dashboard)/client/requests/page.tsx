@@ -4,17 +4,32 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
 import { Plus } from "lucide-react";
 
+const REQUESTS_PAGE_SIZE = 20;
+
 export default function RequestsPage() {
   const t = useTranslations("client.requests");
-  const { data: requestsData, isLoading } = trpc.request.getAll.useQuery({
-    limit: 50,
+  const { page, offset, pageSize, setPage } = useListPage({
+    pageSize: REQUESTS_PAGE_SIZE,
   });
+  const {
+    data: requestsData,
+    isLoading,
+    isFetching,
+  } = trpc.request.getAll.useQuery({
+    limit: pageSize,
+    offset,
+  });
+
+  const total = requestsData?.total ?? 0;
+  const countLabel = t("totalRequests", { count: total });
 
   return (
     <div className="space-y-6">
@@ -34,9 +49,7 @@ export default function RequestsPage() {
       <div className="space-y-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <h2 className="text-sm font-medium text-muted-foreground">{t("allRequests")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t("totalRequests", { count: requestsData?.requests.length || 0 })}
-          </p>
+          <p className="text-sm text-muted-foreground">{countLabel}</p>
         </div>
 
         {isLoading && (
@@ -73,6 +86,14 @@ export default function RequestsPage() {
                 needsManualApproval={request.needsManualApproval === true}
               />
             ))}
+            <OffsetPagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              hasMore={requestsData?.hasMore}
+              onPageChange={setPage}
+              isFetching={isFetching}
+            />
           </div>
         )}
       </div>

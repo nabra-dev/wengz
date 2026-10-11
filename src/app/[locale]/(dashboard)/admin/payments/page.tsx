@@ -27,6 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { trpc } from "@/lib/trpc/client";
 import { formatDate } from "@/lib/utils";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
@@ -43,6 +45,8 @@ import {
   Users,
   AlertTriangle,
 } from "lucide-react";
+
+const PAYMENTS_PAGE_SIZE = 50;
 
 type PaymentProof = {
   id: string;
@@ -100,11 +104,37 @@ export default function AdminPaymentsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [approvePaymentId, setApprovePaymentId] = useState<string | null>(null);
+  const {
+    page: pendingPage,
+    offset: pendingOffset,
+    pageSize: pendingPageSize,
+    setPage: setPendingPage,
+  } = useListPage({ param: "pendingPage", pageSize: PAYMENTS_PAGE_SIZE });
+  const {
+    page: allPage,
+    offset: allOffset,
+    pageSize: allPageSize,
+    setPage: setAllPage,
+  } = useListPage({ param: "allPage", pageSize: PAYMENTS_PAGE_SIZE });
 
   const { data: stats, isLoading: statsLoading } = trpc.payment.getStats.useQuery();
-  const { data: pendingPayments, isLoading: pendingLoading } =
-    trpc.payment.getPendingPayments.useQuery();
-  const { data: allPaymentsData, isLoading: allLoading } = trpc.payment.getAllPayments.useQuery({});
+  const {
+    data: pendingPaymentsData,
+    isLoading: pendingLoading,
+    isFetching: pendingFetching,
+  } = trpc.payment.getPendingPayments.useQuery({
+    limit: pendingPageSize,
+    offset: pendingOffset,
+  });
+  const {
+    data: allPaymentsData,
+    isLoading: allLoading,
+    isFetching: allFetching,
+  } = trpc.payment.getAllPayments.useQuery({
+    limit: allPageSize,
+    offset: allOffset,
+  });
+  const pendingPayments = pendingPaymentsData?.payments;
 
   const approveMutation = trpc.payment.approvePayment.useMutation({
     onSuccess: () => {
@@ -322,21 +352,31 @@ export default function AdminPaymentsPage() {
                 </div>
               )}
               {!pendingLoading && pendingPayments && pendingPayments.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("table.client")}</TableHead>
-                      <TableHead>{t("table.package")}</TableHead>
-                      <TableHead>{t("table.amount")}</TableHead>
-                      <TableHead>{t("table.date")}</TableHead>
-                      <TableHead>{t("table.status")}</TableHead>
-                      <TableHead>{t("table.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pendingPayments.map((payment: PaymentProof) => renderPaymentRow(payment))}
-                  </TableBody>
-                </Table>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("table.client")}</TableHead>
+                        <TableHead>{t("table.package")}</TableHead>
+                        <TableHead>{t("table.amount")}</TableHead>
+                        <TableHead>{t("table.date")}</TableHead>
+                        <TableHead>{t("table.status")}</TableHead>
+                        <TableHead>{t("table.actions")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingPayments.map((payment: PaymentProof) => renderPaymentRow(payment))}
+                    </TableBody>
+                  </Table>
+                  <OffsetPagination
+                    page={pendingPage}
+                    pageSize={pendingPageSize}
+                    total={pendingPaymentsData?.total ?? 0}
+                    hasMore={pendingPaymentsData?.hasMore}
+                    onPageChange={setPendingPage}
+                    isFetching={pendingFetching}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -356,23 +396,33 @@ export default function AdminPaymentsPage() {
                 </div>
               )}
               {!allLoading && allPaymentsData?.payments && allPaymentsData.payments.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("table.client")}</TableHead>
-                      <TableHead>{t("table.package")}</TableHead>
-                      <TableHead>{t("table.amount")}</TableHead>
-                      <TableHead>{t("table.date")}</TableHead>
-                      <TableHead>{t("table.status")}</TableHead>
-                      <TableHead>{t("table.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allPaymentsData.payments.map((payment: PaymentProof) =>
-                      renderPaymentRow(payment)
-                    )}
-                  </TableBody>
-                </Table>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("table.client")}</TableHead>
+                        <TableHead>{t("table.package")}</TableHead>
+                        <TableHead>{t("table.amount")}</TableHead>
+                        <TableHead>{t("table.date")}</TableHead>
+                        <TableHead>{t("table.status")}</TableHead>
+                        <TableHead>{t("table.actions")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allPaymentsData.payments.map((payment: PaymentProof) =>
+                        renderPaymentRow(payment)
+                      )}
+                    </TableBody>
+                  </Table>
+                  <OffsetPagination
+                    page={allPage}
+                    pageSize={allPageSize}
+                    total={allPaymentsData.total ?? 0}
+                    hasMore={allPaymentsData.hasMore}
+                    onPageChange={setAllPage}
+                    isFetching={allFetching}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -423,9 +473,7 @@ export default function AdminPaymentsPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">{t("details.amountSent")}</Label>
-                  <p className="font-medium text-lg">
-                    {formatCurrency(selectedPayment.amount)}
-                  </p>
+                  <p className="font-medium text-lg">{formatCurrency(selectedPayment.amount)}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">{t("details.transferDate")}</Label>

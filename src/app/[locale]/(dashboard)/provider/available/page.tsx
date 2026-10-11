@@ -6,6 +6,8 @@ import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
@@ -13,10 +15,18 @@ import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realti
 import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 import { ArrowRight } from "lucide-react";
 
+const PAGE_SIZE = 20;
+
 export default function AvailableJobsPage() {
   const t = useTranslations("provider.available");
-  const { data: requestsData, isLoading } = trpc.provider.getAvailableRequests.useQuery({
-    limit: 50,
+  const { page, offset, pageSize, setPage } = useListPage({ pageSize: PAGE_SIZE });
+  const {
+    data: requestsData,
+    isLoading,
+    isFetching,
+  } = trpc.provider.getAvailableRequests.useQuery({
+    limit: pageSize,
+    offset,
   });
   const { isUnread } = useProviderRequestUnread();
 
@@ -25,6 +35,9 @@ export default function AvailableJobsPage() {
     [requestsData?.requests]
   );
   useProviderJobsRealtimeRefresh(requestIds);
+
+  const total = requestsData?.total ?? 0;
+  const countLabel = t("jobsAvailable", { count: total });
 
   return (
     <div className="space-y-6">
@@ -36,9 +49,7 @@ export default function AvailableJobsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("openRequests")}</CardTitle>
-          <CardDescription>
-            {t("jobsAvailable", { count: requestsData?.requests.length || 0 })}
-          </CardDescription>
+          <CardDescription>{countLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (
@@ -76,6 +87,14 @@ export default function AvailableJobsPage() {
                   }
                 />
               ))}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                hasMore={requestsData?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

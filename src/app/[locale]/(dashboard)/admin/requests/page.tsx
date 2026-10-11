@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import {
   Select,
   SelectContent,
@@ -35,6 +37,8 @@ import { AssignProviderDialog } from "@/components/admin/assign-provider-dialog"
 import { downloadBase64File } from "@/lib/download-base64-file";
 import { showError } from "@/lib/error-handler";
 
+const REQUESTS_PAGE_SIZE = 50;
+
 type Request = {
   id: string;
   title: string;
@@ -60,6 +64,9 @@ export default function AdminRequestsPage() {
   const locale = useLocale();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({
+    pageSize: REQUESTS_PAGE_SIZE,
+  });
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
   const [confirmRestore, setConfirmRestore] = useState<{ id: string; title: string } | null>(null);
@@ -71,10 +78,13 @@ export default function AdminRequestsPage() {
       ? (statusFilter as RequestStatus)
       : undefined;
 
-  const { data, isLoading, refetch } = trpc.admin.getAllRequests.useQuery({
+  const { data, isLoading, isFetching, refetch } = trpc.admin.getAllRequests.useQuery({
     status: statusQuery,
     deleted: deletedMode,
-    limit: 100,
+    needsManualApproval: statusFilter === "needsManualApproval" ? true : undefined,
+    search: searchQuery.trim() || undefined,
+    limit: pageSize,
+    offset,
   });
   const deleteRequest = trpc.admin.deleteRequest.useMutation({
     onSuccess: () => {
@@ -106,28 +116,13 @@ export default function AdminRequestsPage() {
     },
   });
 
-  const requests: any[] = data?.requests || [];
-
-  const filteredRequests = requests.filter((request: any) => {
-    const matchesStatus =
-      statusFilter === "all" ||
-      statusFilter === "deleted" ||
-      (statusFilter === "needsManualApproval"
-        ? request.needsManualApproval === true
-        : request.status === statusFilter);
-    const matchesSearch =
-      searchQuery === "" ||
-      request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.client.email.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const filteredRequests: any[] = data?.requests || [];
 
   const stats = {
-    total: requests.length,
-    pending: requests.filter((r: any) => r.status === "PENDING" && !r.deletedAt).length,
-    inProgress: requests.filter((r: any) => r.status === "IN_PROGRESS" && !r.deletedAt).length,
-    completed: requests.filter((r: any) => r.status === "COMPLETED" && !r.deletedAt).length,
+    total: data?.stats?.total ?? data?.total ?? 0,
+    pending: data?.stats?.pending ?? 0,
+    inProgress: data?.stats?.inProgress ?? 0,
+    completed: data?.stats?.completed ?? 0,
   };
 
   const handleAssignClick = (request: any) => {
@@ -235,12 +230,21 @@ export default function AdminRequestsPage() {
                   type="text"
                   placeholder={t("search")}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    resetPage();
+                  }}
                   className="w-full ps-10 pe-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                resetPage();
+              }}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={t("filters.status")} />
               </SelectTrigger>
@@ -350,6 +354,14 @@ export default function AdminRequestsPage() {
                   />
                 );
               })}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={data?.total ?? 0}
+                hasMore={data?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

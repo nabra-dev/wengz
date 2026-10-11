@@ -33,6 +33,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { showError, showSuccess } from "@/lib/error-handler";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc/client";
@@ -113,13 +115,15 @@ function formatDestination(entry: {
   return [entry.accountHolder, entry.eWalletNumber].filter(Boolean).join(" · ");
 }
 
-function hasCompletePayout(payout: {
-  payoutMethod: PayoutMethod | null;
-  accountHolder: string | null;
-  bankName: string | null;
-  bankAccount: string | null;
-  eWalletNumber: string | null;
-} | null) {
+function hasCompletePayout(
+  payout: {
+    payoutMethod: PayoutMethod | null;
+    accountHolder: string | null;
+    bankName: string | null;
+    bankAccount: string | null;
+    eWalletNumber: string | null;
+  } | null
+) {
   if (!payout?.payoutMethod || !payout.accountHolder?.trim()) return false;
   if (payout.payoutMethod === "BANK") {
     return Boolean(payout.bankName?.trim() && payout.bankAccount?.trim());
@@ -154,7 +158,24 @@ export default function ProviderWalletPage() {
   const locale = useLocale();
   const formatCurrency = useFormatCurrency();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.provider.getEarnings.useQuery();
+  const {
+    page: ledgerPage,
+    offset: ledgerOffset,
+    pageSize: ledgerPageSize,
+    setPage: setLedgerPage,
+  } = useListPage({ param: "ledgerPage", pageSize: 20 });
+  const {
+    page: withdrawalsPage,
+    offset: withdrawalOffset,
+    pageSize: withdrawalPageSize,
+    setPage: setWithdrawalsPage,
+  } = useListPage({ param: "withdrawalsPage", pageSize: 20 });
+  const { data, isLoading, isFetching } = trpc.provider.getEarnings.useQuery({
+    ledgerLimit: ledgerPageSize,
+    ledgerOffset,
+    withdrawalLimit: withdrawalPageSize,
+    withdrawalOffset,
+  });
   const ledger = (data?.ledger ?? []) as WalletLedgerEntry[];
   const withdrawals = (data?.withdrawals ?? []) as WithdrawalEntry[];
 
@@ -279,93 +300,101 @@ export default function ProviderWalletPage() {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("withdrawals.amount")}</TableHead>
-            <TableHead>{t("withdrawals.fee")}</TableHead>
-            <TableHead>{t("withdrawals.net")}</TableHead>
-            <TableHead>{t("withdrawals.method")}</TableHead>
-            <TableHead>{t("withdrawals.destination")}</TableHead>
-            <TableHead>{t("withdrawals.status")}</TableHead>
-            <TableHead>{t("withdrawals.reason")}</TableHead>
-            <TableHead>{t("withdrawals.proof")}</TableHead>
-            <TableHead>{t("withdrawals.requestedAt")}</TableHead>
-            <TableHead>{t("withdrawals.actions")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {withdrawals.map((entry) => {
-            const dispute = getActiveDispute(entry.disputes);
-            const hasOpenDispute =
-              dispute?.status === "OPEN" || dispute?.status === "UNDER_REVIEW";
-            return (
-              <TableRow key={entry.id}>
-                <TableCell className="font-medium">{formatCurrency(entry.amountUsd)}</TableCell>
-                <TableCell>{formatCurrency(entry.feeUsd ?? 0)}</TableCell>
-                <TableCell>
-                  {formatCurrency(entry.amountUsd - (entry.feeUsd ?? 0))}
-                </TableCell>
-                <TableCell>
-                  {entry.payoutMethod === "BANK" ? t("payout.bank") : t("payout.eWallet")}
-                </TableCell>
-                <TableCell>{formatDestination(entry)}</TableCell>
-                <TableCell>
-                  <Badge variant={withdrawalBadgeVariant(entry.status)}>
-                    {t(`withdrawStatus.${entry.status}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-xs text-sm text-muted-foreground">
-                  {entry.adminReason || entry.providerNote || "—"}
-                </TableCell>
-                <TableCell>
-                  {entry.reviewImage ? (
-                    <a
-                      href={entry.reviewImage}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary underline-offset-2 hover:underline"
-                    >
-                      {t("withdrawals.viewProof")}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell>{new Date(entry.createdAt).toLocaleDateString(locale)}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col items-start gap-1">
-                    {dispute && (
-                      <Badge variant={disputeBadgeVariant(dispute.status)}>
-                        {t("dispute.active", {
-                          status: t(`disputeStatus.${dispute.status}`),
-                        })}
-                      </Badge>
-                    )}
-                    {!hasOpenDispute && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setDisputeTarget({
-                            kind: "withdrawal",
-                            id: entry.id,
-                            label: t("dispute.targetWithdrawal", {
-                              amount: formatCurrency(entry.amountUsd),
-                            }),
-                          })
-                        }
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("withdrawals.amount")}</TableHead>
+              <TableHead>{t("withdrawals.fee")}</TableHead>
+              <TableHead>{t("withdrawals.net")}</TableHead>
+              <TableHead>{t("withdrawals.method")}</TableHead>
+              <TableHead>{t("withdrawals.destination")}</TableHead>
+              <TableHead>{t("withdrawals.status")}</TableHead>
+              <TableHead>{t("withdrawals.reason")}</TableHead>
+              <TableHead>{t("withdrawals.proof")}</TableHead>
+              <TableHead>{t("withdrawals.requestedAt")}</TableHead>
+              <TableHead>{t("withdrawals.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {withdrawals.map((entry) => {
+              const dispute = getActiveDispute(entry.disputes);
+              const hasOpenDispute =
+                dispute?.status === "OPEN" || dispute?.status === "UNDER_REVIEW";
+              return (
+                <TableRow key={entry.id}>
+                  <TableCell className="font-medium">{formatCurrency(entry.amountUsd)}</TableCell>
+                  <TableCell>{formatCurrency(entry.feeUsd ?? 0)}</TableCell>
+                  <TableCell>{formatCurrency(entry.amountUsd - (entry.feeUsd ?? 0))}</TableCell>
+                  <TableCell>
+                    {entry.payoutMethod === "BANK" ? t("payout.bank") : t("payout.eWallet")}
+                  </TableCell>
+                  <TableCell>{formatDestination(entry)}</TableCell>
+                  <TableCell>
+                    <Badge variant={withdrawalBadgeVariant(entry.status)}>
+                      {t(`withdrawStatus.${entry.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-xs text-sm text-muted-foreground">
+                    {entry.adminReason || entry.providerNote || "—"}
+                  </TableCell>
+                  <TableCell>
+                    {entry.reviewImage ? (
+                      <a
+                        href={entry.reviewImage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary underline-offset-2 hover:underline"
                       >
-                        {t("dispute.open")}
-                      </Button>
+                        {t("withdrawals.viewProof")}
+                      </a>
+                    ) : (
+                      "—"
                     )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  </TableCell>
+                  <TableCell>{new Date(entry.createdAt).toLocaleDateString(locale)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1">
+                      {dispute && (
+                        <Badge variant={disputeBadgeVariant(dispute.status)}>
+                          {t("dispute.active", {
+                            status: t(`disputeStatus.${dispute.status}`),
+                          })}
+                        </Badge>
+                      )}
+                      {!hasOpenDispute && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setDisputeTarget({
+                              kind: "withdrawal",
+                              id: entry.id,
+                              label: t("dispute.targetWithdrawal", {
+                                amount: formatCurrency(entry.amountUsd),
+                              }),
+                            })
+                          }
+                        >
+                          {t("dispute.open")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <OffsetPagination
+          page={withdrawalsPage}
+          pageSize={withdrawalPageSize}
+          total={data?.withdrawalTotal ?? 0}
+          hasMore={data?.withdrawalHasMore}
+          onPageChange={setWithdrawalsPage}
+          isFetching={isFetching}
+        />
+      </>
     );
   };
 
@@ -389,79 +418,93 @@ export default function ProviderWalletPage() {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("ledger.request")}</TableHead>
-            <TableHead>{t("ledger.service")}</TableHead>
-            <TableHead>{t("ledger.total")}</TableHead>
-            <TableHead>{t("ledger.creditPrice")}</TableHead>
-            <TableHead>{t("ledger.providerCredits")}</TableHead>
-            <TableHead>{t("ledger.providerAmount")}</TableHead>
-            <TableHead>{t("ledger.status")}</TableHead>
-            <TableHead>{t("ledger.availableAt")}</TableHead>
-            <TableHead>{t("ledger.settledAt")}</TableHead>
-            <TableHead>{t("ledger.actions")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ledger.map((entry) => {
-            const dispute = getActiveDispute(entry.disputes);
-            const hasOpenDispute =
-              dispute?.status === "OPEN" || dispute?.status === "UNDER_REVIEW";
-            return (
-              <TableRow key={entry.id}>
-                <TableCell className="font-medium">{entry.request.title}</TableCell>
-                <TableCell>
-                  {entry.serviceType.icon}{" "}
-                  {resolveLocalizedText(entry.serviceType.nameI18n, locale, entry.serviceType.name)}
-                </TableCell>
-                <TableCell>{formatCredits(entry.totalCredits)}</TableCell>
-                <TableCell>{formatCurrency(entry.creditPriceUsd)}</TableCell>
-                <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
-                <TableCell>{formatCurrency(entry.providerAmountUsd)}</TableCell>
-                <TableCell>
-                  <Badge variant={entry.status === "HOLD" ? "outline" : "secondary"}>
-                    {t(`status.${entry.status}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {entry.status === "HOLD" && entry.availableAt
-                    ? new Date(entry.availableAt).toLocaleDateString(locale)
-                    : "—"}
-                </TableCell>
-                <TableCell>{new Date(entry.settledAt).toLocaleDateString(locale)}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col items-start gap-1">
-                    {dispute && (
-                      <Badge variant={disputeBadgeVariant(dispute.status)}>
-                        {t("dispute.active", {
-                          status: t(`disputeStatus.${dispute.status}`),
-                        })}
-                      </Badge>
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("ledger.request")}</TableHead>
+              <TableHead>{t("ledger.service")}</TableHead>
+              <TableHead>{t("ledger.total")}</TableHead>
+              <TableHead>{t("ledger.creditPrice")}</TableHead>
+              <TableHead>{t("ledger.providerCredits")}</TableHead>
+              <TableHead>{t("ledger.providerAmount")}</TableHead>
+              <TableHead>{t("ledger.status")}</TableHead>
+              <TableHead>{t("ledger.availableAt")}</TableHead>
+              <TableHead>{t("ledger.settledAt")}</TableHead>
+              <TableHead>{t("ledger.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ledger.map((entry) => {
+              const dispute = getActiveDispute(entry.disputes);
+              const hasOpenDispute =
+                dispute?.status === "OPEN" || dispute?.status === "UNDER_REVIEW";
+              return (
+                <TableRow key={entry.id}>
+                  <TableCell className="font-medium">{entry.request.title}</TableCell>
+                  <TableCell>
+                    {entry.serviceType.icon}{" "}
+                    {resolveLocalizedText(
+                      entry.serviceType.nameI18n,
+                      locale,
+                      entry.serviceType.name
                     )}
-                    {!hasOpenDispute && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setDisputeTarget({
-                            kind: "ledger",
-                            id: entry.id,
-                            label: t("dispute.targetLedger", { title: entry.request.title }),
-                          })
-                        }
-                      >
-                        {t("dispute.open")}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  </TableCell>
+                  <TableCell>{formatCredits(entry.totalCredits)}</TableCell>
+                  <TableCell>{formatCurrency(entry.creditPriceUsd)}</TableCell>
+                  <TableCell>{formatCredits(entry.providerCredits)}</TableCell>
+                  <TableCell>{formatCurrency(entry.providerAmountUsd)}</TableCell>
+                  <TableCell>
+                    <Badge variant={entry.status === "HOLD" ? "outline" : "secondary"}>
+                      {t(`status.${entry.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {entry.status === "HOLD" && entry.availableAt
+                      ? new Date(entry.availableAt).toLocaleDateString(locale)
+                      : "—"}
+                  </TableCell>
+                  <TableCell>{new Date(entry.settledAt).toLocaleDateString(locale)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1">
+                      {dispute && (
+                        <Badge variant={disputeBadgeVariant(dispute.status)}>
+                          {t("dispute.active", {
+                            status: t(`disputeStatus.${dispute.status}`),
+                          })}
+                        </Badge>
+                      )}
+                      {!hasOpenDispute && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setDisputeTarget({
+                              kind: "ledger",
+                              id: entry.id,
+                              label: t("dispute.targetLedger", { title: entry.request.title }),
+                            })
+                          }
+                        >
+                          {t("dispute.open")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <OffsetPagination
+          page={ledgerPage}
+          pageSize={ledgerPageSize}
+          total={data?.ledgerTotal ?? 0}
+          hasMore={data?.ledgerHasMore}
+          onPageChange={setLedgerPage}
+          isFetching={isFetching}
+        />
+      </>
     );
   };
 
@@ -681,9 +724,7 @@ export default function ProviderWalletPage() {
             <DialogTitle>{t("dispute.title")}</DialogTitle>
             <DialogDescription>{t("dispute.description")}</DialogDescription>
           </DialogHeader>
-          {disputeTarget && (
-            <p className="text-sm text-muted-foreground">{disputeTarget.label}</p>
-          )}
+          {disputeTarget && <p className="text-sm text-muted-foreground">{disputeTarget.label}</p>}
           <div className="space-y-2">
             <Label htmlFor="disputeReason">{t("dispute.reason")}</Label>
             <Textarea

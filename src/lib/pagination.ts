@@ -16,6 +16,18 @@ export const paginationInputSchema = z
 export type PaginationInput = z.infer<typeof paginationInputSchema>;
 
 /**
+ * Offset-based pagination schema for admin tables that need totals
+ */
+export const offsetPaginationInputSchema = z
+  .object({
+    limit: z.number().min(1).max(100).default(50),
+    offset: z.number().min(0).default(0),
+  })
+  .strict();
+
+export type OffsetPaginationInput = z.infer<typeof offsetPaginationInputSchema>;
+
+/**
  * Pagination result with meta information
  */
 export interface PaginationResult<T> {
@@ -26,29 +38,28 @@ export interface PaginationResult<T> {
 }
 
 /**
- * Create pagination parameters for Prisma queries
+ * Create Prisma cursor pagination parameters (forward page, take limit+1).
  */
-export function createPaginationParams(input: PaginationInput) {
-  const { limit, cursor, sortBy, sortOrder } = input;
-
-  const take = limit + 1; // Fetch one extra to check if there are more
-
-  const skip = cursor ? 1 : 0; // Skip the cursor itself
-
-  const orderBy = {
-    [sortBy]: sortOrder,
-  };
+export function createPaginationParams(input: {
+  limit: number;
+  cursor?: string | null;
+  sortBy?: "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+}) {
+  const { limit, cursor, sortBy = "createdAt", sortOrder = "desc" } = input;
 
   return {
-    take: sortOrder === "desc" ? -take : take,
-    skip,
+    take: limit + 1,
+    skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-    orderBy,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
   };
 }
 
 /**
- * Process Prisma pagination results
+ * Process Prisma pagination results after fetching take: limit + 1
  */
 export function processPaginationResult<T extends { id: string }>(
   items: T[],
@@ -67,12 +78,33 @@ export function processPaginationResult<T extends { id: string }>(
 /**
  * Combined pagination helper for cleaner code
  */
-export function createPaginationHelper<T extends { id: string }>(input: PaginationInput) {
+export function createPaginationHelper<T extends { id: string }>(input: {
+  limit: number;
+  cursor?: string | null;
+  sortBy?: "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+}) {
   const params = createPaginationParams(input);
 
   return {
     params,
     processResult: (items: T[]) => processPaginationResult(items, input.limit),
+  };
+}
+
+/**
+ * Build offset-page meta for admin tables.
+ */
+export function processOffsetResult<T>(
+  items: T[],
+  total: number,
+  offset: number,
+  limit: number
+): { items: T[]; total: number; hasMore: boolean } {
+  return {
+    items,
+    total,
+    hasMore: offset + items.length < total,
   };
 }
 

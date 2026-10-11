@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { History, FileIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
 import { trpc } from "@/lib/trpc/client";
 import { resolveLocalizedText } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/utils";
@@ -72,18 +73,29 @@ function prettyFilename(name: string = "") {
   return result;
 }
 
+const IDENTITY_PAGE_SIZE = 24;
+
 export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
   const t = useTranslations("requests.clientIdentity");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const sheetSide = locale === "ar" ? "left" : "right";
+  const offset = (page - 1) * IDENTITY_PAGE_SIZE;
 
-  const { data, isLoading } = trpc.request.getClientIdentity.useQuery(
-    { clientId, limit: 48 },
+  const { data, isLoading, isFetching } = trpc.request.getClientIdentity.useQuery(
+    { clientId, limit: IDENTITY_PAGE_SIZE, offset },
     { enabled: open && Boolean(clientId) }
   );
 
   const items = useMemo(() => (data?.items ?? []) as IdentityAsset[], [data?.items]);
+
+  useEffect(() => {
+    if (!open) setPage(1);
+  }, [open]);
+
+  const total = data?.total ?? items.length;
+  const hasMore = data?.hasMore ?? false;
 
   const groups = useMemo(() => {
     const map = new Map<
@@ -248,6 +260,14 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
               </div>
             </section>
           ))}
+          <OffsetPagination
+            page={page}
+            pageSize={IDENTITY_PAGE_SIZE}
+            total={total}
+            hasMore={hasMore}
+            onPageChange={setPage}
+            isFetching={isFetching}
+          />
         </div>
       </SheetContent>
     </Sheet>

@@ -4,16 +4,26 @@ import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { RequestCard } from "@/components/requests/request-card";
 import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
 import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realtime-refresh";
 import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 
+const PAGE_SIZE = 20;
+
 export default function MyRequestsPage() {
   const t = useTranslations("provider.myRequests");
-  const { data: requestsData, isLoading } = trpc.provider.getMyRequests.useQuery({
-    limit: 50,
+  const { page, offset, pageSize, setPage } = useListPage({ pageSize: PAGE_SIZE });
+  const {
+    data: requestsData,
+    isLoading,
+    isFetching,
+  } = trpc.provider.getMyRequests.useQuery({
+    limit: pageSize,
+    offset,
   });
   const { isUnread } = useProviderRequestUnread();
 
@@ -22,6 +32,9 @@ export default function MyRequestsPage() {
     [requestsData?.requests]
   );
   useProviderJobsRealtimeRefresh(requestIds);
+
+  const total = requestsData?.total ?? 0;
+  const countLabel = t("totalRequests", { count: total });
 
   return (
     <div className="space-y-6">
@@ -33,9 +46,7 @@ export default function MyRequestsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("allMyRequests")}</CardTitle>
-          <CardDescription>
-            {t("totalRequests", { count: requestsData?.requests.length || 0 })}
-          </CardDescription>
+          <CardDescription>{countLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (
@@ -72,6 +83,14 @@ export default function MyRequestsPage() {
                   unread={isUnread(request.id)}
                 />
               ))}
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                hasMore={requestsData?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </div>
           )}
         </CardContent>

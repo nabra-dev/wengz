@@ -19,9 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/utils";
 import { showError, showSuccess } from "@/lib/error-handler";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { Archive, Check, Inbox, Mail, MessageSquare } from "lucide-react";
 
 type StatusFilter = "NEW" | "READ" | "ARCHIVED" | "ALL";
+
+const CONTACTS_PAGE_SIZE = 50;
 
 export default function AdminContactsPage() {
   const t = useTranslations("admin.contacts");
@@ -30,6 +34,9 @@ export default function AdminContactsPage() {
   const highlightId = searchParams?.get("id") ?? null;
 
   const [tab, setTab] = useState<StatusFilter>("NEW");
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({
+    pageSize: CONTACTS_PAGE_SIZE,
+  });
   const [selectedId, setSelectedId] = useState<string | null>(highlightId);
 
   useEffect(() => {
@@ -38,7 +45,7 @@ export default function AdminContactsPage() {
 
   const statusFilter = tab === "ALL" ? undefined : tab;
   const listQuery = trpc.admin.getContactMessages.useQuery(
-    { status: statusFilter, limit: 50 },
+    { status: statusFilter, limit: pageSize, offset },
     { refetchOnWindowFocus: true }
   );
   const detailQuery = trpc.admin.getContactMessage.useQuery(
@@ -84,7 +91,13 @@ export default function AdminContactsPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as StatusFilter)}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          setTab(v as StatusFilter);
+          resetPage();
+        }}
+      >
         <TabsList>
           <TabsTrigger value="NEW">{t("tabs.new")}</TabsTrigger>
           <TabsTrigger value="READ">{t("tabs.read")}</TabsTrigger>
@@ -111,35 +124,45 @@ export default function AdminContactsPage() {
           ) : messages.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>
           ) : (
-            <ul className="divide-y rounded-lg border">
-              {messages.map((msg) => (
-                <li key={msg.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(msg.id)}
-                    className={`flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50 ${
-                      selectedId === msg.id ? "bg-muted/60" : ""
-                    }`}
-                  >
-                    <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-medium">{msg.fullName}</span>
-                        {statusBadge(msg.status)}
+            <>
+              <ul className="divide-y rounded-lg border">
+                {messages.map((msg) => (
+                  <li key={msg.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(msg.id)}
+                      className={`flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50 ${
+                        selectedId === msg.id ? "bg-muted/60" : ""
+                      }`}
+                    >
+                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-sm font-medium">{msg.fullName}</span>
+                          {statusBadge(msg.status)}
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">{msg.email}</p>
+                        <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+                          {msg.topic ? `${msg.topic} · ` : ""}
+                          {msg.message}
+                        </p>
                       </div>
-                      <p className="truncate text-xs text-muted-foreground">{msg.email}</p>
-                      <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
-                        {msg.topic ? `${msg.topic} · ` : ""}
-                        {msg.message}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {formatDate(msg.createdAt, locale)}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {formatDate(msg.createdAt, locale)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={listQuery.data?.total ?? 0}
+                hasMore={listQuery.data?.hasMore}
+                onPageChange={setPage}
+                isFetching={listQuery.isFetching}
+              />
+            </>
           )}
         </CardContent>
       </Card>

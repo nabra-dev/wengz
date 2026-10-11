@@ -48,6 +48,15 @@
       "MEDIUM": "Medium",
       "HIGH": "High"
     },
+    "pagination": {
+      "loadMore": "Load more",
+      "newest": "Newest",
+      "previous": "Previous",
+      "next": "Next",
+      "showing": "Showing {from}–{to} of {total}",
+      "pageOf": "Page {page} of {pageCount}",
+      "hasMore": "Showing {count} of many"
+    },
     "password": {
       "show": "Show password",
       "hide": "Hide password"

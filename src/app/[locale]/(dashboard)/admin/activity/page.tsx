@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { OffsetPagination } from "@/components/ui/offset-pagination";
+import { useListPage } from "@/hooks/use-list-page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,15 +62,15 @@ export default function AdminActivityLogsPage() {
   );
   const [actionFilter, setActionFilter] = useState(actionFromUrl);
   const [entityIdFilter, setEntityIdFilter] = useState("");
-  const [cursor, setCursor] = useState<string | undefined>();
+  const { page, offset, pageSize, setPage, resetPage } = useListPage({ pageSize: 50 });
 
   const { data, isLoading, isFetching } = trpc.admin.getActivityLogs.useQuery({
     level: level === "ALL" ? undefined : level,
     action: actionFilter.trim() || undefined,
     entityId: entityIdFilter.trim() || undefined,
     entityType: entityIdFilter.trim() ? "Request" : undefined,
-    limit: 50,
-    cursor,
+    limit: pageSize,
+    offset,
   });
 
   const logs = (data?.logs ?? []) as ActivityRow[];
@@ -92,7 +93,7 @@ export default function AdminActivityLogsPage() {
               placeholder={t("actionPlaceholder")}
               value={actionFilter}
               onChange={(e) => {
-                setCursor(undefined);
+                resetPage();
                 setActionFilter(e.target.value);
               }}
               className="sm:w-48"
@@ -101,7 +102,7 @@ export default function AdminActivityLogsPage() {
               placeholder={t("entityIdPlaceholder")}
               value={entityIdFilter}
               onChange={(e) => {
-                setCursor(undefined);
+                resetPage();
                 setEntityIdFilter(e.target.value);
               }}
               className="sm:w-56"
@@ -109,7 +110,7 @@ export default function AdminActivityLogsPage() {
             <Tabs
               value={level}
               onValueChange={(value) => {
-                setCursor(undefined);
+                resetPage();
                 setLevel(value as ActivityLevel);
               }}
             >
@@ -193,22 +194,14 @@ export default function AdminActivityLogsPage() {
                 </TableBody>
               </Table>
 
-              <div className="mt-4 flex justify-end gap-2">
-                {cursor ? (
-                  <Button variant="outline" size="sm" onClick={() => setCursor(undefined)}>
-                    {t("newest")}
-                  </Button>
-                ) : null}
-                {data?.nextCursor ? (
-                  <Button
-                    size="sm"
-                    disabled={isFetching}
-                    onClick={() => setCursor(data.nextCursor ?? undefined)}
-                  >
-                    {t("loadMore")}
-                  </Button>
-                ) : null}
-              </div>
+              <OffsetPagination
+                page={page}
+                pageSize={pageSize}
+                total={data?.total ?? 0}
+                hasMore={data?.hasMore}
+                onPageChange={setPage}
+                isFetching={isFetching}
+              />
             </>
           ) : null}
         </CardContent>
