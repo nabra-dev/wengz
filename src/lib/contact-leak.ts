@@ -151,8 +151,14 @@ export const CONTACT_LEAK_RATE_LIMIT_MESSAGE =
   "Too many attempts to share off-platform contact details. Please wait before trying again, and keep communication on Wengz.";
 
 /**
- * Strike / lockout after repeated blocks. Detection + per-message reject stay on;
- * set true to re-enable rate-limit + admin repeat alerts.
+ * Contact-leak block on create/messages/etc. Scan + strike code stays in place;
+ * set true to reject phones/emails/off-platform links again.
+ */
+export const CONTACT_LEAK_ENFORCEMENT_ENABLED = false;
+
+/**
+ * Strike / lockout after repeated blocks (only when enforcement is also on).
+ * Set true to re-enable rate-limit + admin repeat alerts.
  */
 export const CONTACT_LEAK_STRIKES_ENABLED = false;
 

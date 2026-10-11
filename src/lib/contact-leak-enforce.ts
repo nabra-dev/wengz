@@ -5,6 +5,7 @@ import { getTranslation } from "@/lib/notifications/i18n-helper";
 import { notifyAdminsContactLeakRepeat } from "@/lib/notifications";
 import { isSuperAdmin } from "@/lib/roles";
 import {
+  CONTACT_LEAK_ENFORCEMENT_ENABLED,
   CONTACT_LEAK_ERROR_MESSAGE,
   CONTACT_LEAK_RATE_LIMIT,
   CONTACT_LEAK_RATE_LIMIT_MESSAGE,
@@ -112,14 +113,16 @@ async function handleContactLeakHits(
 
 /**
  * Block a single free-text field when it contains off-platform contact.
- * Logs each block. Strike lockout / admin repeat alerts run only when
- * CONTACT_LEAK_STRIKES_ENABLED is true. Super admins are exempt (ops/testing).
+ * No-op while CONTACT_LEAK_ENFORCEMENT_ENABLED is false (scan code kept).
+ * Strike lockout / admin repeat alerts run only when CONTACT_LEAK_STRIKES_ENABLED
+ * is also true. Super admins are exempt (ops/testing).
  */
 export async function enforceNoContactLeak(
   text: string | undefined | null,
   mode: ContactLeakMode,
   ctx: ContactLeakEnforceContext
 ): Promise<void> {
+  if (!CONTACT_LEAK_ENFORCEMENT_ENABLED) return;
   if (!text) return;
   if (isSuperAdmin(ctx.actorRole)) return;
   const hits = findContactLeaks(text, mode);
@@ -129,12 +132,13 @@ export async function enforceNoContactLeak(
 
 /**
  * Block request create payloads (title/description/Q&A) with contact leaks.
- * Super admins are exempt (ops/testing).
+ * No-op while CONTACT_LEAK_ENFORCEMENT_ENABLED is false. Super admins exempt.
  */
 export async function enforceNoContactLeakInFields(
   input: ContactLeakScanInput,
   ctx: ContactLeakEnforceContext
 ): Promise<void> {
+  if (!CONTACT_LEAK_ENFORCEMENT_ENABLED) return;
   if (isSuperAdmin(ctx.actorRole)) return;
   const hits = findContactLeaksInFields(input);
   if (hits.length === 0) return;
