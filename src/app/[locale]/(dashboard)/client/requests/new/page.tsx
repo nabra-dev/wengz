@@ -24,7 +24,11 @@ import { ServiceAttributesForm } from "@/components/client/service-attributes-fo
 import { trpc } from "@/lib/trpc/client";
 import { showError } from "@/lib/error-handler";
 import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
-import { findContactLeaksInFields, collectAttributeTextAnswers } from "@/lib/contact-leak";
+import {
+  CONTACT_LEAK_ENFORCEMENT_ENABLED,
+  findContactLeaksInFields,
+  collectAttributeTextAnswers,
+} from "@/lib/contact-leak";
 import { ArrowLeft } from "lucide-react";
 import type { AttributeResponse, ServiceAttribute } from "@/types/service-attributes";
 import { calculateAttributeCredits } from "@/lib/attribute-validation";
@@ -215,16 +219,18 @@ export default function NewRequestPage() {
       return;
     }
 
-    const contactHits = findContactLeaksInFields({
-      title: title.trim(),
-      description: description.trim(),
-      attributeAnswers: collectAttributeTextAnswers(
-        attributeResponses.length > 0 ? attributeResponses : undefined
-      ),
-    });
-    if (contactHits.length > 0) {
-      toast.error(tErrors("contactNotAllowed"));
-      return;
+    if (CONTACT_LEAK_ENFORCEMENT_ENABLED) {
+      const contactHits = findContactLeaksInFields({
+        title: title.trim(),
+        description: description.trim(),
+        attributeAnswers: collectAttributeTextAnswers(
+          attributeResponses.length > 0 ? attributeResponses : undefined
+        ),
+      });
+      if (contactHits.length > 0) {
+        toast.error(tErrors("contactNotAllowed"));
+        return;
+      }
     }
 
     createRequest.mutate({

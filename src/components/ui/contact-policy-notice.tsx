@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  CONTACT_LEAK_ENFORCEMENT_ENABLED,
   findContactLeaks,
   findContactLeaksInFields,
   type ContactLeakMode,
@@ -19,7 +20,7 @@ type ContactPolicyNoticeProps = {
 
 /**
  * Live client-side hint when typed content would be blocked for off-platform contact.
- * Server enforcement remains authoritative.
+ * Server enforcement remains authoritative when CONTACT_LEAK_ENFORCEMENT_ENABLED.
  */
 export function ContactPolicyNotice({
   text,
@@ -28,6 +29,8 @@ export function ContactPolicyNotice({
   className,
 }: ContactPolicyNoticeProps) {
   const t = useTranslations("errors");
+  if (!CONTACT_LEAK_ENFORCEMENT_ENABLED) return null;
+
   const hits = fields ? findContactLeaksInFields(fields) : text ? findContactLeaks(text, mode) : [];
 
   if (hits.length === 0) return null;

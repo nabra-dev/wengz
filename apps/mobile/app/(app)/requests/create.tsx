@@ -297,8 +297,6 @@ export default function CreateRequestScreen() {
             disabled={!hasCredits}
             hint={t("profile.editProfile.helperText.maxFileSize")}
           />
-
-          <Muted style={{ marginTop: 8, marginBottom: 0 }}>{t("errors.contactNotAllowed")}</Muted>
         </Card>
 
         <Card>

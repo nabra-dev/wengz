@@ -28,7 +28,7 @@ import {
 import { showError } from "@/lib/error-handler";
 import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
 import { LinkifiedText } from "@/components/ui/linkified-text";
-import { textHasContactLeak } from "@/lib/contact-leak";
+import { CONTACT_LEAK_ENFORCEMENT_ENABLED, textHasContactLeak } from "@/lib/contact-leak";
 import { cn, getInitials } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
 import { useTranslations, useLocale } from "next-intl";
@@ -349,7 +349,11 @@ export function MessagesCard({
   const handleSendComment = () => {
     const hasContent = comment.trim().length > 0 || commentFiles.length > 0;
     if (!hasContent || addComment.isPending || isRecording || isUploadingVoice) return;
-    if (comment.trim() && textHasContactLeak(comment.trim(), "strict")) {
+    if (
+      CONTACT_LEAK_ENFORCEMENT_ENABLED &&
+      comment.trim() &&
+      textHasContactLeak(comment.trim(), "strict")
+    ) {
       toast.error(tErrors("contactNotAllowed"));
       return;
     }

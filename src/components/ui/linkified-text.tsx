@@ -1,7 +1,7 @@
 "use client";
 
 import { linkifyText } from "@/lib/linkify";
-import { isOffPlatformContactUrl } from "@/lib/contact-leak";
+import { CONTACT_LEAK_ENFORCEMENT_ENABLED, isOffPlatformContactUrl } from "@/lib/contact-leak";
 import { cn } from "@/lib/utils";
 
 interface LinkifiedTextProps {
@@ -13,7 +13,7 @@ interface LinkifiedTextProps {
 
 /**
  * Renders plain text with http(s)/www URLs as safe external links.
- * Off-platform contact URLs (WhatsApp, Telegram, LinkedIn profiles, …) stay plain text.
+ * Off-platform contact URLs stay plain text when CONTACT_LEAK_ENFORCEMENT_ENABLED.
  */
 export function LinkifiedText({ text, className, inline = false }: LinkifiedTextProps) {
   const segments = linkifyText(text);
@@ -26,7 +26,10 @@ export function LinkifiedText({ text, className, inline = false }: LinkifiedText
           return <span key={`t-${index}`}>{segment.value}</span>;
         }
 
-        if (isOffPlatformContactUrl(segment.href) || isOffPlatformContactUrl(segment.value)) {
+        if (
+          CONTACT_LEAK_ENFORCEMENT_ENABLED &&
+          (isOffPlatformContactUrl(segment.href) || isOffPlatformContactUrl(segment.value))
+        ) {
           return (
             <span
               key={`b-${index}`}
