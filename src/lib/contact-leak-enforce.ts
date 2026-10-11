@@ -8,6 +8,7 @@ import {
   CONTACT_LEAK_ERROR_MESSAGE,
   CONTACT_LEAK_RATE_LIMIT,
   CONTACT_LEAK_RATE_LIMIT_MESSAGE,
+  CONTACT_LEAK_STRIKES_ENABLED,
   contactLeakRateLimitKey,
   findContactLeaks,
   findContactLeaksInFields,
@@ -72,7 +73,8 @@ async function handleContactLeakHits(
     },
   });
 
-  if (actorId) {
+  // Strike / lockout paused — keep counting + admin tooling ready via CONTACT_LEAK_STRIKES_ENABLED.
+  if (CONTACT_LEAK_STRIKES_ENABLED && actorId) {
     const rl = rateLimit(contactLeakRateLimitKey(actorId), CONTACT_LEAK_RATE_LIMIT);
     if (!rl.success) {
       logActivityAsync({
@@ -110,8 +112,8 @@ async function handleContactLeakHits(
 
 /**
  * Block a single free-text field when it contains off-platform contact.
- * Logs each block; after repeated blocks, rate-limits the actor and alerts admins.
- * Super admins are exempt (ops/testing).
+ * Logs each block. Strike lockout / admin repeat alerts run only when
+ * CONTACT_LEAK_STRIKES_ENABLED is true. Super admins are exempt (ops/testing).
  */
 export async function enforceNoContactLeak(
   text: string | undefined | null,

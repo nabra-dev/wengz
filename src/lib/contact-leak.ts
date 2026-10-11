@@ -150,7 +150,13 @@ export const CONTACT_LEAK_ERROR_MESSAGE =
 export const CONTACT_LEAK_RATE_LIMIT_MESSAGE =
   "Too many attempts to share off-platform contact details. Please wait before trying again, and keep communication on Wengz.";
 
-/** How many blocked contact-leak attempts before temporary lockout. */
+/**
+ * Strike / lockout after repeated blocks. Detection + per-message reject stay on;
+ * set true to re-enable rate-limit + admin repeat alerts.
+ */
+export const CONTACT_LEAK_STRIKES_ENABLED = false;
+
+/** How many blocked contact-leak attempts before temporary lockout (when strikes enabled). */
 export const CONTACT_LEAK_RATE_LIMIT = { limit: 5, windowMs: 15 * 60_000 } as const;
 
 export function contactLeakRateLimitKey(actorId: string): string {
