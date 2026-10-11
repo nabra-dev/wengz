@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
@@ -7,6 +7,7 @@ import {
   addComment,
   approveRequest,
   getRequest,
+  markCommentsRead,
   rateRequest,
   requestRevision,
 } from "../../../src/lib/api";
@@ -16,6 +17,7 @@ import { RequestChat, type ChatComment } from "../../../src/components/RequestCh
 import { VoiceNotePreview } from "../../../src/components/VoiceNotePreview";
 import { physicalRow, row } from "../../../src/rtl";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
+import { useAuth } from "../../../src/providers/auth";
 import {
   Button,
   Card,
@@ -114,6 +116,7 @@ function FileChip({ url }: { url: string }) {
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("messages");
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(0);
@@ -130,6 +133,27 @@ export default function RequestDetailScreen() {
     void qc.invalidateQueries({ queryKey: ["request", id] });
     void qc.invalidateQueries({ queryKey: ["requests"] });
   };
+
+  const canMarkPeerRead = user?.role === "CLIENT" || user?.role === "PROVIDER";
+  const myUserId = user?.id;
+
+  useEffect(() => {
+    if (!id || !canMarkPeerRead || !myUserId || !q.data) return;
+    const comments = (q.data as { comments?: Comment[] }).comments ?? [];
+    const hasUnreadFromOthers = comments.some(
+      (c) => c.type !== "SYSTEM" && c.user?.id && c.user.id !== myUserId && c.isRead !== true
+    );
+    if (!hasUnreadFromOthers) return;
+
+    void markCommentsRead(String(id))
+      .then((res) => {
+        if (res.updated > 0) invalidate();
+      })
+      .catch(() => {
+        /* non-blocking read receipt */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mark once when unread peers appear
+  }, [id, canMarkPeerRead, myUserId, q.data]);
 
   const send = useMutation({
     mutationFn: async (payload: { content: string; files: string[] }) =>

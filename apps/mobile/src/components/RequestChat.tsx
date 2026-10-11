@@ -31,6 +31,7 @@ export type ChatComment = {
   content: string;
   type?: string;
   createdAt?: string;
+  isRead?: boolean;
   files?: string[];
   user?: {
     id?: string | null;
@@ -621,7 +622,24 @@ export function RequestChat({
                 {timeLabel}
               </AppText>
               {isMine ? (
-                <Ionicons name="checkmark-done" size={14} color="rgba(245,247,232,0.7)" />
+                comment.isRead ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                    <Ionicons name="checkmark-done" size={14} color="#53bdeb" />
+                    <AppText
+                      compact
+                      style={{ color: "#53bdeb", fontSize: 10, fontFamily: fonts.medium }}
+                    >
+                      {t("requests.messages.seen")}
+                    </AppText>
+                  </View>
+                ) : (
+                  <Ionicons
+                    name="checkmark"
+                    size={14}
+                    color="rgba(245,247,232,0.7)"
+                    accessibilityLabel={t("requests.messages.delivered")}
+                  />
+                )
               ) : null}
             </View>
           </View>

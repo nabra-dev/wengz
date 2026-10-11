@@ -248,6 +248,13 @@ export function addComment(requestId: string, content: string, files: string[] =
   });
 }
 
+export function markCommentsRead(requestId: string) {
+  return apiRequest<{ updated: number }>("/request/comments/mark-read", {
+    method: "POST",
+    body: { requestId },
+  });
+}
+
 export function getNotifications(limit = 40) {
   return apiRequest<{ notifications: Record<string, unknown>[]; nextCursor: string | null }>(
     `/notification?limit=${limit}`

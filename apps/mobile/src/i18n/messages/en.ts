@@ -754,6 +754,8 @@ export const en = {
       messageSent: "Message Sent",
       messageSuccess: "Your message has been sent.",
       messageFailed: "Failed to send message",
+      delivered: "Delivered",
+      seen: "Seen",
       requestCompleted: "This request has been completed. Comments are no longer available.",
       systemMessages: {
         requestCreated: "Request created. Waiting for a creator to accept.",

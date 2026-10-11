@@ -23,6 +23,7 @@ import {
   Loader2,
   MessageSquare,
   Paperclip,
+  Check,
   CheckCheck,
 } from "lucide-react";
 import { showError } from "@/lib/error-handler";
@@ -46,6 +47,7 @@ interface Comment {
   type: string;
   content: string;
   createdAt: Date;
+  isRead?: boolean;
   user: {
     id?: string | null;
     name: string | null;
@@ -330,6 +332,30 @@ export function MessagesCard({
     globalThis.addEventListener("wengz:request-thread-updated", handleThreadUpdate);
     return () => globalThis.removeEventListener("wengz:request-thread-updated", handleThreadUpdate);
   }, [requestId, utils.request.getById]);
+
+  const markCommentsRead = trpc.request.markCommentsRead.useMutation({
+    onSuccess: (data) => {
+      if (data.updated > 0) {
+        void utils.request.getById.invalidate({ id: requestId });
+      }
+    },
+  });
+  const markCommentsReadMutate = markCommentsRead.mutate;
+
+  const canMarkPeerRead = session?.user?.role === "CLIENT" || session?.user?.role === "PROVIDER";
+  const hasUnreadFromOthers = useMemo(
+    () =>
+      Boolean(myUserId) &&
+      comments.some(
+        (c) => c.type !== "SYSTEM" && c.user?.id && c.user.id !== myUserId && c.isRead !== true
+      ),
+    [comments, myUserId]
+  );
+
+  useEffect(() => {
+    if (!canMarkPeerRead || !hasUnreadFromOthers) return;
+    markCommentsReadMutate({ requestId });
+  }, [canMarkPeerRead, hasUnreadFromOthers, markCommentsReadMutate, requestId]);
 
   const addComment = trpc.request.addComment.useMutation({
     onSuccess: () => {
@@ -683,7 +709,20 @@ export function MessagesCard({
                         >
                           <span>{timeLabel}</span>
                           {isMine ? (
-                            <CheckCheck className="h-3 w-3 opacity-80" aria-hidden />
+                            threadComment.isRead ? (
+                              <span
+                                className="inline-flex items-center gap-0.5 text-[#53bdeb]"
+                                title={t("seen")}
+                              >
+                                <CheckCheck className="h-3.5 w-3.5" aria-hidden />
+                                <span className="font-medium">{t("seen")}</span>
+                              </span>
+                            ) : (
+                              <Check
+                                className="h-3.5 w-3.5 opacity-80"
+                                aria-label={t("delivered")}
+                              />
+                            )
                           ) : null}
                         </div>
                       </div>

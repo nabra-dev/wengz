@@ -907,6 +907,56 @@ export const requestRouter = router({
       return comment;
     }),
 
+  /**
+   * Peer opened the thread — mark the other party's messages/deliverables as seen.
+   * Staff browsing does not flip receipts (client ↔ provider only).
+   */
+  markCommentsRead: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/request/comments/mark-read",
+        tags: ["request", "mobile"],
+        summary: "Mark peer request comments as read/seen",
+        protect: true,
+      },
+    })
+    .input(z.object({ requestId: z.string() }))
+    .output(z.object({ updated: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const request = await ctx.db.request.findUnique({
+        where: { id: input.requestId },
+        select: { id: true, clientId: true, providerId: true, deletedAt: true },
+      });
+
+      if (!request || request.deletedAt) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Request not found",
+        });
+      }
+
+      const isClient = request.clientId === userId;
+      const isProvider = request.providerId === userId;
+      if (!isClient && !isProvider) {
+        return { updated: 0 };
+      }
+
+      const result = await ctx.db.requestComment.updateMany({
+        where: {
+          requestId: input.requestId,
+          userId: { not: userId },
+          isRead: false,
+          type: { in: ["MESSAGE", "DELIVERABLE"] },
+        },
+        data: { isRead: true },
+      });
+
+      return { updated: result.count };
+    }),
+
   // Submit rating (client)
   rate: clientProcedure
     .meta({

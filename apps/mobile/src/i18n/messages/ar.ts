@@ -762,6 +762,8 @@ export const ar: MessageTree = {
       messageSent: "تم إرسال الرسالة",
       messageSuccess: "تم إرسال رسالتك.",
       messageFailed: "فشل إرسال الرسالة",
+      delivered: "تم التسليم",
+      seen: "تمت المشاهدة",
       requestCompleted: "تم إكمال هذا الطلب. لم تعد التعليقات متاحة.",
       systemMessages: {
         requestCreated: "تم إنشاء الطلب. بانتظار قبول المبدع.",
