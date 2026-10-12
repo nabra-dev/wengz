@@ -7,6 +7,7 @@ import { AppNavHeader } from "../../src/components/AppHeader";
 import { CenterNewRequestButton } from "../../src/components/CenterNewRequestButton";
 import { TabBarItem } from "../../src/components/TabBarItem";
 import { brandTabBarOptions } from "../../src/theme/navigation";
+import { shouldForceOnboarding } from "../../src/lib/onboarding";
 
 /** Always resolve to the Home tab when a route can't be matched. */
 export const unstable_settings = { anchor: "index" };
@@ -15,6 +16,7 @@ export default function AppLayout() {
   const { ready, token } = useAuth();
   const { locale, direction } = useLocale();
   if (!ready) return <Loading />;
+  if (shouldForceOnboarding()) return <Redirect href="/(auth)/onboarding" />;
   if (!token) return <Redirect href="/(auth)/welcome" />;
 
   return (

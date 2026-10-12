@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Redirect } from "expo-router";
 import { useAuth } from "../src/providers/auth";
 import { Loading } from "../src/components/ui";
-import { hasCompletedOnboarding } from "../src/lib/onboarding";
+import { hasCompletedOnboarding, shouldForceOnboarding } from "../src/lib/onboarding";
 
 /** Cold-start gate: app → onboarding (once) → welcome → login. */
 export default function Index() {
@@ -21,6 +21,7 @@ export default function Index() {
   }, [token]);
 
   if (!ready) return <Loading />;
+  if (shouldForceOnboarding()) return <Redirect href="/(auth)/onboarding" />;
   if (token) return <Redirect href="/(app)" />;
   if (seenOnboarding === null) return <Loading />;
   if (!seenOnboarding) return <Redirect href="/(auth)/onboarding" />;

@@ -17,10 +17,10 @@ import Animated, {
 import { AuthBrand } from "../../src/components/AuthBrand";
 import { AppText, colors } from "../../src/components/ui";
 import { useLocale } from "../../src/providers/locale";
-import { t } from "../../src/i18n";
+import { t, type AppLocale } from "../../src/i18n";
 import { fonts, typeScale, BRAND } from "../../src/theme/brand";
 import { row } from "../../src/rtl";
-import { markOnboardingComplete } from "../../src/lib/onboarding";
+import { consumeForceOnboarding, markOnboardingComplete } from "../../src/lib/onboarding";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -311,13 +311,17 @@ function ProgressTrack({ index, total }: { index: number; total: number }) {
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
-  const { locale, direction } = useLocale();
+  const { locale, direction, setLocale } = useLocale();
   const [index, setIndex] = useState(0);
   const slide = SLIDES[index]!;
   const isFirst = index === 0;
   const isLast = index === SLIDES.length - 1;
   const backIcon = direction === "rtl" ? "chevron-forward" : "chevron-back";
   const nextIcon = direction === "rtl" ? "chevron-back" : "chevron-forward";
+
+  useEffect(() => {
+    consumeForceOnboarding();
+  }, []);
 
   const finish = useCallback(async () => {
     await markOnboardingComplete();
@@ -372,18 +376,57 @@ export default function OnboardingScreen() {
         >
           {index + 1} / {SLIDES.length}
         </AppText>
-        <Pressable onPress={() => void finish()} hitSlop={12}>
-          <AppText
-            compact
-            style={{
-              color: colors.mutedForeground,
-              fontFamily: fonts.medium,
-              ...typeScale.md,
-            }}
-          >
-            {t("auth.onboarding.skip")}
-          </AppText>
-        </Pressable>
+        <View style={{ ...row(), alignItems: "center", gap: 10 }}>
+          <View style={{ ...row(), gap: 6 }}>
+            {(
+              [
+                { key: "en" as AppLocale, label: "EN" },
+                { key: "ar" as AppLocale, label: "ع" },
+              ] as const
+            ).map((opt) => {
+              const active = locale === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => void setLocale(opt.key)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("common.language")}
+                  accessibilityState={{ selected: active }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: active ? "rgba(105,13,212,0.35)" : "rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <AppText
+                    compact
+                    style={{
+                      color: active ? colors.yellow : colors.mutedForeground,
+                      fontFamily: fonts.medium,
+                      ...typeScale.sm,
+                    }}
+                  >
+                    {opt.label}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Pressable onPress={() => void finish()} hitSlop={12}>
+            <AppText
+              compact
+              style={{
+                color: colors.mutedForeground,
+                fontFamily: fonts.medium,
+                ...typeScale.md,
+              }}
+            >
+              {t("auth.onboarding.skip")}
+            </AppText>
+          </Pressable>
+        </View>
       </View>
 
       <ProgressTrack index={index} total={SLIDES.length} />
