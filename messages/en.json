@@ -87,6 +87,7 @@
       "pricing": "Plans",
       "contact": "Contact us",
       "providerForm": "Creator form",
+      "creators": "Become a creator",
       "theme": "Theme"
     },
     "notices": {
@@ -302,8 +303,10 @@
       "primary": "Start your free trial",
       "primaryShort": "Try free",
       "startTrial": "Start your free trial",
-      "asClient": "As a client",
-      "asProvider": "As a creator",
+      "asClient": "Sign up",
+      "asProvider": "Become a creator",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
       "viewPlans": "Explore plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
@@ -2070,49 +2073,49 @@
       "notFound": "Request not found",
       "backToRequests": "Back to Requests",
       "deliverableReady": {
-        "title": "Deliverable Ready",
-        "description": "Review the deliverable and either approve or request a revision.",
-        "approve": "Approve & Complete",
+        "title": "Ready for your review",
+        "description": "Approve to finish, or ask for changes below.",
+        "approve": "Approve & complete",
         "approving": "Approving..."
       },
       "requestRevision": {
-        "title": "Request Revision",
+        "title": "Need changes",
         "freeRemaining": "{count} free {revision} remaining",
         "revision": "revision",
         "revisions": "revisions",
-        "noFreeLeft": "No free revisions left - costs {cost} credit",
-        "placeholder": "Describe what changes you need...",
+        "noFreeLeft": "No free revisions left — costs {cost} credit",
+        "placeholder": "What should change?",
         "minCharacters": "Required",
-        "button": "Request Revision",
-        "requesting": "Requesting...",
-        "insufficientCredits": "Insufficient Credits",
-        "insufficientCreditsDesc": "You need {required} credits for this revision, but you have {available} credits remaining. Please purchase more credits.",
-        "buyCredits": "Buy Credits"
+        "button": "Send revision request",
+        "requesting": "Sending...",
+        "insufficientCredits": "Not enough credits",
+        "insufficientCreditsDesc": "This revision needs {required} credits; you have {available}. Buy more to continue.",
+        "buyCredits": "Buy credits"
       },
       "rateService": {
-        "title": "Rate This Service",
-        "description": "Share your experience with this creator",
-        "reviewPlaceholder": "Write a review (optional)...",
+        "title": "How was this work?",
+        "description": "A quick rating helps your creator — review is optional.",
+        "reviewPlaceholder": "Add a short review (optional)",
         "charactersCount": "{count} characters",
-        "submit": "Submit Rating",
+        "submit": "Submit rating",
         "submitting": "Submitting...",
         "rateStars": "Rate {count} stars"
       },
       "yourRating": {
-        "title": "Your Rating"
+        "title": "Your rating"
       },
       "toast": {
-        "approved": "Request Approved!",
-        "approvedDesc": "The deliverable has been approved. Great work!",
-        "revisionRequested": "Revision Requested",
-        "revisionRequestedDesc": "The creator has been notified about your revision request.",
-        "ratingSubmitted": "Rating Submitted",
-        "ratingSubmittedDesc": "Thank you for your feedback!",
-        "invalidFeedback": "Invalid Feedback",
-        "invalidFeedbackDesc": "Please describe the changes needed."
+        "approved": "Request completed",
+        "approvedDesc": "Thanks — the deliverable is approved.",
+        "revisionRequested": "Revision requested",
+        "revisionRequestedDesc": "Your creator was notified.",
+        "ratingSubmitted": "Thanks for the rating",
+        "ratingSubmittedDesc": "Your feedback was saved.",
+        "invalidFeedback": "Add a note",
+        "invalidFeedbackDesc": "Describe what needs to change."
       },
       "messagesTitle": "Messages",
-      "messagesDescription": "Communicate with your creator",
+      "messagesDescription": "Deliverables and updates live here",
       "messagesPlaceholder": "Type your message...",
       "messagingAfterClaim": "Messaging opens once a creator claims your request. You’ll see the full thread here."
     },

@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 type RequestWorkspaceProps = {
   readonly info: ReactNode;
   readonly chat: ReactNode;
+  /** Put chat first and give it more width (client request focus). */
+  readonly emphasize?: "chat" | "info";
 };
 
 const LG_QUERY = "(min-width: 1024px)";
@@ -31,11 +33,12 @@ function useIsLgUp(): boolean {
  * Two-column request workspace on lg+: info | chat.
  * Below lg: tabbed Details / Messages — chat fills most of the viewport.
  */
-export function RequestWorkspace({ info, chat }: RequestWorkspaceProps) {
+export function RequestWorkspace({ info, chat, emphasize = "info" }: RequestWorkspaceProps) {
   const t = useTranslations("requests.workspace");
   const isDesktop = useIsLgUp();
   const tabsAnchorRef = useRef<HTMLDivElement | null>(null);
   const [tab, setTab] = useState("messages");
+  const chatFirst = emphasize === "chat";
 
   const handleTabChange = useCallback((value: string) => {
     setTab(value);
@@ -45,12 +48,33 @@ export function RequestWorkspace({ info, chat }: RequestWorkspaceProps) {
   }, []);
 
   if (isDesktop) {
+    const chatAside = (
+      <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100dvh-5rem)]">
+        {chat}
+      </aside>
+    );
+    const infoColumn = <div className="min-w-0 space-y-6">{info}</div>;
+
     return (
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,36rem)] lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-start">
-        <div className="min-w-0 space-y-6">{info}</div>
-        <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100dvh-5rem)]">
-          {chat}
-        </aside>
+      <div
+        className={cn(
+          "grid gap-6 lg:items-start",
+          chatFirst
+            ? "lg:grid-cols-[minmax(24rem,1fr)_minmax(16rem,22rem)] xl:grid-cols-[minmax(28rem,1fr)_minmax(18rem,24rem)]"
+            : "lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_minmax(26rem,36rem)]"
+        )}
+      >
+        {chatFirst ? (
+          <>
+            {chatAside}
+            {infoColumn}
+          </>
+        ) : (
+          <>
+            {infoColumn}
+            {chatAside}
+          </>
+        )}
       </div>
     );
   }

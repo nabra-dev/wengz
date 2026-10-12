@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- user-uploaded / dynamic attachment URLs */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,6 +69,11 @@ interface MessagesCardProps {
   readonly maskClientNames?: boolean;
   /** Tall chat panel for split request layouts. */
   readonly variant?: "default" | "panel";
+  /**
+   * Rendered under the latest DELIVERABLE in the thread (client review / rate actions).
+   * Falls back to the end of the thread when no deliverable exists.
+   */
+  readonly afterLatestDeliverable?: ReactNode;
 }
 
 type ThreadItem =
@@ -288,6 +293,7 @@ export function MessagesCard({
   maskProviderNames = false,
   maskClientNames = false,
   variant = "default",
+  afterLatestDeliverable,
 }: MessagesCardProps) {
   const t = useTranslations("requests.messages");
   const tSidebar = useTranslations("requests.sidebar");
@@ -312,6 +318,15 @@ export function MessagesCard({
     () => buildThread(comments, myUserId, locale, t, tSidebar, maskProviderNames, maskClientNames),
     [comments, myUserId, locale, t, tSidebar, maskProviderNames, maskClientNames]
   );
+
+  const latestDeliverableId = useMemo(() => {
+    for (let i = comments.length - 1; i >= 0; i -= 1) {
+      if (comments[i]?.type === "DELIVERABLE") return comments[i]!.id;
+    }
+    return null;
+  }, [comments]);
+
+  const hasThreadActions = Boolean(afterLatestDeliverable);
 
   useEffect(() => {
     const handleThreadUpdate = (event: Event) => {
@@ -493,6 +508,13 @@ export function MessagesCard({
   }, [comments]);
 
   useEffect(() => {
+    if (!hasThreadActions) return;
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+  }, [hasThreadActions, latestDeliverableId]);
+
+  useEffect(() => {
     if (commentFiles.length > 0) setShowAttach(true);
   }, [commentFiles.length]);
 
@@ -601,135 +623,150 @@ export function MessagesCard({
                   threadComment.content.trim() !== attachmentFallback;
                 const timeLabel = formatMessageTime(threadComment.createdAt, locale);
                 const isDeliverable = threadComment.type === "DELIVERABLE";
+                const showActionsHere =
+                  Boolean(afterLatestDeliverable) &&
+                  isDeliverable &&
+                  threadComment.id === latestDeliverableId;
 
                 return (
-                  <div
-                    key={threadComment.id}
-                    className={cn(
-                      "flex gap-1.5 px-1",
-                      isMine ? "flex-row-reverse" : "flex-row",
-                      isFirstInGroup ? "mt-2" : "mt-0.5"
-                    )}
-                  >
-                    {!isMine ? (
-                      <div className="flex w-8 shrink-0 items-end sm:w-9">
-                        {showAvatar ? (
-                          <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
-                            <AvatarImage src={displayImage || ""} />
-                            <AvatarFallback className="text-[10px]">
-                              {getInitials(displayName)}
-                            </AvatarFallback>
-                          </Avatar>
-                        ) : null}
-                      </div>
-                    ) : null}
-
+                  <div key={threadComment.id} className="contents">
                     <div
                       className={cn(
-                        "flex min-w-0 max-w-[min(100%,18.5rem)] flex-col sm:max-w-[min(100%,22rem)] md:max-w-sm",
-                        isMine ? "items-end" : "items-start"
+                        "flex gap-1.5 px-1",
+                        isMine ? "flex-row-reverse" : "flex-row",
+                        isFirstInGroup ? "mt-2" : "mt-0.5"
                       )}
                     >
-                      {showName ? (
-                        <span className="mb-0.5 px-1 text-[11px] font-medium text-[#E0F840]/80">
-                          {displayName}
-                        </span>
+                      {!isMine ? (
+                        <div className="flex w-8 shrink-0 items-end sm:w-9">
+                          {showAvatar ? (
+                            <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
+                              <AvatarImage src={displayImage || ""} />
+                              <AvatarFallback className="text-[10px]">
+                                {getInitials(displayName)}
+                              </AvatarFallback>
+                            </Avatar>
+                          ) : null}
+                        </div>
                       ) : null}
 
                       <div
                         className={cn(
-                          "relative w-fit max-w-full px-3 pb-1.5 pt-2 text-[13.5px] leading-relaxed shadow-sm sm:text-sm",
-                          isMine
-                            ? cn(
-                                "bg-primary text-primary-foreground",
-                                isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
-                                isFirstInGroup &&
-                                  !isLastInGroup &&
-                                  "rounded-2xl rounded-tr-md rounded-br-md",
-                                !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
-                                !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-r-md"
-                              )
-                            : cn(
-                                "bg-[hsl(268_24%_16%)] text-foreground ring-1 ring-white/5",
-                                isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
-                                isFirstInGroup &&
-                                  !isLastInGroup &&
-                                  "rounded-2xl rounded-tl-md rounded-bl-md",
-                                !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
-                                !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-l-md"
-                              )
+                          "flex min-w-0 flex-col",
+                          isDeliverable
+                            ? "max-w-[min(100%,22rem)] sm:max-w-[min(100%,26rem)] md:max-w-md"
+                            : "max-w-[min(100%,18.5rem)] sm:max-w-[min(100%,22rem)] md:max-w-sm",
+                          isMine ? "items-end" : "items-start"
                         )}
                       >
-                        {isDeliverable ? (
-                          <span
-                            className={cn(
-                              "mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                              isMine
-                                ? "bg-primary-foreground/15 text-primary-foreground"
-                                : "bg-[#E0F840]/15 text-[#E0F840]"
-                            )}
-                          >
-                            {t("deliverable")}
+                        {showName ? (
+                          <span className="mb-0.5 px-1 text-[11px] font-medium text-[#E0F840]/80">
+                            {displayName}
                           </span>
-                        ) : null}
-
-                        {showText ? (
-                          <LinkifiedText
-                            text={threadComment.content}
-                            className={cn(
-                              "whitespace-pre-wrap break-words [unicode-bidi:plaintext]",
-                              isMine && "[&_a]:text-primary-foreground [&_a]:underline"
-                            )}
-                          />
-                        ) : null}
-
-                        {threadComment.files.length > 0 ? (
-                          <div
-                            className={cn(
-                              "flex flex-col gap-2",
-                              showText && "mt-2",
-                              isMine ? "items-end" : "items-start"
-                            )}
-                          >
-                            {threadComment.files.map((file: string, i: number) => (
-                              <MessageFileAttachment
-                                key={`${threadComment.id}-file-${i}`}
-                                url={file}
-                                mine={isMine}
-                              />
-                            ))}
-                          </div>
                         ) : null}
 
                         <div
                           className={cn(
-                            "mt-1 flex items-center justify-end gap-1 text-[10px] leading-none",
-                            isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                            "relative w-fit max-w-full px-3 pb-1.5 pt-2 text-[13.5px] leading-relaxed shadow-sm sm:text-sm",
+                            isMine
+                              ? cn(
+                                  "bg-primary text-primary-foreground",
+                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
+                                  isFirstInGroup &&
+                                    !isLastInGroup &&
+                                    "rounded-2xl rounded-tr-md rounded-br-md",
+                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
+                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-r-md"
+                                )
+                              : cn(
+                                  "bg-[hsl(268_24%_16%)] text-foreground ring-1 ring-white/5",
+                                  isDeliverable && "ring-[#E0F840]/25",
+                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
+                                  isFirstInGroup &&
+                                    !isLastInGroup &&
+                                    "rounded-2xl rounded-tl-md rounded-bl-md",
+                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
+                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-l-md"
+                                )
                           )}
                         >
-                          <span>{timeLabel}</span>
-                          {isMine ? (
-                            threadComment.isRead ? (
-                              <span
-                                className="inline-flex items-center gap-0.5 text-[#53bdeb]"
-                                title={t("seen")}
-                              >
-                                <CheckCheck className="h-3.5 w-3.5" aria-hidden />
-                                <span className="font-medium">{t("seen")}</span>
-                              </span>
-                            ) : (
-                              <Check
-                                className="h-3.5 w-3.5 opacity-80"
-                                aria-label={t("delivered")}
-                              />
-                            )
+                          {isDeliverable ? (
+                            <span
+                              className={cn(
+                                "mb-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                isMine
+                                  ? "bg-primary-foreground/15 text-primary-foreground"
+                                  : "bg-[#E0F840]/15 text-[#E0F840]"
+                              )}
+                            >
+                              {t("deliverable")}
+                            </span>
                           ) : null}
+
+                          {showText ? (
+                            <LinkifiedText
+                              text={threadComment.content}
+                              className={cn(
+                                "whitespace-pre-wrap break-words [unicode-bidi:plaintext]",
+                                isMine && "[&_a]:text-primary-foreground [&_a]:underline"
+                              )}
+                            />
+                          ) : null}
+
+                          {threadComment.files.length > 0 ? (
+                            <div
+                              className={cn(
+                                "flex flex-col gap-2",
+                                showText && "mt-2",
+                                isMine ? "items-end" : "items-start"
+                              )}
+                            >
+                              {threadComment.files.map((file: string, i: number) => (
+                                <MessageFileAttachment
+                                  key={`${threadComment.id}-file-${i}`}
+                                  url={file}
+                                  mine={isMine}
+                                />
+                              ))}
+                            </div>
+                          ) : null}
+
+                          <div
+                            className={cn(
+                              "mt-1 flex items-center justify-end gap-1 text-[10px] leading-none",
+                              isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{timeLabel}</span>
+                            {isMine ? (
+                              threadComment.isRead ? (
+                                <span
+                                  className="inline-flex items-center gap-0.5 text-[#53bdeb]"
+                                  title={t("seen")}
+                                >
+                                  <CheckCheck className="h-3.5 w-3.5" aria-hidden />
+                                  <span className="font-medium">{t("seen")}</span>
+                                </span>
+                              ) : (
+                                <Check
+                                  className="h-3.5 w-3.5 opacity-80"
+                                  aria-label={t("delivered")}
+                                />
+                              )
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
+                    {showActionsHere ? (
+                      <div className="w-full pb-1">{afterLatestDeliverable}</div>
+                    ) : null}
                   </div>
                 );
               })}
+              {afterLatestDeliverable && !latestDeliverableId ? (
+                <div className="w-full pb-1">{afterLatestDeliverable}</div>
+              ) : null}
             </div>
           )}
         </div>

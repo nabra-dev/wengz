@@ -3,7 +3,7 @@
 import { Link, usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import type { MouseEventHandler, ReactNode } from "react";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { BrandLogo } from "@/components/brand/brand-logo";
@@ -15,6 +15,9 @@ export const LANDING_NAV_LINKS = [
   { href: "#pricing", labelKey: "landing.nav.pricing" },
   { href: "/contact", labelKey: "landing.nav.contact" },
 ] as const;
+
+const CREATOR_NAV_CLASS =
+  "group inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm font-medium text-[#690DD4] transition-colors hover:bg-[#690DD4]/[0.08] hover:text-[#5509ad] dark:text-[#E0F840] dark:hover:bg-[#E0F840]/10 dark:hover:text-[#f0ff6a] xl:px-3.5";
 
 type LandingNavHref = (typeof LANDING_NAV_LINKS)[number]["href"];
 
@@ -75,6 +78,13 @@ export function LandingHeader() {
                 {t(item.labelKey)}
               </LandingNavLink>
             ))}
+            <Link href="/forms/provider" className={`ms-1 ${CREATOR_NAV_CLASS}`}>
+              {t("landing.nav.creators")}
+              <ArrowUpRight
+                className="h-3.5 w-3.5 opacity-55 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-90"
+                aria-hidden
+              />
+            </Link>
           </nav>
 
           <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
@@ -91,23 +101,16 @@ export function LandingHeader() {
               </summary>
               <div className="absolute end-0 top-full z-50 mt-2 min-w-[11rem] rounded-xl border border-border bg-background p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
                 <Link
-                  href="/auth/register"
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  {t("landing.cta.asClient")}
-                </Link>
-                <Link
-                  href="/forms/provider"
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  {t("landing.cta.asProvider")}
-                </Link>
-                <div className="-mx-1.5 my-1 h-px bg-border" />
-                <Link
                   href="/auth/login"
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
                 >
-                  {t("common.buttons.signIn")}
+                  {t("landing.cta.signIn")}
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  {t("landing.cta.signUp")}
                 </Link>
               </div>
             </details>
@@ -138,12 +141,35 @@ export function LandingHeader() {
                       </LandingNavLink>
                     </li>
                   ))}
+                  <li>
+                    <Link
+                      href="/forms/provider"
+                      className={`mx-1.5 my-1 justify-center ${CREATOR_NAV_CLASS}`}
+                      onClick={(event) => {
+                        event.currentTarget.closest("details")?.removeAttribute("open");
+                      }}
+                    >
+                      {t("landing.nav.creators")}
+                      <ArrowUpRight
+                        className="h-3.5 w-3.5 opacity-55 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-90"
+                        aria-hidden
+                      />
+                    </Link>
+                  </li>
                   <li className="mt-1 border-t border-border pt-1">
                     <Link
                       href="/auth/login"
                       className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
                     >
-                      {t("common.buttons.signIn")}
+                      {t("landing.cta.signIn")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/auth/register"
+                      className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      {t("landing.cta.signUp")}
                     </Link>
                   </li>
                   <li className="min-[400px]:hidden">
