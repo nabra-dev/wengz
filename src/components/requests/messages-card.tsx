@@ -19,7 +19,6 @@ import {
   FileArchive,
   FileAudio,
   FileVideo,
-  ExternalLink,
   Loader2,
   MessageSquare,
   Paperclip,
@@ -29,6 +28,7 @@ import {
 import { showError } from "@/lib/error-handler";
 import { ContactPolicyNotice } from "@/components/ui/contact-policy-notice";
 import { LinkifiedText } from "@/components/ui/linkified-text";
+import { FileDownloadButton, FilePreviewWithDownload } from "@/components/ui/file-download-button";
 import { CONTACT_LEAK_ENFORCEMENT_ENABLED, textHasContactLeak } from "@/lib/contact-leak";
 import { cn, getInitials } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
@@ -74,6 +74,8 @@ interface MessagesCardProps {
    * Falls back to the end of the thread when no deliverable exists.
    */
   readonly afterLatestDeliverable?: ReactNode;
+  /** Always rendered at the end of the thread (provider start/deliver actions). */
+  readonly threadFooter?: ReactNode;
 }
 
 type ThreadItem =
@@ -160,14 +162,19 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
     return (
       <div
         className={cn(
-          "w-[min(100%,18rem)] min-w-[14rem] space-y-1.5 rounded-2xl p-2.5 sm:w-72",
+          "relative w-[min(100%,18rem)] min-w-[14rem] space-y-1.5 rounded-2xl p-2.5 sm:w-72",
           mine ? "bg-black/15" : "bg-black/20"
         )}
       >
-        <div className="flex items-center gap-2 text-[11px] opacity-80">
+        <div className="flex items-center gap-2 pe-8 text-[11px] opacity-80">
           <FileAudio className="h-3.5 w-3.5" />
           <span>{t("voiceNote")}</span>
         </div>
+        <FileDownloadButton
+          url={url}
+          filename={name}
+          className="top-2 end-2 bg-black/40 hover:bg-black/55"
+        />
         <AudioPlayer src={url} filename={name} className="w-full" />
       </div>
     );
@@ -175,41 +182,53 @@ function MessageFileAttachment({ url, mine }: { readonly url: string; readonly m
 
   if (kind === "image") {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block w-full max-w-[min(100%,15rem)] overflow-hidden rounded-xl sm:max-w-[17rem]"
+      <FilePreviewWithDownload
+        url={url}
+        filename={name}
+        className="w-full max-w-[min(100%,15rem)] overflow-hidden rounded-xl sm:max-w-[17rem]"
       >
-        <img src={url} alt={name} className="max-h-56 w-full object-cover bg-black/20" />
-      </a>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+          <img src={url} alt={name} className="max-h-56 w-full object-cover bg-black/20" />
+        </a>
+      </FilePreviewWithDownload>
     );
   }
 
   if (kind === "video") {
     return (
-      <div className="w-full max-w-[min(100%,18rem)] overflow-hidden rounded-xl sm:max-w-xs">
+      <FilePreviewWithDownload
+        url={url}
+        filename={name}
+        className="w-full max-w-[min(100%,18rem)] overflow-hidden rounded-xl sm:max-w-xs"
+      >
         <video src={url} controls className="max-h-56 w-full bg-black/20" title={name}>
           <track kind="captions" />
         </video>
-      </div>
+      </FilePreviewWithDownload>
     );
   }
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm",
-        mine ? "bg-black/15 hover:bg-black/25" : "bg-black/20 hover:bg-black/30"
+        "inline-flex max-w-full items-center gap-1 rounded-xl pe-1 text-sm",
+        mine ? "bg-black/15" : "bg-black/20"
       )}
     >
-      <KindGlyph kind={kind} />
-      <span className="truncate font-medium">{name}</span>
-      <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
-    </a>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "inline-flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5",
+          mine ? "hover:bg-black/20" : "hover:bg-black/25"
+        )}
+      >
+        <KindGlyph kind={kind} />
+        <span className="truncate font-medium">{name}</span>
+      </a>
+      <FileDownloadButton url={url} filename={name} variant="icon" className="text-inherit" />
+    </div>
   );
 }
 
@@ -294,6 +313,7 @@ export function MessagesCard({
   maskClientNames = false,
   variant = "default",
   afterLatestDeliverable,
+  threadFooter,
 }: MessagesCardProps) {
   const t = useTranslations("requests.messages");
   const tSidebar = useTranslations("requests.sidebar");
@@ -326,7 +346,7 @@ export function MessagesCard({
     return null;
   }, [comments]);
 
-  const hasThreadActions = Boolean(afterLatestDeliverable);
+  const hasThreadActions = Boolean(afterLatestDeliverable || threadFooter);
 
   useEffect(() => {
     const handleThreadUpdate = (event: Event) => {
@@ -558,10 +578,10 @@ export function MessagesCard({
       </div>
 
       <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0">
-        {/* Thread — WhatsApp-like wallpaper (ltr keeps mine=right in Arabic UI) */}
+        {/* Thread — follow page direction so RTL starts from the right */}
         <div
           ref={messagesContainerRef}
-          dir="ltr"
+          dir={locale === "ar" ? "rtl" : "ltr"}
           className={cn(
             "min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-3",
             "bg-[hsl(268_28%_7%)]",
@@ -569,7 +589,7 @@ export function MessagesCard({
             "[background-size:18px_18px]"
           )}
         >
-          {comments.length === 0 ? (
+          {comments.length === 0 && !afterLatestDeliverable && !threadFooter ? (
             <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 px-6 text-center">
               <div className="rounded-full bg-primary/15 p-4 text-primary">
                 <MessageSquare className="h-8 w-8" />
@@ -671,22 +691,22 @@ export function MessagesCard({
                             isMine
                               ? cn(
                                   "bg-primary text-primary-foreground",
-                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
+                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-se-md",
                                   isFirstInGroup &&
                                     !isLastInGroup &&
-                                    "rounded-2xl rounded-tr-md rounded-br-md",
-                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tr-md",
-                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-r-md"
+                                    "rounded-2xl rounded-se-md rounded-ee-md",
+                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-se-md",
+                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-e-md"
                                 )
                               : cn(
                                   "bg-[hsl(268_24%_16%)] text-foreground ring-1 ring-white/5",
                                   isDeliverable && "ring-[#E0F840]/25",
-                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
+                                  isFirstInGroup && isLastInGroup && "rounded-2xl rounded-ss-md",
                                   isFirstInGroup &&
                                     !isLastInGroup &&
-                                    "rounded-2xl rounded-tl-md rounded-bl-md",
-                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-tl-md",
-                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-l-md"
+                                    "rounded-2xl rounded-ss-md rounded-es-md",
+                                  !isFirstInGroup && isLastInGroup && "rounded-2xl rounded-ss-md",
+                                  !isFirstInGroup && !isLastInGroup && "rounded-2xl rounded-s-md"
                                 )
                           )}
                         >
@@ -732,6 +752,7 @@ export function MessagesCard({
                           ) : null}
 
                           <div
+                            dir="ltr"
                             className={cn(
                               "mt-1 flex items-center justify-end gap-1 text-[10px] leading-none",
                               isMine ? "text-primary-foreground/70" : "text-muted-foreground"
@@ -767,6 +788,7 @@ export function MessagesCard({
               {afterLatestDeliverable && !latestDeliverableId ? (
                 <div className="w-full pb-1">{afterLatestDeliverable}</div>
               ) : null}
+              {threadFooter ? <div className="w-full pb-1">{threadFooter}</div> : null}
             </div>
           )}
         </div>

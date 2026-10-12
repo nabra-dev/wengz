@@ -22,6 +22,9 @@
       "displayOnly": "عرض",
       "switchTo": "تبديل عملة العرض إلى {currency}"
     },
+    "files": {
+      "download": "تحميل"
+    },
     "footer": {
       "privacy": "الخصوصية",
       "terms": "الشروط",
@@ -2575,7 +2578,7 @@
       "messagingAfterClaim": "الرسائل متاحة بعد استلامك لهذه الوظيفة (أو تعيينها لك).",
       "messages": {
         "title": "الرسائل",
-        "description": "تواصل مع العميل",
+        "description": "التسليم والتحديثات هنا",
         "noMessages": "لا توجد رسائل بعد",
         "system": "النظام",
         "deliverable": "التسليم",

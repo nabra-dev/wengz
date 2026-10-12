@@ -10,6 +10,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { calculateAttributeCreditBreakdown } from "@/lib/attribute-validation";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { LinkifiedText } from "@/components/ui/linkified-text";
+import { FileDownloadButton, FilePreviewWithDownload } from "@/components/ui/file-download-button";
 import {
   filenameFromUrl,
   getExtension,
@@ -18,7 +19,7 @@ import {
   type FileKind,
 } from "@/lib/file-display";
 import { cn } from "@/lib/utils";
-import { FileArchive, FileAudio, FileIcon, FileText, FileVideo, ExternalLink } from "lucide-react";
+import { FileArchive, FileAudio, FileIcon, FileText, FileVideo } from "lucide-react";
 import { textContainsUrl } from "@/lib/linkify";
 
 interface AttributeResponsesDisplayProps {
@@ -95,16 +96,17 @@ function MediaAnswerItem({
 
   if (kind === "audio") {
     return (
-      <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="relative space-y-2 rounded-lg border bg-muted/40 p-3">
+        <div className="flex min-w-0 items-center gap-2 pe-8">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
             <FileAudio className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{name}</p>
+            <p className="truncate text-sm font-medium">{name}</p>
             <p className="text-xs text-muted-foreground">{t("fileKinds.voiceNote")}</p>
           </div>
         </div>
+        <FileDownloadButton url={url} filename={name} className="top-2 end-2" />
         <AudioPlayer src={url} filename={name} className="w-full" />
       </div>
     );
@@ -112,60 +114,66 @@ function MediaAnswerItem({
 
   if (kind === "image") {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group block overflow-hidden rounded-lg border bg-muted/30 transition-colors hover:bg-muted/50"
-      >
-        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
-          <img src={url} alt={name} className="h-full w-full object-cover" />
-        </div>
+      <div className="overflow-hidden rounded-lg border bg-muted/30">
+        <FilePreviewWithDownload url={url} filename={name}>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+            <div className="flex aspect-square items-center justify-center overflow-hidden bg-muted">
+              <img src={url} alt={name} className="h-full w-full object-cover" />
+            </div>
+          </a>
+        </FilePreviewWithDownload>
         <div className="flex items-center gap-1.5 px-2 py-1.5">
           <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{name}</p>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <FileDownloadButton url={url} filename={name} variant="icon" className="h-7 w-7" />
         </div>
-      </a>
+      </div>
     );
   }
 
   if (kind === "video") {
     return (
       <div className="overflow-hidden rounded-lg border bg-muted/30">
-        <div className="aspect-video bg-muted">
-          <video src={url} controls className="h-full w-full object-cover" title={name}>
-            <track kind="captions" />
-          </video>
+        <FilePreviewWithDownload url={url} filename={name}>
+          <div className="aspect-video bg-muted">
+            <video src={url} controls className="h-full w-full object-cover" title={name}>
+              <track kind="captions" />
+            </video>
+          </div>
+        </FilePreviewWithDownload>
+        <div className="flex items-center gap-1.5 px-2 py-1.5">
+          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{name}</p>
+          <FileDownloadButton url={url} filename={name} variant="icon" className="h-7 w-7" />
         </div>
-        <p className="truncate px-2 py-1.5 text-xs text-muted-foreground">{name}</p>
       </div>
     );
   }
 
   // PDF / archive / other — icon card
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-3 rounded-lg border bg-muted/40 p-3 transition-colors hover:bg-muted/60"
-    >
-      <span
-        className={cn(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-md",
-          kind === "pdf" && "bg-red-500/15 text-red-600 dark:text-red-400",
-          kind === "archive" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-          kind === "other" && "bg-primary/10 text-primary"
-        )}
+    <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-90"
       >
-        <FileKindIcon kind={kind} className="h-6 w-6" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{name}</p>
-        <p className="text-xs text-muted-foreground">{kindLabel(kind, t)}</p>
-      </div>
-      <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
-    </a>
+        <span
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-md",
+            kind === "pdf" && "bg-red-500/15 text-red-600 dark:text-red-400",
+            kind === "archive" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+            kind === "other" && "bg-primary/10 text-primary"
+          )}
+        >
+          <FileKindIcon kind={kind} className="h-6 w-6" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">{kindLabel(kind, t)}</p>
+        </div>
+      </a>
+      <FileDownloadButton url={url} filename={name} variant="icon" />
+    </div>
   );
 }
 

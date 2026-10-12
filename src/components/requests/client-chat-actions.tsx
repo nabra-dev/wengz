@@ -109,7 +109,7 @@ export function ClientChatActions({
 
   if (mode === "rated" && existingRating) {
     return (
-      <div className="mx-1 mt-2 rounded-2xl border border-border/70 bg-[hsl(var(--card))]/95 p-3 shadow-sm ring-1 ring-white/5 sm:mx-2 sm:p-3.5">
+      <div className="mx-1 mt-2 rounded-2xl border border-border/70 bg-[hsl(var(--card))]/95 p-3 text-start shadow-sm ring-1 ring-white/5 sm:mx-2 sm:p-3.5">
         <p className="text-xs font-medium text-muted-foreground">{t("yourRating.title")}</p>
         <div className="mt-1.5 flex gap-0.5" aria-label={t("yourRating.title")}>
           {[1, 2, 3, 4, 5].map((star) => (
@@ -133,7 +133,7 @@ export function ClientChatActions({
 
   if (mode === "rate") {
     return (
-      <div className="mx-1 mt-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 shadow-sm sm:mx-2 sm:p-3.5">
+      <div className="mx-1 mt-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-start shadow-sm sm:mx-2 sm:p-3.5">
         <p className="text-sm font-semibold text-foreground">{t("rateService.title")}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{t("rateService.description")}</p>
 
@@ -164,25 +164,27 @@ export function ClientChatActions({
           className="mt-3 min-h-[4.5rem] bg-background/80 text-sm"
         />
 
-        <Button
-          size="sm"
-          className="mt-3 w-full sm:w-auto"
-          onClick={handleSubmitRating}
-          disabled={rating === 0 || submitRating.isPending}
-        >
-          {submitRating.isPending ? t("rateService.submitting") : t("rateService.submit")}
-        </Button>
+        <div className="mt-3 flex justify-start">
+          <Button
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={handleSubmitRating}
+            disabled={rating === 0 || submitRating.isPending}
+          >
+            {submitRating.isPending ? t("rateService.submitting") : t("rateService.submit")}
+          </Button>
+        </div>
       </div>
     );
   }
 
   // mode === "review"
   return (
-    <div className="mx-1 mt-2 rounded-2xl border border-primary/25 bg-primary/10 p-3 shadow-sm sm:mx-2 sm:p-3.5">
+    <div className="mx-1 mt-2 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-start shadow-sm sm:mx-2 sm:p-3.5">
       <p className="text-sm font-semibold text-foreground">{t("deliverableReady.title")}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{t("deliverableReady.description")}</p>
 
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-start">
         <Button
           size="sm"
           onClick={handleApprove}
@@ -207,7 +209,7 @@ export function ClientChatActions({
       </div>
 
       {showRevision ? (
-        <div className="mt-3 space-y-2 border-t border-border/50 pt-3">
+        <div className="mt-3 space-y-2 border-t border-border/50 pt-3 text-start">
           {revisionInfo ? (
             <p className="text-xs text-muted-foreground">
               {revisionInfo.freeRevisionsRemaining > 0 ? (
@@ -241,7 +243,7 @@ export function ClientChatActions({
           />
 
           {needsPaidRevision && !hasEnoughCredits ? (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-start">
               <p className="text-sm font-medium text-destructive">
                 {t("requestRevision.insufficientCredits")}
               </p>
@@ -260,18 +262,20 @@ export function ClientChatActions({
             </div>
           ) : null}
 
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleRequestRevision}
-            disabled={!revisionFeedbackValid || requestRevision.isPending || !hasEnoughCredits}
-            className="w-full gap-1.5 sm:w-auto"
-          >
-            <RotateCcw className="h-4 w-4" />
-            {requestRevision.isPending
-              ? t("requestRevision.requesting")
-              : t("requestRevision.button")}
-          </Button>
+          <div className="flex justify-start">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleRequestRevision}
+              disabled={!revisionFeedbackValid || requestRevision.isPending || !hasEnoughCredits}
+              className="w-full gap-1.5 sm:w-auto"
+            >
+              <RotateCcw className="h-4 w-4" />
+              {requestRevision.isPending
+                ? t("requestRevision.requesting")
+                : t("requestRevision.button")}
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

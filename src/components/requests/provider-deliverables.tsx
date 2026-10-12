@@ -6,6 +6,7 @@ import { formatDateTime, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { LinkifiedText } from "@/components/ui/linkified-text";
+import { FileDownloadButton, FilePreviewWithDownload } from "@/components/ui/file-download-button";
 
 interface Comment {
   id: string;
@@ -113,24 +114,42 @@ export function ProviderDeliverables({
 
                         if (isImage(file)) {
                           return (
-                            <a
+                            <div
                               key={`${comment.id}-file-${fileIdx}`}
-                              href={file}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group block p-2 rounded border border-green-200 bg-white hover:bg-green-100 transition-colors"
+                              className="group rounded border border-green-200 bg-white p-2 transition-colors hover:bg-green-100"
                             >
-                              <div className="aspect-video rounded overflow-hidden mb-1 flex items-center justify-center bg-green-100">
-                                <img
-                                  src={file}
-                                  alt={displayName}
-                                  className="w-full h-full object-cover"
+                              <FilePreviewWithDownload
+                                url={file}
+                                filename={displayName}
+                                className="mb-1"
+                              >
+                                <a
+                                  href={file}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded bg-green-100">
+                                    <img
+                                      src={file}
+                                      alt={displayName}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                </a>
+                              </FilePreviewWithDownload>
+                              <div className="flex items-center gap-1">
+                                <p className="min-w-0 flex-1 truncate text-xs text-green-700 group-hover:text-green-900">
+                                  {displayName}
+                                </p>
+                                <FileDownloadButton
+                                  url={file}
+                                  filename={displayName}
+                                  variant="icon"
+                                  className="h-7 w-7 text-green-800"
                                 />
                               </div>
-                              <p className="text-xs text-green-700 truncate group-hover:text-green-900">
-                                {displayName}
-                              </p>
-                            </a>
+                            </div>
                           );
                         }
 
@@ -138,10 +157,15 @@ export function ProviderDeliverables({
                           return (
                             <div
                               key={`${comment.id}-file-${fileIdx}`}
-                              className="group p-2 rounded border border-green-200 bg-white col-span-2 sm:col-span-3"
+                              className="relative col-span-2 rounded border border-green-200 bg-white p-2 pe-10 sm:col-span-3"
                             >
+                              <FileDownloadButton
+                                url={file}
+                                filename={displayName}
+                                className="top-2 end-2"
+                              />
                               <AudioPlayer src={file} className="w-full" filename={displayName} />
-                              <p className="text-xs text-green-700 mt-1 truncate">{displayName}</p>
+                              <p className="mt-1 truncate text-xs text-green-700">{displayName}</p>
                             </div>
                           );
                         }
@@ -150,36 +174,61 @@ export function ProviderDeliverables({
                           return (
                             <div
                               key={`${comment.id}-file-${fileIdx}`}
-                              className="group p-2 rounded border border-green-200 bg-white"
+                              className="rounded border border-green-200 bg-white p-2"
                             >
-                              <div className="aspect-video rounded overflow-hidden mb-1 bg-green-100">
-                                <video
-                                  src={file}
-                                  controls
-                                  className="w-full h-full object-cover"
-                                  title={displayName}
-                                >
-                                  <track kind="captions" />
-                                </video>
+                              <FilePreviewWithDownload
+                                url={file}
+                                filename={displayName}
+                                className="mb-1"
+                              >
+                                <div className="aspect-video overflow-hidden rounded bg-green-100">
+                                  <video
+                                    src={file}
+                                    controls
+                                    className="h-full w-full object-cover"
+                                    title={displayName}
+                                  >
+                                    <track kind="captions" />
+                                  </video>
+                                </div>
+                              </FilePreviewWithDownload>
+                              <div className="flex items-center gap-1">
+                                <p className="min-w-0 flex-1 truncate text-xs text-green-700">
+                                  {displayName}
+                                </p>
+                                <FileDownloadButton
+                                  url={file}
+                                  filename={displayName}
+                                  variant="icon"
+                                  className="h-7 w-7 text-green-800"
+                                />
                               </div>
-                              <p className="text-xs text-green-700 truncate">{displayName}</p>
                             </div>
                           );
                         }
 
                         return (
-                          <a
+                          <div
                             key={`${comment.id}-file-${fileIdx}`}
-                            href={file}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group p-2 rounded border border-green-200 bg-white hover:bg-green-100 transition-colors flex flex-col items-center justify-center"
+                            className="relative flex flex-col items-center justify-center rounded border border-green-200 bg-white p-2"
                           >
-                            <div className="text-2xl mb-1">📎</div>
-                            <p className="text-xs text-green-700 truncate text-center group-hover:text-green-900">
-                              {displayName}
-                            </p>
-                          </a>
+                            <a
+                              href={file}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex w-full flex-col items-center justify-center transition-colors hover:bg-green-50"
+                            >
+                              <div className="mb-1 text-2xl">📎</div>
+                              <p className="truncate text-center text-xs text-green-700">
+                                {displayName}
+                              </p>
+                            </a>
+                            <FileDownloadButton
+                              url={file}
+                              filename={displayName}
+                              className="top-1.5 end-1.5"
+                            />
+                          </div>
                         );
                       })}
                     </div>

@@ -7,6 +7,7 @@ import { History, FileIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/ui/audio-player";
+import { FileDownloadButton, FilePreviewWithDownload } from "@/components/ui/file-download-button";
 import {
   Sheet,
   SheetContent,
@@ -181,27 +182,41 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
 
                   if (isImage(file)) {
                     return (
-                      <a
+                      <div
                         key={asset.id}
-                        href={file}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group block rounded border bg-card p-2 hover:bg-muted/50 transition-colors"
+                        className="group rounded border bg-card p-2 transition-colors hover:bg-muted/50"
                       >
-                        <div className="aspect-video rounded overflow-hidden mb-1 bg-muted flex items-center justify-center">
-                          <img
-                            src={file}
-                            alt={displayName}
-                            className="w-full h-full object-cover"
+                        <FilePreviewWithDownload url={file} filename={displayName} className="mb-1">
+                          <a
+                            href={file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <div className="mb-0 flex aspect-video items-center justify-center overflow-hidden rounded bg-muted">
+                              <img
+                                src={file}
+                                alt={displayName}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          </a>
+                        </FilePreviewWithDownload>
+                        <div className="flex items-center gap-1">
+                          <p className="min-w-0 flex-1 truncate text-xs">{displayName}</p>
+                          <FileDownloadButton
+                            url={file}
+                            filename={displayName}
+                            variant="icon"
+                            className="h-7 w-7"
                           />
                         </div>
-                        <p className="text-xs truncate">{displayName}</p>
                         {completedLabel ? (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
                             {completedLabel}
                           </p>
                         ) : null}
-                      </a>
+                      </div>
                     );
                   }
 
@@ -209,10 +224,15 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
                     return (
                       <div
                         key={asset.id}
-                        className="col-span-2 rounded border bg-card p-2 space-y-1"
+                        className="relative col-span-2 space-y-1 rounded border bg-card p-2 pe-10"
                       >
+                        <FileDownloadButton
+                          url={file}
+                          filename={displayName}
+                          className="top-2 end-2"
+                        />
                         <AudioPlayer src={file} className="w-full" filename={displayName} />
-                        <p className="text-xs truncate">{displayName}</p>
+                        <p className="truncate text-xs">{displayName}</p>
                         {completedLabel ? (
                           <p className="text-[10px] text-muted-foreground">{completedLabel}</p>
                         ) : null}
@@ -223,19 +243,29 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
                   if (isVideo(file)) {
                     return (
                       <div key={asset.id} className="rounded border bg-card p-2">
-                        <div className="aspect-video rounded overflow-hidden mb-1 bg-muted">
-                          <video
-                            src={file}
-                            controls
-                            className="w-full h-full object-cover"
-                            title={displayName}
-                          >
-                            <track kind="captions" />
-                          </video>
+                        <FilePreviewWithDownload url={file} filename={displayName} className="mb-1">
+                          <div className="aspect-video overflow-hidden rounded bg-muted">
+                            <video
+                              src={file}
+                              controls
+                              className="h-full w-full object-cover"
+                              title={displayName}
+                            >
+                              <track kind="captions" />
+                            </video>
+                          </div>
+                        </FilePreviewWithDownload>
+                        <div className="flex items-center gap-1">
+                          <p className="min-w-0 flex-1 truncate text-xs">{displayName}</p>
+                          <FileDownloadButton
+                            url={file}
+                            filename={displayName}
+                            variant="icon"
+                            className="h-7 w-7"
+                          />
                         </div>
-                        <p className="text-xs truncate">{displayName}</p>
                         {completedLabel ? (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
                             {completedLabel}
                           </p>
                         ) : null}
@@ -244,19 +274,30 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
                   }
 
                   return (
-                    <a
+                    <div
                       key={asset.id}
-                      href={file}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex flex-col items-center justify-center rounded border bg-card p-3 hover:bg-muted/50 transition-colors"
+                      className="relative flex flex-col items-center justify-center rounded border bg-card p-3"
                     >
-                      <FileIcon className="h-6 w-6 mb-1 text-muted-foreground" />
-                      <p className="text-xs truncate text-center w-full">{displayName}</p>
-                      {completedLabel ? (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{completedLabel}</p>
-                      ) : null}
-                    </a>
+                      <a
+                        href={file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full flex-col items-center justify-center transition-colors hover:opacity-90"
+                      >
+                        <FileIcon className="mb-1 h-6 w-6 text-muted-foreground" />
+                        <p className="w-full truncate text-center text-xs">{displayName}</p>
+                        {completedLabel ? (
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            {completedLabel}
+                          </p>
+                        ) : null}
+                      </a>
+                      <FileDownloadButton
+                        url={file}
+                        filename={displayName}
+                        className="top-1.5 end-1.5"
+                      />
+                    </div>
                   );
                 })}
               </div>

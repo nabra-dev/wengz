@@ -22,6 +22,9 @@
       "displayOnly": "Display",
       "switchTo": "Switch display currency to {currency}"
     },
+    "files": {
+      "download": "Download"
+    },
     "footer": {
       "privacy": "Privacy",
       "terms": "Terms",
@@ -2583,7 +2586,7 @@
       "messagingAfterClaim": "Messaging is available after you claim this job (or it is assigned to you).",
       "messages": {
         "title": "Messages",
-        "description": "Communicate with the client",
+        "description": "Delivery and updates live here",
         "noMessages": "No messages yet",
         "system": "System",
         "deliverable": "Deliverable",

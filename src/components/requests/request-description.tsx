@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "next-intl";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { LinkifiedText } from "@/components/ui/linkified-text";
+import { FileDownloadButton, FilePreviewWithDownload } from "@/components/ui/file-download-button";
 import { filenameFromUrl, prettyFilename, resolveFileKind } from "@/lib/file-display";
 import { FileArchive, FileIcon, FileText } from "lucide-react";
 
@@ -38,17 +39,20 @@ export function RequestDescription({ description, attachments }: RequestDescript
 
     if (kind === "image") {
       return (
-        <a href={file} target="_blank" rel="noopener noreferrer" className="block">
-          <div className="aspect-square rounded-md overflow-hidden bg-muted mb-2 flex items-center justify-center">
-            <img src={file} alt={displayName} className="w-full h-full object-cover" />
-          </div>
-        </a>
+        <FilePreviewWithDownload url={file} filename={displayName} className="mb-2">
+          <a href={file} target="_blank" rel="noopener noreferrer" className="block">
+            <div className="aspect-square overflow-hidden rounded-md bg-muted flex items-center justify-center">
+              <img src={file} alt={displayName} className="h-full w-full object-cover" />
+            </div>
+          </a>
+        </FilePreviewWithDownload>
       );
     }
 
     if (kind === "audio") {
       return (
-        <div className="rounded-md bg-muted mb-2 p-2">
+        <div className="relative mb-2 rounded-md bg-muted p-2 pe-10">
+          <FileDownloadButton url={file} filename={displayName} className="top-2 end-2" />
           <AudioPlayer src={file} className="w-full" filename={displayName} />
         </div>
       );
@@ -56,22 +60,27 @@ export function RequestDescription({ description, attachments }: RequestDescript
 
     if (kind === "video") {
       return (
-        <div className="aspect-video rounded-md overflow-hidden bg-muted mb-2 flex items-center justify-center">
-          <video src={file} controls className="w-full h-full object-cover" title={displayName}>
-            <track kind="captions" />
-          </video>
-        </div>
+        <FilePreviewWithDownload url={file} filename={displayName} className="mb-2">
+          <div className="aspect-video overflow-hidden rounded-md bg-muted flex items-center justify-center">
+            <video src={file} controls className="h-full w-full object-cover" title={displayName}>
+              <track kind="captions" />
+            </video>
+          </div>
+        </FilePreviewWithDownload>
       );
     }
 
     const Icon = kind === "pdf" ? FileText : kind === "archive" ? FileArchive : FileIcon;
 
     return (
-      <a href={file} target="_blank" rel="noopener noreferrer" className="block">
-        <div className="aspect-square rounded-md bg-muted mb-2 flex items-center justify-center text-muted-foreground">
-          <Icon className="h-8 w-8" />
-        </div>
-      </a>
+      <div className="relative mb-2">
+        <a href={file} target="_blank" rel="noopener noreferrer" className="block">
+          <div className="aspect-square rounded-md bg-muted flex items-center justify-center text-muted-foreground">
+            <Icon className="h-8 w-8" />
+          </div>
+        </a>
+        <FileDownloadButton url={file} filename={displayName} />
+      </div>
     );
   };
 
@@ -84,24 +93,37 @@ export function RequestDescription({ description, attachments }: RequestDescript
         <LinkifiedText text={description} />
 
         {attachments && attachments.length > 0 && (
-          <div className="pt-4 border-t">
-            <p className="text-sm font-medium mb-2">
+          <div className="border-t pt-4">
+            <p className="mb-2 text-sm font-medium">
               {t("attachments", { count: attachments.length })}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {attachments.map((file: string, index: number) => {
                 const displayName = labelFor(file, index);
                 return (
                   <div
                     key={file}
-                    className="group p-2 rounded-lg border bg-background hover:bg-muted/50 transition-colors"
+                    className="group rounded-lg border bg-background p-2 transition-colors hover:bg-muted/50"
                   >
                     {renderMediaFile(file, displayName)}
-                    <a href={file} target="_blank" rel="noopener noreferrer" className="block">
-                      <p className="text-xs text-muted-foreground truncate group-hover:text-foreground">
-                        {displayName}
-                      </p>
-                    </a>
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-w-0 flex-1"
+                      >
+                        <p className="truncate text-xs text-muted-foreground group-hover:text-foreground">
+                          {displayName}
+                        </p>
+                      </a>
+                      <FileDownloadButton
+                        url={file}
+                        filename={displayName}
+                        variant="icon"
+                        className="h-7 w-7"
+                      />
+                    </div>
                   </div>
                 );
               })}

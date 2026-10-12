@@ -36,6 +36,16 @@ export default function AvailableJobDetailPage() {
     id: requestId,
   });
 
+  const assignedProviderId = request?.providerId ?? request?.provider?.id ?? null;
+  const isMine = Boolean(session?.user?.id && assignedProviderId === session.user.id);
+
+  // Already assigned to this provider — go straight to the request workspace
+  useEffect(() => {
+    if (isMine && requestId) {
+      router.replace(`/provider/requests/${requestId}`);
+    }
+  }, [isMine, requestId, router]);
+
   const claimRequest = trpc.provider.claimRequest.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -44,7 +54,7 @@ export default function AvailableJobDetailPage() {
         utils.provider.getMyRequests.invalidate(),
         utils.provider.getStats.invalidate(),
       ]);
-      router.push(`/provider/requests/${requestId}`);
+      router.replace(`/provider/requests/${requestId}`);
     },
     onError: (error) => {
       showError(error, t("claimFailed"), tErrors);
@@ -57,7 +67,7 @@ export default function AvailableJobDetailPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isMine) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -77,22 +87,6 @@ export default function AvailableJobDetailPage() {
     );
   }
 
-  const assignedProviderId = request.providerId ?? request.provider?.id ?? null;
-  const isMine = Boolean(session?.user?.id && assignedProviderId === session.user.id);
-
-  // Already assigned to this provider — continue on the request workspace
-  if (isMine) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold">{t("alreadyYours.title")}</h2>
-        <p className="mt-2 text-muted-foreground">{t("alreadyYours.description")}</p>
-        <Link href={`/provider/requests/${requestId}`}>
-          <Button className="mt-4">{t("alreadyYours.openRequest")}</Button>
-        </Link>
-      </div>
-    );
-  }
-
   // Assigned to someone else
   if (assignedProviderId) {
     return (
@@ -107,7 +101,6 @@ export default function AvailableJobDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <RequestHeader
         title={request.title}
         status={request.status}
@@ -136,11 +129,9 @@ export default function AvailableJobDetailPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           <RequestDescription description={request.description} attachments={request.attachments} />
 
-          {/* Service-Specific Q&A Responses */}
           {(request as any).attributeResponses &&
             Array.isArray((request as any).attributeResponses) &&
             (request as any).attributeResponses.length > 0 && (
@@ -151,7 +142,6 @@ export default function AvailableJobDetailPage() {
             )}
         </div>
 
-        {/* Sidebar */}
         <RequestSidebar
           serviceTypeName={resolveLocalizedText(
             (request.serviceType as any).nameI18n,
