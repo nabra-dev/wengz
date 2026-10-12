@@ -405,7 +405,7 @@ export function DashboardShell({
           <div className="p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                <AvatarImage src={session?.user?.image || ""} className="object-cover" />
+                <AvatarImage src={session?.user?.image ?? undefined} className="object-cover" />
                 <AvatarFallback className="text-xs sm:text-sm">
                   {getInitials(session?.user?.name || "U")}
                 </AvatarFallback>
