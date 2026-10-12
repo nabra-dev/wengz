@@ -68,7 +68,7 @@ export default function AdminContactLeaksPage() {
   const locale = useLocale();
   const utils = trpc.useUtils();
   const [filter, setFilter] = useState<LeakFilter>("all");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({ pageSize: 50 });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
   const [clearingUserId, setClearingUserId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching } = trpc.admin.getContactLeakEvents.useQuery({
@@ -302,6 +302,7 @@ export default function AdminContactLeaksPage() {
                 total={data?.total ?? 0}
                 hasMore={data?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </>

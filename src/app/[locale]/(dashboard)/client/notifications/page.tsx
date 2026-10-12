@@ -15,17 +15,13 @@ import { useRealtimeNotifications } from "@/components/providers/notification-pr
 import { formatDateTime } from "@/lib/utils";
 import { Bell, Check } from "lucide-react";
 
-const NOTIFICATIONS_PAGE_SIZE = 20;
-
 export default function NotificationsPage() {
   const t = useTranslations("client.notifications");
   const locale = useLocale();
   const router = useRouter();
   const utils = trpc.useUtils();
   const { refreshUnreadCount } = useRealtimeNotifications();
-  const { page, offset, pageSize, setPage } = useListPage({
-    pageSize: NOTIFICATIONS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize } = useListPage();
   const {
     data: notifications,
     isLoading,
@@ -177,6 +173,7 @@ export default function NotificationsPage() {
                 total={notifications?.total ?? 0}
                 hasMore={notifications?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </div>

@@ -12,11 +12,9 @@ import { trpc } from "@/lib/trpc/client";
 import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realtime-refresh";
 import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 
-const PAGE_SIZE = 20;
-
 export default function MyRequestsPage() {
   const t = useTranslations("provider.myRequests");
-  const { page, offset, pageSize, setPage } = useListPage({ pageSize: PAGE_SIZE });
+  const { page, offset, pageSize, setPage, setPageSize } = useListPage();
   const {
     data: requestsData,
     isLoading,
@@ -89,6 +87,7 @@ export default function MyRequestsPage() {
                 total={total}
                 hasMore={requestsData?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </div>

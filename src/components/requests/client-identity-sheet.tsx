@@ -73,25 +73,27 @@ function prettyFilename(name: string = "") {
   return result;
 }
 
-const IDENTITY_PAGE_SIZE = 24;
-
 export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
   const t = useTranslations("requests.clientIdentity");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const sheetSide = locale === "ar" ? "left" : "right";
-  const offset = (page - 1) * IDENTITY_PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
 
   const { data, isLoading, isFetching } = trpc.request.getClientIdentity.useQuery(
-    { clientId, limit: IDENTITY_PAGE_SIZE, offset },
+    { clientId, limit: pageSize, offset },
     { enabled: open && Boolean(clientId) }
   );
 
   const items = useMemo(() => (data?.items ?? []) as IdentityAsset[], [data?.items]);
 
   useEffect(() => {
-    if (!open) setPage(1);
+    if (!open) {
+      setPage(1);
+      setPageSize(10);
+    }
   }, [open]);
 
   const total = data?.total ?? items.length;
@@ -262,10 +264,14 @@ export function ClientIdentitySheet({ clientId }: ClientIdentitySheetProps) {
           ))}
           <OffsetPagination
             page={page}
-            pageSize={IDENTITY_PAGE_SIZE}
+            pageSize={pageSize}
             total={total}
             hasMore={hasMore}
             onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
             isFetching={isFetching}
           />
         </div>

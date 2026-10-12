@@ -47,17 +47,13 @@ type Subscription = {
   };
 };
 
-const SUBS_PAGE_SIZE = 50;
-
 export default function AdminSubscriptionsPage() {
   const t = useTranslations("admin.subscriptions");
   const locale = useLocale();
   const formatCurrency = useFormatCurrency();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({
-    pageSize: SUBS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
 
   const { data, isLoading, isFetching } = trpc.admin.getAllSubscriptions.useQuery({
     status:
@@ -274,6 +270,7 @@ export default function AdminSubscriptionsPage() {
                 total={data?.total ?? 0}
                 hasMore={data?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </div>

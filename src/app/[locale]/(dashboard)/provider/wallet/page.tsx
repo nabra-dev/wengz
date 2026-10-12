@@ -163,13 +163,15 @@ export default function ProviderWalletPage() {
     offset: ledgerOffset,
     pageSize: ledgerPageSize,
     setPage: setLedgerPage,
-  } = useListPage({ param: "ledgerPage", pageSize: 20 });
+    setPageSize: setLedgerPageSize,
+  } = useListPage({ param: "ledgerPage" });
   const {
     page: withdrawalsPage,
     offset: withdrawalOffset,
     pageSize: withdrawalPageSize,
     setPage: setWithdrawalsPage,
-  } = useListPage({ param: "withdrawalsPage", pageSize: 20 });
+    setPageSize: setWithdrawalsPageSize,
+  } = useListPage({ param: "withdrawalsPage" });
   const { data, isLoading, isFetching } = trpc.provider.getEarnings.useQuery({
     ledgerLimit: ledgerPageSize,
     ledgerOffset,
@@ -392,6 +394,7 @@ export default function ProviderWalletPage() {
           total={data?.withdrawalTotal ?? 0}
           hasMore={data?.withdrawalHasMore}
           onPageChange={setWithdrawalsPage}
+          onPageSizeChange={setWithdrawalsPageSize}
           isFetching={isFetching}
         />
       </>
@@ -502,6 +505,7 @@ export default function ProviderWalletPage() {
           total={data?.ledgerTotal ?? 0}
           hasMore={data?.ledgerHasMore}
           onPageChange={setLedgerPage}
+          onPageSizeChange={setLedgerPageSize}
           isFetching={isFetching}
         />
       </>

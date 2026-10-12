@@ -12,13 +12,9 @@ import { EmptyRequestsState } from "@/components/requests/empty-requests-state";
 import { trpc } from "@/lib/trpc/client";
 import { Plus } from "lucide-react";
 
-const REQUESTS_PAGE_SIZE = 20;
-
 export default function RequestsPage() {
   const t = useTranslations("client.requests");
-  const { page, offset, pageSize, setPage } = useListPage({
-    pageSize: REQUESTS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize } = useListPage();
   const {
     data: requestsData,
     isLoading,
@@ -92,6 +88,7 @@ export default function RequestsPage() {
               total={total}
               hasMore={requestsData?.hasMore}
               onPageChange={setPage}
+              onPageSizeChange={setPageSize}
               isFetching={isFetching}
             />
           </div>

@@ -55,6 +55,7 @@
       "next": "Next",
       "showing": "Showing {from}–{to} of {total}",
       "pageOf": "Page {page} of {pageCount}",
+      "perPage": "Per page",
       "hasMore": "Showing {count} of many"
     },
     "password": {

@@ -55,6 +55,7 @@
       "next": "التالي",
       "showing": "عرض {from}–{to} من {total}",
       "pageOf": "صفحة {page} من {pageCount}",
+      "perPage": "لكل صفحة",
       "hasMore": "عرض {count} من المزيد"
     },
     "password": {

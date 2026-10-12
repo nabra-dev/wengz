@@ -25,8 +25,6 @@ import { Archive, Check, Inbox, Mail, MessageSquare } from "lucide-react";
 
 type StatusFilter = "NEW" | "READ" | "ARCHIVED" | "ALL";
 
-const CONTACTS_PAGE_SIZE = 50;
-
 export default function AdminContactsPage() {
   const t = useTranslations("admin.contacts");
   const locale = useLocale();
@@ -34,9 +32,7 @@ export default function AdminContactsPage() {
   const highlightId = searchParams?.get("id") ?? null;
 
   const [tab, setTab] = useState<StatusFilter>("NEW");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({
-    pageSize: CONTACTS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
   const [selectedId, setSelectedId] = useState<string | null>(highlightId);
 
   useEffect(() => {
@@ -160,6 +156,7 @@ export default function AdminContactsPage() {
                 total={listQuery.data?.total ?? 0}
                 hasMore={listQuery.data?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={listQuery.isFetching}
               />
             </>

@@ -20,7 +20,7 @@ export type PaginationInput = z.infer<typeof paginationInputSchema>;
  */
 export const offsetPaginationInputSchema = z
   .object({
-    limit: z.number().min(1).max(100).default(50),
+    limit: z.number().min(1).max(100).default(10),
     offset: z.number().min(0).default(0),
   })
   .strict();

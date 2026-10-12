@@ -354,17 +354,13 @@ function UserListItem({
   );
 }
 
-const USERS_PAGE_SIZE = 50;
-
 export default function AdminUsersPage() {
   const t = useTranslations("admin.users");
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({
-    pageSize: USERS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -616,16 +612,12 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Calculate stats
   const allUsers = (users?.users || []) as unknown as UserData[];
-  const stats = {
+  const stats = users?.stats ?? {
     total: users?.total || 0,
-    clients: allUsers.filter((u) => u.role === "CLIENT").length,
-    providers: allUsers.filter((u) => u.role === "PROVIDER").length,
-    admins: allUsers.filter(
-      (u) =>
-        u.role === "SUPER_ADMIN" || u.role === "PROJECT_MANAGER" || u.role === "FINANCE_MANAGER"
-    ).length,
+    clients: 0,
+    providers: 0,
+    admins: 0,
   };
 
   return (
@@ -969,6 +961,7 @@ export default function AdminUsersPage() {
                     total={users?.total ?? 0}
                     hasMore={users?.hasMore}
                     onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
                     isFetching={isFetching}
                   />
                 </div>

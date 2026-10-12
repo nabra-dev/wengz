@@ -37,8 +37,6 @@ import { AssignProviderDialog } from "@/components/admin/assign-provider-dialog"
 import { downloadBase64File } from "@/lib/download-base64-file";
 import { showError } from "@/lib/error-handler";
 
-const REQUESTS_PAGE_SIZE = 50;
-
 type Request = {
   id: string;
   title: string;
@@ -64,9 +62,7 @@ export default function AdminRequestsPage() {
   const locale = useLocale();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({
-    pageSize: REQUESTS_PAGE_SIZE,
-  });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
   const [confirmRestore, setConfirmRestore] = useState<{ id: string; title: string } | null>(null);
@@ -360,6 +356,7 @@ export default function AdminRequestsPage() {
                 total={data?.total ?? 0}
                 hasMore={data?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </div>

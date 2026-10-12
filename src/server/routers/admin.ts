@@ -1745,7 +1745,7 @@ export const adminRouter = router({
       z
         .object({
           role: z.enum(ALL_ROLES).optional(),
-          limit: z.number().min(1).max(100).default(50),
+          limit: z.number().min(1).max(100).default(10),
           offset: z.number().default(0),
           search: z.string().optional(),
           status: z
@@ -1759,20 +1759,30 @@ export const adminRouter = router({
         users: z.array(z.any()),
         total: z.number(),
         hasMore: z.boolean(),
+        stats: z.object({
+          total: z.number(),
+          clients: z.number(),
+          providers: z.number(),
+          admins: z.number(),
+        }),
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
+      // Role cards ignore the role filter so counts stay a full breakdown for search/status.
+      const statsWhere: Record<string, unknown> = {};
 
       if (input?.role) {
         where.role = input.role;
       }
 
       if (input?.search) {
-        where.OR = [
-          { name: { contains: input.search, mode: "insensitive" } },
-          { email: { contains: input.search, mode: "insensitive" } },
+        const searchOr = [
+          { name: { contains: input.search, mode: "insensitive" as const } },
+          { email: { contains: input.search, mode: "insensitive" as const } },
         ];
+        where.OR = searchOr;
+        statsWhere.OR = searchOr;
       }
 
       // Filter by lifecycle: active = approved + not soft-deleted
@@ -1780,17 +1790,27 @@ export const adminRouter = router({
       if (status === "active" || status === "approved") {
         where.deletedAt = null;
         where.approvalStatus = "APPROVED";
+        statsWhere.deletedAt = null;
+        statsWhere.approvalStatus = "APPROVED";
       } else if (status === "pending") {
         where.deletedAt = null;
         where.approvalStatus = "PENDING";
+        statsWhere.deletedAt = null;
+        statsWhere.approvalStatus = "PENDING";
       } else if (status === "rejected") {
         where.deletedAt = null;
         where.approvalStatus = "REJECTED";
+        statsWhere.deletedAt = null;
+        statsWhere.approvalStatus = "REJECTED";
       } else if (status === "inactive") {
         where.deletedAt = { not: null };
+        statsWhere.deletedAt = { not: null };
       }
 
-      const [users, total, ratingAvgs] = await Promise.all([
+      const limit = input?.limit || 10;
+      const offset = input?.offset || 0;
+
+      const [users, total, roleGroups, ratingAvgs] = await Promise.all([
         ctx.db.user.findMany({
           where,
           select: {
@@ -1827,16 +1847,29 @@ export const adminRouter = router({
               },
             },
           },
-          take: input?.limit || 50,
-          skip: input?.offset || 0,
+          take: limit,
+          skip: offset,
           orderBy: { createdAt: "desc" },
         }),
         ctx.db.user.count({ where }),
+        ctx.db.user.groupBy({
+          by: ["role"],
+          where: statsWhere,
+          _count: { _all: true },
+        }),
         ctx.db.rating.groupBy({
           by: ["providerId"],
           _avg: { rating: true },
         }),
       ]);
+
+      const roleCount = (role: string) =>
+        roleGroups.find((row) => row.role === role)?._count._all ?? 0;
+      const clients = roleCount("CLIENT");
+      const providers = roleCount("PROVIDER");
+      const admins =
+        roleCount("SUPER_ADMIN") + roleCount("PROJECT_MANAGER") + roleCount("FINANCE_MANAGER");
+      const statsTotal = roleGroups.reduce((sum, row) => sum + row._count._all, 0);
 
       const avgByProvider = new Map(ratingAvgs.map((row) => [row.providerId, row._avg.rating]));
 
@@ -1848,7 +1881,13 @@ export const adminRouter = router({
       return {
         users: usersWithRating,
         total,
-        hasMore: (input?.offset || 0) + users.length < total,
+        hasMore: offset + users.length < total,
+        stats: {
+          total: statsTotal,
+          clients,
+          providers,
+          admins,
+        },
       };
     }),
 

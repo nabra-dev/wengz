@@ -46,8 +46,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const PAYMENTS_PAGE_SIZE = 50;
-
 type PaymentProof = {
   id: string;
   transferImage: string;
@@ -109,13 +107,15 @@ export default function AdminPaymentsPage() {
     offset: pendingOffset,
     pageSize: pendingPageSize,
     setPage: setPendingPage,
-  } = useListPage({ param: "pendingPage", pageSize: PAYMENTS_PAGE_SIZE });
+    setPageSize: setPendingPageSize,
+  } = useListPage({ param: "pendingPage" });
   const {
     page: allPage,
     offset: allOffset,
     pageSize: allPageSize,
     setPage: setAllPage,
-  } = useListPage({ param: "allPage", pageSize: PAYMENTS_PAGE_SIZE });
+    setPageSize: setAllPageSize,
+  } = useListPage({ param: "allPage" });
 
   const { data: stats, isLoading: statsLoading } = trpc.payment.getStats.useQuery();
   const {
@@ -374,6 +374,7 @@ export default function AdminPaymentsPage() {
                     total={pendingPaymentsData?.total ?? 0}
                     hasMore={pendingPaymentsData?.hasMore}
                     onPageChange={setPendingPage}
+                    onPageSizeChange={setPendingPageSize}
                     isFetching={pendingFetching}
                   />
                 </>
@@ -420,6 +421,7 @@ export default function AdminPaymentsPage() {
                     total={allPaymentsData.total ?? 0}
                     hasMore={allPaymentsData.hasMore}
                     onPageChange={setAllPage}
+                    onPageSizeChange={setAllPageSize}
                     isFetching={allFetching}
                   />
                 </>

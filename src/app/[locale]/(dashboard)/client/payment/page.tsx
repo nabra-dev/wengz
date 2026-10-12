@@ -301,9 +301,8 @@ function TransactionsSection({ locale }: { locale: string }) {
   const t = useTranslations("client.transactions");
   const tAdmin = useTranslations("admin.payments");
   const formatCurrency = useFormatCurrency();
-  const { page, offset, pageSize, setPage } = useListPage({
+  const { page, offset, pageSize, setPage, setPageSize } = useListPage({
     param: "txPage",
-    pageSize: 20,
   });
   const { data, isLoading, isFetching } = trpc.subscription.getTransactionHistory.useQuery({
     limit: pageSize,
@@ -408,6 +407,7 @@ function TransactionsSection({ locale }: { locale: string }) {
             total={data?.total ?? 0}
             hasMore={data?.hasMore}
             onPageChange={setPage}
+            onPageSizeChange={setPageSize}
             isFetching={isFetching}
           />
         </div>

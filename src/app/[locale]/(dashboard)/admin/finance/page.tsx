@@ -152,8 +152,6 @@ function hasCompletePayout(payout: PayoutDetails | null) {
   return Boolean(payout.eWalletNumber?.trim());
 }
 
-const FINANCE_LIST_PAGE_SIZE = 50;
-
 function withdrawalBadgeVariant(status: WithdrawalStatus) {
   if (status === "APPROVED") return "default" as const;
   if (status === "REJECTED") return "destructive" as const;
@@ -173,28 +171,32 @@ export default function AdminFinancePage() {
     offset: walletsOffset,
     pageSize: walletsPageSize,
     setPage: setWalletsPage,
-  } = useListPage({ param: "walletsPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+    setPageSize: setWalletsPageSize,
+  } = useListPage({ param: "walletsPage" });
   const {
     page: ledgerPage,
     offset: ledgerOffset,
     pageSize: ledgerPageSize,
     setPage: setLedgerPage,
+    setPageSize: setLedgerPageSize,
     resetPage: resetLedgerPage,
-  } = useListPage({ param: "ledgerPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  } = useListPage({ param: "ledgerPage" });
   const {
     page: withdrawalsPage,
     offset: withdrawalsOffset,
     pageSize: withdrawalsPageSize,
     setPage: setWithdrawalsPage,
+    setPageSize: setWithdrawalsPageSize,
     resetPage: resetWithdrawalsPage,
-  } = useListPage({ param: "withdrawalsPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  } = useListPage({ param: "withdrawalsPage" });
   const {
     page: disputesPage,
     offset: disputesOffset,
     pageSize: disputesPageSize,
     setPage: setDisputesPage,
+    setPageSize: setDisputesPageSize,
     resetPage: resetDisputesPage,
-  } = useListPage({ param: "disputesPage", pageSize: FINANCE_LIST_PAGE_SIZE });
+  } = useListPage({ param: "disputesPage" });
   const [reviewTarget, setReviewTarget] = useState<WithdrawalRow | null>(null);
   const [reviewReason, setReviewReason] = useState("");
   const [reviewImageUrl, setReviewImageUrl] = useState<string | null>(null);
@@ -520,6 +522,7 @@ export default function AdminFinancePage() {
             total={withdrawalsData?.total ?? 0}
             hasMore={withdrawalsData?.hasMore}
             onPageChange={setWithdrawalsPage}
+            onPageSizeChange={setWithdrawalsPageSize}
             isFetching={withdrawalsFetching}
           />
         </CardContent>
@@ -625,6 +628,7 @@ export default function AdminFinancePage() {
             total={disputesData?.total ?? 0}
             hasMore={disputesData?.hasMore}
             onPageChange={setDisputesPage}
+            onPageSizeChange={setDisputesPageSize}
             isFetching={disputesFetching}
           />
         </CardContent>
@@ -721,6 +725,7 @@ export default function AdminFinancePage() {
             total={finance?.total ?? 0}
             hasMore={finance?.hasMore}
             onPageChange={setWalletsPage}
+            onPageSizeChange={setWalletsPageSize}
             isFetching={financeFetching}
           />
         </CardContent>
@@ -836,6 +841,7 @@ export default function AdminFinancePage() {
             total={ledgerData?.total ?? 0}
             hasMore={ledgerData?.hasMore}
             onPageChange={setLedgerPage}
+            onPageSizeChange={setLedgerPageSize}
             isFetching={ledgerFetching}
           />
         </CardContent>

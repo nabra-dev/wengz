@@ -62,7 +62,7 @@ export default function AdminActivityLogsPage() {
   );
   const [actionFilter, setActionFilter] = useState(actionFromUrl);
   const [entityIdFilter, setEntityIdFilter] = useState("");
-  const { page, offset, pageSize, setPage, resetPage } = useListPage({ pageSize: 50 });
+  const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
 
   const { data, isLoading, isFetching } = trpc.admin.getActivityLogs.useQuery({
     level: level === "ALL" ? undefined : level,
@@ -200,6 +200,7 @@ export default function AdminActivityLogsPage() {
                 total={data?.total ?? 0}
                 hasMore={data?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </>

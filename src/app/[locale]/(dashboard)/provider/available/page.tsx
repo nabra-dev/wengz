@@ -15,11 +15,9 @@ import { useProviderJobsRealtimeRefresh } from "@/hooks/use-provider-jobs-realti
 import { useProviderRequestUnread } from "@/hooks/use-provider-request-unread";
 import { ArrowRight } from "lucide-react";
 
-const PAGE_SIZE = 20;
-
 export default function AvailableJobsPage() {
   const t = useTranslations("provider.available");
-  const { page, offset, pageSize, setPage } = useListPage({ pageSize: PAGE_SIZE });
+  const { page, offset, pageSize, setPage, setPageSize } = useListPage();
   const {
     data: requestsData,
     isLoading,
@@ -93,6 +91,7 @@ export default function AvailableJobsPage() {
                 total={total}
                 hasMore={requestsData?.hasMore}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 isFetching={isFetching}
               />
             </div>
