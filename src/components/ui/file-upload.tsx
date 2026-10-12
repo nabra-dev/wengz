@@ -88,6 +88,95 @@ function createRemoveFileHandler(
   };
 }
 
+function UploadedFilePreview({
+  file,
+  name,
+  kind,
+  onRemove,
+  removeLabel,
+  disabled,
+}: {
+  readonly file: UploadedFile;
+  readonly name: string;
+  readonly kind: FileKind;
+  readonly onRemove: () => void;
+  readonly removeLabel: string;
+  readonly disabled?: boolean;
+}) {
+  return (
+    <li className="relative rounded-lg border bg-background/60 p-2.5">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute end-1 top-1 z-[1] h-7 w-7"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={removeLabel}
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
+
+      {kind === "image" ? (
+        <div className="flex gap-3 pe-8">
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted sm:h-24 sm:w-24"
+          >
+            <img src={file.url} alt={name} className="h-full w-full object-cover" />
+          </a>
+          <div className="min-w-0 self-center">
+            <p className="truncate text-sm font-medium">{name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      ) : kind === "video" ? (
+        <div className="space-y-2 pe-8">
+          <div className="overflow-hidden rounded-md border bg-muted">
+            <video src={file.url} controls className="max-h-40 w-full object-contain" title={name}>
+              <track kind="captions" />
+            </video>
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      ) : kind === "audio" ? (
+        <div className="space-y-2 pe-8">
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <FileAudio className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{name}</p>
+              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+            </div>
+          </div>
+          <AudioPlayer src={file.url} filename={name} className="w-full" />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 pe-8">
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+          >
+            <KindIcon kind={kind} />
+          </a>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{name}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export function FileUpload({
   onFilesChange,
   maxFiles = 5,
@@ -266,25 +355,26 @@ export function FileUpload({
           <p className="text-sm font-medium">
             {t("attachedCount", { count: uploadedFiles.length, maxFiles })}
           </p>
-          <div className="space-y-1">
-            {uploadedFiles.map((file, index) => (
-              <div
-                key={`${file.url}-${index}`}
-                className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
-              >
-                <span className="truncate">{file.filename}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
-                  onClick={() => removeFile(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          <ul className="space-y-2">
+            {uploadedFiles.map((file, index) => {
+              const kind = resolveFileKind(
+                file.url,
+                file.type.startsWith("audio/") ? "voice" : "file"
+              );
+              const name = friendlyUploadName(file, kind, t("voiceNote"));
+              return (
+                <UploadedFilePreview
+                  key={`${file.url}-${index}`}
+                  file={file}
+                  name={name}
+                  kind={kind}
+                  onRemove={() => removeFile(index)}
+                  removeLabel={t("removeFile")}
+                  disabled={disabled || isUploading}
+                />
+              );
+            })}
+          </ul>
         </div>
       )}
     </div>
@@ -411,62 +501,15 @@ export function InlineFileUpload({
             );
             const name = friendlyUploadName(file, kind, t("voiceNote"));
             return (
-              <li
+              <UploadedFilePreview
                 key={`${file.url}-${index}`}
-                className="relative rounded-lg border bg-background/60 p-2.5"
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute end-1 top-1 h-7 w-7"
-                  onClick={() => removeFile(index)}
-                  disabled={disabled}
-                  aria-label={t("removeFile")}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-
-                {kind === "image" ? (
-                  <div className="flex gap-3 pe-8">
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block h-16 w-16 shrink-0 overflow-hidden rounded-md border bg-muted"
-                    >
-                      <img src={file.url} alt={name} className="h-full w-full object-cover" />
-                    </a>
-                    <div className="min-w-0 self-center">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                    </div>
-                  </div>
-                ) : kind === "audio" ? (
-                  <div className="space-y-2 pe-8">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                        <FileAudio className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{name}</p>
-                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                      </div>
-                    </div>
-                    <AudioPlayer src={file.url} filename={name} className="w-full" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 pe-8">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                      <KindIcon kind={kind} />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                    </div>
-                  </div>
-                )}
-              </li>
+                file={file}
+                name={name}
+                kind={kind}
+                onRemove={() => removeFile(index)}
+                removeLabel={t("removeFile")}
+                disabled={disabled}
+              />
             );
           })}
         </ul>
