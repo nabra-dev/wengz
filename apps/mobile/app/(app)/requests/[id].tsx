@@ -226,8 +226,126 @@ export default function RequestDetailScreen() {
   const attachments = request.attachments ?? [];
   const attributeResponses = asAttributeResponses(request.attributeResponses);
   const comments = request.comments ?? [];
-  const deliverables = comments.filter((c) => c.type === "DELIVERABLE");
   const canSendMessages = Boolean(request.providerId) && request.status !== "COMPLETED";
+
+  const chatActions =
+    request.status === "DELIVERED" ||
+    (request.status === "COMPLETED" && !request.rating) ||
+    request.rating ? (
+      <Card highlight={request.status === "DELIVERED"}>
+        {request.status === "DELIVERED" ? (
+          <>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
+              {t("client.requestDetail.deliverableReady.title")}
+            </AppText>
+            <Muted>{t("client.requestDetail.deliverableReady.description")}</Muted>
+            <Label>{t("client.requestDetail.requestRevision.title")}</Label>
+            <Muted>
+              {typeof request.revisionInfo?.freeRevisionsRemaining === "number"
+                ? t("client.requestDetail.requestRevision.freeRemaining", {
+                    count: request.revisionInfo.freeRevisionsRemaining,
+                    revision: t("client.requestDetail.requestRevision.revision"),
+                  })
+                : null}
+            </Muted>
+            <Field
+              placeholder={t("client.requestDetail.requestRevision.placeholder")}
+              value={feedback}
+              onChangeText={setFeedback}
+              multiline
+            />
+            <Button
+              label={
+                revise.isPending
+                  ? t("client.requestDetail.requestRevision.requesting")
+                  : t("client.requestDetail.requestRevision.button")
+              }
+              onPress={() => {
+                if (!feedback.trim()) {
+                  setError(t("client.requestDetail.toast.invalidFeedbackDesc"));
+                  return;
+                }
+                revise.mutate();
+              }}
+              variant="ghost"
+              disabled={revise.isPending}
+            />
+            <Button
+              label={
+                approve.isPending
+                  ? t("client.requestDetail.deliverableReady.approving")
+                  : t("client.requestDetail.deliverableReady.approve")
+              }
+              onPress={() => approve.mutate()}
+              variant="secondary"
+              disabled={approve.isPending}
+            />
+          </>
+        ) : null}
+
+        {request.status === "COMPLETED" && !request.rating ? (
+          <>
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
+              {t("client.requestDetail.rateService.title")}
+            </AppText>
+            <Muted>{t("client.requestDetail.rateService.description")}</Muted>
+            <View style={{ ...physicalRow(), gap: 8, marginBottom: 10 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => setRating(n)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: rating >= n ? colors.yellow : colors.muted,
+                  }}
+                >
+                  <AppText
+                    style={{
+                      color: rating >= n ? "#2A0A55" : colors.foreground,
+                      fontFamily: fonts.bold,
+                    }}
+                  >
+                    {n}
+                  </AppText>
+                </Pressable>
+              ))}
+            </View>
+            <Field
+              placeholder={t("client.requestDetail.rateService.reviewPlaceholder")}
+              value={feedback}
+              onChangeText={setFeedback}
+              multiline
+            />
+            <Button
+              label={
+                rate.isPending
+                  ? t("client.requestDetail.rateService.submitting")
+                  : t("client.requestDetail.rateService.submit")
+              }
+              onPress={() => rate.mutate()}
+              disabled={rate.isPending || rating < 1}
+            />
+          </>
+        ) : null}
+
+        {request.rating ? (
+          <>
+            <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
+              {t("client.requestDetail.yourRating.title")}: {request.rating.rating}/5
+            </AppText>
+            {request.rating.reviewText ? <Muted>{request.rating.reviewText}</Muted> : null}
+          </>
+        ) : null}
+      </Card>
+    ) : null;
 
   const header = (
     <View>
@@ -341,183 +459,6 @@ export default function RequestDetailScreen() {
             })}
           </Card>
         ) : null}
-
-        {deliverables.length > 0 ? (
-          <Card highlight>
-            <AppText
-              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 8 }}
-            >
-              {t("client.newRequest.deliverables.title")}
-            </AppText>
-            {deliverables.map((d, idx) => (
-              <View
-                key={d.id}
-                style={{
-                  marginBottom: idx < deliverables.length - 1 ? 14 : 0,
-                  paddingBottom: idx < deliverables.length - 1 ? 14 : 0,
-                  borderBottomWidth: idx < deliverables.length - 1 ? 1 : 0,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <View style={{ ...row(), alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <AppText
-                    style={{ color: colors.yellow, fontFamily: fonts.medium, ...typeScale.sm }}
-                  >
-                    {request.provider?.name || t("requests.card.provider")}
-                  </AppText>
-                  <View
-                    style={{
-                      backgroundColor: "rgba(224,248,64,0.15)",
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 6,
-                    }}
-                  >
-                    <AppText
-                      style={{ color: colors.yellow, ...typeScale.xs, fontFamily: fonts.medium }}
-                    >
-                      {t("client.newRequest.deliverables.badge")}
-                    </AppText>
-                  </View>
-                </View>
-                {d.content?.trim() ? (
-                  <AppText
-                    style={{
-                      color: colors.foreground,
-                      fontFamily: fonts.regular,
-                      lineHeight: 20,
-                      marginBottom: d.files?.length ? 8 : 0,
-                    }}
-                  >
-                    {d.content}
-                  </AppText>
-                ) : null}
-                {d.files?.length ? (
-                  <View style={{ ...row(), flexWrap: "wrap", gap: 8 }}>
-                    {d.files.map((url, i) => (
-                      <FileChip key={`${url}-${i}`} url={url} />
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </Card>
-        ) : null}
-
-        {request.status === "DELIVERED" ? (
-          <Card highlight>
-            <AppText
-              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
-            >
-              {t("client.requestDetail.deliverableReady.title")}
-            </AppText>
-            <Muted>{t("client.requestDetail.deliverableReady.description")}</Muted>
-            <Label>{t("client.requestDetail.requestRevision.title")}</Label>
-            <Muted>
-              {typeof request.revisionInfo?.freeRevisionsRemaining === "number"
-                ? t("client.requestDetail.requestRevision.freeRemaining", {
-                    count: request.revisionInfo.freeRevisionsRemaining,
-                    revision: t("client.requestDetail.requestRevision.revision"),
-                  })
-                : null}
-            </Muted>
-            <Field
-              placeholder={t("client.requestDetail.requestRevision.placeholder")}
-              value={feedback}
-              onChangeText={setFeedback}
-              multiline
-            />
-            <Button
-              label={
-                revise.isPending
-                  ? t("client.requestDetail.requestRevision.requesting")
-                  : t("client.requestDetail.requestRevision.button")
-              }
-              onPress={() => {
-                if (!feedback.trim()) {
-                  setError(t("client.requestDetail.toast.invalidFeedbackDesc"));
-                  return;
-                }
-                revise.mutate();
-              }}
-              variant="ghost"
-              disabled={revise.isPending}
-            />
-            <Button
-              label={
-                approve.isPending
-                  ? t("client.requestDetail.deliverableReady.approving")
-                  : t("client.requestDetail.deliverableReady.approve")
-              }
-              onPress={() => approve.mutate()}
-              variant="secondary"
-              disabled={approve.isPending}
-            />
-          </Card>
-        ) : null}
-
-        {request.status === "COMPLETED" && !request.rating ? (
-          <Card>
-            <AppText
-              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
-            >
-              {t("client.requestDetail.rateService.title")}
-            </AppText>
-            <Muted>{t("client.requestDetail.rateService.description")}</Muted>
-            <View
-              // Keep 1→5 left-to-right even in Arabic.
-              style={{ ...physicalRow(), gap: 8, marginBottom: 10 }}
-            >
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => setRating(n)}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: rating >= n ? colors.yellow : colors.muted,
-                  }}
-                >
-                  <AppText
-                    style={{
-                      color: rating >= n ? "#2A0A55" : colors.foreground,
-                      fontFamily: fonts.bold,
-                    }}
-                  >
-                    {n}
-                  </AppText>
-                </Pressable>
-              ))}
-            </View>
-            <Field
-              placeholder={t("client.requestDetail.rateService.reviewPlaceholder")}
-              value={feedback}
-              onChangeText={setFeedback}
-              multiline
-            />
-            <Button
-              label={
-                rate.isPending
-                  ? t("client.requestDetail.rateService.submitting")
-                  : t("client.requestDetail.rateService.submit")
-              }
-              onPress={() => rate.mutate()}
-              disabled={rate.isPending || rating < 1}
-            />
-          </Card>
-        ) : null}
-
-        {request.rating ? (
-          <Card>
-            <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
-              {t("client.requestDetail.yourRating.title")}: {request.rating.rating}/5
-            </AppText>
-            {request.rating.reviewText ? <Muted>{request.rating.reviewText}</Muted> : null}
-          </Card>
-        ) : null}
       </ScrollScreen>
     );
   }
@@ -540,6 +481,7 @@ export default function RequestDetailScreen() {
             canSend={canSendMessages}
             sending={send.isPending}
             maskProviderNames
+            threadFooter={chatActions}
             onError={setError}
             onSend={async ({ content, files }) => {
               setError(null);

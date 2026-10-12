@@ -981,7 +981,7 @@
         "notFoundDesc": "The request you're looking for doesn't exist or has been deleted.",
         "backToRequests": "Back to All Requests",
         "messagesTitle": "Messages",
-        "messagesDesc": "Communicate with the client and creator",
+        "messagesDesc": "Delivery and updates live here",
         "messagesPlaceholder": "Type your message...",
         "messagingAfterClaim": "Messaging is available after a creator claims or is assigned to this request.",
         "approveOnBehalf": "Approve for client",

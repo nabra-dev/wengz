@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -64,6 +64,8 @@ type Props = {
   onError?: (message: string) => void;
   /** Clients see creators as Wengz (matches web). */
   maskProviderNames?: boolean;
+  /** Shown at the end of the thread (approve / revision / rate). */
+  threadFooter?: ReactNode;
 };
 
 function sameCalendarDay(a: Date, b: Date): boolean {
@@ -256,6 +258,7 @@ export function RequestChat({
   onSend,
   onError,
   maskProviderNames = true,
+  threadFooter,
 }: Props) {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
@@ -663,6 +666,13 @@ export function RequestChat({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        ListHeaderComponent={
+          threadFooter ? (
+            <View style={{ transform: [{ scaleY: -1 }], paddingHorizontal: 4, paddingVertical: 8 }}>
+              {threadFooter}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View
             style={{

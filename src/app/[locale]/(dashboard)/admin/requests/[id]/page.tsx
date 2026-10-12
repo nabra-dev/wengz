@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   FileText,
   MessageSquare,
-  CheckCircle,
   UserPlus,
   Trash,
   RotateCcw,
@@ -25,6 +24,7 @@ import { RequestSidebar } from "@/components/requests/request-sidebar";
 import { RequestStats } from "@/components/requests/request-stats";
 import { RequestWorkspace } from "@/components/requests/request-workspace";
 import { MessagesCard } from "@/components/requests/messages-card";
+import { StaffChatActions } from "@/components/requests/staff-chat-actions";
 import { ClientIdentitySheet } from "@/components/requests/client-identity-sheet";
 import { AssignProviderDialog } from "@/components/admin/assign-provider-dialog";
 import { trpc } from "@/lib/trpc/client";
@@ -44,19 +44,6 @@ export default function AdminRequestDetailPage() {
   const [confirmRestore, setConfirmRestore] = useState(false);
 
   const { data: request, isLoading } = trpc.request.getById.useQuery({ id: requestId });
-
-  const approveOnBehalf = trpc.admin.approveRequestOnBehalf.useMutation({
-    onSuccess: () => {
-      void utils.request.getById.invalidate({ id: requestId });
-      void utils.request.getAll.invalidate();
-      toast.success(t("detail.toast.approvedOnBehalf"), {
-        description: t("detail.toast.approvedOnBehalfDesc"),
-      });
-    },
-    onError: (error: unknown) => {
-      showError(error, t("detail.toast.approveOnBehalfError"));
-    },
-  });
 
   const deleteRequest = trpc.admin.deleteRequest.useMutation({
     onSuccess: () => {
@@ -122,6 +109,24 @@ export default function AdminRequestDetailPage() {
   })();
 
   const isDeleted = Boolean((request as { deletedAt?: string | Date | null }).deletedAt);
+  const canApproveOnBehalf = !isDeleted && request.status === "DELIVERED";
+  const isCompleted = request.status === "COMPLETED";
+
+  const chatActions =
+    canApproveOnBehalf || isCompleted ? (
+      <StaffChatActions
+        requestId={requestId}
+        mode={canApproveOnBehalf ? "approveOnBehalf" : "completed"}
+        existingRating={
+          request.rating
+            ? {
+                rating: request.rating.rating,
+                reviewText: request.rating.reviewText,
+              }
+            : null
+        }
+      />
+    ) : null;
 
   const chatPanel = request.provider ? (
     <MessagesCard
@@ -132,6 +137,8 @@ export default function AdminRequestDetailPage() {
       placeholder={t("detail.messagesPlaceholder")}
       canSendMessages={request.status !== "COMPLETED"}
       variant="panel"
+      afterLatestDeliverable={canApproveOnBehalf ? chatActions : undefined}
+      threadFooter={!canApproveOnBehalf ? chatActions : undefined}
     />
   ) : (
     <Card className="border-dashed flex h-[calc(100dvh-14rem)] min-h-[20rem] flex-col justify-center lg:h-[min(75dvh,48rem)]">
@@ -174,24 +181,6 @@ export default function AdminRequestDetailPage() {
                 {t("actions.assignProvider")}
               </Button>
             ) : null}
-            {!isDeleted && request.status === "DELIVERED" ? (
-              <Button
-                onClick={() => {
-                  if (!window.confirm(t("detail.approveOnBehalfConfirm"))) return;
-                  approveOnBehalf.mutate({ requestId });
-                }}
-                disabled={approveOnBehalf.isPending}
-                className="gap-2"
-                title={t("detail.approveOnBehalfHint")}
-              >
-                {approveOnBehalf.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                {t("detail.approveOnBehalf")}
-              </Button>
-            ) : null}
             {isDeleted ? (
               <Button
                 variant="outline"
@@ -218,6 +207,7 @@ export default function AdminRequestDetailPage() {
       />
 
       <RequestWorkspace
+        emphasize="chat"
         info={
           <>
             <RequestStats
