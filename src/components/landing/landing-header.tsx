@@ -2,11 +2,20 @@
 
 import { Link, usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import type { MouseEventHandler, ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEventHandler,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { cn } from "@/lib/utils";
 
 export const LANDING_NAV_LINKS = [
   { href: "#services", labelKey: "landing.nav.services" },
@@ -50,9 +59,52 @@ export function LandingNavLink({
   );
 }
 
+function useCloseOnOutsideAndEscape(
+  open: boolean,
+  onClose: () => void,
+  containerRef: RefObject<HTMLElement | null>
+) {
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const el = containerRef.current;
+      if (!el) return;
+      if (event.target instanceof Node && !el.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose, containerRef]);
+}
+
 export function LandingHeader() {
   const t = useTranslations();
   const pathname = usePathname() || "/";
+  const ctaMenuId = useId();
+  const mobileMenuId = useId();
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
+  const [ctaOpen, setCtaOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setCtaOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useCloseOnOutsideAndEscape(ctaOpen, () => setCtaOpen(false), ctaRef);
+  useCloseOnOutsideAndEscape(mobileOpen, () => setMobileOpen(false), mobileRef);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -90,99 +142,134 @@ export function LandingHeader() {
           <div className="ms-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             <ThemeSwitcher className="hidden min-[400px]:inline-flex" />
             <LanguageSwitcher variant="icon" />
-            <details key={`cta-${pathname}`} className="group relative">
-              <summary className="flex h-8 max-w-[9.5rem] cursor-pointer list-none items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:max-w-none sm:px-3.5 sm:text-sm [&::-webkit-details-marker]:hidden">
+
+            <div ref={ctaRef} className="relative">
+              <button
+                type="button"
+                aria-expanded={ctaOpen}
+                aria-controls={ctaMenuId}
+                aria-haspopup="menu"
+                onClick={() => {
+                  setCtaOpen((open) => !open);
+                  setMobileOpen(false);
+                }}
+                className="flex h-8 max-w-[9.5rem] cursor-pointer items-center gap-1 rounded-full bg-gradient-to-r from-[#690DD4] to-[#E0F840] px-2.5 text-xs font-semibold text-black shadow-[0_8px_28px_rgba(105,13,212,0.35)] sm:h-9 sm:max-w-none sm:px-3.5 sm:text-sm"
+              >
                 <span className="truncate lg:hidden">{t("landing.cta.primaryShort")}</span>
                 <span className="hidden lg:inline">{t("landing.cta.primary")}</span>
                 <ChevronDown
-                  className="h-3.5 w-3.5 shrink-0 opacity-80 transition-transform group-open:rotate-180 sm:h-4 sm:w-4"
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0 opacity-80 transition-transform sm:h-4 sm:w-4",
+                    ctaOpen && "rotate-180"
+                  )}
                   aria-hidden
                 />
-              </summary>
-              <div className="absolute end-0 top-full z-50 mt-2 min-w-[11rem] rounded-xl border border-border bg-background p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
-                <Link
-                  href="/auth/login"
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+              </button>
+              {ctaOpen ? (
+                <div
+                  id={ctaMenuId}
+                  role="menu"
+                  className="absolute end-0 top-full z-50 mt-2 min-w-[11rem] rounded-xl border border-border bg-background p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]"
                 >
-                  {t("landing.cta.signIn")}
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  {t("landing.cta.signUp")}
-                </Link>
-              </div>
-            </details>
-            <details key={`nav-${pathname}`} className="group lg:hidden">
-              <summary
-                className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-foreground hover:bg-muted sm:h-9 sm:w-9 [&::-webkit-details-marker]:hidden"
+                  <Link
+                    href="/auth/login"
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                    onClick={() => setCtaOpen(false)}
+                  >
+                    {t("landing.cta.signIn")}
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                    onClick={() => setCtaOpen(false)}
+                  >
+                    {t("landing.cta.signUp")}
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+
+            <div ref={mobileRef} className="lg:hidden">
+              <button
+                type="button"
+                aria-expanded={mobileOpen}
+                aria-controls={mobileMenuId}
                 aria-label={t("landing.nav.openMenu")}
+                onClick={() => {
+                  setMobileOpen((open) => !open);
+                  setCtaOpen(false);
+                }}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-foreground hover:bg-muted sm:h-9 sm:w-9"
               >
-                <Menu className="h-5 w-5 group-open:hidden" aria-hidden />
-                <X className="hidden h-5 w-5 group-open:block" aria-hidden />
-              </summary>
-              <nav
-                id="landing-mobile-nav"
-                aria-label={t("landing.nav.ariaLabel")}
-                className="absolute inset-x-0 top-full z-50 mt-3 rounded-2xl border border-border bg-background p-2 shadow-[0_12px_40px_rgba(0,0,0,0.2)]"
-              >
-                <ul className="flex flex-col gap-0.5">
-                  {LANDING_NAV_LINKS.map((item) => (
-                    <li key={item.href}>
-                      <LandingNavLink
-                        href={item.href}
-                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
-                        onClick={(event) => {
-                          event.currentTarget.closest("details")?.removeAttribute("open");
-                        }}
+                {mobileOpen ? (
+                  <X className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Menu className="h-5 w-5" aria-hidden />
+                )}
+              </button>
+              {mobileOpen ? (
+                <nav
+                  id={mobileMenuId}
+                  aria-label={t("landing.nav.ariaLabel")}
+                  className="absolute inset-x-0 top-full z-50 mt-3 rounded-2xl border border-border bg-background p-2 shadow-[0_12px_40px_rgba(0,0,0,0.2)]"
+                >
+                  <ul className="flex flex-col gap-0.5">
+                    {LANDING_NAV_LINKS.map((item) => (
+                      <li key={item.href}>
+                        <LandingNavLink
+                          href={item.href}
+                          className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {t(item.labelKey)}
+                        </LandingNavLink>
+                      </li>
+                    ))}
+                    <li>
+                      <Link
+                        href="/forms/provider"
+                        className={`mx-1.5 my-1 justify-center ${CREATOR_NAV_CLASS}`}
+                        onClick={() => setMobileOpen(false)}
                       >
-                        {t(item.labelKey)}
-                      </LandingNavLink>
+                        {t("landing.nav.creators")}
+                        <ArrowUpRight
+                          className="h-3.5 w-3.5 opacity-55 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-90"
+                          aria-hidden
+                        />
+                      </Link>
                     </li>
-                  ))}
-                  <li>
-                    <Link
-                      href="/forms/provider"
-                      className={`mx-1.5 my-1 justify-center ${CREATOR_NAV_CLASS}`}
-                      onClick={(event) => {
-                        event.currentTarget.closest("details")?.removeAttribute("open");
-                      }}
-                    >
-                      {t("landing.nav.creators")}
-                      <ArrowUpRight
-                        className="h-3.5 w-3.5 opacity-55 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-90"
-                        aria-hidden
-                      />
-                    </Link>
-                  </li>
-                  <li className="mt-1 border-t border-border pt-1">
-                    <Link
-                      href="/auth/login"
-                      className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      {t("landing.cta.signIn")}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/auth/register"
-                      className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      {t("landing.cta.signUp")}
-                    </Link>
-                  </li>
-                  <li className="min-[400px]:hidden">
-                    <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {t("landing.nav.theme")}
-                      </span>
-                      <ThemeSwitcher />
-                    </div>
-                  </li>
-                </ul>
-              </nav>
-            </details>
+                    <li className="mt-1 border-t border-border pt-1">
+                      <Link
+                        href="/auth/login"
+                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {t("landing.cta.signIn")}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/auth/register"
+                        className="flex items-center rounded-xl px-3.5 py-3 text-sm font-medium text-foreground hover:bg-muted"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {t("landing.cta.signUp")}
+                      </Link>
+                    </li>
+                    <li className="min-[400px]:hidden">
+                      <div className="flex items-center justify-between rounded-xl px-3.5 py-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {t("landing.nav.theme")}
+                        </span>
+                        <ThemeSwitcher />
+                      </div>
+                    </li>
+                  </ul>
+                </nav>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
