@@ -625,6 +625,17 @@
     "settings": {
       "title": "Settings",
       "subtitle": "Configure platform-wide options",
+      "signupApproval": {
+        "title": "New user approval",
+        "description": "Require staff review before new clients or creators can sign in. Turn off to approve automatically on signup.",
+        "clientPending": "Require approval for new clients",
+        "clientPendingHint": "When on, client register stays pending until an admin approves (and grants the free package).",
+        "providerPending": "Require approval for new creators",
+        "providerPendingHint": "When on, creator applications stay pending until an admin approves.",
+        "save": "Save approval settings",
+        "saving": "Saving...",
+        "saved": "Approval settings saved"
+      },
       "finance": {
         "title": "Creator settlement",
         "description": "Global USD credit price, commission, and withdrawal rules for creator payouts (not package subscriptions).",

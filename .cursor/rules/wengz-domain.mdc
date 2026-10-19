@@ -29,7 +29,7 @@ Global settings (`finance-settings.ts`): credit USD price, commission %, min wit
 
 ## Trust
 
-- Signup → `PENDING` until SA approve; REJECTED may re-apply.
+- Signup → `PENDING` until SA approve by default (Admin → Settings can disable per clients/creators for instant approve); REJECTED may re-apply.
 - Contact-leak enforcement + Admin → Contact leaks (PM/SA). Super admin exempt from leak blocks.
 - Maintenance: staff can log in; clients/providers cannot (existing JWTs not revoked).
 

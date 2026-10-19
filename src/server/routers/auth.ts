@@ -2,17 +2,17 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc";
 import { TRPCError } from "@trpc/server";
-import { notifyAdminsNewUserRegistration, sendApplicationReceivedEmail } from "@/lib/notifications";
 import { passwordSchema, phoneWithCountryCodeSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivityAsync } from "@/lib/activity-log";
-import { logger } from "@/lib/logger";
 import { issuePasswordResetEmail } from "@/lib/issue-password-reset";
 import { finalizePasswordReset, findValidPasswordResetToken } from "@/lib/password-reset";
 import { invalidateSessionUserCache } from "@/lib/session-user-cache";
 import { isAllowedProviderCvUrl } from "@/lib/upload-url";
 import { sendEmail, getOpsNotifyEmailHtml } from "@/lib/notifications/email";
 import { mobileClientLogin } from "@/lib/mobile-auth";
+import { getSignupApprovalSettings } from "@/lib/signup-approval-settings";
+import { runSignupSideEffects, signupSuccessMessage } from "@/lib/activate-approved-signup";
 
 const DEFAULT_AVATAR = "/images/logo.svg";
 
@@ -115,6 +115,10 @@ export const authRouter = router({
       const ip = forwardedString?.split(",")[0] || realIpString || null;
 
       const hashedPassword = await bcrypt.hash(input.password, 12);
+      const signupSettings = await getSignupApprovalSettings(ctx.db);
+      const requiresPending = signupSettings.clientPendingApproval;
+      const approvalStatus = requiresPending ? "PENDING" : "APPROVED";
+      const approvedAt = requiresPending ? null : new Date();
 
       if (existingUser) {
         if (existingUser.approvalStatus === "PENDING") {
@@ -139,8 +143,8 @@ export const authRouter = router({
             phone: input.phone || null,
             image: existingUser.image || DEFAULT_AVATAR,
             role: "CLIENT",
-            approvalStatus: "PENDING",
-            approvedAt: null,
+            approvalStatus,
+            approvedAt,
             rejectedAt: null,
             rejectionReason: null,
             deletedAt: null,
@@ -150,40 +154,31 @@ export const authRouter = router({
           },
         });
 
-        sendApplicationReceivedEmail({
-          userEmail: user.email,
-          userName: user.name || "User",
-          userRole: "CLIENT",
+        await runSignupSideEffects({
+          db: ctx.db,
+          user,
+          requiresPendingApproval: requiresPending,
           locale: ctx.locale,
-        }).catch((error) => {
-          logger.error("Failed to send application received email:", error);
-        });
-
-        void notifyAdminsNewUserRegistration({
-          userName: user.name || "User",
-          userEmail: user.email,
-          userRole: "CLIENT",
-          userId: user.id,
           reapplied: true,
-        }).catch((error) => {
-          logger.error("Failed to notify admins of client re-application:", error);
         });
 
         logActivityAsync({
           action: "auth.register_reapply",
-          message: `Client re-applied after rejection: ${user.email}`,
+          message: requiresPending
+            ? `Client re-applied after rejection: ${user.email}`
+            : `Client re-applied and auto-approved: ${user.email}`,
           actorId: user.id,
           actorRole: "CLIENT",
           entityType: "User",
           entityId: user.id,
           ip,
-          metadata: { email: user.email, approvalStatus: "PENDING", reapply: true },
+          metadata: { email: user.email, approvalStatus, reapply: true },
         });
 
         return {
           success: true,
           reapplied: true,
-          message: "Application re-submitted. An admin will review it shortly.",
+          message: signupSuccessMessage(requiresPending, true),
           userId: user.id,
         };
       }
@@ -196,44 +191,36 @@ export const authRouter = router({
           phone: input.phone || null,
           image: DEFAULT_AVATAR,
           role: "CLIENT",
-          approvalStatus: "PENDING",
+          approvalStatus,
+          approvedAt,
           registrationIp: ip,
           preferredLocale: ctx.locale === "ar" ? "ar" : "en",
         },
       });
 
-      sendApplicationReceivedEmail({
-        userEmail: user.email,
-        userName: user.name || "User",
-        userRole: "CLIENT",
+      await runSignupSideEffects({
+        db: ctx.db,
+        user,
+        requiresPendingApproval: requiresPending,
         locale: ctx.locale,
-      }).catch((error) => {
-        logger.error("Failed to send application received email:", error);
-      });
-
-      void notifyAdminsNewUserRegistration({
-        userName: user.name || "User",
-        userEmail: user.email,
-        userRole: "CLIENT",
-        userId: user.id,
-      }).catch((error) => {
-        logger.error("Failed to notify admins of client registration:", error);
       });
 
       logActivityAsync({
         action: "auth.register",
-        message: `New client application pending: ${user.email}`,
+        message: requiresPending
+          ? `New client application pending: ${user.email}`
+          : `New client auto-approved: ${user.email}`,
         actorId: user.id,
         actorRole: "CLIENT",
         entityType: "User",
         entityId: user.id,
         ip,
-        metadata: { email: user.email, approvalStatus: "PENDING" },
+        metadata: { email: user.email, approvalStatus },
       });
 
       return {
         success: true,
-        message: "Application submitted. An admin will review it shortly.",
+        message: signupSuccessMessage(requiresPending, false),
         userId: user.id,
       };
     }),
@@ -410,6 +397,46 @@ export const authRouter = router({
         })
         .join(", ");
       const registrationIp = ipForLimit === "unknown" ? null : ipForLimit;
+      const signupSettings = await getSignupApprovalSettings(ctx.db);
+      const requiresPending = signupSettings.providerPendingApproval;
+      const approvalStatus = requiresPending ? "PENDING" : "APPROVED";
+      const approvedAt = requiresPending ? null : new Date();
+
+      const sendOpsProviderMail = (
+        userEmail: string,
+        userName: string | null,
+        reapply: boolean
+      ) => {
+        const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
+        const title = requiresPending
+          ? reapply
+            ? "Provider re-application (pending approval)"
+            : "New provider application (pending approval)"
+          : reapply
+            ? "Provider re-application (auto-approved)"
+            : "New provider application (auto-approved)";
+        void getOpsNotifyEmailHtml({
+          title,
+          rows: [
+            { label: "Name", value: userName || "—" },
+            { label: "Email", value: userEmail },
+            { label: "Phone", value: input.phone },
+            { label: "Website", value: input.website.trim() || "—" },
+            { label: "CV", value: input.cvUrl.trim() || "—" },
+            { label: "Services", value: serviceLabels || "—" },
+          ],
+          messageBody: messageBody || "—",
+        })
+          .then((html) =>
+            sendEmail({
+              to: recipient,
+              subject: `${requiresPending ? "Provider application pending" : "Provider application"} — ${userName || userEmail}`,
+              html,
+              replyTo: userEmail,
+            })
+          )
+          .catch(() => undefined);
+      };
 
       if (existingUser) {
         if (existingUser.approvalStatus === "PENDING") {
@@ -433,8 +460,8 @@ export const authRouter = router({
             phone: input.phone,
             image: existingUser.image || DEFAULT_AVATAR,
             role: "PROVIDER",
-            approvalStatus: "PENDING",
-            approvedAt: null,
+            approvalStatus,
+            approvedAt,
             rejectedAt: null,
             rejectionReason: null,
             deletedAt: null,
@@ -469,51 +496,20 @@ export const authRouter = router({
           },
         });
 
-        sendApplicationReceivedEmail({
-          userEmail: user.email,
-          userName: user.name || "User",
-          userRole: "PROVIDER",
+        await runSignupSideEffects({
+          db: ctx.db,
+          user,
+          requiresPendingApproval: requiresPending,
           locale: ctx.locale,
-        }).catch((error) => {
-          logger.error("Failed to send provider application received email:", error);
-        });
-
-        void notifyAdminsNewUserRegistration({
-          userName: user.name || "User",
-          userEmail: user.email,
-          userRole: "PROVIDER",
-          userId: user.id,
           reapplied: true,
-        }).catch((error) => {
-          logger.error("Failed to notify admins of provider re-application:", error);
         });
-
-        const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
-        void getOpsNotifyEmailHtml({
-          title: "Provider re-application (pending approval)",
-          rows: [
-            { label: "Name", value: user.name || "—" },
-            { label: "Email", value: user.email },
-            { label: "Phone", value: input.phone },
-            { label: "Website", value: input.website.trim() || "—" },
-            { label: "CV", value: input.cvUrl.trim() || "—" },
-            { label: "Services", value: serviceLabels || "—" },
-          ],
-          messageBody: messageBody || "—",
-        })
-          .then((html) =>
-            sendEmail({
-              to: recipient,
-              subject: `Provider re-application pending — ${user.name || user.email}`,
-              html,
-              replyTo: user.email,
-            })
-          )
-          .catch(() => undefined);
+        sendOpsProviderMail(user.email, user.name, true);
 
         logActivityAsync({
           action: "auth.register_provider_reapply",
-          message: `Provider re-applied after rejection: ${user.email}`,
+          message: requiresPending
+            ? `Provider re-applied after rejection: ${user.email}`
+            : `Provider re-applied and auto-approved: ${user.email}`,
           actorId: user.id,
           actorRole: "PROVIDER",
           entityType: "User",
@@ -521,7 +517,7 @@ export const authRouter = router({
           ip: registrationIp,
           metadata: {
             email: user.email,
-            approvalStatus: "PENDING",
+            approvalStatus,
             serviceIds: uniqueServiceIds,
             reapply: true,
           },
@@ -530,7 +526,7 @@ export const authRouter = router({
         return {
           success: true,
           reapplied: true,
-          message: "Application re-submitted. An admin will review it shortly.",
+          message: signupSuccessMessage(requiresPending, true),
           userId: user.id,
         };
       }
@@ -543,7 +539,8 @@ export const authRouter = router({
           phone: input.phone,
           image: DEFAULT_AVATAR,
           role: "PROVIDER",
-          approvalStatus: "PENDING",
+          approvalStatus,
+          approvedAt,
           registrationIp,
           preferredLocale: ctx.locale === "ar" ? "ar" : "en",
           providerProfile: {
@@ -561,51 +558,19 @@ export const authRouter = router({
         },
       });
 
-      sendApplicationReceivedEmail({
-        userEmail: user.email,
-        userName: user.name || "User",
-        userRole: "PROVIDER",
+      await runSignupSideEffects({
+        db: ctx.db,
+        user,
+        requiresPendingApproval: requiresPending,
         locale: ctx.locale,
-      }).catch((error) => {
-        logger.error("Failed to send provider application received email:", error);
       });
-
-      void notifyAdminsNewUserRegistration({
-        userName: user.name || "User",
-        userEmail: user.email,
-        userRole: "PROVIDER",
-        userId: user.id,
-      }).catch((error) => {
-        logger.error("Failed to notify admins of provider registration:", error);
-      });
-
-      // Ops notify (best-effort) — same recipient as legacy contact form
-      const recipient = process.env.CONTACT_FORMS_RECIPIENT || "info@wengz.tech";
-      void getOpsNotifyEmailHtml({
-        title: "New provider application (pending approval)",
-        rows: [
-          { label: "Name", value: user.name || "—" },
-          { label: "Email", value: user.email },
-          { label: "Phone", value: input.phone },
-          { label: "Website", value: input.website.trim() || "—" },
-          { label: "CV", value: input.cvUrl.trim() || "—" },
-          { label: "Services", value: serviceLabels || "—" },
-        ],
-        messageBody: messageBody || "—",
-      })
-        .then((html) =>
-          sendEmail({
-            to: recipient,
-            subject: `Provider application pending — ${user.name || user.email}`,
-            html,
-            replyTo: user.email,
-          })
-        )
-        .catch(() => undefined);
+      sendOpsProviderMail(user.email, user.name, false);
 
       logActivityAsync({
         action: "auth.register_provider",
-        message: `New provider application pending: ${user.email}`,
+        message: requiresPending
+          ? `New provider application pending: ${user.email}`
+          : `New provider auto-approved: ${user.email}`,
         actorId: user.id,
         actorRole: "PROVIDER",
         entityType: "User",
@@ -613,14 +578,14 @@ export const authRouter = router({
         ip: registrationIp,
         metadata: {
           email: user.email,
-          approvalStatus: "PENDING",
+          approvalStatus,
           serviceIds: uniqueServiceIds,
         },
       });
 
       return {
         success: true,
-        message: "Application submitted. An admin will review it shortly.",
+        message: signupSuccessMessage(requiresPending, false),
         userId: user.id,
       };
     }),

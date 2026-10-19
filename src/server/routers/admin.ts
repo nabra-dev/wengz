@@ -58,6 +58,10 @@ import {
   PAYMENT_INSTRUCTIONS_KEY,
   type ManualPaymentSettings,
 } from "@/lib/payment-settings";
+import {
+  getSignupApprovalSettings as loadSignupApprovalSettings,
+  SIGNUP_APPROVAL_KEY,
+} from "@/lib/signup-approval-settings";
 import { getOrSetCached, cacheKeys, cacheTTL } from "@/lib/cache";
 import {
   invalidatePackageCache,
@@ -188,6 +192,76 @@ export const adminRouter = router({
       return {
         success: true,
         enabled,
+      };
+    }),
+
+  getSignupApprovalSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/settings/signup-approval",
+        tags: ["admin"],
+        summary: "Get whether new clients/creators require admin approval",
+      },
+    })
+    .input(z.void())
+    .output(
+      z.object({
+        clientPendingApproval: z.boolean(),
+        providerPendingApproval: z.boolean(),
+      })
+    )
+    .query(async ({ ctx }) => loadSignupApprovalSettings(ctx.db)),
+
+  setSignupApprovalSettings: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/admin/settings/signup-approval",
+        tags: ["admin"],
+        summary: "Set whether new clients/creators require admin approval",
+      },
+    })
+    .input(
+      z.object({
+        clientPendingApproval: z.boolean(),
+        providerPendingApproval: z.boolean(),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        clientPendingApproval: z.boolean(),
+        providerPendingApproval: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const value = {
+        clientPendingApproval: input.clientPendingApproval,
+        providerPendingApproval: input.providerPendingApproval,
+      };
+      const description =
+        "When enabled for a role, self-serve signups stay PENDING until staff approve. When disabled, new accounts are APPROVED immediately.";
+
+      await ctx.db.systemSettings.upsert({
+        where: { key: SIGNUP_APPROVAL_KEY },
+        update: { value, description },
+        create: { key: SIGNUP_APPROVAL_KEY, value, description },
+      });
+
+      logActivityAsync({
+        action: "admin.set_signup_approval",
+        message: `Signup approval settings updated (clients=${value.clientPendingApproval}, creators=${value.providerPendingApproval})`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "SystemSettings",
+        entityId: SIGNUP_APPROVAL_KEY,
+        metadata: value,
+      });
+
+      return {
+        success: true,
+        ...value,
       };
     }),
 

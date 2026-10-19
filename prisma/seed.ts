@@ -1185,10 +1185,16 @@ async function main() {
         value: { enabled: false },
         description: "When enabled, only SUPER_ADMIN users can log in.",
       },
+      {
+        key: "signup_approval",
+        value: { clientPendingApproval: true, providerPendingApproval: true },
+        description:
+          "When enabled for a role, self-serve signups stay PENDING until staff approve.",
+      },
     ],
   });
 
-  console.log("⚙️  Seeded finance, payment, and maintenance settings");
+  console.log("⚙️  Seeded finance, payment, maintenance, and signup-approval settings");
   console.log(`   creditPriceUsd=0.008 commission=0% minWithdrawal=1 withdrawalFee=0`);
 
   // ─── Sample users (all roles) ──────────────────────────────────────────────

@@ -21,10 +21,13 @@ export default function AdminSettingsPage() {
   const showFinance = canManageFinance(role);
   const tAdmin = useTranslations("admin");
   const t = useTranslations("admin.dashboard.maintenance");
+  const tSignup = useTranslations("admin.settings.signupApproval");
   const tFinance = useTranslations("admin.settings.finance");
   const tPayment = useTranslations("admin.settings.payment");
   const { data: maintenance, isLoading: maintenanceLoading } =
     trpc.admin.getMaintenanceMode.useQuery(undefined, { enabled: showPlatform });
+  const { data: signupApproval, isLoading: signupApprovalLoading } =
+    trpc.admin.getSignupApprovalSettings.useQuery(undefined, { enabled: showPlatform });
   const { data: financeSettings, isLoading: financeLoading } =
     trpc.admin.getFinanceSettings.useQuery(undefined, { enabled: showFinance });
   const { data: paymentSettings, isLoading: paymentLoading } =
@@ -35,6 +38,13 @@ export default function AdminSettingsPage() {
       utils.admin.getMaintenanceMode.invalidate();
       utils.admin.getPublicAppState.invalidate();
     },
+  });
+  const setSignupApprovalMutation = trpc.admin.setSignupApprovalSettings.useMutation({
+    onSuccess: () => {
+      showSuccess(tSignup("saved"));
+      utils.admin.getSignupApprovalSettings.invalidate();
+    },
+    onError: (error) => showError(error),
   });
   const setFinanceSettingsMutation = trpc.admin.setFinanceSettings.useMutation({
     onSuccess: () => {
@@ -53,6 +63,8 @@ export default function AdminSettingsPage() {
     onError: (error) => showError(error),
   });
 
+  const [clientPendingApproval, setClientPendingApproval] = useState(true);
+  const [providerPendingApproval, setProviderPendingApproval] = useState(true);
   const [creditPriceUsd, setCreditPriceUsd] = useState("1");
   const [commissionPercent, setCommissionPercent] = useState("10");
   const [minWithdrawalUsd, setMinWithdrawalUsd] = useState("1");
@@ -65,10 +77,20 @@ export default function AdminSettingsPage() {
   const [note, setNote] = useState("");
   const [instapayEnabled, setInstapayEnabled] = useState(true);
   const [instapayLink, setInstapayLink] = useState("");
+  const signupHydrated = useRef(false);
   const financeHydrated = useRef(false);
   const paymentHydrated = useRef(false);
 
   // Seed local draft once when server values first arrive — do not overwrite while editing.
+  useEffect(() => {
+    if (!signupApproval || signupHydrated.current) return;
+    signupHydrated.current = true;
+    queueMicrotask(() => {
+      setClientPendingApproval(signupApproval.clientPendingApproval);
+      setProviderPendingApproval(signupApproval.providerPendingApproval);
+    });
+  }, [signupApproval]);
+
   useEffect(() => {
     if (!financeSettings || financeHydrated.current) return;
     financeHydrated.current = true;
@@ -110,6 +132,14 @@ export default function AdminSettingsPage() {
     maintenanceActionLabel = t("turnOff");
   }
 
+  const handleSaveSignupApproval = (event: FormEvent) => {
+    event.preventDefault();
+    setSignupApprovalMutation.mutate({
+      clientPendingApproval,
+      providerPendingApproval,
+    });
+  };
+
   const handleSaveFinance = (event: FormEvent) => {
     event.preventDefault();
     setFinanceSettingsMutation.mutate({
@@ -119,6 +149,8 @@ export default function AdminSettingsPage() {
       withdrawalFeeUsd: Number(withdrawalFeeUsd),
     });
   };
+
+  const signupBusy = signupApprovalLoading || setSignupApprovalMutation.isPending;
 
   const handleSavePayment = (event: FormEvent) => {
     event.preventDefault();
@@ -144,212 +176,263 @@ export default function AdminSettingsPage() {
       </div>
 
       {showPlatform && (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("title")}</CardTitle>
-          <CardDescription>{t("description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Badge variant={maintenanceEnabled ? "destructive" : "secondary"}>
-              {maintenanceBadgeLabel}
-            </Badge>
-          </div>
-          <Button
-            variant={maintenanceEnabled ? "destructive" : "default"}
-            onClick={() => setMaintenanceModeMutation.mutate({ enabled: !maintenanceEnabled })}
-            disabled={maintenanceLoading || setMaintenanceModeMutation.isPending}
-          >
-            {maintenanceActionLabel}
-          </Button>
-        </CardContent>
-      </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("title")}</CardTitle>
+              <CardDescription>{t("description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Badge variant={maintenanceEnabled ? "destructive" : "secondary"}>
+                  {maintenanceBadgeLabel}
+                </Badge>
+              </div>
+              <Button
+                variant={maintenanceEnabled ? "destructive" : "default"}
+                onClick={() => setMaintenanceModeMutation.mutate({ enabled: !maintenanceEnabled })}
+                disabled={maintenanceLoading || setMaintenanceModeMutation.isPending}
+              >
+                {maintenanceActionLabel}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{tSignup("title")}</CardTitle>
+              <CardDescription>{tSignup("description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="max-w-xl space-y-4" onSubmit={handleSaveSignupApproval}>
+                <div className="flex items-start gap-3 rounded-lg border p-4">
+                  <Checkbox
+                    id="clientPendingApproval"
+                    checked={clientPendingApproval}
+                    onCheckedChange={(checked) => setClientPendingApproval(checked === true)}
+                    disabled={signupBusy}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="clientPendingApproval">{tSignup("clientPending")}</Label>
+                    <p className="text-xs text-muted-foreground">{tSignup("clientPendingHint")}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-lg border p-4">
+                  <Checkbox
+                    id="providerPendingApproval"
+                    checked={providerPendingApproval}
+                    onCheckedChange={(checked) => setProviderPendingApproval(checked === true)}
+                    disabled={signupBusy}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="providerPendingApproval">{tSignup("providerPending")}</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {tSignup("providerPendingHint")}
+                    </p>
+                  </div>
+                </div>
+                <Button type="submit" disabled={signupBusy}>
+                  {setSignupApprovalMutation.isPending ? tSignup("saving") : tSignup("save")}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {showFinance && (
-      <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{tFinance("title")}</CardTitle>
-          <CardDescription>{tFinance("description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid max-w-xl gap-4 md:grid-cols-2" onSubmit={handleSaveFinance}>
-            <div className="space-y-2">
-              <Label htmlFor="creditPriceUsd">{tFinance("creditPriceUsd")}</Label>
-              <Input
-                id="creditPriceUsd"
-                type="number"
-                min="0"
-                step="any"
-                value={creditPriceUsd}
-                onChange={(event) => setCreditPriceUsd(event.target.value)}
-                disabled={financeLoading || setFinanceSettingsMutation.isPending}
-                required
-              />
-              <p className="text-xs text-muted-foreground">{tFinance("creditPriceUsdHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="commissionPercent">{tFinance("commissionPercent")}</Label>
-              <Input
-                id="commissionPercent"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={commissionPercent}
-                onChange={(event) => setCommissionPercent(event.target.value)}
-                disabled={financeLoading || setFinanceSettingsMutation.isPending}
-                required
-              />
-              <p className="text-xs text-muted-foreground">{tFinance("commissionPercentHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="minWithdrawalUsd">{tFinance("minWithdrawalUsd")}</Label>
-              <Input
-                id="minWithdrawalUsd"
-                type="number"
-                min="0"
-                step="any"
-                value={minWithdrawalUsd}
-                onChange={(event) => setMinWithdrawalUsd(event.target.value)}
-                disabled={financeLoading || setFinanceSettingsMutation.isPending}
-                required
-              />
-              <p className="text-xs text-muted-foreground">{tFinance("minWithdrawalUsdHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="withdrawalFeeUsd">{tFinance("withdrawalFeeUsd")}</Label>
-              <Input
-                id="withdrawalFeeUsd"
-                type="number"
-                min="0"
-                step="any"
-                value={withdrawalFeeUsd}
-                onChange={(event) => setWithdrawalFeeUsd(event.target.value)}
-                disabled={financeLoading || setFinanceSettingsMutation.isPending}
-                required
-              />
-              <p className="text-xs text-muted-foreground">{tFinance("withdrawalFeeUsdHint")}</p>
-            </div>
-            <div className="md:col-span-2">
-              <Button type="submit" disabled={financeLoading || setFinanceSettingsMutation.isPending}>
-                {setFinanceSettingsMutation.isPending ? tFinance("saving") : tFinance("save")}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{tPayment("title")}</CardTitle>
-          <CardDescription>{tPayment("description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid max-w-3xl gap-4 md:grid-cols-2" onSubmit={handleSavePayment}>
-            <div className="space-y-2">
-              <Label htmlFor="bankName">{tPayment("bankName")}</Label>
-              <Input
-                id="bankName"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                disabled={paymentBusy}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="accountName">{tPayment("accountName")}</Label>
-              <Input
-                id="accountName"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                disabled={paymentBusy}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="iban">{tPayment("iban")}</Label>
-              <Input
-                id="iban"
-                value={iban}
-                onChange={(e) => setIban(e.target.value)}
-                disabled={paymentBusy}
-                required
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="swiftCode">{tPayment("swiftCode")}</Label>
-              <Input
-                id="swiftCode"
-                value={swiftCode}
-                onChange={(e) => setSwiftCode(e.target.value)}
-                disabled={paymentBusy}
-                required
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="currency">{tPayment("currency")}</Label>
-              <Input
-                id="currency"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                disabled={paymentBusy}
-                required
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="note">{tPayment("note")}</Label>
-              <Textarea
-                id="note"
-                name="note"
-                aria-label={tPayment("note")}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                disabled={paymentBusy}
-                required
-                rows={3}
-              />
-            </div>
-
-            <div className="md:col-span-2 space-y-4 rounded-lg border p-4">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="instapayEnabled"
-                  checked={instapayEnabled}
-                  onCheckedChange={(checked) => setInstapayEnabled(checked === true)}
-                  disabled={paymentBusy}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="instapayEnabled">{tPayment("instapayEnabled")}</Label>
-                  <p className="text-xs text-muted-foreground">{tPayment("instapayHint")}</p>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>{tFinance("title")}</CardTitle>
+              <CardDescription>{tFinance("description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="grid max-w-xl gap-4 md:grid-cols-2" onSubmit={handleSaveFinance}>
+                <div className="space-y-2">
+                  <Label htmlFor="creditPriceUsd">{tFinance("creditPriceUsd")}</Label>
+                  <Input
+                    id="creditPriceUsd"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={creditPriceUsd}
+                    onChange={(event) => setCreditPriceUsd(event.target.value)}
+                    disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">{tFinance("creditPriceUsdHint")}</p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="instapayLink">{tPayment("instapayLink")}</Label>
-                <Input
-                  id="instapayLink"
-                  type="url"
-                  placeholder="https://ipn.eg/..."
-                  value={instapayLink}
-                  onChange={(e) => setInstapayLink(e.target.value)}
-                  disabled={paymentBusy || !instapayEnabled}
-                  required={instapayEnabled}
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commissionPercent">{tFinance("commissionPercent")}</Label>
+                  <Input
+                    id="commissionPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={commissionPercent}
+                    onChange={(event) => setCommissionPercent(event.target.value)}
+                    disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {tFinance("commissionPercentHint")}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="minWithdrawalUsd">{tFinance("minWithdrawalUsd")}</Label>
+                  <Input
+                    id="minWithdrawalUsd"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={minWithdrawalUsd}
+                    onChange={(event) => setMinWithdrawalUsd(event.target.value)}
+                    disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {tFinance("minWithdrawalUsdHint")}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="withdrawalFeeUsd">{tFinance("withdrawalFeeUsd")}</Label>
+                  <Input
+                    id="withdrawalFeeUsd"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={withdrawalFeeUsd}
+                    onChange={(event) => setWithdrawalFeeUsd(event.target.value)}
+                    disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {tFinance("withdrawalFeeUsdHint")}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <Button
+                    type="submit"
+                    disabled={financeLoading || setFinanceSettingsMutation.isPending}
+                  >
+                    {setFinanceSettingsMutation.isPending ? tFinance("saving") : tFinance("save")}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-            <div className="md:col-span-2">
-              <Button type="submit" disabled={paymentBusy}>
-                {setPaymentSettingsMutation.isPending ? tPayment("saving") : tPayment("save")}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-      </>
+          <Card>
+            <CardHeader>
+              <CardTitle>{tPayment("title")}</CardTitle>
+              <CardDescription>{tPayment("description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="grid max-w-3xl gap-4 md:grid-cols-2" onSubmit={handleSavePayment}>
+                <div className="space-y-2">
+                  <Label htmlFor="bankName">{tPayment("bankName")}</Label>
+                  <Input
+                    id="bankName"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    disabled={paymentBusy}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accountName">{tPayment("accountName")}</Label>
+                  <Input
+                    id="accountName"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    disabled={paymentBusy}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="iban">{tPayment("iban")}</Label>
+                  <Input
+                    id="iban"
+                    value={iban}
+                    onChange={(e) => setIban(e.target.value)}
+                    disabled={paymentBusy}
+                    required
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="swiftCode">{tPayment("swiftCode")}</Label>
+                  <Input
+                    id="swiftCode"
+                    value={swiftCode}
+                    onChange={(e) => setSwiftCode(e.target.value)}
+                    disabled={paymentBusy}
+                    required
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">{tPayment("currency")}</Label>
+                  <Input
+                    id="currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                    disabled={paymentBusy}
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="note">{tPayment("note")}</Label>
+                  <Textarea
+                    id="note"
+                    name="note"
+                    aria-label={tPayment("note")}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    disabled={paymentBusy}
+                    required
+                    rows={3}
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-4 rounded-lg border p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="instapayEnabled"
+                      checked={instapayEnabled}
+                      onCheckedChange={(checked) => setInstapayEnabled(checked === true)}
+                      disabled={paymentBusy}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="instapayEnabled">{tPayment("instapayEnabled")}</Label>
+                      <p className="text-xs text-muted-foreground">{tPayment("instapayHint")}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="instapayLink">{tPayment("instapayLink")}</Label>
+                    <Input
+                      id="instapayLink"
+                      type="url"
+                      placeholder="https://ipn.eg/..."
+                      value={instapayLink}
+                      onChange={(e) => setInstapayLink(e.target.value)}
+                      disabled={paymentBusy || !instapayEnabled}
+                      required={instapayEnabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Button type="submit" disabled={paymentBusy}>
+                    {setPaymentSettingsMutation.isPending ? tPayment("saving") : tPayment("save")}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );
