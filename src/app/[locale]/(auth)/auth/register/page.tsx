@@ -6,7 +6,7 @@ import { Link, useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Briefcase, Loader2, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -19,15 +19,30 @@ import { CONTINUE_NEW_REQUEST_PATH, parseContinuePath } from "@/lib/landing-requ
 import { getStaffHomePath, isStaffRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
+type RegisterStep = "choose" | "client";
+
 export default function RegisterPage() {
   const router = useRouter();
   const locale = useLocale();
   const { data: session, status } = useSession();
   const [error, setError] = useState("");
+  const [step, setStep] = useState<RegisterStep>("choose");
   const t = useTranslations("auth.register");
   const tFields = useTranslations("forms.fields");
   const searchParams = useSearchParams();
   const continueAfterAuth = parseContinuePath(searchParams?.get("continue") ?? null);
+  const roleParam = searchParams?.get("role");
+
+  useEffect(() => {
+    if (roleParam === "client") {
+      setStep("client");
+      return;
+    }
+    if (roleParam === "provider" || roleParam === "creator") {
+      const qs = continueAfterAuth ? `?continue=${encodeURIComponent(continueAfterAuth)}` : "";
+      router.replace(`/forms/provider${qs}`);
+    }
+  }, [roleParam, router, continueAfterAuth]);
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
@@ -123,6 +138,89 @@ export default function RegisterPage() {
   }
 
   const busy = registerMutation.isPending;
+  const providerHref = continueAfterAuth
+    ? `/forms/provider?continue=${encodeURIComponent(continueAfterAuth)}`
+    : "/forms/provider";
+
+  if (step === "choose") {
+    return (
+      <AuthFormShell
+        badge={
+          <>
+            <Users className="h-3.5 w-3.5 text-primary" aria-hidden />
+            {t("choose.badge")}
+          </>
+        }
+        title={t("choose.title")}
+        subtitle={t("choose.subtitle")}
+      >
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-muted-foreground">{t("choose.stepLabel")}</p>
+
+          <button
+            type="button"
+            onClick={() => setStep("client")}
+            className="group flex w-full items-start gap-4 rounded-2xl border border-border/70 bg-background/60 p-4 text-start transition-colors hover:border-primary/40 hover:bg-primary/[0.04] sm:p-5"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+              <UserPlus className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-base font-semibold text-foreground">
+                  {t("choose.clientTitle")}
+                </span>
+                <ArrowRight
+                  className="h-4 w-4 shrink-0 opacity-40 transition-transform group-hover:translate-x-0.5 group-hover:opacity-80 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                  aria-hidden
+                />
+              </span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {t("choose.clientDescription")}
+              </span>
+            </span>
+          </button>
+
+          <Link
+            href={providerHref}
+            className="group flex w-full items-start gap-4 rounded-2xl border border-border/70 bg-background/60 p-4 text-start transition-colors hover:border-primary/40 hover:bg-primary/[0.04] sm:p-5"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E0F840]/20 text-foreground transition-colors group-hover:bg-[#E0F840]/30 dark:bg-[#E0F840]/15">
+              <Briefcase className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-base font-semibold text-foreground">
+                  {t("choose.providerTitle")}
+                </span>
+                <ArrowRight
+                  className="h-4 w-4 shrink-0 opacity-40 transition-transform group-hover:translate-x-0.5 group-hover:opacity-80 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                  aria-hidden
+                />
+              </span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {t("choose.providerDescription")}
+              </span>
+            </span>
+          </Link>
+
+          <p className="pt-2 text-center text-sm text-muted-foreground">
+            {t("haveAccount")}{" "}
+            <Link
+              href={
+                continueAfterAuth
+                  ? `/auth/login?continue=${encodeURIComponent(continueAfterAuth)}`
+                  : "/auth/login"
+              }
+              className="font-medium text-primary hover:underline"
+            >
+              {t("signInLink")}
+            </Link>
+          </p>
+        </div>
+      </AuthFormShell>
+    );
+  }
 
   return (
     <AuthFormShell
@@ -135,21 +233,22 @@ export default function RegisterPage() {
       title={t("title")}
       subtitle={t("subtitle")}
       asideExtras={
-        <Link
-          href="/forms/provider"
-          className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/50 px-4 py-3.5 transition-colors hover:border-primary/30 hover:bg-background/80"
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setStep("choose");
+          }}
+          className="group flex w-full items-center gap-2 rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-background/80 hover:text-foreground"
         >
-          <span className="min-w-0">
-            <span className="block text-sm font-medium text-foreground">{t("asideCreator")}</span>
-            <span className="mt-0.5 block text-sm text-muted-foreground group-hover:text-foreground">
-              {t("asideCreatorCta")}
-            </span>
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0 opacity-50 rtl:rotate-180" aria-hidden />
-        </Link>
+          <ArrowLeft className="h-4 w-4 shrink-0 opacity-60 rtl:rotate-180" aria-hidden />
+          {t("backToChoose")}
+        </button>
       }
     >
       <form onSubmit={onSubmit} className="space-y-5">
+        <p className="text-sm font-medium text-muted-foreground">{t("clientStepLabel")}</p>
+
         {error ? (
           <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
             {error}

@@ -570,10 +570,9 @@ export const adminRouter = router({
         ctx.db.serviceType.count({ where: { isActive: true } }),
         ctx.db.rating.aggregate({ _avg: { rating: true } }),
         ctx.db.$queryRaw<[{ total: number }]>`
-            SELECT COALESCE(SUM(p.price), 0) as total
-            FROM "ClientSubscription" cs
-            JOIN "Package" p ON cs."packageId" = p.id
-            WHERE cs."isActive" = true
+            SELECT COALESCE(SUM(pp.amount), 0)::float AS total
+            FROM "PaymentProof" pp
+            WHERE pp.status = 'APPROVED'
           `,
       ]);
 
@@ -656,13 +655,13 @@ export const adminRouter = router({
         ctx.db.request.count({
           where: { createdAt: { gte: thirtyDaysAgo } },
         }),
-        // Monthly revenue trend (last 6 months) — aggregate in SQL
+        // Monthly revenue trend (last 6 months) — approved payments only
         ctx.db.$queryRaw<{ month: Date; revenue: number }[]>`
-          SELECT date_trunc('month', cs."createdAt") AS month,
-                 COALESCE(SUM(p.price), 0) AS revenue
-          FROM "ClientSubscription" cs
-          JOIN "Package" p ON cs."packageId" = p.id
-          WHERE cs."createdAt" >= ${sixMonthsAgo}
+          SELECT date_trunc('month', COALESCE(pp."reviewedAt", pp."createdAt")) AS month,
+                 COALESCE(SUM(pp.amount), 0)::float AS revenue
+          FROM "PaymentProof" pp
+          WHERE pp.status = 'APPROVED'
+            AND COALESCE(pp."reviewedAt", pp."createdAt") >= ${sixMonthsAgo}
           GROUP BY 1
           ORDER BY 1
         `,
@@ -789,7 +788,7 @@ export const adminRouter = router({
     .input(
       z
         .object({
-          status: z.enum(["active", "expired", "cancelled", "all"]).optional(),
+          status: z.enum(["active", "pending", "expired", "cancelled", "all"]).optional(),
           search: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
@@ -804,6 +803,7 @@ export const adminRouter = router({
         stats: z.object({
           total: z.number(),
           active: z.number(),
+          pending: z.number(),
           expired: z.number(),
           cancelled: z.number(),
           totalRevenue: z.number(),
@@ -814,22 +814,38 @@ export const adminRouter = router({
       const now = new Date();
       const where: Prisma.ClientSubscriptionWhereInput = {};
 
+      // Pending paid packages: created inactive until FM/SA approves payment proof.
+      const pendingWhere: Prisma.ClientSubscriptionWhereInput = {
+        isActive: false,
+        cancelledAt: null,
+      };
+
       if (input?.status === "active") {
         where.isActive = true;
         where.endDate = { gte: now };
+      } else if (input?.status === "pending") {
+        Object.assign(where, pendingWhere);
       } else if (input?.status === "expired") {
+        // Period ended — exclude unpaid pending rows (they also have endDate set at subscribe).
         where.endDate = { lt: now };
+        where.OR = [{ isActive: true }, { cancelledAt: { not: null } }];
       } else if (input?.status === "cancelled") {
         where.cancelledAt = { not: null };
       }
 
       const search = input?.search?.trim();
       if (search) {
-        where.OR = [
+        const searchOr: Prisma.ClientSubscriptionWhereInput[] = [
           { user: { name: { contains: search, mode: "insensitive" } } },
           { user: { email: { contains: search, mode: "insensitive" } } },
           { package: { name: { contains: search, mode: "insensitive" } } },
         ];
+        if (where.OR) {
+          where.AND = [{ OR: where.OR }, { OR: searchOr }];
+          delete where.OR;
+        } else {
+          where.OR = searchOr;
+        }
       }
 
       const [
@@ -837,6 +853,7 @@ export const adminRouter = router({
         total,
         allCount,
         activeCount,
+        pendingCount,
         expiredCount,
         cancelledCount,
         revenueAgg,
@@ -846,6 +863,9 @@ export const adminRouter = router({
           include: {
             user: { select: { id: true, name: true, email: true, createdAt: true } },
             package: true,
+            paymentProof: {
+              select: { id: true, status: true, amount: true, reviewedAt: true },
+            },
           },
           take: input?.limit || 50,
           skip: input?.offset || 0,
@@ -856,16 +876,21 @@ export const adminRouter = router({
         ctx.db.clientSubscription.count({
           where: { isActive: true, endDate: { gte: now } },
         }),
+        ctx.db.clientSubscription.count({ where: pendingWhere }),
         ctx.db.clientSubscription.count({
-          where: { endDate: { lt: now } },
+          where: {
+            endDate: { lt: now },
+            OR: [{ isActive: true }, { cancelledAt: { not: null } }],
+          },
         }),
         ctx.db.clientSubscription.count({
           where: { cancelledAt: { not: null } },
         }),
+        // Recognized revenue = approved payment proofs only (not catalog price of unpaid/cancelled).
         ctx.db.$queryRaw<[{ total: number | null }]>`
-            SELECT COALESCE(SUM(p.price), 0)::float AS total
-            FROM "ClientSubscription" cs
-            INNER JOIN "Package" p ON p.id = cs."packageId"
+            SELECT COALESCE(SUM(pp.amount), 0)::float AS total
+            FROM "PaymentProof" pp
+            WHERE pp.status = 'APPROVED'
           `,
       ]);
 
@@ -876,6 +901,7 @@ export const adminRouter = router({
         stats: {
           total: allCount,
           active: activeCount,
+          pending: pendingCount,
           expired: expiredCount,
           cancelled: cancelledCount,
           totalRevenue: Number(revenueAgg[0]?.total ?? 0),
@@ -917,12 +943,11 @@ export const adminRouter = router({
         ctx.db.clientSubscription.count({
           where: { isActive: true, endDate: { gte: new Date() } },
         }),
-        // Efficient revenue calculation using aggregate
+        // Recognized revenue = approved payment proofs only
         ctx.db.$queryRaw<[{ total: number }]>`
-        SELECT COALESCE(SUM(p.price), 0) as total
-        FROM "ClientSubscription" cs
-        JOIN "Package" p ON cs."packageId" = p.id
-        WHERE cs."isActive" = true
+        SELECT COALESCE(SUM(pp.amount), 0)::float AS total
+        FROM "PaymentProof" pp
+        WHERE pp.status = 'APPROVED'
       `,
         ctx.db.request.findMany({
           take: 5,

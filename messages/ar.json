@@ -302,10 +302,12 @@
       "primary": "ابدأ تجربتك المجانية",
       "primaryShort": "جرّب مجاناً",
       "startTrial": "ابدأ تجربتك المجانية",
-      "asClient": "إنشاء حساب",
+      "asClient": "إنشاء حساب كعميل جديد",
       "asProvider": "كن مبدعاً معنا",
       "signIn": "تسجيل الدخول",
       "signUp": "إنشاء حساب",
+      "signUpShort": "عميل جديد",
+      "signUpClient": "تسجيل عميل جديد",
       "viewPlans": "استكشف الباقات",
       "appComingSoon": "قريباً",
       "iosApp": "تطبيق iOS",
@@ -508,7 +510,7 @@
       "signingIn": "جاري تسجيل الدخول...",
       "signInButton": "تسجيل الدخول",
       "noAccount": "ليس لديك حساب؟",
-      "signUp": "إنشاء حساب",
+      "signUp": "تسجيل عميل جديد",
       "loginFailed": "فشل تسجيل الدخول",
       "invalidCredentials": "بريد إلكتروني أو كلمة مرور غير صحيحة. حاول مرة أخرى.",
       "welcomeBack": "مرحباً بعودتك!",
@@ -554,10 +556,22 @@
       "errorFallback": "تعذر إعادة تعيين كلمة المرور. حاول مرة أخرى."
     },
     "register": {
-      "badge": "تسجيل عميل",
-      "title": "إنشاء حساب",
+      "badge": "عميل جديد",
+      "title": "إنشاء حساب عميل",
       "description": "أدخل بياناتك — سيوافق المسؤول قبل أن تتمكن من تسجيل الدخول",
-      "subtitle": "انضم كعميل لشراء باقات الرصيد وفتح طلبات الخدمة. يراجع المسؤول كل حساب جديد.",
+      "subtitle": "هذا التسجيل للعملاء فقط — اشترِ باقات الرصيد وافتح طلبات الخدمة. يراجع المسؤول كل حساب جديد.",
+      "clientStepLabel": "الخطوة 2 من 2 — بيانات العميل",
+      "backToChoose": "العودة لاختيار نوع الحساب",
+      "choose": {
+        "badge": "ابدأ الآن",
+        "title": "كيف تريد الانضمام؟",
+        "subtitle": "اختر عميل لتعيين مبدعين، أو قدّم كمبدع لتنفيذ الطلبات.",
+        "stepLabel": "الخطوة 1 من 2 — اختر نوع الحساب",
+        "clientTitle": "أنا عميل جديد",
+        "clientDescription": "أنشئ حساب عميل لشراء الرصيد وفتح الطلبات واستلام العمل.",
+        "providerTitle": "أنا مبدع",
+        "providerDescription": "قدّم للانضمام كمبدع وتنفيذ طلبات العملاء على وينجز."
+      },
       "asideCreator": "تريد الإبداع للعملاء بدلاً من ذلك؟",
       "asideCreatorCta": "التقديم كمبدع",
       "nameLabel": "الاسم الكامل",
@@ -573,8 +587,8 @@
       "passwordHint": "8 أحرف على الأقل",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordHint": "يجب أن تطابق كلمة المرور أعلاه",
-      "creatingAccount": "جاري إنشاء الحساب...",
-      "createAccountButton": "إنشاء حساب",
+      "creatingAccount": "جاري إنشاء حساب العميل...",
+      "createAccountButton": "إنشاء حساب عميل",
       "haveAccount": "لديك حساب بالفعل؟",
       "signInLink": "تسجيل الدخول",
       "accountCreated": "تم استلام الطلب",
@@ -1485,9 +1499,11 @@
       "stats": {
         "total": "الإجمالي",
         "active": "نشط",
+        "pending": "معلّق",
         "expired": "منتهي",
         "cancelled": "ملغي",
-        "totalRevenue": "إجمالي الإيرادات"
+        "totalRevenue": "إجمالي الإيرادات",
+        "totalRevenueHint": "المدفوعات المعتمدة فقط"
       },
       "filters": {
         "title": "الفلاتر",
@@ -1495,15 +1511,20 @@
         "status": "تصفية حسب الحالة",
         "allStatuses": "جميع الحالات",
         "active": "نشط",
+        "pending": "بانتظار الدفع",
         "expired": "منتهي",
         "cancelled": "ملغي"
       },
       "list": {
         "title": "الاشتراكات ({count})",
-        "creditsLeft": "كريدت متبقي"
+        "creditsLeft": "كريدت متبقي",
+        "awaitingPayment": "بانتظار الدفع",
+        "periodStartsOnPayment": "تبدأ المدة بعد اعتماد الدفع"
       },
       "badges": {
         "active": "نشط",
+        "pending": "بانتظار الدفع",
+        "pendingReview": "الدفع قيد المراجعة",
         "expired": "منتهي",
         "cancelled": "ملغي"
       },
@@ -1513,7 +1534,8 @@
         "withFilters": "حاول تعديل الفلاتر"
       },
       "info": {
-        "to": "إلى"
+        "to": "إلى",
+        "requested": "طُلب في"
       }
     },
     "contactLeaks": {

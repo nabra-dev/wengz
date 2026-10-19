@@ -27,7 +27,10 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Hourglass,
 } from "lucide-react";
+
+type SubscriptionStatusFilter = "active" | "pending" | "expired" | "cancelled";
 
 type Subscription = {
   id: string;
@@ -45,6 +48,12 @@ type Subscription = {
     price: number;
     durationDays: number;
   };
+  paymentProof: {
+    id: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    amount: number;
+    reviewedAt: string | Date | null;
+  } | null;
 };
 
 export default function AdminSubscriptionsPage() {
@@ -56,8 +65,7 @@ export default function AdminSubscriptionsPage() {
   const { page, offset, pageSize, setPage, setPageSize, resetPage } = useListPage();
 
   const { data, isLoading, isFetching } = trpc.admin.getAllSubscriptions.useQuery({
-    status:
-      statusFilter === "all" ? undefined : (statusFilter as "active" | "expired" | "cancelled"),
+    status: statusFilter === "all" ? undefined : (statusFilter as SubscriptionStatusFilter),
     search: searchQuery.trim() || undefined,
     limit: pageSize,
     offset,
@@ -67,6 +75,7 @@ export default function AdminSubscriptionsPage() {
   const stats = data?.stats ?? {
     total: 0,
     active: 0,
+    pending: 0,
     expired: 0,
     cancelled: 0,
     totalRevenue: 0,
@@ -88,7 +97,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t("stats.total")}</CardTitle>
@@ -105,6 +114,17 @@ export default function AdminSubscriptionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{stats.active}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t("stats.pending")}</CardTitle>
+            <Hourglass className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+              {stats.pending}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -132,6 +152,7 @@ export default function AdminSubscriptionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{t("stats.totalRevenueHint")}</p>
           </CardContent>
         </Card>
       </div>
@@ -171,6 +192,7 @@ export default function AdminSubscriptionsPage() {
               <SelectContent>
                 <SelectItem value="all">{t("filters.allStatuses")}</SelectItem>
                 <SelectItem value="active">{t("filters.active")}</SelectItem>
+                <SelectItem value="pending">{t("filters.pending")}</SelectItem>
                 <SelectItem value="expired">{t("filters.expired")}</SelectItem>
                 <SelectItem value="cancelled">{t("filters.cancelled")}</SelectItem>
               </SelectContent>
@@ -198,9 +220,11 @@ export default function AdminSubscriptionsPage() {
           ) : (
             <div className="space-y-4">
               {subscriptions.map((sub) => {
-                const isExpired = new Date(sub.endDate) < new Date();
                 const isCancelled = sub.cancelledAt !== null;
+                const isPending = !sub.isActive && !isCancelled;
+                const isExpired = !isPending && !isCancelled && new Date(sub.endDate) < new Date();
                 const isActive = sub.isActive && !isExpired && !isCancelled;
+                const proofStatus = sub.paymentProof?.status;
 
                 return (
                   <div
@@ -212,10 +236,17 @@ export default function AdminSubscriptionsPage() {
                         <User className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h3 className="font-medium">{sub.user.name || sub.user.email}</h3>
                           {isActive && <Badge variant="success">{t("badges.active")}</Badge>}
-                          {isExpired && <Badge variant="warning">{t("badges.expired")}</Badge>}
+                          {isPending && (
+                            <Badge variant="warning">
+                              {proofStatus === "PENDING"
+                                ? t("badges.pendingReview")
+                                : t("badges.pending")}
+                            </Badge>
+                          )}
+                          {isExpired && <Badge variant="secondary">{t("badges.expired")}</Badge>}
                           {isCancelled && (
                             <Badge variant="destructive">{t("badges.cancelled")}</Badge>
                           )}
@@ -230,13 +261,16 @@ export default function AdminSubscriptionsPage() {
                         <div>
                           <p className="font-medium">
                             {resolveLocalizedText(
-                              (sub.package as any).nameI18n,
+                              // Packages store bilingual names as JSON
+                              (sub.package as { nameI18n?: Record<string, string> | null })
+                                .nameI18n,
                               locale,
                               sub.package.name
                             )}
                           </p>
                           <p className="text-muted-foreground">
                             {formatCurrency(sub.package.price)}
+                            {isPending ? ` · ${t("list.awaitingPayment")}` : null}
                           </p>
                         </div>
                       </div>
@@ -254,10 +288,21 @@ export default function AdminSubscriptionsPage() {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <p className="font-medium">{formatDate(sub.startDate, locale)}</p>
-                          <p className="text-muted-foreground">
-                            {t("info.to")} {formatDate(sub.endDate, locale)}
-                          </p>
+                          {isPending ? (
+                            <>
+                              <p className="font-medium">{t("list.periodStartsOnPayment")}</p>
+                              <p className="text-muted-foreground">
+                                {t("info.requested")} {formatDate(sub.createdAt, locale)}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium">{formatDate(sub.startDate, locale)}</p>
+                              <p className="text-muted-foreground">
+                                {t("info.to")} {formatDate(sub.endDate, locale)}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

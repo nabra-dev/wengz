@@ -306,10 +306,12 @@
       "primary": "Start your free trial",
       "primaryShort": "Try free",
       "startTrial": "Start your free trial",
-      "asClient": "Sign up",
+      "asClient": "Sign up as a new client",
       "asProvider": "Become a creator",
       "signIn": "Sign in",
       "signUp": "Sign up",
+      "signUpShort": "New client",
+      "signUpClient": "New client signup",
       "viewPlans": "Explore plans",
       "appComingSoon": "Coming soon",
       "iosApp": "iOS app",
@@ -512,7 +514,7 @@
       "signingIn": "Signing in...",
       "signInButton": "Sign In",
       "noAccount": "Don't have an account?",
-      "signUp": "Sign up",
+      "signUp": "New client signup",
       "loginFailed": "Login Failed",
       "invalidCredentials": "Invalid email or password. Please try again.",
       "welcomeBack": "Welcome back!",
@@ -558,10 +560,22 @@
       "errorFallback": "Could not reset password. Please try again."
     },
     "register": {
-      "badge": "Client signup",
-      "title": "Create an account",
+      "badge": "New client",
+      "title": "Create a client account",
       "description": "Enter your details — an admin will approve before you can sign in",
-      "subtitle": "Join as a client to buy credit packages and open service requests. An admin reviews every new account.",
+      "subtitle": "This signup is for clients only — buy credit packages and open service requests. An admin reviews every new account.",
+      "clientStepLabel": "Step 2 of 2 — Client details",
+      "backToChoose": "Back to account type",
+      "choose": {
+        "badge": "Get started",
+        "title": "How do you want to join?",
+        "subtitle": "Choose client to hire creators, or apply as a creator to fulfill requests.",
+        "stepLabel": "Step 1 of 2 — Choose account type",
+        "clientTitle": "I’m a new client",
+        "clientDescription": "Create a client account to buy credits, open requests, and get work delivered.",
+        "providerTitle": "I’m a creator",
+        "providerDescription": "Apply to join as a creator and fulfill client requests on Wengz."
+      },
       "asideCreator": "Want to create for clients instead?",
       "asideCreatorCta": "Apply as a creator",
       "nameLabel": "Full Name",
@@ -577,8 +591,8 @@
       "passwordHint": "At least 8 characters",
       "confirmPasswordLabel": "Confirm Password",
       "confirmPasswordHint": "Must match password above",
-      "creatingAccount": "Creating account...",
-      "createAccountButton": "Create Account",
+      "creatingAccount": "Creating client account...",
+      "createAccountButton": "Create client account",
       "haveAccount": "Already have an account?",
       "signInLink": "Sign in",
       "accountCreated": "Application received",
@@ -1489,9 +1503,11 @@
       "stats": {
         "total": "Total",
         "active": "Active",
+        "pending": "Pending",
         "expired": "Expired",
         "cancelled": "Cancelled",
-        "totalRevenue": "Total Revenue"
+        "totalRevenue": "Total Revenue",
+        "totalRevenueHint": "Approved payments only"
       },
       "filters": {
         "title": "Filters",
@@ -1499,15 +1515,20 @@
         "status": "Filter by status",
         "allStatuses": "All Statuses",
         "active": "Active",
+        "pending": "Pending payment",
         "expired": "Expired",
         "cancelled": "Cancelled"
       },
       "list": {
         "title": "Subscriptions ({count})",
-        "creditsLeft": "Credits left"
+        "creditsLeft": "Credits left",
+        "awaitingPayment": "Awaiting payment",
+        "periodStartsOnPayment": "Period starts after payment approval"
       },
       "badges": {
         "active": "Active",
+        "pending": "Pending payment",
+        "pendingReview": "Payment under review",
         "expired": "Expired",
         "cancelled": "Cancelled"
       },
@@ -1517,7 +1538,8 @@
         "withFilters": "Try adjusting your filters"
       },
       "info": {
-        "to": "to"
+        "to": "to",
+        "requested": "Requested"
       }
     },
     "contactLeaks": {
