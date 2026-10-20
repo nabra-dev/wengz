@@ -786,6 +786,8 @@
       "actions": {
         "approve": "Approve",
         "reject": "Reject",
+        "delete": "Delete",
+        "deleting": "Deleting...",
         "sendReset": "Send reset link",
         "sendingReset": "Sending...",
         "exportExcel": "Export Excel",
@@ -850,6 +852,8 @@
           "deactivated": "User deactivated successfully",
           "approved": "User approved successfully",
           "rejected": "User rejected",
+          "deleted": "User deleted",
+          "deletedDesc": "Account removed from sign-in. Related history was kept.",
           "statusFailed": "Failed to update user status",
           "resetSent": "Password reset link sent",
           "resetFailed": "Could not send password reset link"
@@ -888,7 +892,23 @@
         "rejectTitle": "Reject application",
         "reject": "Reject {email}? They will not be able to sign in.",
         "rejectReason": "Reason (optional)",
-        "rejectReasonPlaceholder": "Why was this application rejected?"
+        "rejectReasonPlaceholder": "Why was this application rejected?",
+        "deleteTitle": "Delete user",
+        "delete": "Delete {email}? They will be signed out and cannot sign in again with this email until they re-register.",
+        "deleteConfirm": "Delete user",
+        "deleteHint": "Soft delete — history is kept. Open requests and active subscriptions are cancelled. The email is freed for a new signup.",
+        "deleteImpactTitle": "Related data",
+        "deleteImpactLoading": "Checking related data…",
+        "impactOpenClientRequests": "Open client requests: {count}",
+        "impactOpenProviderRequests": "Open creator assignments: {count}",
+        "impactActiveSubscriptions": "Active subscriptions: {count}",
+        "impactPendingSubscriptions": "Pending (unpaid) subscriptions: {count}",
+        "impactPendingPayments": "Pending payment proofs: {count}",
+        "impactPendingWithdrawals": "Pending withdrawals: {count}",
+        "impactOpenDisputes": "Open finance disputes: {count}",
+        "impactTotalRequests": "Total requests (history): {count}",
+        "impactTotalSubscriptions": "Total subscriptions (history): {count}",
+        "impactStillWorks": "Deletion still works with this data — records stay for audit; in-flight items above will be cancelled."
       }
     },
     "requests": {

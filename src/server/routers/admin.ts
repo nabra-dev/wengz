@@ -76,6 +76,7 @@ import {
   clearContactLeakStrikes as clearContactLeakStrikesForUser,
   getContactLeakStrikeState,
 } from "@/lib/contact-leak-enforce";
+import { adminDeleteUser, getUserDeleteImpact } from "@/lib/admin-delete-user";
 
 /** Only one package may be featured; clears `isFeatured` on all other rows. */
 async function clearFeaturedExcept(db: PrismaClient, keepId: string) {
@@ -3603,6 +3604,104 @@ export const adminRouter = router({
         success: true,
         message: `User ${user.email} has been ${input.isActive ? "activated" : "deactivated"}`,
         user: updatedUser,
+      };
+    }),
+
+  /** Preview related data before soft-deleting a user (subscriptions, open requests, etc.). */
+  getUserDeleteImpact: userManagerProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/admin/users/{userId}/delete-impact",
+        tags: ["admin"],
+        summary: "Preview impact of deleting a user",
+      },
+    })
+    .input(z.object({ userId: z.string() }))
+    .output(
+      z.object({
+        userId: z.string(),
+        email: z.string(),
+        name: z.string().nullable(),
+        role: z.string(),
+        alreadyDeleted: z.boolean(),
+        openClientRequests: z.number(),
+        openProviderRequests: z.number(),
+        totalClientRequests: z.number(),
+        totalProviderRequests: z.number(),
+        activeSubscriptions: z.number(),
+        pendingSubscriptions: z.number(),
+        totalSubscriptions: z.number(),
+        pendingPaymentProofs: z.number(),
+        pendingWithdrawals: z.number(),
+        openFinanceDisputes: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => getUserDeleteImpact(ctx.db, input.userId)),
+
+  /**
+   * Soft-delete a user. Keeps history; cancels open requests/subscriptions;
+   * frees email for re-registration. Works even when the user has related data.
+   */
+  deleteUser: userManagerProcedure
+    .meta({
+      openapi: {
+        method: "DELETE",
+        path: "/admin/users/{userId}",
+        tags: ["admin"],
+        summary: "Soft-delete a user (keeps history)",
+      },
+    })
+    .input(z.object({ userId: z.string() }))
+    .output(
+      z.object({
+        success: z.boolean(),
+        userId: z.string(),
+        previousEmail: z.string(),
+        cancelledOpenClientRequests: z.number(),
+        cancelledOpenProviderRequests: z.number(),
+        cancelledSubscriptions: z.number(),
+        rejectedPaymentProofs: z.number(),
+        rejectedWithdrawals: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await adminDeleteUser({
+        db: ctx.db,
+        userId: input.userId,
+        actorId: ctx.session.user.id,
+        locale: ctx.locale,
+      });
+
+      logActivityAsync({
+        action: "admin.delete_user",
+        message: `User deleted: ${result.previousEmail}`,
+        actorId: ctx.session.user.id,
+        actorRole: ctx.session.user.role,
+        entityType: "User",
+        entityId: result.userId,
+        level: "warn",
+        metadata: {
+          previousEmail: result.previousEmail,
+          openClientRequests: result.impact.openClientRequests,
+          openProviderRequests: result.impact.openProviderRequests,
+          cancelledOpenClientRequests: result.cancelledOpenClientRequests,
+          cancelledOpenProviderRequests: result.cancelledOpenProviderRequests,
+          cancelledSubscriptions: result.cancelledSubscriptions,
+          rejectedPaymentProofs: result.rejectedPaymentProofs,
+          rejectedWithdrawals: result.rejectedWithdrawals,
+        },
+      });
+
+      return {
+        success: true,
+        userId: result.userId,
+        previousEmail: result.previousEmail,
+        cancelledOpenClientRequests: result.cancelledOpenClientRequests,
+        cancelledOpenProviderRequests: result.cancelledOpenProviderRequests,
+        cancelledSubscriptions: result.cancelledSubscriptions,
+        rejectedPaymentProofs: result.rejectedPaymentProofs,
+        rejectedWithdrawals: result.rejectedWithdrawals,
       };
     }),
 

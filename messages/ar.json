@@ -782,6 +782,8 @@
       "actions": {
         "approve": "موافقة",
         "reject": "رفض",
+        "delete": "حذف",
+        "deleting": "جاري الحذف...",
         "sendReset": "إرسال رابط إعادة التعيين",
         "sendingReset": "جاري الإرسال...",
         "exportExcel": "تصدير Excel",
@@ -846,6 +848,8 @@
           "deactivated": "تم إلغاء تفعيل المستخدم بنجاح",
           "approved": "تمت الموافقة على المستخدم بنجاح",
           "rejected": "تم رفض المستخدم",
+          "deleted": "تم حذف المستخدم",
+          "deletedDesc": "أُزيل الحساب من تسجيل الدخول. تم الاحتفاظ بالسجل المرتبط.",
           "statusFailed": "فشل تحديث حالة المستخدم",
           "resetSent": "تم إرسال رابط إعادة تعيين كلمة المرور",
           "resetFailed": "تعذر إرسال رابط إعادة التعيين"
@@ -884,7 +888,23 @@
         "rejectTitle": "رفض الطلب",
         "reject": "رفض {email}؟ لن يتمكن من تسجيل الدخول.",
         "rejectReason": "السبب (اختياري)",
-        "rejectReasonPlaceholder": "لماذا تم رفض هذا الطلب؟"
+        "rejectReasonPlaceholder": "لماذا تم رفض هذا الطلب؟",
+        "deleteTitle": "حذف المستخدم",
+        "delete": "حذف {email}؟ سيتم تسجيل خروجهم ولن يتمكنوا من الدخول بهذا البريد حتى يعيدوا التسجيل.",
+        "deleteConfirm": "حذف المستخدم",
+        "deleteHint": "حذف ناعم — يُحتفظ بالسجل. تُلغى الطلبات المفتوحة والاشتراكات النشطة. يتحرر البريد لتسجيل جديد.",
+        "deleteImpactTitle": "البيانات المرتبطة",
+        "deleteImpactLoading": "جاري فحص البيانات المرتبطة…",
+        "impactOpenClientRequests": "طلبات عميل مفتوحة: {count}",
+        "impactOpenProviderRequests": "تعيينات مبدع مفتوحة: {count}",
+        "impactActiveSubscriptions": "اشتراكات نشطة: {count}",
+        "impactPendingSubscriptions": "اشتراكات معلّقة (غير مدفوعة): {count}",
+        "impactPendingPayments": "إثباتات دفع معلّقة: {count}",
+        "impactPendingWithdrawals": "سحوبات معلّقة: {count}",
+        "impactOpenDisputes": "نزاعات مالية مفتوحة: {count}",
+        "impactTotalRequests": "إجمالي الطلبات (سجل): {count}",
+        "impactTotalSubscriptions": "إجمالي الاشتراكات (سجل): {count}",
+        "impactStillWorks": "الحذف يعمل رغم هذه البيانات — تبقى السجلات للتدقيق؛ العناصر الجارية أعلاه ستُلغى."
       }
     },
     "requests": {

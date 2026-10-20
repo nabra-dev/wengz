@@ -46,6 +46,7 @@ import {
   KeyRound,
   Download,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
@@ -190,10 +191,12 @@ function UserListItem({
   onActiveChange,
   onApprove,
   onReject,
+  onDelete,
   onSendResetLink,
   isToggling,
   isApproving,
   isRejecting,
+  isDeleting,
   isSendingReset,
 }: {
   user: UserData;
@@ -211,10 +214,12 @@ function UserListItem({
   onActiveChange: (userId: string, isActive: boolean) => void;
   onApprove: (userId: string) => void;
   onReject: (userId: string) => void;
+  onDelete: (userId: string) => void;
   onSendResetLink: (userId: string) => void;
   isToggling?: boolean;
   isApproving?: boolean;
   isRejecting?: boolean;
+  isDeleting?: boolean;
   isSendingReset?: boolean;
 }): JSX.Element {
   const t = useTranslations("admin.users");
@@ -343,10 +348,20 @@ function UserListItem({
               <Switch
                 id={`user-active-${user.id}`}
                 checked={isActive}
-                disabled={isToggling}
+                disabled={isToggling || isDeleting}
                 onCheckedChange={(checked: boolean) => onActiveChange(user.id, checked)}
               />
             </div>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(user.id)}
+              disabled={isDeleting || isToggling}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? t("actions.deleting") : t("actions.delete")}
+            </Button>
           </>
         )}
       </div>
@@ -374,8 +389,13 @@ export default function AdminUsersPage() {
     id: string;
     email: string;
   } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actingUserId, setActingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [resetLinkUserId, setResetLinkUserId] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<{
     id: string;
@@ -495,6 +515,27 @@ export default function AdminUsersPage() {
     },
     onError: (error) => {
       setActingUserId(null);
+      toast.error(error.message || t("dialog.toast.statusFailed"));
+    },
+  });
+
+  const { data: deleteImpact, isLoading: deleteImpactLoading } =
+    trpc.admin.getUserDeleteImpact.useQuery(
+      { userId: confirmDelete?.id ?? "" },
+      { enabled: Boolean(confirmDelete?.id) }
+    );
+
+  const deleteUser = trpc.admin.deleteUser.useMutation({
+    onSuccess: () => {
+      utils.admin.getUsers.invalidate();
+      setDeletingUserId(null);
+      setConfirmDelete(null);
+      toast.success(t("dialog.toast.deleted"), {
+        description: t("dialog.toast.deletedDesc"),
+      });
+    },
+    onError: (error) => {
+      setDeletingUserId(null);
       toast.error(error.message || t("dialog.toast.statusFailed"));
     },
   });
@@ -943,6 +984,9 @@ export default function AdminUsersPage() {
                       onReject={(userId) => {
                         setConfirmReject({ id: userId, email: user.email });
                       }}
+                      onDelete={(userId) => {
+                        setConfirmDelete({ id: userId, email: user.email });
+                      }}
                       onSendResetLink={(userId) => {
                         setResetLinkUserId(userId);
                         sendPasswordResetLink.mutate({ userId });
@@ -950,6 +994,7 @@ export default function AdminUsersPage() {
                       isToggling={togglingUserId === user.id}
                       isApproving={actingUserId === user.id && approveUser.isPending}
                       isRejecting={actingUserId === user.id && rejectUser.isPending}
+                      isDeleting={deletingUserId === user.id && deleteUser.isPending}
                       isSendingReset={
                         resetLinkUserId === user.id && sendPasswordResetLink.isPending
                       }
@@ -1094,6 +1139,105 @@ export default function AdminUsersPage() {
               }}
             >
               {t("actions.reject")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("confirmations.deleteTitle")}</DialogTitle>
+            <DialogDescription>
+              {confirmDelete
+                ? t("confirmations.delete", { email: confirmDelete.email })
+                : undefined}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("confirmations.deleteHint")}</p>
+          <div className="rounded-lg border bg-muted/40 p-3 space-y-1.5 text-sm">
+            <p className="font-medium">{t("confirmations.deleteImpactTitle")}</p>
+            {deleteImpactLoading || !deleteImpact ? (
+              <p className="text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {t("confirmations.deleteImpactLoading")}
+              </p>
+            ) : (
+              <ul className="space-y-1 text-muted-foreground">
+                <li>
+                  {t("confirmations.impactOpenClientRequests", {
+                    count: deleteImpact.openClientRequests,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactOpenProviderRequests", {
+                    count: deleteImpact.openProviderRequests,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactActiveSubscriptions", {
+                    count: deleteImpact.activeSubscriptions,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactPendingSubscriptions", {
+                    count: deleteImpact.pendingSubscriptions,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactPendingPayments", {
+                    count: deleteImpact.pendingPaymentProofs,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactPendingWithdrawals", {
+                    count: deleteImpact.pendingWithdrawals,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactOpenDisputes", {
+                    count: deleteImpact.openFinanceDisputes,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactTotalRequests", {
+                    count: deleteImpact.totalClientRequests + deleteImpact.totalProviderRequests,
+                  })}
+                </li>
+                <li>
+                  {t("confirmations.impactTotalSubscriptions", {
+                    count: deleteImpact.totalSubscriptions,
+                  })}
+                </li>
+                <li className="pt-1 text-foreground">{t("confirmations.impactStillWorks")}</li>
+              </ul>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setConfirmDelete(null)}
+              disabled={deleteUser.isPending}
+            >
+              {t("dialog.buttons.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={deleteUser.isPending || deleteImpactLoading}
+              onClick={() => {
+                if (!confirmDelete) return;
+                setDeletingUserId(confirmDelete.id);
+                deleteUser.mutate({ userId: confirmDelete.id });
+              }}
+            >
+              {deleteUser.isPending ? t("actions.deleting") : t("confirmations.deleteConfirm")}
             </Button>
           </div>
         </DialogContent>

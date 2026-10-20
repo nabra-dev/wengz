@@ -146,7 +146,7 @@ Operational jobs (e.g. **subscription expiry warnings**, **delivered-approval re
 
 ## Trust, safety, and compliance (surface level)
 
-- User records support **soft delete** (`deletedAt`) and **registration IP** for abuse-oriented workflows.
+- User records support **soft delete** (`deletedAt`) and **registration IP** for abuse-oriented workflows. Admin/PM **Delete user** soft-deletes even when the user has subscriptions or requests: history is kept, open requests and active/pending subscriptions are cancelled, pending proofs/withdrawals/disputes are rejected, and the email is freed for re-registration. Deactivate remains a lighter toggle (no email rewrite).
 - **Self-serve signup** (client register + creator/provider form) defaults to `approvalStatus: PENDING` unless Admin → Settings disables pending approval for that role—then accounts are **APPROVED** immediately (free trial + welcome for clients). When pending is on, they cannot sign in until an admin **approves** (free trial + welcome email run on approve for clients). Admin-created users are **APPROVED** immediately. Soft-delete remains a separate deactivate path from pending/rejected.
 - **System settings** (`SystemSettings` key/value) allow storing configurable policy without code changes for supported keys.
 
