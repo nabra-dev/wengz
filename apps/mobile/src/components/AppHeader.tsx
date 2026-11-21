@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
-import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "../providers/theme";
 import { t } from "../i18n";
 import { backChevron, row } from "../rtl";
@@ -27,7 +26,7 @@ type NavHeaderProps = {
 
 /**
  * Single header chrome for Tabs + Stack.
- * SafeAreaView paints the status-bar inset with brand background (no white gap).
+ * Theme toggle lives on Profile only (not in the global header).
  */
 export function AppNavHeader({ navigation, back }: NavHeaderProps) {
   const { colors, isDark } = useTheme();
@@ -45,22 +44,14 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
               accessibilityRole="button"
               accessibilityLabel={t("common.back", { defaultValue: "Back" })}
             >
-              <Ionicons
-                name={backChevron()}
-                size={26}
-                color={isDark ? colors.yellow : colors.purple}
-              />
+              <Ionicons name={backChevron()} size={26} color={colors.accent} />
             </Pressable>
-          ) : (
-            <ThemeToggle size={34} />
-          )}
+          ) : null}
         </View>
         <View style={styles.center}>
           <BrandLogo height={LOGO_HEIGHT} tone={isDark ? "yellow" : "purple"} />
         </View>
-        <View style={[styles.side, { alignItems: "flex-end" }]}>
-          {showBack ? <ThemeToggle size={34} /> : null}
-        </View>
+        <View style={styles.side} />
       </View>
       <View style={{ height: 1, backgroundColor: colors.border }} />
     </SafeAreaView>

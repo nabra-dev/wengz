@@ -61,7 +61,7 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
             width: 16,
             height: 2,
             borderRadius: 1,
-            backgroundColor: colors.yellow,
+            backgroundColor: colors.accent,
           }}
         />
       ) : (

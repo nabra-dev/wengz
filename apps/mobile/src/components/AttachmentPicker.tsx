@@ -252,7 +252,7 @@ export function AttachmentPicker({
           {busy ? (
             <>
               <View style={{ width: 8 }} />
-              <ActivityIndicator color={colors.yellow} />
+              <ActivityIndicator color={colors.accent} />
             </>
           ) : null}
         </View>
@@ -315,7 +315,7 @@ export function AttachmentPicker({
                   >
                     {p.name}
                   </AppText>
-                  <ActivityIndicator size="small" color={colors.yellow} />
+                  <ActivityIndicator size="small" color={colors.accent} />
                 </View>
               </View>
             ))}

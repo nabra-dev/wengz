@@ -85,7 +85,7 @@ export default function SubscribeScreen() {
             {current ? (
               <Card highlight>
                 <AppText
-                  style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 6 }}
+                  style={{ color: colors.accent, fontFamily: fonts.semiBold, marginBottom: 6 }}
                 >
                   {t("client.subscription.currentSubscription.title", {
                     name: currentName || "—",
@@ -147,7 +147,7 @@ export default function SubscribeScreen() {
                   {name}
                 </AppText>
                 {isCurrent ? (
-                  <AppText style={{ color: colors.yellow, fontFamily: fonts.medium }}>
+                  <AppText style={{ color: colors.accent, fontFamily: fonts.medium }}>
                     {t("client.subscription.plans.current")}
                   </AppText>
                 ) : null}

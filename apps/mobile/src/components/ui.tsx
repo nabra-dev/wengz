@@ -75,7 +75,7 @@ function makeStyles(c: ThemeColors) {
       borderColor: c.border,
     } as ViewStyle,
     btnDanger: { backgroundColor: c.destructive } as ViewStyle,
-    btnTextOnPurple: { color: c.yellow } as TextStyle,
+    btnTextOnPurple: { color: c.onPrimary } as TextStyle,
     btnTextOnYellow: { color: "#2A0A55" } as TextStyle,
     card: {
       alignSelf: "stretch",
@@ -116,7 +116,7 @@ function makeStyles(c: ThemeColors) {
       borderColor: c.purple,
     } as ViewStyle,
     segmentLabel: { color: c.foreground, ...typeScale.sm } as TextStyle,
-    segmentLabelActive: { color: c.yellow } as TextStyle,
+    segmentLabelActive: { color: c.onPrimary } as TextStyle,
     center: {
       flex: 1,
       alignItems: "center",
@@ -134,6 +134,7 @@ function makeStyles(c: ThemeColors) {
     mutedForeground: c.mutedForeground,
     foreground: c.foreground,
     yellow: c.yellow,
+    accent: c.accent,
   };
 }
 
@@ -562,7 +563,7 @@ export function Loading() {
   const s = useThemedStyles();
   return (
     <View style={s.center}>
-      <ActivityIndicator color={s.yellow} size="large" />
+      <ActivityIndicator color={s.accent} size="large" />
     </View>
   );
 }

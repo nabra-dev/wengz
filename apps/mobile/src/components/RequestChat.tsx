@@ -234,7 +234,7 @@ function MessageAttachment({ url, mine }: { url: string; mine: boolean }) {
       <Ionicons
         name="document-outline"
         size={18}
-        color={mine ? colors.yellow : colors.foreground}
+        color={mine ? colors.accent : colors.foreground}
       />
       <AppText
         numberOfLines={2}
@@ -571,7 +571,7 @@ export function RequestChat({
                 <AppText
                   compact
                   style={{
-                    color: isMine ? colors.yellow : colors.yellow,
+                    color: colors.accent,
                     fontFamily: fonts.semiBold,
                     fontSize: 10,
                     textTransform: "uppercase",
@@ -896,12 +896,12 @@ export function RequestChat({
                 accessibilityLabel={t("requests.messages.send")}
               >
                 {sending ? (
-                  <ActivityIndicator color={colors.yellow} />
+                  <ActivityIndicator color={colors.accent} />
                 ) : (
                   <Ionicons
                     name="send"
                     size={18}
-                    color={colors.yellow}
+                    color={colors.accent}
                     style={{ marginStart: 2 }}
                   />
                 )}
@@ -926,7 +926,7 @@ export function RequestChat({
                 }
               >
                 {uploadingVoice ? (
-                  <ActivityIndicator color={colors.yellow} />
+                  <ActivityIndicator color={colors.accent} />
                 ) : (
                   <Ionicons
                     name={recording ? "stop" : "mic"}

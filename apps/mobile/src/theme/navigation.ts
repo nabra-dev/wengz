@@ -20,7 +20,7 @@ export function brandStackOptions(c: ThemeColors = darkPalette) {
       backgroundColor: c.background,
     },
     headerShadowVisible: false,
-    headerTintColor: c.yellow,
+    headerTintColor: c.accent,
     headerTitleAlign: "center" as const,
     headerBackTitleVisible: false,
     headerStatusBarHeight: 0,
@@ -52,7 +52,7 @@ export function brandTabBarOptions(c: ThemeColors = darkPalette) {
       backgroundColor: c.background,
     },
     headerShadowVisible: false,
-    headerTintColor: c.yellow,
+    headerTintColor: c.accent,
     headerTitleAlign: "center" as const,
     headerStatusBarHeight: 0,
     get headerTitleStyle() {
@@ -74,7 +74,7 @@ export function brandTabBarOptions(c: ThemeColors = darkPalette) {
       paddingBottom: 12,
       overflow: "visible" as const,
     },
-    tabBarActiveTintColor: c.yellow,
+    tabBarActiveTintColor: c.accent,
     tabBarInactiveTintColor: c.mutedForeground,
     tabBarItemStyle: {
       paddingVertical: 2,

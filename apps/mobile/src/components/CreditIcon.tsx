@@ -204,7 +204,7 @@ export function CreditAmount({
         ? colors.mutedForeground
         : tone === "white"
           ? "#FFFFFF"
-          : colors.yellow;
+          : colors.accent;
 
   return (
     <View

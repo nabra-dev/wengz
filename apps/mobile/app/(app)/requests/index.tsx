@@ -51,7 +51,7 @@ export default function RequestsScreen() {
           <RefreshControl
             refreshing={pullRefreshing}
             onRefresh={() => void onRefresh()}
-            tintColor={colors.yellow}
+            tintColor={colors.accent}
           />
         }
         ListHeaderComponent={

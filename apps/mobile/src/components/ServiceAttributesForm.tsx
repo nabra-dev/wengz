@@ -102,13 +102,13 @@ export function ServiceAttributesForm({ attributes, responses, onChange, disable
                         borderRadius: 8,
                         marginBottom: 6,
                         borderWidth: 1,
-                        borderColor: selected ? colors.yellow : colors.border,
+                        borderColor: selected ? colors.accent : colors.border,
                         backgroundColor: selected ? "rgba(224,248,64,0.1)" : colors.card,
                       }}
                     >
                       <AppText
                         style={{
-                          color: selected ? colors.yellow : colors.foreground,
+                          color: selected ? colors.accent : colors.foreground,
                           fontFamily: fonts.regular,
                         }}
                       >

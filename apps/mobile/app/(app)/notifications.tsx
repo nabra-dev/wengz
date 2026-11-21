@@ -69,7 +69,7 @@ export default function NotificationsScreen() {
           <RefreshControl
             refreshing={pullRefreshing}
             onRefresh={() => void onRefresh()}
-            tintColor={colors.yellow}
+            tintColor={colors.accent}
           />
         }
         ListHeaderComponent={
@@ -132,7 +132,7 @@ export default function NotificationsScreen() {
               {!item.isRead ? (
                 <AppText
                   style={{
-                    color: colors.yellow,
+                    color: colors.accent,
                     fontFamily: fonts.medium,
                     ...typeScale.xs,
                     flexShrink: 0,

@@ -321,7 +321,7 @@ export function VoiceRecorder({
         {uploading ? (
           <>
             <View style={{ width: 8 }} />
-            <ActivityIndicator color={colors.yellow} />
+            <ActivityIndicator color={colors.accent} />
           </>
         ) : null}
       </View>

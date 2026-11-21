@@ -138,7 +138,7 @@ export default function PaymentScreen() {
       <ScrollScreen keyboard={false}>
         <PageHeader title={t("client.payment.statusTitle")} />
         <Card highlight>
-          <AppText style={{ color: colors.yellow, fontFamily: fonts.semiBold, marginBottom: 8 }}>
+          <AppText style={{ color: colors.accent, fontFamily: fonts.semiBold, marginBottom: 8 }}>
             {t(
               `client.payment.status.${status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending"}`
             )}
@@ -188,8 +188,8 @@ export default function PaymentScreen() {
               borderRadius: 10,
               marginBottom: 8,
               borderWidth: 1,
-              borderColor: selected ? colors.yellow : colors.border,
-              backgroundColor: selected ? "rgba(224,248,64,0.08)" : colors.card,
+              borderColor: selected ? colors.accent : colors.border,
+              backgroundColor: selected ? "rgba(105,13,212,0.08)" : colors.card,
               opacity: available ? 1 : 0.45,
             }}
           >

@@ -5,6 +5,10 @@ export type ColorScheme = "light" | "dark";
 export type ThemeColors = {
   purple: string;
   yellow: string;
+  /** Text/icons on surfaces — yellow in dark, purple in light (readable). */
+  accent: string;
+  /** Label on primary (purple) buttons — yellow in dark, white in light. */
+  onPrimary: string;
   background: string;
   card: string;
   foreground: string;
@@ -22,6 +26,8 @@ export type ThemeColors = {
 
 export const darkPalette: ThemeColors = {
   ...BRAND.colors,
+  accent: BRAND.colors.yellow,
+  onPrimary: BRAND.colors.yellow,
   chip: "rgba(255,255,255,0.08)",
   track: "rgba(255,255,255,0.12)",
 };
@@ -29,6 +35,8 @@ export const darkPalette: ThemeColors = {
 export const lightPalette: ThemeColors = {
   purple: BRAND.colors.purple,
   yellow: BRAND.colors.yellow,
+  accent: BRAND.colors.purple,
+  onPrimary: "#FFFFFF",
   background: "#FFFFFF",
   card: "#F2F0FF",
   foreground: "#111111",

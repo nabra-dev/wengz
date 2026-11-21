@@ -212,7 +212,7 @@ export function SelectDropdown({
                           <AppText
                             style={{
                               width: "100%",
-                              color: active ? colors.yellow : colors.foreground,
+                              color: active ? colors.accent : colors.foreground,
                               fontFamily: active ? fonts.medium : fonts.regular,
                               ...typeScale.md,
                             }}

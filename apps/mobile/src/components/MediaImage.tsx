@@ -105,7 +105,7 @@ export function MediaImage({
 
   const body = (
     <View style={[{ alignItems: "center", justifyContent: "center", overflow: "hidden" }, style]}>
-      {loading ? <ActivityIndicator color={colors.yellow} /> : null}
+      {loading ? <ActivityIndicator color={colors.accent} /> : null}
       {!loading && showImage && src ? (
         <Image
           source={{ uri: src }}
@@ -152,7 +152,7 @@ export function MediaImage({
               paddingHorizontal: 20,
               paddingVertical: 12,
               borderRadius: 8,
-              backgroundColor: colors.yellow,
+              backgroundColor: colors.accent,
             }}
           >
             <AppText style={{ color: "#2A0A55", fontFamily: fonts.semiBold }}>

@@ -112,7 +112,7 @@ export function VoiceNotePreview({
 
   const progress =
     status.duration > 0 ? Math.min(1, Math.max(0, status.currentTime / status.duration)) : 0;
-  const accent = mine ? colors.yellow : colors.purple;
+  const accent = mine ? colors.accent : colors.purple;
   const labelColor = mine ? "rgba(245,247,232,0.9)" : colors.foreground;
 
   const body = (
