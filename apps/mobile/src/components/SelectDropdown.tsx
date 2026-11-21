@@ -56,6 +56,7 @@ export function SelectDropdown({
   const { locale } = useLocale();
   const rtl = locale === "ar";
   const { outlines } = useDebugOutlineFlags();
+  // colors from ui Proxy — accessed at render for theme updates
 
   const openMenu = () => {
     if (disabled) return;
@@ -165,7 +166,18 @@ export function SelectDropdown({
           <View style={styles.modalRoot} pointerEvents="box-none">
             <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
             {anchor ? (
-              <View style={[styles.menu, { top: menuTop, left: menuLeft, width: menuWidth }]}>
+              <View
+                style={[
+                  styles.menu,
+                  {
+                    top: menuTop,
+                    left: menuLeft,
+                    width: menuWidth,
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                  },
+                ]}
+              >
                 <ScrollView
                   keyboardShouldPersistTaps="handled"
                   nestedScrollEnabled
@@ -242,9 +254,7 @@ const styles = StyleSheet.create({
   menu: {
     position: "absolute",
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: colors.card,
     overflow: "hidden",
     zIndex: 10000,
     elevation: 24,

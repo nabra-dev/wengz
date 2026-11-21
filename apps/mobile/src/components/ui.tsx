@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,17 +16,20 @@ import {
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND, fonts, statusStyle, typeScale } from "../theme/brand";
+import { fonts, statusStyle, typeScale } from "../theme/brand";
+import { colors as runtimeColors } from "../theme/runtime";
+import type { ThemeColors } from "../theme/palettes";
+import { useTheme } from "../providers/theme";
 import { t } from "../i18n";
 import { AppText, AppTextInput } from "./typography";
 import { alignStart, row, startTextAlign } from "../rtl";
 import { debugOutlineStyle } from "../debug/outline";
 import { useDebugOutlineFlags } from "../debug/outline-state";
 
-const c = BRAND.colors;
-
 export { typeScale };
 export { AppText, AppTextInput } from "./typography";
+/** Theme-aware palette — reads active scheme at access time. */
+export const colors = runtimeColors;
 
 /** Bottom inset so content clears the tab bar / home indicator. */
 export const SCROLL_BOTTOM_PAD = 40;
@@ -38,14 +41,170 @@ export const listFillStyle: ViewStyle = {
 export const listContentDefaults: ViewStyle = {
   flexGrow: 1,
   paddingBottom: SCROLL_BOTTOM_PAD,
-  // Set at call sites too when locale can change — getter used below in Screen lists.
 };
+
+function useThemedStyles() {
+  const { colors: c } = useTheme();
+  return useMemo(() => makeStyles(c), [c]);
+}
+
+function makeStyles(c: ThemeColors) {
+  return {
+    screen: { flex: 1, backgroundColor: c.background } as ViewStyle,
+    pageTitle: { color: c.foreground, ...typeScale.xl } as TextStyle,
+    pageDesc: { color: c.mutedForeground, ...typeScale.sm, marginTop: 4 } as TextStyle,
+    title: { color: c.foreground, ...typeScale.xl, marginBottom: 6 } as TextStyle,
+    muted: { color: c.mutedForeground, ...typeScale.sm, marginBottom: 8 } as TextStyle,
+    label: { color: c.foreground, ...typeScale.sm, marginBottom: 6 } as TextStyle,
+    input: {
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      color: c.foreground,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 12,
+      ...typeScale.md,
+    } as TextStyle,
+    btnPrimary: { backgroundColor: c.purple } as ViewStyle,
+    btnSecondary: { backgroundColor: c.yellow } as ViewStyle,
+    btnGhost: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: c.border,
+    } as ViewStyle,
+    btnDanger: { backgroundColor: c.destructive } as ViewStyle,
+    btnTextOnPurple: { color: c.yellow } as TextStyle,
+    btnTextOnYellow: { color: "#2A0A55" } as TextStyle,
+    card: {
+      alignSelf: "stretch",
+      width: "100%",
+      maxWidth: "100%",
+      alignItems: "stretch",
+      overflow: "hidden",
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+    } as ViewStyle,
+    cardHighlight: {
+      borderColor: "rgba(105,13,212,0.45)",
+      backgroundColor: "rgba(105,13,212,0.08)",
+    } as ViewStyle,
+    statLabel: { color: c.mutedForeground, ...typeScale.sm, marginBottom: 8 } as TextStyle,
+    statValue: {
+      color: c.foreground,
+      ...typeScale.display,
+      fontVariant: ["tabular-nums"],
+    } as TextStyle,
+    statHint: { color: c.mutedForeground, ...typeScale.xs, marginTop: 4 } as TextStyle,
+    segmentItem: {
+      flex: 1,
+      height: 42,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+    } as ViewStyle,
+    segmentItemActive: {
+      backgroundColor: c.purple,
+      borderColor: c.purple,
+    } as ViewStyle,
+    segmentLabel: { color: c.foreground, ...typeScale.sm } as TextStyle,
+    segmentLabelActive: { color: c.yellow } as TextStyle,
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.background,
+    } as ViewStyle,
+    error: { color: c.destructive, marginBottom: 10, ...typeScale.sm } as TextStyle,
+    sectionTitle: {
+      color: c.mutedForeground,
+      ...typeScale.sm,
+      marginBottom: 8,
+      marginTop: 16,
+    } as TextStyle,
+    destructive: c.destructive,
+    mutedForeground: c.mutedForeground,
+    foreground: c.foreground,
+    yellow: c.yellow,
+  };
+}
+
+const layout = StyleSheet.create({
+  flex: { flex: 1 },
+  scroll: { flex: 1 },
+  padded: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  pageHeader: {
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 16,
+    marginTop: 0,
+  },
+  passwordWrap: {
+    position: "relative",
+    marginBottom: 12,
+  },
+  passwordInput: {
+    marginBottom: 0,
+    paddingEnd: 44,
+  },
+  passwordToggle: {
+    position: "absolute",
+    end: 10,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 36,
+  },
+  inputMultiline: {
+    minHeight: 110,
+    textAlignVertical: "top",
+  },
+  btn: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  btnText: {},
+  statCard: {
+    flex: 1,
+    minWidth: "46%",
+    marginBottom: 0,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeText: {
+    ...typeScale.xs,
+  },
+  segmentRow: {
+    gap: 8,
+    marginBottom: 14,
+  },
+});
 
 export function Screen({
   children,
   style,
   padded = true,
-  /** Use `top` only on auth / edge-to-edge screens without a nav header. */
   edges = ["left", "right"],
 }: {
   children: React.ReactNode;
@@ -53,12 +212,13 @@ export function Screen({
   padded?: boolean;
   edges?: Edge[];
 }) {
+  const s = useThemedStyles();
   const { outlines } = useDebugOutlineFlags();
   return (
     <SafeAreaView
       style={[
-        styles.screen,
-        padded && styles.padded,
+        s.screen,
+        padded && layout.padded,
         debugOutlineStyle(outlines, "rgba(0,200,255,0.7)"),
         style,
       ]}
@@ -77,11 +237,9 @@ type ScrollScreenProps = {
   contentContainerStyle?: ViewStyle;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   keyboard?: boolean;
-  /** Extra space above the default bottom pad (e.g. sticky footers). */
   bottomPad?: number;
 } & Pick<ScrollViewProps, "stickyHeaderIndices">;
 
-/** Full-height scrollable page — use on every form / content screen. */
 export function ScrollScreen({
   children,
   padded = true,
@@ -95,7 +253,7 @@ export function ScrollScreen({
 }: ScrollScreenProps) {
   const body = (
     <ScrollView
-      style={styles.scroll}
+      style={layout.scroll}
       contentContainerStyle={[{ flexGrow: 1, paddingBottom: bottomPad }, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
@@ -114,7 +272,7 @@ export function ScrollScreen({
     <Screen padded={padded} edges={edges} style={style}>
       {keyboard ? (
         <KeyboardAvoidingView
-          style={styles.flex}
+          style={layout.flex}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
         >
@@ -136,12 +294,13 @@ export function PageHeader({
   description?: string;
   right?: React.ReactNode;
 }) {
+  const s = useThemedStyles();
   return (
-    <View style={[styles.pageHeader, row()]}>
+    <View style={[layout.pageHeader, row()]}>
       <View style={{ flex: 1, minWidth: 0, alignItems: alignStart() }}>
-        <AppText style={[styles.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
+        <AppText style={[s.pageTitle, { fontFamily: fonts.semiBold }]}>{title}</AppText>
         {description ? (
-          <AppText style={[styles.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
+          <AppText style={[s.pageDesc, { fontFamily: fonts.regular }]}>{description}</AppText>
         ) : null}
       </View>
       {right ? <View style={{ flexShrink: 0 }}>{right}</View> : null}
@@ -150,49 +309,51 @@ export function PageHeader({
 }
 
 export function Title({ children, style }: { children: React.ReactNode; style?: TextStyle }) {
-  return (
-    <AppText style={[styles.title, { fontFamily: fonts.semiBold }, style]}>{children}</AppText>
-  );
+  const s = useThemedStyles();
+  return <AppText style={[s.title, { fontFamily: fonts.semiBold }, style]}>{children}</AppText>;
 }
 
 export function Muted({ children, style }: { children: React.ReactNode; style?: TextStyle }) {
-  return <AppText style={[styles.muted, { fontFamily: fonts.regular }, style]}>{children}</AppText>;
+  const s = useThemedStyles();
+  return <AppText style={[s.muted, { fontFamily: fonts.regular }, style]}>{children}</AppText>;
 }
 
 export function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  const s = useThemedStyles();
   const textAlign = startTextAlign();
   return (
     <RNText
       style={[
-        styles.label,
+        s.label,
         { fontFamily: fonts.medium, width: "100%" },
         textAlign ? { textAlign } : null,
       ]}
     >
       {children}
       {required ? (
-        <RNText style={{ color: c.destructive, fontFamily: fonts.medium }}> *</RNText>
+        <RNText style={{ color: s.destructive, fontFamily: fonts.medium }}> *</RNText>
       ) : null}
     </RNText>
   );
 }
 
 export function Field(props: TextInputProps) {
+  const s = useThemedStyles();
   const { outlines } = useDebugOutlineFlags();
   const [visible, setVisible] = useState(false);
   const isPassword = props.secureTextEntry === true;
 
   if (isPassword) {
     return (
-      <View style={styles.passwordWrap}>
+      <View style={layout.passwordWrap}>
         <AppTextInput
-          placeholderTextColor={c.mutedForeground}
+          placeholderTextColor={s.mutedForeground}
           {...props}
           secureTextEntry={!visible}
           style={[
-            styles.input,
-            styles.passwordInput,
-            props.multiline && styles.inputMultiline,
+            s.input,
+            layout.passwordInput,
+            props.multiline && layout.inputMultiline,
             outlines ? { borderWidth: 1, borderColor: "rgba(255,170,0,0.9)" } : null,
             props.style,
           ]}
@@ -202,12 +363,12 @@ export function Field(props: TextInputProps) {
           accessibilityLabel={visible ? t("common.hidePassword") : t("common.showPassword")}
           hitSlop={8}
           onPress={() => setVisible((prev) => !prev)}
-          style={styles.passwordToggle}
+          style={layout.passwordToggle}
         >
           <Ionicons
             name={visible ? "eye-off-outline" : "eye-outline"}
             size={20}
-            color={c.mutedForeground}
+            color={s.mutedForeground}
           />
         </Pressable>
       </View>
@@ -216,11 +377,11 @@ export function Field(props: TextInputProps) {
 
   return (
     <AppTextInput
-      placeholderTextColor={c.mutedForeground}
+      placeholderTextColor={s.mutedForeground}
       {...props}
       style={[
-        styles.input,
-        props.multiline && styles.inputMultiline,
+        s.input,
+        props.multiline && layout.inputMultiline,
         outlines ? { borderWidth: 1, borderColor: "rgba(255,170,0,0.9)" } : null,
         props.style,
       ]}
@@ -241,17 +402,18 @@ export function Button({
   variant?: "primary" | "secondary" | "ghost" | "danger";
   style?: ViewStyle;
 }) {
+  const s = useThemedStyles();
   const { outlines } = useDebugOutlineFlags();
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
-        styles.btn,
-        variant === "primary" && styles.btnPrimary,
-        variant === "secondary" && styles.btnSecondary,
-        variant === "ghost" && styles.btnGhost,
-        variant === "danger" && styles.btnDanger,
+        layout.btn,
+        variant === "primary" && s.btnPrimary,
+        variant === "secondary" && s.btnSecondary,
+        variant === "ghost" && s.btnGhost,
+        variant === "danger" && s.btnDanger,
         debugOutlineStyle(outlines, "rgba(224,248,64,0.9)"),
         (disabled || pressed) && { opacity: 0.75 },
         style,
@@ -261,12 +423,11 @@ export function Button({
         align="center"
         numberOfLines={1}
         style={[
-          styles.btnText,
-          // Locale type scale at render — StyleSheet.create freezes EN metrics.
+          layout.btnText,
           { fontFamily: fonts.semiBold, ...typeScale.md },
-          variant === "primary" && styles.btnTextOnPurple,
-          variant === "secondary" && styles.btnTextOnYellow,
-          (variant === "ghost" || variant === "danger") && { color: c.foreground },
+          variant === "primary" && s.btnTextOnPurple,
+          variant === "secondary" && s.btnTextOnYellow,
+          (variant === "ghost" || variant === "danger") && { color: s.foreground },
           variant === "danger" && { color: "#fff" },
         ]}
       >
@@ -287,14 +448,13 @@ export function Card({
   highlight?: boolean;
   style?: ViewStyle;
 }) {
+  const s = useThemedStyles();
   const { outlines } = useDebugOutlineFlags();
-  // Keep stretch so full-width controls (buttons, dropdowns, fields) don't shrink.
-  // Text RTL pinning is handled by AppText / Label, not alignItems on the card.
   const body = (
     <View
       style={[
-        styles.card,
-        highlight && styles.cardHighlight,
+        s.card,
+        highlight && s.cardHighlight,
         debugOutlineStyle(outlines, "rgba(255,45,85,0.85)"),
         style,
       ]}
@@ -325,22 +485,23 @@ export function StatCard({
   highlight?: boolean;
   icon?: React.ReactNode;
 }) {
+  const s = useThemedStyles();
   return (
-    <Card highlight={highlight} style={styles.statCard}>
+    <Card highlight={highlight} style={layout.statCard}>
       <View style={{ ...row(), alignItems: "center", gap: 6, marginBottom: 2 }}>
         {icon}
         <AppText
           compact
-          style={[styles.statLabel, { fontFamily: fonts.medium, marginBottom: 0, flex: 1 }]}
+          style={[s.statLabel, { fontFamily: fonts.medium, marginBottom: 0, flex: 1 }]}
         >
           {label}
         </AppText>
       </View>
-      <AppText compact style={[styles.statValue, { fontFamily: fonts.bold }]}>
+      <AppText compact style={[s.statValue, { fontFamily: fonts.bold }]}>
         {value}
       </AppText>
       {hint ? (
-        <AppText compact style={[styles.statHint, { fontFamily: fonts.regular }]}>
+        <AppText compact style={[s.statHint, { fontFamily: fonts.regular }]}>
           {hint}
         </AppText>
       ) : null}
@@ -352,11 +513,11 @@ export function StatusBadge({ status }: { status: string }) {
   const s = statusStyle(status);
   const label = t(`common.requestStatus.${status}`, { defaultValue: status });
   return (
-    <View style={[styles.badge, { backgroundColor: s.bg }]}>
+    <View style={[layout.badge, { backgroundColor: s.bg }]}>
       <AppText
         compact
         align="center"
-        style={[styles.badgeText, { color: s.fg, fontFamily: fonts.medium }]}
+        style={[layout.badgeText, { color: s.fg, fontFamily: fonts.medium }]}
       >
         {label}
       </AppText>
@@ -364,7 +525,6 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/** Shared two/three-way tabs used on profile + request detail. */
 export function SegmentedTabs<T extends string>({
   options,
   value,
@@ -374,23 +534,20 @@ export function SegmentedTabs<T extends string>({
   value: T;
   onChange: (key: T) => void;
 }) {
+  const s = useThemedStyles();
   return (
-    <View style={[styles.segmentRow, row()]}>
+    <View style={[layout.segmentRow, row()]}>
       {options.map((opt) => {
         const active = value === opt.key;
         return (
           <Pressable
             key={opt.key}
             onPress={() => onChange(opt.key)}
-            style={[styles.segmentItem, active && styles.segmentItemActive]}
+            style={[s.segmentItem, active && s.segmentItemActive]}
           >
             <AppText
               align="center"
-              style={[
-                styles.segmentLabel,
-                { fontFamily: fonts.medium },
-                active && styles.segmentLabelActive,
-              ]}
+              style={[s.segmentLabel, { fontFamily: fonts.medium }, active && s.segmentLabelActive]}
             >
               {opt.label}
             </AppText>
@@ -402,22 +559,25 @@ export function SegmentedTabs<T extends string>({
 }
 
 export function Loading() {
+  const s = useThemedStyles();
   return (
-    <View style={styles.center}>
-      <ActivityIndicator color={c.yellow} size="large" />
+    <View style={s.center}>
+      <ActivityIndicator color={s.yellow} size="large" />
     </View>
   );
 }
 
 export function ErrorText({ children }: { children: React.ReactNode }) {
-  return <AppText style={[styles.error, { fontFamily: fonts.regular }]}>{children}</AppText>;
+  const s = useThemedStyles();
+  return <AppText style={[s.error, { fontFamily: fonts.regular }]}>{children}</AppText>;
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
+  const s = useThemedStyles();
   return (
     <View style={{ width: "100%", alignItems: alignStart(), marginBottom: 8, marginTop: 16 }}>
       <AppText
-        style={[styles.sectionTitle, { fontFamily: fonts.medium, marginBottom: 0, marginTop: 0 }]}
+        style={[s.sectionTitle, { fontFamily: fonts.medium, marginBottom: 0, marginTop: 0 }]}
       >
         {children}
       </AppText>
@@ -428,207 +588,3 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 export function useUiFontFamily() {
   return fonts.regular;
 }
-
-export { c as colors };
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: c.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  padded: {
-    paddingHorizontal: 16,
-    /** Breathing room under AppNavHeader on every tab/stack screen. */
-    paddingTop: 16,
-  },
-  pageHeader: {
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 16,
-    marginTop: 0,
-  },
-  pageTitle: {
-    color: c.foreground,
-    ...typeScale.xl,
-  },
-  pageDesc: {
-    color: c.mutedForeground,
-    ...typeScale.sm,
-    marginTop: 4,
-  },
-  title: {
-    color: c.foreground,
-    ...typeScale.xl,
-    marginBottom: 6,
-  },
-  muted: {
-    color: c.mutedForeground,
-    ...typeScale.sm,
-    marginBottom: 8,
-  },
-  label: {
-    color: c.foreground,
-    ...typeScale.sm,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: c.card,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 8,
-    color: c.foreground,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
-    ...typeScale.md,
-  },
-  passwordWrap: {
-    position: "relative",
-    marginBottom: 12,
-  },
-  passwordInput: {
-    marginBottom: 0,
-    paddingEnd: 44,
-  },
-  passwordToggle: {
-    position: "absolute",
-    end: 10,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    width: 36,
-  },
-  inputMultiline: {
-    minHeight: 110,
-    textAlignVertical: "top",
-  },
-  btn: {
-    // No width/alignSelf: column parents already stretch children, and forcing
-    // 100% here collapses siblings when a Button sits inside a row.
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
-  },
-  btnPrimary: {
-    backgroundColor: c.purple,
-  },
-  btnSecondary: {
-    backgroundColor: c.yellow,
-  },
-  btnGhost: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  btnDanger: {
-    backgroundColor: c.destructive,
-  },
-  btnText: {
-    // Font size / lineHeight applied at render via `typeScale` (locale-aware).
-  },
-  btnTextOnPurple: {
-    color: c.yellow,
-  },
-  btnTextOnYellow: {
-    color: "#2A0A55",
-  },
-  card: {
-    alignSelf: "stretch",
-    width: "100%",
-    maxWidth: "100%",
-    alignItems: "stretch",
-    overflow: "hidden",
-    backgroundColor: c.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  cardHighlight: {
-    borderColor: "rgba(105,13,212,0.45)",
-    backgroundColor: "rgba(105,13,212,0.08)",
-  },
-  statCard: {
-    flex: 1,
-    minWidth: "46%",
-    marginBottom: 0,
-  },
-  statLabel: {
-    color: c.mutedForeground,
-    ...typeScale.sm,
-    marginBottom: 8,
-  },
-  statValue: {
-    color: c.foreground,
-    ...typeScale.display,
-    fontVariant: ["tabular-nums"],
-  },
-  statHint: {
-    color: c.mutedForeground,
-    ...typeScale.xs,
-    marginTop: 4,
-  },
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    ...typeScale.xs,
-  },
-  segmentRow: {
-    gap: 8,
-    marginBottom: 14,
-  },
-  segmentItem: {
-    flex: 1,
-    height: 42,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c.card,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  segmentItemActive: {
-    backgroundColor: c.purple,
-    borderColor: c.purple,
-  },
-  segmentLabel: {
-    color: c.foreground,
-    ...typeScale.sm,
-  },
-  segmentLabelActive: {
-    color: c.yellow,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c.background,
-  },
-  error: {
-    color: c.destructive,
-    marginBottom: 10,
-    ...typeScale.sm,
-  },
-  sectionTitle: {
-    color: c.mutedForeground,
-    ...typeScale.sm,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-});

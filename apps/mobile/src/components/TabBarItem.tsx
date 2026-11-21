@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react";
 import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, typeScale, BRAND } from "../theme/brand";
+import { fonts, typeScale } from "../theme/brand";
+import { useTheme } from "../providers/theme";
 import { AppText } from "./typography";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -16,6 +17,7 @@ type Props = {
 
 /** Tab icon + label with a clear active state. */
 export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: Props) {
+  const { colors, isDark } = useTheme();
   return (
     <View style={{ alignItems: "center", justifyContent: "center", minWidth: 72, maxWidth: 96 }}>
       <View
@@ -25,7 +27,11 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
           borderRadius: 8,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: focused ? "rgba(224,248,64,0.12)" : "transparent",
+          backgroundColor: focused
+            ? isDark
+              ? "rgba(224,248,64,0.12)"
+              : "rgba(105,13,212,0.1)"
+            : "transparent",
         }}
       >
         <Ionicons
@@ -55,7 +61,7 @@ export function TabBarItem({ label, color, focused, activeIcon, inactiveIcon }: 
             width: 16,
             height: 2,
             borderRadius: 1,
-            backgroundColor: BRAND.colors.yellow,
+            backgroundColor: colors.yellow,
           }}
         />
       ) : (

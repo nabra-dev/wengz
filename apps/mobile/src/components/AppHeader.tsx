@@ -2,18 +2,19 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandLogo } from "./BrandLogo";
-import { BRAND } from "../theme/brand";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "../providers/theme";
 import { t } from "../i18n";
 import { backChevron, row } from "../rtl";
 
-const c = BRAND.colors;
 const LOGO_HEIGHT = 32;
 
 /** Centered brand mark (kept for any title-slot usage). */
 export function AppHeaderTitle() {
+  const { isDark } = useTheme();
   return (
     <View style={styles.titleWrap}>
-      <BrandLogo height={LOGO_HEIGHT} tone="yellow" />
+      <BrandLogo height={LOGO_HEIGHT} tone={isDark ? "yellow" : "purple"} />
     </View>
   );
 }
@@ -29,11 +30,12 @@ type NavHeaderProps = {
  * SafeAreaView paints the status-bar inset with brand background (no white gap).
  */
 export function AppNavHeader({ navigation, back }: NavHeaderProps) {
+  const { colors, isDark } = useTheme();
   const showBack = back != null;
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
-      <View style={[styles.bar, row()]}>
+    <SafeAreaView edges={["top"]} style={{ backgroundColor: colors.background }}>
+      <View style={[styles.bar, row(), { backgroundColor: colors.background }]}>
         <View style={styles.side}>
           {showBack ? (
             <Pressable
@@ -43,17 +45,24 @@ export function AppNavHeader({ navigation, back }: NavHeaderProps) {
               accessibilityRole="button"
               accessibilityLabel={t("common.back", { defaultValue: "Back" })}
             >
-              {/* Glyphs don’t mirror with RTL — flip the chevron explicitly. */}
-              <Ionicons name={backChevron()} size={26} color={c.yellow} />
+              <Ionicons
+                name={backChevron()}
+                size={26}
+                color={isDark ? colors.yellow : colors.purple}
+              />
             </Pressable>
-          ) : null}
+          ) : (
+            <ThemeToggle size={34} />
+          )}
         </View>
         <View style={styles.center}>
-          <BrandLogo height={LOGO_HEIGHT} tone="yellow" />
+          <BrandLogo height={LOGO_HEIGHT} tone={isDark ? "yellow" : "purple"} />
         </View>
-        <View style={styles.side} />
+        <View style={[styles.side, { alignItems: "flex-end" }]}>
+          {showBack ? <ThemeToggle size={34} /> : null}
+        </View>
       </View>
-      <View style={styles.border} />
+      <View style={{ height: 1, backgroundColor: colors.border }} />
     </SafeAreaView>
   );
 }
@@ -64,14 +73,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  safe: {
-    backgroundColor: c.background,
-  },
   bar: {
     height: 56,
     alignItems: "center",
     paddingHorizontal: 4,
-    backgroundColor: c.background,
   },
   side: {
     width: 52,
@@ -85,9 +90,5 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     padding: 8,
-  },
-  border: {
-    height: 1,
-    backgroundColor: c.border,
   },
 });

@@ -16,8 +16,13 @@ import {
   PageHeader,
   ScrollScreen,
   SegmentedTabs,
+  AppText,
+  colors,
 } from "../../src/components/ui";
 import { SelectDropdown } from "../../src/components/SelectDropdown";
+import { ThemeToggle } from "../../src/components/ThemeToggle";
+import { useTheme } from "../../src/providers/theme";
+import { fonts, typeScale } from "../../src/theme/brand";
 import { row } from "../../src/rtl";
 
 type Tab = "profile" | "security";
@@ -51,6 +56,7 @@ function splitPhone(raw: string | null | undefined): { code: string; number: str
 export default function ProfileScreen() {
   const { signOut } = useAuth();
   const { locale, setLocale } = useLocale();
+  const { isDark } = useTheme();
   const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const [tab, setTab] = useState<Tab>("profile");
   const [name, setName] = useState("");
@@ -296,6 +302,27 @@ export default function ProfileScreen() {
           />
         </Card>
       )}
+
+      <Card>
+        <View style={{ ...row(), alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText
+              style={{
+                color: colors.foreground,
+                fontFamily: fonts.semiBold,
+                ...typeScale.md,
+                marginBottom: 4,
+              }}
+            >
+              {t("common.appearance")}
+            </AppText>
+            <Muted style={{ marginBottom: 0 }}>
+              {isDark ? t("common.darkMode") : t("common.lightMode")}
+            </Muted>
+          </View>
+          <ThemeToggle size={40} />
+        </View>
+      </Card>
 
       <Button
         label={locale === "ar" ? "🇸🇦 العربية" : "🇺🇸 English"}

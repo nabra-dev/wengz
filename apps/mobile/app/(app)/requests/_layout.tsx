@@ -3,7 +3,7 @@ import { AppNavHeader } from "../../../src/components/AppHeader";
 import { brandModalStackOptions, brandStackOptions } from "../../../src/theme/navigation";
 import { t } from "../../../src/i18n";
 import { useLocale } from "../../../src/providers/locale";
-import { BRAND } from "../../../src/theme/brand";
+import { useTheme } from "../../../src/providers/theme";
 
 /**
  * Anchor the stack to `index`.
@@ -16,14 +16,17 @@ export const unstable_settings = { anchor: "index" };
 
 export default function RequestsLayout() {
   const { locale } = useLocale();
+  const { colors } = useTheme();
+  const stackOpts = brandStackOptions(colors);
+  const modalOpts = brandModalStackOptions(colors);
 
   return (
     <Stack
-      key={locale}
+      key={`${locale}-${colors.background}`}
       screenOptions={{
-        ...brandStackOptions,
+        ...stackOpts,
         header: (props) => <AppNavHeader {...props} />,
-        contentStyle: { backgroundColor: BRAND.colors.background },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen
@@ -41,7 +44,7 @@ export default function RequestsLayout() {
       <Stack.Screen
         name="create"
         options={{
-          ...brandModalStackOptions,
+          ...modalOpts,
           title: t("client.newRequest.title"),
         }}
       />

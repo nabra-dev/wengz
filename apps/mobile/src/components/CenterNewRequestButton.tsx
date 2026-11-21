@@ -11,7 +11,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { BRAND, fonts, typeScale } from "../theme/brand";
+import { fonts, typeScale } from "../theme/brand";
+import { useTheme } from "../providers/theme";
 import { t } from "../i18n";
 import { AppText } from "./typography";
 
@@ -23,6 +24,7 @@ const HALF = SIZE / 2;
  * Elevated center tab action — brand FAB that opens create request.
  */
 export function CenterNewRequestButton() {
+  const { colors } = useTheme();
   const pulse = useSharedValue(0);
   const press = useSharedValue(0);
 
@@ -71,7 +73,7 @@ export function CenterNewRequestButton() {
               width: SIZE + 6,
               height: SIZE + 6,
               borderRadius: (SIZE + 6) / 2,
-              backgroundColor: BRAND.colors.purple,
+              backgroundColor: colors.purple,
             },
             ringStyle,
           ]}
@@ -84,7 +86,7 @@ export function CenterNewRequestButton() {
             width: SIZE + 8,
             height: SIZE + 8,
             borderRadius: (SIZE + 8) / 2,
-            backgroundColor: BRAND.colors.card,
+            backgroundColor: colors.card,
           }}
         />
 
@@ -111,9 +113,9 @@ export function CenterNewRequestButton() {
                 borderRadius: HALF,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: BRAND.colors.purple,
+                backgroundColor: colors.purple,
                 borderWidth: 2,
-                borderColor: BRAND.colors.card,
+                borderColor: colors.card,
                 shadowColor: "#000",
                 shadowOpacity: 0.35,
                 shadowRadius: 6,
@@ -123,7 +125,7 @@ export function CenterNewRequestButton() {
               fabStyle,
             ]}
           >
-            <Ionicons name="add" size={26} color={BRAND.colors.foreground} />
+            <Ionicons name="add" size={26} color={colors.foreground} />
           </Animated.View>
         </Pressable>
       </View>
@@ -134,7 +136,7 @@ export function CenterNewRequestButton() {
         style={{
           marginTop: 10,
           paddingHorizontal: 2,
-          color: BRAND.colors.mutedForeground,
+          color: colors.mutedForeground,
           fontFamily: fonts.medium,
           ...typeScale.sm,
         }}

@@ -22,9 +22,11 @@ import {
 import { fonts, typeScale } from "../../src/theme/brand";
 import { alignStart, row } from "../../src/rtl";
 import { CreditIcon } from "../../src/components/CreditIcon";
+import { useTheme } from "../../src/providers/theme";
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const sub = useQuery({ queryKey: ["subscription"], queryFn: getActiveSubscription });
   const usage = useQuery({ queryKey: ["usage"], queryFn: getUsageStats });
@@ -107,7 +109,7 @@ export default function HomeScreen() {
           value={credits}
           hint={planName}
           highlight={!sub.data}
-          icon={<CreditIcon size={16} tone="yellow" />}
+          icon={<CreditIcon size={16} tone={isDark ? "yellow" : "purple"} />}
         />
         <StatCard
           label={t("client.dashboard.stats.activeRequests")}

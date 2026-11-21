@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { BrandLogo } from "./BrandLogo";
 import { BRAND, latinFonts, typeScale } from "../theme/brand";
-import { colors } from "./ui";
+import { useTheme } from "../providers/theme";
 import { AppText } from "./typography";
 
 /** Shared auth / marketing identity block — logo + brand name. */
@@ -12,9 +12,10 @@ export function AuthBrand({
   height?: number;
   showName?: boolean;
 }) {
+  const { colors, isDark } = useTheme();
   return (
     <View style={{ alignItems: "center", marginBottom: 28 }}>
-      <BrandLogo height={height} tone="yellow" />
+      <BrandLogo height={height} tone={isDark ? "yellow" : "purple"} />
       {showName ? (
         <AppText
           style={{

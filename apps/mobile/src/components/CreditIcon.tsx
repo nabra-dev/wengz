@@ -1,7 +1,8 @@
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { AppText } from "./typography";
-import { BRAND, fonts } from "../theme/brand";
+import { fonts } from "../theme/brand";
+import { colors } from "../theme/runtime";
 import { t } from "../i18n";
 import { row } from "../rtl";
 
@@ -17,44 +18,50 @@ type Palette = {
   shadow: string;
 };
 
-const TONE: Record<Tone, Palette> = {
-  purple: {
-    fill: BRAND.colors.purple,
-    deep: "#3D0880",
-    mid: "#5B10B8",
-    light: "#A56BFF",
-    mark: "#FFFFFF",
-    shine: "rgba(255,255,255,0.55)",
-    shadow: "rgba(30,0,70,0.35)",
-  },
-  yellow: {
-    fill: BRAND.colors.yellow,
-    deep: "#9BB50A",
-    mid: "#C9E028",
-    light: "#F8FF9A",
-    mark: "#1F1606",
-    shine: "rgba(255,255,255,0.65)",
-    shadow: "rgba(80,70,0,0.28)",
-  },
-  muted: {
-    fill: BRAND.colors.mutedForeground,
-    deep: "#6A6178",
-    mid: "#8E859C",
-    light: "#D0C8DA",
-    mark: BRAND.colors.background,
-    shine: "rgba(255,255,255,0.35)",
-    shadow: "rgba(0,0,0,0.25)",
-  },
-  white: {
+function tonePalette(tone: Tone): Palette {
+  if (tone === "purple") {
+    return {
+      fill: colors.purple,
+      deep: "#3D0880",
+      mid: "#5B10B8",
+      light: "#A56BFF",
+      mark: "#FFFFFF",
+      shine: "rgba(255,255,255,0.55)",
+      shadow: "rgba(30,0,70,0.35)",
+    };
+  }
+  if (tone === "yellow") {
+    return {
+      fill: colors.yellow,
+      deep: "#9BB50A",
+      mid: "#C9E028",
+      light: "#F8FF9A",
+      mark: "#1F1606",
+      shine: "rgba(255,255,255,0.65)",
+      shadow: "rgba(80,70,0,0.28)",
+    };
+  }
+  if (tone === "muted") {
+    return {
+      fill: colors.mutedForeground,
+      deep: "#6A6178",
+      mid: "#8E859C",
+      light: "#D0C8DA",
+      mark: colors.background,
+      shine: "rgba(255,255,255,0.35)",
+      shadow: "rgba(0,0,0,0.25)",
+    };
+  }
+  return {
     fill: "#FFFFFF",
     deep: "#D8D2E6",
     mid: "#F0ECF7",
     light: "#FFFFFF",
-    mark: BRAND.colors.purple,
+    mark: colors.purple,
     shine: "rgba(255,255,255,0.8)",
     shadow: "rgba(105,13,212,0.2)",
-  },
-};
+  };
+}
 
 /**
  * Brand credits mark — refined wallet + credit coin.
@@ -69,7 +76,7 @@ export function CreditIcon({
   tone?: Tone;
   style?: StyleProp<ViewStyle>;
 }) {
-  const c = TONE[tone];
+  const c = tonePalette(tone);
   const gid = `credit-${tone}-${Math.round(size)}`;
 
   return (
@@ -192,12 +199,12 @@ export function CreditAmount({
 }) {
   const color =
     tone === "purple"
-      ? BRAND.colors.purple
+      ? colors.purple
       : tone === "muted"
-        ? BRAND.colors.mutedForeground
+        ? colors.mutedForeground
         : tone === "white"
           ? "#FFFFFF"
-          : BRAND.colors.yellow;
+          : colors.yellow;
 
   return (
     <View

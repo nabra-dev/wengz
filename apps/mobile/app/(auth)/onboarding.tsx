@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Image, Linking, Pressable, ScrollView, StatusBar, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,9 +18,11 @@ import { AppText } from "../../src/components/ui";
 import { BrandLogo } from "../../src/components/BrandLogo";
 import { CreditIcon } from "../../src/components/CreditIcon";
 import { CreatorsIcon } from "../../src/components/CreatorsIcon";
+import { ThemeToggle } from "../../src/components/ThemeToggle";
 import { useLocale } from "../../src/providers/locale";
+import { useTheme } from "../../src/providers/theme";
 import { t, type AppLocale } from "../../src/i18n";
-import { fonts, typeScale, BRAND } from "../../src/theme/brand";
+import { fonts, typeScale } from "../../src/theme/brand";
 import { row } from "../../src/rtl";
 import { consumeForceOnboarding, markOnboardingComplete } from "../../src/lib/onboarding";
 
@@ -43,22 +45,26 @@ const LOOP_WIDTH = WORK_IMAGES.length * (CARD_W + CARD_GAP);
 /** ~px/sec — smooth continuous drift, no pause between loops. */
 const MARQUEE_SPEED = 38;
 
-/** Onboarding canvas — light mockup palette (app shell stays dark elsewhere). */
-const UI = {
-  bg: "#FFFFFF",
-  ink: "#111111",
-  muted: "#6B6575",
-  card: "#F2F0FF",
-  track: "#E8E6EF",
-  skipBg: "#EFEFF3",
-  border: "#E4E2EA",
-  purple: BRAND.colors.purple,
-  lime: BRAND.colors.yellow,
-} as const;
-
 type SlideId = "credits" | "creators" | "works";
 
 const SLIDES: SlideId[] = ["credits", "creators", "works"];
+
+/** Theme-aware onboarding tokens (same keys as the old light UI map). */
+function useOnboardingUi() {
+  const { colors, isDark } = useTheme();
+  return {
+    bg: colors.background,
+    ink: colors.foreground,
+    muted: colors.mutedForeground,
+    card: colors.card,
+    track: colors.track,
+    skipBg: colors.chip,
+    border: colors.border,
+    purple: colors.purple,
+    lime: colors.yellow,
+    isDark,
+  };
+}
 
 /** Feature chips — icons mirror the product mockups. */
 const SLIDE_FEATURES: Record<
@@ -78,6 +84,7 @@ const SLIDE_FEATURES: Record<
 };
 
 function AccentTitle({ slide }: { slide: SlideId }) {
+  const UI = useOnboardingUi();
   const lead = t(`auth.onboarding.${slide}.titleLead`);
   const accent = t(`auth.onboarding.${slide}.titleAccent`);
   const trail = slide === "works" ? t("auth.onboarding.works.titleTrail") : "";
@@ -114,18 +121,21 @@ function AccentTitle({ slide }: { slide: SlideId }) {
 
 /** Step heroes — solid brand marks, no plate/BG. */
 function HeroVisual({ slide }: { slide: Exclude<SlideId, "works"> }) {
+  const { isDark } = useOnboardingUi();
+  const tone = isDark ? "yellow" : "purple";
   return (
     <View style={{ marginTop: 10, marginBottom: 10 }}>
       {slide === "credits" ? (
-        <CreditIcon size={112} tone="purple" />
+        <CreditIcon size={112} tone={tone} />
       ) : (
-        <CreatorsIcon size={112} tone="purple" />
+        <CreatorsIcon size={112} tone={tone} />
       )}
     </View>
   );
 }
 
 function FeatureCards({ id }: { id: Exclude<SlideId, "works"> }) {
+  const UI = useOnboardingUi();
   const items = SLIDE_FEATURES[id];
 
   return (
@@ -165,6 +175,7 @@ function FeatureCards({ id }: { id: Exclude<SlideId, "works"> }) {
 
 /** Infinite autoplay marquee — portrait tiles, no arrows/dots/pause. */
 function WorkGallery({ onOpenWeb }: { onOpenWeb: () => void }) {
+  const UI = useOnboardingUi();
   const offset = useSharedValue(0);
   // Two identical sets so when we jump back by LOOP_WIDTH the frame looks continuous.
   const track = [...WORK_IMAGES, ...WORK_IMAGES];
@@ -224,6 +235,7 @@ function WorkGallery({ onOpenWeb }: { onOpenWeb: () => void }) {
 }
 
 function GalleryCta({ onOpenWeb }: { onOpenWeb: () => void }) {
+  const UI = useOnboardingUi();
   return (
     <Pressable
       onPress={onOpenWeb}
@@ -258,6 +270,7 @@ function GalleryCta({ onOpenWeb }: { onOpenWeb: () => void }) {
 }
 
 function ProgressTrack({ index, total }: { index: number; total: number }) {
+  const UI = useOnboardingUi();
   const progress = useSharedValue((index + 1) / total);
 
   useEffect(() => {
@@ -302,6 +315,7 @@ function LanguageToggle({
   locale: AppLocale;
   onChange: (next: AppLocale) => void;
 }) {
+  const UI = useOnboardingUi();
   return (
     <View
       style={{
@@ -356,12 +370,14 @@ function LanguageToggle({
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { locale, direction, setLocale } = useLocale();
+  const UI = useOnboardingUi();
   const [index, setIndex] = useState(0);
   const slide = SLIDES[index]!;
   const isFirst = index === 0;
   const isLast = index === SLIDES.length - 1;
   const backIcon = direction === "rtl" ? "chevron-forward" : "chevron-back";
   const nextIcon = direction === "rtl" ? "chevron-back" : "chevron-forward";
+  const logoTone = UI.isDark ? "yellow" : "purple";
 
   useEffect(() => {
     consumeForceOnboarding();
@@ -399,8 +415,6 @@ export default function OnboardingScreen() {
         paddingHorizontal: 22,
       }}
     >
-      <StatusBar barStyle="dark-content" />
-
       <View
         style={{
           ...row(),
@@ -409,7 +423,10 @@ export default function OnboardingScreen() {
           marginBottom: 14,
         }}
       >
-        <LanguageToggle locale={locale} onChange={(next) => void setLocale(next)} />
+        <View style={{ ...row(), alignItems: "center", gap: 8 }}>
+          <LanguageToggle locale={locale} onChange={(next) => void setLocale(next)} />
+          <ThemeToggle />
+        </View>
         <Pressable
           onPress={() => void finish()}
           hitSlop={8}
@@ -453,7 +470,7 @@ export default function OnboardingScreen() {
         <Animated.View key={slide} entering={FadeIn.duration(240)} exiting={FadeOut.duration(120)}>
           <Animated.View entering={SlideInRight.duration(280).easing(Easing.out(Easing.cubic))}>
             <View style={{ alignItems: "center", width: "100%" }}>
-              <BrandLogo height={52} tone="purple" style={{ marginBottom: 22 }} />
+              <BrandLogo height={52} tone={logoTone} style={{ marginBottom: 22 }} />
 
               {slide === "works" ? null : <HeroVisual slide={slide} />}
 
@@ -489,7 +506,7 @@ export default function OnboardingScreen() {
             minHeight: 52,
             borderRadius: 16,
             borderWidth: 1.5,
-            borderColor: isFirst ? "#F0EEF4" : UI.border,
+            borderColor: isFirst ? UI.skipBg : UI.border,
             backgroundColor: UI.bg,
             ...row(),
             alignItems: "center",

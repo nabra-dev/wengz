@@ -3,15 +3,8 @@ import { router } from "expo-router";
 import { requestPasswordReset } from "../../src/lib/api";
 import { t } from "../../src/i18n";
 import { AuthBrand } from "../../src/components/AuthBrand";
-import {
-  Button,
-  Card,
-  ErrorText,
-  Field,
-  Label,
-  Muted,
-  ScrollScreen,
-} from "../../src/components/ui";
+import { AuthScreen } from "../../src/components/AuthScreen";
+import { Button, Card, ErrorText, Field, Label, Muted } from "../../src/components/ui";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -33,10 +26,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <ScrollScreen
-      edges={["top", "left", "right", "bottom"]}
-      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
-    >
+    <AuthScreen>
       <AuthBrand height={48} />
       <Card>
         <Label>{t("auth.forgotPassword.title")}</Label>
@@ -75,6 +65,6 @@ export default function ForgotPasswordScreen() {
           </>
         )}
       </Card>
-    </ScrollScreen>
+    </AuthScreen>
   );
 }

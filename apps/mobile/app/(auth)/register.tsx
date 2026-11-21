@@ -4,6 +4,7 @@ import { Link, router } from "expo-router";
 import { ApiError, registerClient } from "../../src/lib/api";
 import { t } from "../../src/i18n";
 import { AuthBrand } from "../../src/components/AuthBrand";
+import { AuthScreen } from "../../src/components/AuthScreen";
 import { SelectDropdown } from "../../src/components/SelectDropdown";
 import {
   Button,
@@ -12,7 +13,6 @@ import {
   Field,
   Label,
   Muted,
-  ScrollScreen,
   colors,
   AppText,
 } from "../../src/components/ui";
@@ -105,10 +105,7 @@ export default function RegisterScreen() {
   }
 
   return (
-    <ScrollScreen
-      edges={["top", "left", "right", "bottom"]}
-      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
-    >
+    <AuthScreen>
       <AuthBrand height={48} />
       <Card>
         <AppText
@@ -240,6 +237,6 @@ export default function RegisterScreen() {
           variant="ghost"
         />
       </Card>
-    </ScrollScreen>
+    </AuthScreen>
   );
 }

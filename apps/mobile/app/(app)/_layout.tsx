@@ -1,6 +1,7 @@
 import { Redirect, Tabs, router } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { useLocale } from "../../src/providers/locale";
+import { useTheme } from "../../src/providers/theme";
 import { t } from "../../src/i18n";
 import { Loading } from "../../src/components/ui";
 import { AppNavHeader } from "../../src/components/AppHeader";
@@ -15,20 +16,22 @@ export const unstable_settings = { anchor: "index" };
 export default function AppLayout() {
   const { ready, token } = useAuth();
   const { locale, direction } = useLocale();
+  const { colors } = useTheme();
   if (!ready) return <Loading />;
   if (shouldForceOnboarding()) return <Redirect href="/(auth)/onboarding" />;
   if (!token) return <Redirect href="/(auth)/welcome" />;
 
+  const tabOpts = brandTabBarOptions(colors);
+
   return (
     <Tabs
-      key={locale}
+      key={`${locale}-${colors.background}`}
       screenOptions={{
-        ...brandTabBarOptions,
+        ...tabOpts,
         header: (props) => <AppNavHeader {...props} />,
         tabBarShowLabel: false,
-        // Native tabs ignore document `dir`; mirror items via RN direction.
         tabBarStyle: {
-          ...brandTabBarOptions.tabBarStyle,
+          ...tabOpts.tabBarStyle,
           direction,
         },
       }}
@@ -64,8 +67,6 @@ export default function AppLayout() {
           ),
         }}
         listeners={{
-          // Create lives on the requests stack — always land on the list tab,
-          // not a leftover Create screen sitting on top.
           tabPress: (e) => {
             e.preventDefault();
             router.navigate("/requests");
@@ -80,7 +81,6 @@ export default function AppLayout() {
           tabBarButton: () => <CenterNewRequestButton />,
         }}
         listeners={{
-          // Never focus this placeholder tab — FAB handles navigation.
           tabPress: (e) => {
             e.preventDefault();
             router.push("/requests/create");

@@ -548,7 +548,7 @@ export function RequestChat({
 
           <View
             style={{
-              backgroundColor: isMine ? colors.purple : "#1F1730",
+              backgroundColor: isMine ? colors.purple : colors.muted,
               paddingHorizontal: 12,
               paddingTop: 8,
               paddingBottom: 6,

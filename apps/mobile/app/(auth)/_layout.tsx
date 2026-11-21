@@ -1,8 +1,8 @@
 import { Redirect, Stack, useSegments } from "expo-router";
 import { useAuth } from "../../src/providers/auth";
 import { useLocale } from "../../src/providers/locale";
+import { useTheme } from "../../src/providers/theme";
 import { Loading } from "../../src/components/ui";
-import { BRAND } from "../../src/theme/brand";
 import { stackPushAnimation } from "../../src/theme/navigation";
 import { shouldForceOnboarding } from "../../src/lib/onboarding";
 
@@ -12,21 +12,21 @@ export const unstable_settings = { anchor: "welcome" };
 export default function AuthLayout() {
   const { ready, token } = useAuth();
   const { locale } = useLocale();
+  const { colors } = useTheme();
   const onOnboarding = (useSegments() as string[]).includes("onboarding");
 
   if (!ready) return <Loading />;
   if (token && !onOnboarding && !shouldForceOnboarding()) return <Redirect href="/(app)" />;
 
-  // Entry screen is controlled by `unstable_settings.anchor` (SDK 58 Stack dropped initialRouteName).
   return (
     <Stack
-      key={locale}
+      key={`${locale}-${colors.background}`}
       screenOptions={{
         headerShown: false,
         animation: stackPushAnimation(),
         animationDuration: 280,
         gestureEnabled: true,
-        contentStyle: { backgroundColor: BRAND.colors.background },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="onboarding" />

@@ -5,16 +5,8 @@ import { useAuth } from "../../src/providers/auth";
 import { t } from "../../src/i18n";
 import { ApiError } from "../../src/lib/api";
 import { AuthBrand } from "../../src/components/AuthBrand";
-import {
-  Button,
-  Card,
-  ErrorText,
-  Field,
-  Label,
-  ScrollScreen,
-  colors,
-  AppText,
-} from "../../src/components/ui";
+import { AuthScreen } from "../../src/components/AuthScreen";
+import { Button, Card, ErrorText, Field, Label, colors, AppText } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 import { row } from "../../src/rtl";
 
@@ -53,10 +45,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <ScrollScreen
-      edges={["top", "left", "right", "bottom"]}
-      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
-    >
+    <AuthScreen>
       <AuthBrand height={52} />
 
       <Card>
@@ -157,6 +146,6 @@ export default function LoginScreen() {
           variant="ghost"
         />
       </Card>
-    </ScrollScreen>
+    </AuthScreen>
   );
 }

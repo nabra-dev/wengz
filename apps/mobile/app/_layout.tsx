@@ -1,4 +1,5 @@
 import "../src/lib/install-expo-blob";
+import type { ReactNode } from "react";
 import {
   Stack,
   LocaleProvider as RouterLocaleProvider,
@@ -6,7 +7,6 @@ import {
 } from "expo-router";
 import { View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -25,6 +25,7 @@ import {
 } from "@expo-google-fonts/cairo";
 import { AuthProvider } from "../src/providers/auth";
 import { AppLocaleProvider, useLocale } from "../src/providers/locale";
+import { ThemeProvider, useTheme } from "../src/providers/theme";
 import { Button, Muted, Title } from "../src/components/ui";
 import { t } from "../src/i18n";
 import { DebugUiProvider } from "../src/debug/DebugProvider";
@@ -64,20 +65,31 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
+function ThemedShell({ children }: { children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+        {children}
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
+  );
+}
+
 function RootNavigator() {
   const { locale, direction } = useLocale();
+  const { colors } = useTheme();
 
   return (
     <RouterLocaleProvider direction={direction}>
       <AuthProvider>
-        <StatusBar style="light" />
         <Stack
-          key={locale}
+          key={`${locale}-${colors.background}`}
           screenOptions={{
             headerShown: false,
             animation: stackPushAnimation(),
             animationDuration: 280,
-            contentStyle: { backgroundColor: BRAND.colors.background },
+            contentStyle: { backgroundColor: colors.background },
           }}
         />
       </AuthProvider>
@@ -97,20 +109,19 @@ export default function RootLayout() {
     Cairo_700Bold,
   });
 
-  // Keep the native splash up until fonts are ready (locale splash hide is below).
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.colors.background }}>
-        <QueryClientProvider client={queryClient}>
-          <AppLocaleProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppLocaleProvider>
+        <ThemeProvider>
+          <ThemedShell>
             <DebugUiProvider>
               <RootNavigator />
             </DebugUiProvider>
-          </AppLocaleProvider>
-        </QueryClientProvider>
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
+          </ThemedShell>
+        </ThemeProvider>
+      </AppLocaleProvider>
+    </QueryClientProvider>
   );
 }

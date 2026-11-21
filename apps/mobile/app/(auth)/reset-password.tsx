@@ -3,7 +3,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { resetPassword } from "../../src/lib/api";
 import { t } from "../../src/i18n";
 import { AuthBrand } from "../../src/components/AuthBrand";
-import { Button, Card, ErrorText, Field, Label, ScrollScreen } from "../../src/components/ui";
+import { AuthScreen } from "../../src/components/AuthScreen";
+import { Button, Card, ErrorText, Field, Label } from "../../src/components/ui";
 
 export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
@@ -38,10 +39,7 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <ScrollScreen
-      edges={["top", "left", "right", "bottom"]}
-      contentContainerStyle={{ justifyContent: "center", paddingVertical: 40 }}
-    >
+    <AuthScreen>
       <AuthBrand height={48} />
       <Card>
         <Label>{t("auth.resetPassword.title")}</Label>
@@ -57,6 +55,6 @@ export default function ResetPasswordScreen() {
           variant="secondary"
         />
       </Card>
-    </ScrollScreen>
+    </AuthScreen>
   );
 }
