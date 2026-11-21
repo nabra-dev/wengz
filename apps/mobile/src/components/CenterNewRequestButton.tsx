@@ -125,7 +125,7 @@ export function CenterNewRequestButton() {
               fabStyle,
             ]}
           >
-            <Ionicons name="add" size={26} color={colors.foreground} />
+            <Ionicons name="add" size={26} color="#FFFFFF" />
           </Animated.View>
         </Pressable>
       </View>

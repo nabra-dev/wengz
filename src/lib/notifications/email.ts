@@ -641,6 +641,40 @@ export async function getProviderClaimedEmailTemplate(
   });
 }
 
+export async function getProviderAssignedEmailTemplate(
+  requestTitle: string,
+  locale: string = "en",
+  requestId?: string
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.providerAssigned.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.providerAssigned.emailBody.heading",
+    introKey: "notifications.providerAssigned.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.providerAssigned.emailBody.viewButton",
+    href: appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"),
+  });
+}
+
+export async function getProviderUnassignedForClientEmailTemplate(
+  requestTitle: string,
+  locale: string = "en",
+  requestId?: string
+) {
+  return buildSimpleCtaEmail({
+    locale,
+    subjectKey: "notifications.providerUnassigned.emailSubject",
+    subjectParams: { requestTitle },
+    headingKey: "notifications.providerUnassigned.emailBody.heading",
+    introKey: "notifications.providerUnassigned.emailBody.intro",
+    introParams: { requestTitle },
+    buttonKey: "notifications.providerUnassigned.emailBody.viewButton",
+    href: appUrl(requestId ? `/client/requests/${requestId}` : "/client/requests"),
+  });
+}
+
 export async function getRequestAcceptedEmailTemplate(
   requestTitle: string,
   locale: string = "en",
@@ -658,19 +692,26 @@ export async function getRequestAcceptedEmailTemplate(
   });
 }
 
+/** e.g. 4 → ★★★★☆ — used in rating emails / notifications. */
+export function formatRatingStars(rating: number): string {
+  const n = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return `${"★".repeat(n)}${"☆".repeat(5 - n)}`;
+}
+
 export async function getRatingSubmittedEmailTemplate(
   requestTitle: string,
   rating: number,
   locale: string = "en",
   requestId?: string
 ) {
+  const stars = formatRatingStars(rating);
   return buildSimpleCtaEmail({
     locale,
     subjectKey: "notifications.ratingSubmitted.emailSubject",
-    subjectParams: { rating: String(rating) },
+    subjectParams: { stars, rating: String(rating) },
     headingKey: "notifications.ratingSubmitted.emailBody.heading",
     introKey: "notifications.ratingSubmitted.emailBody.intro",
-    introParams: { requestTitle, rating: String(rating) },
+    introParams: { requestTitle, stars, rating: String(rating) },
     buttonKey: "notifications.ratingSubmitted.emailBody.viewButton",
     href: appUrl(requestId ? `/provider/requests/${requestId}` : "/provider/requests"),
   });

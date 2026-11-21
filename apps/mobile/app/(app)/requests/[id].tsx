@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { AppState, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   addComment,
@@ -17,6 +17,7 @@ import { RequestChat, type ChatComment } from "../../../src/components/RequestCh
 import { VoiceNotePreview } from "../../../src/components/VoiceNotePreview";
 import { physicalRow, row } from "../../../src/rtl";
 import { fileNameFromUrl, isLikelyImageUrl } from "../../../src/lib/media";
+import { getRequestThreadPollingInterval } from "../../../src/lib/request-realtime";
 import { useAuth } from "../../../src/providers/auth";
 import {
   Button,
@@ -125,7 +126,12 @@ export default function RequestDetailScreen() {
   const q = useQuery({
     queryKey: ["request", id],
     queryFn: () => getRequest(String(id)),
-    refetchInterval: 30_000,
+    refetchInterval: (query) =>
+      getRequestThreadPollingInterval(
+        (query.state.data as { status?: string } | undefined)?.status
+      ),
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     enabled: Boolean(id),
   });
 
@@ -133,6 +139,16 @@ export default function RequestDetailScreen() {
     void qc.invalidateQueries({ queryKey: ["request", id] });
     void qc.invalidateQueries({ queryKey: ["requests"] });
   };
+
+  // Foreground resume — same role as web visibilitychange refetch
+  useEffect(() => {
+    if (!id) return;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") invalidate();
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- id/qc only
+  }, [id]);
 
   const canMarkPeerRead = user?.role === "CLIENT" || user?.role === "PROVIDER";
   const myUserId = user?.id;
@@ -293,30 +309,34 @@ export default function RequestDetailScreen() {
               {t("client.requestDetail.rateService.title")}
             </AppText>
             <Muted>{t("client.requestDetail.rateService.description")}</Muted>
-            <View style={{ ...physicalRow(), gap: 8, marginBottom: 10 }}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => setRating(n)}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: rating >= n ? colors.yellow : colors.muted,
-                  }}
-                >
-                  <AppText
+            <View style={{ ...physicalRow(), gap: 6, marginBottom: 10, alignItems: "center" }}>
+              {[1, 2, 3, 4, 5].map((n) => {
+                const filled = rating >= n;
+                return (
+                  <Pressable
+                    key={n}
+                    onPress={() => setRating(n)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("client.requestDetail.rateService.rateStars", {
+                      count: n,
+                    })}
+                    accessibilityState={{ selected: filled }}
                     style={{
-                      color: rating >= n ? "#2A0A55" : colors.foreground,
-                      fontFamily: fonts.bold,
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    {n}
-                  </AppText>
-                </Pressable>
-              ))}
+                    <Ionicons
+                      name={filled ? "star" : "star-outline"}
+                      size={28}
+                      color={filled ? colors.yellow : colors.mutedForeground}
+                    />
+                  </Pressable>
+                );
+              })}
             </View>
             <Field
               placeholder={t("client.requestDetail.rateService.reviewPlaceholder")}
@@ -338,9 +358,23 @@ export default function RequestDetailScreen() {
 
         {request.rating ? (
           <>
-            <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>
-              {t("client.requestDetail.yourRating.title")}: {request.rating.rating}/5
+            <AppText
+              style={{ color: colors.foreground, fontFamily: fonts.semiBold, marginBottom: 6 }}
+            >
+              {t("client.requestDetail.yourRating.title")}
             </AppText>
+            <View style={{ ...physicalRow(), gap: 4, marginBottom: 6, alignItems: "center" }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Ionicons
+                  key={n}
+                  name={n <= (request.rating?.rating ?? 0) ? "star" : "star-outline"}
+                  size={22}
+                  color={
+                    n <= (request.rating?.rating ?? 0) ? colors.yellow : colors.mutedForeground
+                  }
+                />
+              ))}
+            </View>
             {request.rating.reviewText ? <Muted>{request.rating.reviewText}</Muted> : null}
           </>
         ) : null}

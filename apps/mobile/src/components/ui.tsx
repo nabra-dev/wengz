@@ -116,7 +116,8 @@ function makeStyles(c: ThemeColors) {
       borderColor: c.purple,
     } as ViewStyle,
     segmentLabel: { color: c.foreground, ...typeScale.sm } as TextStyle,
-    segmentLabelActive: { color: c.onPrimary } as TextStyle,
+    // Active segment sits on purple — white stays readable in both themes (avoid yellow glare).
+    segmentLabelActive: { color: "#FFFFFF" } as TextStyle,
     center: {
       flex: 1,
       alignItems: "center",

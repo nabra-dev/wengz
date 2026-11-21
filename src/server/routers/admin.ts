@@ -20,6 +20,8 @@ import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
 import {
   notifyProviderAssignment,
+  notifyClientProviderAssigned,
+  notifyClientProviderUnassigned,
   notifyProviderWithdrawalReviewed,
   notifyProviderFinanceDisputeReviewed,
   notifyProviderUnassigned,
@@ -3246,6 +3248,11 @@ export const adminRouter = router({
         locale: ctx.locale,
       });
 
+      await notifyClientProviderAssigned({
+        requestId: input.requestId,
+        clientId: request.clientId,
+      });
+
       logRequestActivity({
         action: "request.assign",
         requestId: input.requestId,
@@ -3311,6 +3318,11 @@ export const adminRouter = router({
           locale: ctx.locale,
         });
       }
+
+      await notifyClientProviderUnassigned({
+        requestId: input.requestId,
+        clientId: request.clientId,
+      });
 
       logRequestActivity({
         action: "request.unassign",

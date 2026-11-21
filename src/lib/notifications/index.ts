@@ -14,7 +14,10 @@ import {
   getAccountRejectedEmailTemplate,
   getNewRequestAvailableEmailTemplate,
   getProviderClaimedEmailTemplate,
+  getProviderAssignedEmailTemplate,
+  getProviderUnassignedForClientEmailTemplate,
   getRequestAcceptedEmailTemplate,
+  formatRatingStars,
   getRatingSubmittedEmailTemplate,
   getWithdrawalReviewedEmailTemplate,
   getFinanceDisputeReviewedEmailTemplate,
@@ -734,6 +737,88 @@ export async function notifyClientProviderClaimed(params: {
   });
 }
 
+/** Staff assigned a creator — notify the client (identity stays brand-safe). */
+export async function notifyClientProviderAssigned(params: {
+  requestId: string;
+  clientId: string;
+  locale?: string;
+}) {
+  const { requestId, clientId } = params;
+  const locale = await localeForUser(clientId);
+
+  const request = await db.request.findUnique({
+    where: { id: requestId },
+    select: { title: true },
+  });
+
+  if (!request) return;
+
+  const title = await getTranslation(locale, "notifications.providerAssigned.title");
+  const message = await getTranslation(locale, "notifications.providerAssigned.message", {
+    requestTitle: request.title,
+  });
+  const emailTemplate = await getProviderAssignedEmailTemplate(request.title, locale, requestId);
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "assignment",
+    link: `/client/requests/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.providerAssigned.title",
+      messageKey: "notifications.providerAssigned.message",
+      messageParams: { requestTitle: request.title },
+    },
+  });
+}
+
+/** Staff unassigned the creator — tell the client the request is open again. */
+export async function notifyClientProviderUnassigned(params: {
+  requestId: string;
+  clientId: string;
+  locale?: string;
+}) {
+  const { requestId, clientId } = params;
+  const locale = await localeForUser(clientId);
+
+  const request = await db.request.findUnique({
+    where: { id: requestId },
+    select: { title: true },
+  });
+
+  if (!request) return;
+
+  const title = await getTranslation(locale, "notifications.providerUnassigned.title");
+  const message = await getTranslation(locale, "notifications.providerUnassigned.message", {
+    requestTitle: request.title,
+  });
+  const emailTemplate = await getProviderUnassignedForClientEmailTemplate(
+    request.title,
+    locale,
+    requestId
+  );
+
+  return createNotification({
+    userId: clientId,
+    title,
+    message,
+    type: "status_change",
+    link: `/client/requests/${requestId}`,
+    requestId,
+    locale,
+    emailTemplate,
+    sseI18n: {
+      titleKey: "notifications.providerUnassigned.title",
+      messageKey: "notifications.providerUnassigned.message",
+      messageParams: { requestTitle: request.title },
+    },
+  });
+}
+
 export async function notifyNewRequestAvailable(params: {
   providerId: string;
   requestId: string;
@@ -815,8 +900,10 @@ export async function notifyProviderRatingSubmitted(params: {
   const { providerId, requestId, requestTitle, rating } = params;
   const locale = await localeForUser(providerId);
 
+  const stars = formatRatingStars(rating);
   const title = await getTranslation(locale, "notifications.ratingSubmitted.title");
   const message = await getTranslation(locale, "notifications.ratingSubmitted.message", {
+    stars,
     rating: String(rating),
     requestTitle,
   });
@@ -839,7 +926,7 @@ export async function notifyProviderRatingSubmitted(params: {
     sseI18n: {
       titleKey: "notifications.ratingSubmitted.title",
       messageKey: "notifications.ratingSubmitted.message",
-      messageParams: { rating: String(rating), requestTitle },
+      messageParams: { stars, rating: String(rating), requestTitle },
     },
   });
 }

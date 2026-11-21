@@ -25,6 +25,7 @@ import {
 } from "@expo-google-fonts/cairo";
 import { AuthProvider } from "../src/providers/auth";
 import { AppLocaleProvider, useLocale } from "../src/providers/locale";
+import { RealtimeProvider } from "../src/providers/realtime";
 import { ThemeProvider, useTheme } from "../src/providers/theme";
 import { Button, Muted, Title } from "../src/components/ui";
 import { t } from "../src/i18n";
@@ -83,15 +84,17 @@ function RootNavigator() {
   return (
     <RouterLocaleProvider direction={direction}>
       <AuthProvider>
-        <Stack
-          key={`${locale}-${colors.background}`}
-          screenOptions={{
-            headerShown: false,
-            animation: stackPushAnimation(),
-            animationDuration: 280,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
+        <RealtimeProvider>
+          <Stack
+            key={`${locale}-${colors.background}`}
+            screenOptions={{
+              headerShown: false,
+              animation: stackPushAnimation(),
+              animationDuration: 280,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        </RealtimeProvider>
       </AuthProvider>
     </RouterLocaleProvider>
   );

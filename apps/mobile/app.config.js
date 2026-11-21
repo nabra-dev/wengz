@@ -87,6 +87,7 @@ module.exports = {
         color: "#690DD4",
       },
     ],
+    "expo-sharing",
   ],
   experiments: {
     typedRoutes: true,

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { t } from "../i18n";
 import { getAccessToken } from "../lib/auth-store";
+import { cacheAuthedFile } from "../lib/file-cache";
 import { resolveMediaUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { AppText } from "./typography";
@@ -15,21 +16,24 @@ async function loadAuthedMediaUri(remoteUrl: string): Promise<string> {
   if (
     remoteUrl.startsWith("blob:") ||
     remoteUrl.startsWith("file:") ||
-    remoteUrl.startsWith("data:")
+    remoteUrl.startsWith("data:") ||
+    remoteUrl.startsWith("content:")
   ) {
     return remoteUrl;
   }
+
+  // Native: cache to disk (auth headers) — more reliable than data: URIs for audio.
+  if (Platform.OS !== "web") {
+    return cacheAuthedFile(remoteUrl);
+  }
+
   const token = await getAccessToken();
   const res = await fetch(resolveMediaUrl(remoteUrl), {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!res.ok) throw new Error(`audio ${res.status}`);
   const blob = await res.blob();
-  if (
-    typeof URL !== "undefined" &&
-    typeof URL.createObjectURL === "function" &&
-    Platform.OS === "web"
-  ) {
+  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
     return URL.createObjectURL(blob);
   }
   return await new Promise<string>((resolve, reject) => {

@@ -16,7 +16,9 @@ import {
 } from "expo-audio";
 import { t, i18n } from "../i18n";
 import { uploadFile } from "../lib/api";
-import { fileNameFromUrl, isLikelyImageUrl } from "../lib/media";
+import { shareAuthedFile } from "../lib/file-cache";
+import { detectFileKind, prettyFilename, type FileKind } from "../lib/file-kind";
+import { fileNameFromUrl } from "../lib/media";
 import { fonts, typeScale } from "../theme/brand";
 import { useAuth } from "../providers/auth";
 import { AttachmentPicker } from "./AttachmentPicker";
@@ -102,8 +104,59 @@ function formatDayLabel(date: Date | string, locale: string): string {
   }).format(d);
 }
 
-function isAudioUrl(url: string): boolean {
-  return /\.(webm|m4a|mp3|ogg|wav|aac|mp4|caf|3gp)$/i.test(url.split("?")[0] ?? "");
+function labelForAttachment(url: string, kind: FileKind): string {
+  const raw = fileNameFromUrl(url);
+  const pretty = prettyFilename(raw);
+  if (kind === "audio") return t("requests.messages.voiceNote");
+  if (pretty && !pretty.startsWith(".")) return pretty;
+  const ext = raw.includes(".") ? raw.split(".").pop() : "";
+  const base =
+    kind === "image"
+      ? t("requests.messages.image")
+      : kind === "video"
+        ? t("requests.messages.video")
+        : t("requests.messages.file");
+  return ext ? `${base}.${ext}` : base;
+}
+
+function kindIcon(kind: FileKind): keyof typeof Ionicons.glyphMap {
+  if (kind === "image") return "image-outline";
+  if (kind === "audio") return "musical-notes-outline";
+  if (kind === "video") return "videocam-outline";
+  if (kind === "pdf") return "document-text-outline";
+  return "document-outline";
+}
+
+function DownloadChip({ url, onError }: { url: string; onError?: (message: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Pressable
+      hitSlop={8}
+      disabled={busy}
+      onPress={() => {
+        setBusy(true);
+        void shareAuthedFile(url)
+          .catch(() => onError?.(t("common.downloadFailed")))
+          .finally(() => setBusy(false));
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t("common.download")}
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.55)",
+      }}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color="#FFFFFF" />
+      ) : (
+        <Ionicons name="download-outline" size={16} color="#FFFFFF" />
+      )}
+    </Pressable>
+  );
 }
 
 function buildThread(
@@ -187,39 +240,64 @@ function bubbleRadius(isMine: boolean, isFirst: boolean, isLast: boolean) {
   };
 }
 
-function MessageAttachment({ url, mine }: { url: string; mine: boolean }) {
-  if (isAudioUrl(url)) {
+function MessageAttachment({
+  url,
+  mine,
+  onError,
+}: {
+  url: string;
+  mine: boolean;
+  onError?: (message: string) => void;
+}) {
+  const kind = detectFileKind(url);
+  const name = labelForAttachment(url, kind);
+
+  if (kind === "audio") {
     return (
       <View
         style={{
+          position: "relative",
           borderRadius: 14,
           padding: 8,
+          paddingTop: 12,
           backgroundColor: mine ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.22)",
+          minWidth: 220,
         }}
       >
+        <View style={{ position: "absolute", top: 6, end: 6, zIndex: 2 }}>
+          <DownloadChip url={url} onError={onError} />
+        </View>
         <VoiceNotePreview url={url} mine={mine} variant="bubble" />
       </View>
     );
   }
 
-  if (isLikelyImageUrl(url)) {
+  if (kind === "image") {
     return (
-      <MediaImage
-        uri={url}
-        zoomable
-        style={{
-          width: 220,
-          maxWidth: "100%",
-          height: 180,
-          borderRadius: 12,
-          backgroundColor: "rgba(0,0,0,0.2)",
-        }}
-      />
+      <View style={{ position: "relative", alignSelf: "flex-start" }}>
+        <MediaImage
+          uri={url}
+          zoomable
+          style={{
+            width: 220,
+            maxWidth: "100%",
+            height: 180,
+            borderRadius: 12,
+            backgroundColor: "rgba(0,0,0,0.2)",
+          }}
+        />
+        <View style={{ position: "absolute", top: 8, end: 8, zIndex: 2 }}>
+          <DownloadChip url={url} onError={onError} />
+        </View>
+      </View>
     );
   }
 
   return (
-    <View
+    <Pressable
+      onPress={() => {
+        void shareAuthedFile(url).catch(() => onError?.(t("common.downloadFailed")));
+      }}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -228,26 +306,26 @@ function MessageAttachment({ url, mine }: { url: string; mine: boolean }) {
         paddingVertical: 10,
         borderRadius: 12,
         backgroundColor: mine ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.22)",
-        maxWidth: 240,
+        maxWidth: 260,
+        minWidth: 160,
       }}
+      accessibilityRole="button"
+      accessibilityLabel={name}
     >
-      <Ionicons
-        name="document-outline"
-        size={18}
-        color={mine ? colors.accent : colors.foreground}
-      />
+      <Ionicons name={kindIcon(kind)} size={18} color={mine ? colors.accent : colors.foreground} />
       <AppText
         numberOfLines={2}
         style={{
           flex: 1,
-          color: mine ? colors.foreground : colors.foreground,
+          color: colors.foreground,
           fontFamily: fonts.medium,
           ...typeScale.sm,
         }}
       >
-        {fileNameFromUrl(url)}
+        {name}
       </AppText>
-    </View>
+      <DownloadChip url={url} onError={onError} />
+    </Pressable>
   );
 }
 
@@ -600,7 +678,12 @@ export function RequestChat({
             {comment.files?.length ? (
               <View style={{ gap: 8, marginTop: showText ? 8 : 0 }}>
                 {comment.files.map((url, i) => (
-                  <MessageAttachment key={`${comment.id}-${i}`} url={url} mine={isMine} />
+                  <MessageAttachment
+                    key={`${comment.id}-${i}`}
+                    url={url}
+                    mine={isMine}
+                    onError={onError}
+                  />
                 ))}
               </View>
             ) : null}
@@ -666,13 +749,6 @@ export function RequestChat({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        ListHeaderComponent={
-          threadFooter ? (
-            <View style={{ transform: [{ scaleY: -1 }], paddingHorizontal: 4, paddingVertical: 8 }}>
-              {threadFooter}
-            </View>
-          ) : undefined
-        }
         ListEmptyComponent={
           <View
             style={{
@@ -721,6 +797,11 @@ export function RequestChat({
           </View>
         }
       />
+
+      {/* Outside inverted FlatList — scaleY un-flip on ListHeader was unreliable (upside-down review card). */}
+      {threadFooter ? (
+        <View style={{ paddingHorizontal: 4, paddingVertical: 8 }}>{threadFooter}</View>
+      ) : null}
 
       {canSend ? (
         <View

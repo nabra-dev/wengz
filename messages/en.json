@@ -2777,6 +2777,26 @@
         "viewButton": "View Request"
       }
     },
+    "providerAssigned": {
+      "title": "Creator assigned to your request",
+      "message": "A creator was assigned to \"{requestTitle}\". They will start work and share an estimated delivery time next.",
+      "emailSubject": "Creator assigned to \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Creator assigned to your request",
+        "intro": "A creator was assigned to <strong>{requestTitle}</strong>. They will start work and share an estimated delivery time next.",
+        "viewButton": "View Request"
+      }
+    },
+    "providerUnassigned": {
+      "title": "Creator unassigned",
+      "message": "Your request \"{requestTitle}\" is waiting for a creator again.",
+      "emailSubject": "Creator unassigned from \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "Creator unassigned",
+        "intro": "Your request <strong>{requestTitle}</strong> is waiting for a creator again.",
+        "viewButton": "View Request"
+      }
+    },
     "approvalReminder": {
       "title": "Please review your deliverable",
       "message": "Your request \"{requestTitle}\" was delivered over an hour ago and is waiting for your approval.",
@@ -3013,11 +3033,11 @@
     },
     "ratingSubmitted": {
       "title": "Rating Submitted",
-      "message": "You received a {rating}-star rating for \"{requestTitle}\".",
-      "emailSubject": "You received a {rating}-star rating",
+      "message": "You received {stars} for \"{requestTitle}\".",
+      "emailSubject": "New rating: {stars}",
       "emailBody": {
         "heading": "New rating received",
-        "intro": "You received a <strong>{rating}-star</strong> rating for <strong>{requestTitle}</strong>.",
+        "intro": "You received <strong style=\"letter-spacing:2px;font-size:1.25em\">{stars}</strong> for <strong>{requestTitle}</strong>.",
         "viewButton": "View Request"
       }
     },

@@ -19,6 +19,8 @@ export const en = {
     credits: "Credits",
     showPassword: "Show password",
     hidePassword: "Hide password",
+    download: "Download",
+    downloadFailed: "Could not download file",
     requestStatus: {
       PENDING: "Pending",
       IN_PROGRESS: "In Progress",

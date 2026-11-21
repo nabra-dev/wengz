@@ -207,16 +207,17 @@ All cron routes require `Authorization: Bearer ${CRON_SECRET}` (in production `C
 
 Client-only native apps (see `apps/mobile`) authenticate with a **Bearer JWT**, not cookies.
 
-| Concern     | Implementation                                                                                                                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Login       | `POST /api/rest/auth/mobile-login` (`auth.mobileLogin`) — **CLIENT** role only; returns `accessToken`, `expiresIn`, `user`                                                                      |
-| Auth header | `Authorization: Bearer <accessToken>` on tRPC REST, `/api/upload/*`, `/api/files/*`                                                                                                             |
-| Locale      | `X-Locale: en\|ar` (or `Accept-Language`) → `ctx.locale` + `preferredLocale` sync                                                                                                               |
-| Context     | [`src/lib/mobile-auth.ts`](src/lib/mobile-auth.ts), [`src/lib/request-session.ts`](src/lib/request-session.ts), [`createTRPCContext`](src/server/trpc.ts)                                       |
-| Inbox       | Poll `GET /api/rest/notification` — do not rely on SSE                                                                                                                                          |
-| Push        | Register via `POST /api/rest/notification/push-device` or `/api/push/subscribe`; fan-out from `createNotification` via Expo Push API ([`src/lib/push.ts`](src/lib/push.ts), `PushDevice` model) |
-| OpenAPI     | Bearer scheme `Authorization` documented in [`src/server/openapi.ts`](src/server/openapi.ts)                                                                                                    |
-| Services    | `GET /api/rest/services` (`request.getServiceTypes`) — do **not** use `/request/service-types` (collides with `/request/{id}`)                                                                  |
+| Concern     | Implementation                                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Login       | `POST /api/rest/auth/mobile-login` (`auth.mobileLogin`) — **CLIENT** role only; returns `accessToken`, `expiresIn`, `user`                                                                                                                       |
+| Auth header | `Authorization: Bearer <accessToken>` on tRPC REST, `/api/upload/*`, `/api/files/*`                                                                                                                                                              |
+| Locale      | `X-Locale: en\|ar` (or `Accept-Language`) → `ctx.locale` + `preferredLocale` sync                                                                                                                                                                |
+| Context     | [`src/lib/mobile-auth.ts`](src/lib/mobile-auth.ts), [`src/lib/request-session.ts`](src/lib/request-session.ts), [`createTRPCContext`](src/server/trpc.ts)                                                                                        |
+| Inbox       | Poll `GET /api/rest/notification` for the list screen; optional SSE below also invalidates the inbox query                                                                                                                                       |
+| Live chat   | `GET /api/notifications/sse` with `Authorization: Bearer …` (same JWT as REST). Mobile invalidates `request/{id}` on `message` / `status_change`. Fallback poll every 15s while status is active (same as web `getRequestThreadPollingInterval`) |
+| Push        | Register via `POST /api/rest/notification/push-device` or `/api/push/subscribe`; fan-out from `createNotification` via Expo Push API ([`src/lib/push.ts`](src/lib/push.ts), `PushDevice` model)                                                  |
+| OpenAPI     | Bearer scheme `Authorization` documented in [`src/server/openapi.ts`](src/server/openapi.ts)                                                                                                                                                     |
+| Services    | `GET /api/rest/services` (`request.getServiceTypes`) — do **not** use `/request/service-types` (collides with `/request/{id}`)                                                                                                                   |
 
 Web cookie sessions remain unchanged. Tokens are NextAuth-compatible JWTs signed with `NEXTAUTH_SECRET` and invalidated when `passwordChangedAt` advances.
 

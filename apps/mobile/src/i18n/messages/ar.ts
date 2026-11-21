@@ -20,6 +20,8 @@ export const ar: MessageTree = {
     credits: "الكريدت",
     showPassword: "إظهار كلمة المرور",
     hidePassword: "إخفاء كلمة المرور",
+    download: "تنزيل",
+    downloadFailed: "تعذر تنزيل الملف",
     requestStatus: {
       PENDING: "قيد الانتظار",
       IN_PROGRESS: "قيد التنفيذ",

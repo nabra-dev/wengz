@@ -2769,6 +2769,26 @@
         "viewButton": "عرض الطلب"
       }
     },
+    "providerAssigned": {
+      "title": "تم تعيين مبدع لطلبك",
+      "message": "تم تعيين مبدع لطلب \"{requestTitle}\". سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك.",
+      "emailSubject": "تم تعيين مبدع لطلب \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تم تعيين مبدع لطلبك",
+        "intro": "تم تعيين مبدع لطلب <strong>{requestTitle}</strong>. سيبدأ العمل ويشارك وقت التسليم المتوقع بعد ذلك.",
+        "viewButton": "عرض الطلب"
+      }
+    },
+    "providerUnassigned": {
+      "title": "تمت إزالة المبدع",
+      "message": "طلبك \"{requestTitle}\" بانتظار مبدع من جديد.",
+      "emailSubject": "تمت إزالة المبدع من \"{requestTitle}\"",
+      "emailBody": {
+        "heading": "تمت إزالة المبدع",
+        "intro": "طلبك <strong>{requestTitle}</strong> بانتظار مبدع من جديد.",
+        "viewButton": "عرض الطلب"
+      }
+    },
     "approvalReminder": {
       "title": "يرجى مراجعة التسليم",
       "message": "تم تسليم طلبك \"{requestTitle}\" منذ أكثر من ساعة وما زال بانتظار موافقتك.",
@@ -3005,11 +3025,11 @@
     },
     "ratingSubmitted": {
       "title": "تم استلام تقييم",
-      "message": "لقد استلمت تقييماً {rating} نجوم على \"{requestTitle}\".",
-      "emailSubject": "حصلت على تقييم {rating} نجوم",
+      "message": "حصلت على {stars} لطلب \"{requestTitle}\".",
+      "emailSubject": "تقييم جديد: {stars}",
       "emailBody": {
         "heading": "تقييم جديد",
-        "intro": "حصلت على تقييم <strong>{rating} نجوم</strong> لطلب <strong>{requestTitle}</strong>.",
+        "intro": "حصلت على <strong style=\"letter-spacing:2px;font-size:1.25em\">{stars}</strong> لطلب <strong>{requestTitle}</strong>.",
         "viewButton": "عرض الطلب"
       }
     },

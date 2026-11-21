@@ -6,7 +6,11 @@ import {
   removeSseClient,
   sendNotificationToUser,
 } from "@/lib/notifications/sse-utils";
-import { getLocaleFromCookie } from "@/lib/notifications/i18n-helper";
+import {
+  extractBearerToken,
+  resolveRequestLocale,
+  sessionFromBearerToken,
+} from "@/lib/mobile-auth";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -18,18 +22,24 @@ if (typeof globalThis !== "undefined" && !(globalThis as any).__sseInitialized) 
 }
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
+  // Cookie session (web) or Bearer JWT (mobile)
+  let userId: string | undefined;
+  const bearer = extractBearerToken(request.headers);
+  if (bearer) {
+    const mobileSession = await sessionFromBearerToken(bearer);
+    userId = mobileSession?.user?.id;
+  } else {
+    const session = await getServerSession(authOptions);
+    userId = session?.user?.id;
+  }
 
-  if (!session?.user?.id) {
+  if (!userId) {
     logger.info("❌ SSE: Unauthorized access attempt");
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const userId = session.user.id;
-
-  // Extract locale from cookies on this connection
   const cookieHeader = request.headers.get("cookie") || "";
-  const locale = getLocaleFromCookie(cookieHeader);
+  const locale = resolveRequestLocale(request.headers, cookieHeader);
 
   const stream = new ReadableStream({
     start(controller) {

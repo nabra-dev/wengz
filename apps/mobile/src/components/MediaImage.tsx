@@ -9,8 +9,8 @@ import {
   type StyleProp,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getAccessToken } from "../lib/auth-store";
-import { isLikelyImageUrl, resolveMediaUrl } from "../lib/media";
+import { cacheAuthedFile } from "../lib/file-cache";
+import { detectFileKind } from "../lib/file-kind";
 import { fonts } from "../theme/brand";
 import { row, rowGap } from "../rtl";
 import { colors } from "./ui";
@@ -27,27 +27,6 @@ type Props = {
   zoomable?: boolean;
 };
 
-async function loadAuthedDataUri(remoteUrl: string): Promise<string> {
-  const url = resolveMediaUrl(remoteUrl);
-  const token = await getAccessToken();
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!res.ok) {
-    throw new Error(`Image ${res.status}`);
-  }
-  const blob = await res.blob();
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("Failed to read image"));
-    };
-    reader.onerror = () => reject(new Error("Failed to read image"));
-    reader.readAsDataURL(blob);
-  });
-}
-
 /** Image that works for local picks and auth-protected `/api/files/...` URLs. */
 export function MediaImage({
   uri,
@@ -58,18 +37,24 @@ export function MediaImage({
 }: Props) {
   const local =
     previewUri ||
-    (uri.startsWith("file:") || uri.startsWith("data:") || uri.startsWith("blob:") ? uri : null);
+    (uri.startsWith("file:") ||
+    uri.startsWith("data:") ||
+    uri.startsWith("blob:") ||
+    uri.startsWith("content:")
+      ? uri
+      : null);
   const [remoteSrc, setRemoteSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(!local);
   const [lightbox, setLightbox] = useState(false);
 
-  const treatAsImage = Boolean(local) || isLikelyImageUrl(uri);
+  const treatAsImage = Boolean(local) || detectFileKind(uri) === "image";
 
   useEffect(() => {
     if (local) {
       setLoading(false);
       setFailed(false);
+      setRemoteSrc(null);
       return;
     }
     if (!treatAsImage) {
@@ -82,10 +67,10 @@ export function MediaImage({
     setLoading(true);
     setFailed(false);
     setRemoteSrc(null);
-    void loadAuthedDataUri(uri)
-      .then((dataUri) => {
+    void cacheAuthedFile(uri)
+      .then((fileUri) => {
         if (!cancelled) {
-          setRemoteSrc(dataUri);
+          setRemoteSrc(fileUri);
           setLoading(false);
         }
       })
@@ -114,7 +99,7 @@ export function MediaImage({
         />
       ) : null}
       {!loading && (!showImage || failed) ? (
-        <Ionicons name="document-outline" size={28} color={colors.mutedForeground} />
+        <Ionicons name="image-outline" size={28} color={colors.mutedForeground} />
       ) : null}
     </View>
   );
@@ -123,7 +108,9 @@ export function MediaImage({
 
   return (
     <>
-      <Pressable onPress={() => setLightbox(true)}>{body}</Pressable>
+      <Pressable onPress={() => setLightbox(true)} accessibilityRole="imagebutton">
+        {body}
+      </Pressable>
       <Modal
         visible={lightbox}
         transparent
