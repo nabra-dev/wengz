@@ -12,15 +12,15 @@ export const unstable_settings = { anchor: "welcome" };
 export default function AuthLayout() {
   const { ready, token } = useAuth();
   const { locale } = useLocale();
-  const onOnboarding = useSegments().includes("onboarding");
+  const onOnboarding = (useSegments() as string[]).includes("onboarding");
 
   if (!ready) return <Loading />;
   if (token && !onOnboarding && !shouldForceOnboarding()) return <Redirect href="/(app)" />;
 
+  // Entry screen is controlled by `unstable_settings.anchor` (SDK 58 Stack dropped initialRouteName).
   return (
     <Stack
       key={locale}
-      initialRouteName="welcome"
       screenOptions={{
         headerShown: false,
         animation: stackPushAnimation(),

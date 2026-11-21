@@ -30,7 +30,8 @@ export const ar: MessageTree = {
       next: "التالي",
       getStarted: "ابدأ الآن",
       credits: {
-        title: "كريدت يحرّك عملك",
+        titleLead: "كريدت يحرّك",
+        titleAccent: "عملك",
         body: "اختر باقة، واصرف الكريدت على التصميم والمحتوى والإنتاج — وتابع كل شيء من مكان واحد.",
         highlights: {
           a: "باقات مرنة",
@@ -39,7 +40,8 @@ export const ar: MessageTree = {
         },
       },
       creators: {
-        title: "مبدعون ينجزون",
+        titleLead: "مبدعون",
+        titleAccent: "ينجزون",
         body: "نوجّه طلبك لمبدعين موثوقين. تابع التقدم، راجع التسليم، واطلب تعديلات عند الحاجة.",
         highlights: {
           a: "مطابقة ذكية",
@@ -48,9 +50,11 @@ export const ar: MessageTree = {
         },
       },
       works: {
-        title: "شاهد أعمال وينجز",
+        titleLead: "شاهد أعمال",
+        titleAccent: "وينجز",
+        titleTrail: "",
         body: "تصفّح أعمالاً حقيقية للعملاء — تصميم وفيديو والمزيد — ثم ابدأ طلبك.",
-        seeGallery: "عرض المعرض على الويب",
+        seeGallery: "عرض المعرض على الويب سايت",
       },
     },
     welcome: {

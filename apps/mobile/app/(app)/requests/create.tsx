@@ -23,6 +23,8 @@ import {
   AppText,
 } from "../../../src/components/ui";
 import { fonts } from "../../../src/theme/brand";
+import { CreditAmount } from "../../../src/components/CreditIcon";
+import { row } from "../../../src/rtl";
 import {
   calculateAttributeCredits,
   type AttributeResponse,
@@ -300,16 +302,38 @@ export default function CreateRequestScreen() {
         </Card>
 
         <Card>
-          <Muted>
-            {t("client.newRequest.costSummary.total")}: {totalCost}
-          </Muted>
-          <Muted>
-            {t("client.newRequest.costSummary.available")}: {remainingCredits}
-          </Muted>
-          <Muted style={{ marginBottom: 0 }}>
-            {t("client.newRequest.costSummary.remaining")}:{" "}
-            {Math.max(0, remainingCredits - totalCost)}
-          </Muted>
+          <View style={{ ...row(), alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <Muted style={{ marginBottom: 0 }}>{t("client.newRequest.costSummary.total")}</Muted>
+            <CreditAmount value={totalCost} size={15} />
+          </View>
+          <View
+            style={{
+              ...row(),
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              marginTop: 8,
+            }}
+          >
+            <Muted style={{ marginBottom: 0 }}>
+              {t("client.newRequest.costSummary.available")}
+            </Muted>
+            <CreditAmount value={remainingCredits} size={15} />
+          </View>
+          <View
+            style={{
+              ...row(),
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              marginTop: 8,
+            }}
+          >
+            <Muted style={{ marginBottom: 0 }}>
+              {t("client.newRequest.costSummary.remaining")}
+            </Muted>
+            <CreditAmount value={Math.max(0, remainingCredits - totalCost)} size={15} />
+          </View>
         </Card>
       </ScrollScreen>
 

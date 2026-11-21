@@ -24,6 +24,8 @@ import {
   AppText,
 } from "../../src/components/ui";
 import { fonts } from "../../src/theme/brand";
+import { CreditAmount } from "../../src/components/CreditIcon";
+import { row } from "../../src/rtl";
 
 type MethodId = "bank_transfer" | "instapay" | "fawry" | "meeza" | "visa" | "mastercard";
 
@@ -204,10 +206,16 @@ export default function PaymentScreen() {
 
       <Muted style={{ marginTop: 8 }}>{t("client.payment.steps.pay")}</Muted>
       <Card highlight>
-        <Muted>
-          {packageName} · ${amount} · {subscription.package?.credits ?? "—"}{" "}
-          {t("client.payment.badges.credits")}
-        </Muted>
+        <View style={{ ...row(), alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+          <Muted style={{ marginBottom: 0 }}>
+            {packageName} · ${amount} ·
+          </Muted>
+          <CreditAmount
+            value={subscription.package?.credits ?? "—"}
+            label={t("client.payment.badges.credits")}
+            size={15}
+          />
+        </View>
         {method === "instapay" ? (
           <>
             <AppText style={{ color: colors.foreground, fontFamily: fonts.semiBold }}>

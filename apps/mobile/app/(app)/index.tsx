@@ -21,6 +21,7 @@ import {
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
 import { alignStart, row } from "../../src/rtl";
+import { CreditIcon } from "../../src/components/CreditIcon";
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -106,6 +107,7 @@ export default function HomeScreen() {
           value={credits}
           hint={planName}
           highlight={!sub.data}
+          icon={<CreditIcon size={16} tone="yellow" />}
         />
         <StatCard
           label={t("client.dashboard.stats.activeRequests")}

@@ -317,17 +317,25 @@ export function StatCard({
   value,
   hint,
   highlight,
+  icon,
 }: {
   label: string;
   value: string | number;
   hint?: string;
   highlight?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
     <Card highlight={highlight} style={styles.statCard}>
-      <AppText compact style={[styles.statLabel, { fontFamily: fonts.medium }]}>
-        {label}
-      </AppText>
+      <View style={{ ...row(), alignItems: "center", gap: 6, marginBottom: 2 }}>
+        {icon}
+        <AppText
+          compact
+          style={[styles.statLabel, { fontFamily: fonts.medium, marginBottom: 0, flex: 1 }]}
+        >
+          {label}
+        </AppText>
+      </View>
       <AppText compact style={[styles.statValue, { fontFamily: fonts.bold }]}>
         {value}
       </AppText>

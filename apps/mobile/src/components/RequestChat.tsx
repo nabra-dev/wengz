@@ -671,7 +671,7 @@ export function RequestChat({
             <View style={{ transform: [{ scaleY: -1 }], paddingHorizontal: 4, paddingVertical: 8 }}>
               {threadFooter}
             </View>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           <View

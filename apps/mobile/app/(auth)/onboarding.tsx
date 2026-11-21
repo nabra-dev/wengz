@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Dimensions, Image, Linking, Pressable, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, StatusBar, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,267 +8,253 @@ import Animated, {
   FadeIn,
   FadeOut,
   SlideInRight,
-  interpolate,
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { AuthBrand } from "../../src/components/AuthBrand";
-import { AppText, colors } from "../../src/components/ui";
+import { AppText } from "../../src/components/ui";
+import { BrandLogo } from "../../src/components/BrandLogo";
+import { CreditIcon } from "../../src/components/CreditIcon";
+import { CreatorsIcon } from "../../src/components/CreatorsIcon";
 import { useLocale } from "../../src/providers/locale";
 import { t, type AppLocale } from "../../src/i18n";
 import { fonts, typeScale, BRAND } from "../../src/theme/brand";
 import { row } from "../../src/rtl";
 import { consumeForceOnboarding, markOnboardingComplete } from "../../src/lib/onboarding";
 
-const { width: SCREEN_W } = Dimensions.get("window");
+/** Bundled featured works — reliable vs remote URLs in Expo. */
+const WORK_IMAGES = [
+  require("../../assets/gallery/1.png"),
+  require("../../assets/gallery/2.png"),
+  require("../../assets/gallery/3.png"),
+  require("../../assets/gallery/4.png"),
+  require("../../assets/gallery/5.png"),
+  require("../../assets/gallery/6.png"),
+  require("../../assets/gallery/7.png"),
+  require("../../assets/gallery/8.png"),
+] as const;
 
-/** Featured work samples from the public landing gallery (`#gallery`). */
-const WORK_IMAGES = [1, 2, 3, 4, 5, 6].map(
-  (n) => `https://wengz.tech/images/landing/gallery/${n}.webp`
-);
+const CARD_W = 132;
+const CARD_H = Math.round(CARD_W * (4 / 3)); // portrait
+const CARD_GAP = 12;
+const LOOP_WIDTH = WORK_IMAGES.length * (CARD_W + CARD_GAP);
+/** ~px/sec — smooth continuous drift, no pause between loops. */
+const MARQUEE_SPEED = 38;
+
+/** Onboarding canvas — light mockup palette (app shell stays dark elsewhere). */
+const UI = {
+  bg: "#FFFFFF",
+  ink: "#111111",
+  muted: "#6B6575",
+  card: "#F2F0FF",
+  track: "#E8E6EF",
+  skipBg: "#EFEFF3",
+  border: "#E4E2EA",
+  purple: BRAND.colors.purple,
+  lime: BRAND.colors.yellow,
+} as const;
 
 type SlideId = "credits" | "creators" | "works";
 
 const SLIDES: SlideId[] = ["credits", "creators", "works"];
 
-const SLIDE_META: Record<
+/** Feature chips — icons mirror the product mockups. */
+const SLIDE_FEATURES: Record<
   Exclude<SlideId, "works">,
-  { icon: keyof typeof Ionicons.glyphMap; accent: string }
+  { key: "a" | "b" | "c"; icon: keyof typeof Ionicons.glyphMap }[]
 > = {
-  credits: { icon: "diamond-outline", accent: BRAND.colors.yellow },
-  creators: { icon: "people-outline", accent: "#C4B5FD" },
+  credits: [
+    { key: "a", icon: "grid-outline" },
+    { key: "b", icon: "videocam-outline" },
+    { key: "c", icon: "stats-chart-outline" },
+  ],
+  creators: [
+    { key: "a", icon: "people-outline" },
+    { key: "b", icon: "stats-chart-outline" },
+    { key: "c", icon: "create-outline" },
+  ],
 };
 
-function Atmosphere() {
+function AccentTitle({ slide }: { slide: SlideId }) {
+  const lead = t(`auth.onboarding.${slide}.titleLead`);
+  const accent = t(`auth.onboarding.${slide}.titleAccent`);
+  const trail = slide === "works" ? t("auth.onboarding.works.titleTrail") : "";
+
   return (
-    <View
-      pointerEvents="none"
-      style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+    <AppText
+      align="center"
+      style={{
+        color: UI.ink,
+        fontFamily: fonts.bold,
+        fontSize: 28,
+        lineHeight: 36,
+        marginTop: 8,
+        marginBottom: 10,
+      }}
     >
-      <View
+      {lead}
+      {lead ? " " : ""}
+      <AppText
+        compact
         style={{
-          position: "absolute",
-          top: -80,
-          right: -60,
-          width: 260,
-          height: 260,
-          borderRadius: 130,
-          backgroundColor: "rgba(105,13,212,0.45)",
-          opacity: 0.55,
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          top: 180,
-          left: -90,
-          width: 220,
-          height: 220,
-          borderRadius: 110,
-          backgroundColor: "rgba(224,248,64,0.12)",
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          bottom: 120,
-          right: -40,
-          width: 180,
-          height: 180,
-          borderRadius: 90,
-          backgroundColor: "rgba(105,13,212,0.28)",
-        }}
-      />
-    </View>
-  );
-}
-
-function WorkGallery({ onOpenWeb }: { onOpenWeb: () => void }) {
-  const hero = WORK_IMAGES[0]!;
-  const rest = WORK_IMAGES.slice(1, 5);
-  const tileW = (SCREEN_W - 48 - 10) / 2;
-
-  return (
-    <View style={{ width: "100%", gap: 10 }}>
-      <View style={{ ...row(), gap: 10 }}>
-        <Image
-          source={{ uri: hero }}
-          style={{
-            width: tileW,
-            height: tileW * 1.25,
-            borderRadius: 16,
-            backgroundColor: colors.muted,
-          }}
-          resizeMode="cover"
-        />
-        <View style={{ width: tileW, gap: 10 }}>
-          {rest.slice(0, 2).map((uri) => (
-            <Image
-              key={uri}
-              source={{ uri }}
-              style={{
-                width: tileW,
-                height: (tileW * 1.25 - 10) / 2,
-                borderRadius: 14,
-                backgroundColor: colors.muted,
-              }}
-              resizeMode="cover"
-            />
-          ))}
-        </View>
-      </View>
-      <View style={{ ...row(), gap: 10 }}>
-        {rest.slice(2, 4).map((uri) => (
-          <Image
-            key={uri}
-            source={{ uri }}
-            style={{
-              flex: 1,
-              height: 72,
-              borderRadius: 12,
-              backgroundColor: colors.muted,
-            }}
-            resizeMode="cover"
-          />
-        ))}
-      </View>
-      <Pressable
-        onPress={onOpenWeb}
-        style={{
-          ...row(),
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          paddingVertical: 12,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: "rgba(224,248,64,0.35)",
-          backgroundColor: "rgba(224,248,64,0.08)",
+          color: UI.purple,
+          fontFamily: fonts.bold,
+          fontSize: 28,
+          lineHeight: 36,
         }}
       >
-        <Ionicons name="open-outline" size={16} color={BRAND.colors.yellow} />
-        <AppText
-          compact
-          style={{
-            color: BRAND.colors.yellow,
-            fontFamily: fonts.medium,
-            ...typeScale.md,
-          }}
-        >
-          {t("auth.onboarding.works.seeGallery")}
-        </AppText>
-      </Pressable>
+        {accent}
+      </AppText>
+      {trail ? ` ${trail}` : ""}
+    </AppText>
+  );
+}
+
+/** Step heroes — solid brand marks, no plate/BG. */
+function HeroVisual({ slide }: { slide: Exclude<SlideId, "works"> }) {
+  return (
+    <View style={{ marginTop: 10, marginBottom: 10 }}>
+      {slide === "credits" ? (
+        <CreditIcon size={112} tone="purple" />
+      ) : (
+        <CreatorsIcon size={112} tone="purple" />
+      )}
     </View>
   );
 }
 
-function FeatureVisual({ id }: { id: Exclude<SlideId, "works"> }) {
-  const meta = SLIDE_META[id];
-  const pulse = useSharedValue(0);
-  const chips = ["a", "b", "c"] as const;
+function FeatureCards({ id }: { id: Exclude<SlideId, "works"> }) {
+  const items = SLIDE_FEATURES[id];
+
+  return (
+    <View style={{ ...row(), gap: 10, marginTop: 22, width: "100%" }}>
+      {items.map((item) => (
+        <View
+          key={item.key}
+          style={{
+            flex: 1,
+            aspectRatio: 1,
+            borderRadius: 22,
+            backgroundColor: UI.card,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 8,
+            gap: 8,
+          }}
+        >
+          <Ionicons name={item.icon} size={26} color={UI.purple} />
+          <AppText
+            align="center"
+            compact
+            style={{
+              color: UI.purple,
+              fontFamily: fonts.semiBold,
+              fontSize: 11,
+              lineHeight: 14,
+            }}
+          >
+            {t(`auth.onboarding.${id}.highlights.${item.key}`)}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Infinite autoplay marquee — portrait tiles, no arrows/dots/pause. */
+function WorkGallery({ onOpenWeb }: { onOpenWeb: () => void }) {
+  const offset = useSharedValue(0);
+  // Two identical sets so when we jump back by LOOP_WIDTH the frame looks continuous.
+  const track = [...WORK_IMAGES, ...WORK_IMAGES];
 
   useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+    const duration = Math.round((LOOP_WIDTH / MARQUEE_SPEED) * 1000);
+    offset.value = 0;
+    offset.value = withRepeat(
+      withTiming(-LOOP_WIDTH, { duration, easing: Easing.linear }),
       -1,
-      true
+      false
     );
-  }, [pulse]);
+    return () => {
+      cancelAnimation(offset);
+    };
+  }, [offset]);
 
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(pulse.value, [0, 1], [1, 1.08]) }],
-    opacity: interpolate(pulse.value, [0, 1], [0.35, 0.7]),
+  const trackStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: offset.value }],
   }));
 
   return (
-    <View
-      style={{
-        width: "100%",
-        aspectRatio: 1.05,
-        borderRadius: 28,
-        overflow: "hidden",
-        backgroundColor: "rgba(21,16,31,0.95)",
-        borderWidth: 1,
-        borderColor: "rgba(224,248,64,0.16)",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
-    >
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          backgroundColor: "rgba(105,13,212,0.22)",
-        }}
-      />
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            width: 160,
-            height: 160,
-            borderRadius: 80,
-            borderWidth: 1,
-            borderColor: "rgba(224,248,64,0.25)",
-          },
-          ringStyle,
-        ]}
-      />
-      <View
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 32,
-          backgroundColor: "rgba(224,248,64,0.12)",
-          borderWidth: 1,
-          borderColor: "rgba(224,248,64,0.35)",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 18,
-        }}
-      >
-        <Ionicons name={meta.icon} size={42} color={meta.accent} />
-      </View>
-      <AuthBrand height={28} />
-      <View style={{ ...row(), flexWrap: "wrap", gap: 8, marginTop: 20, justifyContent: "center" }}>
-        {chips.map((key) => (
-          <View
-            key={key}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 999,
-              backgroundColor: "rgba(255,255,255,0.06)",
-              borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.1)",
-            }}
-          >
-            <AppText
-              compact
+    <View style={{ width: "100%", marginTop: 2, marginBottom: 2 }}>
+      <View style={{ width: "100%", overflow: "hidden" }} pointerEvents="none">
+        <Animated.View
+          style={[
+            {
+              flexDirection: "row",
+              gap: CARD_GAP,
+              height: CARD_H,
+            },
+            trackStyle,
+          ]}
+        >
+          {track.map((source, i) => (
+            <View
+              key={`work-${i}`}
               style={{
-                color: colors.foreground,
-                fontFamily: fonts.medium,
-                ...typeScale.sm,
+                width: CARD_W,
+                height: CARD_H,
+                borderRadius: 18,
+                overflow: "hidden",
+                backgroundColor: UI.card,
+                borderWidth: 1,
+                borderColor: "rgba(105,13,212,0.08)",
               }}
             >
-              {t(`auth.onboarding.${id}.highlights.${key}`)}
-            </AppText>
-          </View>
-        ))}
+              <Image source={source} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            </View>
+          ))}
+        </Animated.View>
       </View>
+
+      <GalleryCta onOpenWeb={onOpenWeb} />
     </View>
   );
 }
 
-function SlideVisual({ id, onOpenWeb }: { id: SlideId; onOpenWeb: () => void }) {
-  if (id === "works") return <WorkGallery onOpenWeb={onOpenWeb} />;
-  return <FeatureVisual id={id} />;
+function GalleryCta({ onOpenWeb }: { onOpenWeb: () => void }) {
+  return (
+    <Pressable
+      onPress={onOpenWeb}
+      style={({ pressed }) => ({
+        marginTop: 12,
+        ...row(),
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        paddingVertical: 14,
+        paddingHorizontal: 18,
+        borderRadius: 999,
+        borderWidth: 1.5,
+        borderColor: UI.lime,
+        backgroundColor: pressed ? "rgba(224,248,64,0.12)" : "transparent",
+        width: "100%",
+      })}
+    >
+      <AppText
+        compact
+        style={{
+          color: UI.purple,
+          fontFamily: fonts.semiBold,
+          ...typeScale.md,
+        }}
+      >
+        {t("auth.onboarding.works.seeGallery")}
+      </AppText>
+      <Ionicons name="open-outline" size={16} color={UI.purple} />
+    </Pressable>
+  );
 }
 
 function ProgressTrack({ index, total }: { index: number; total: number }) {
@@ -288,23 +274,81 @@ function ProgressTrack({ index, total }: { index: number; total: number }) {
   return (
     <View
       style={{
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: "rgba(255,255,255,0.1)",
+        height: 5,
+        borderRadius: 999,
+        backgroundColor: UI.track,
         overflow: "hidden",
-        marginBottom: 8,
+        marginBottom: 20,
       }}
     >
       <Animated.View
         style={[
           {
             height: "100%",
-            borderRadius: 2,
-            backgroundColor: BRAND.colors.yellow,
+            borderRadius: 999,
+            backgroundColor: UI.lime,
           },
           fillStyle,
         ]}
       />
+    </View>
+  );
+}
+
+function LanguageToggle({
+  locale,
+  onChange,
+}: {
+  locale: AppLocale;
+  onChange: (next: AppLocale) => void;
+}) {
+  return (
+    <View
+      style={{
+        ...row(),
+        backgroundColor: UI.skipBg,
+        borderRadius: 12,
+        padding: 3,
+        gap: 2,
+      }}
+    >
+      {(
+        [
+          { key: "en" as AppLocale, label: "EN" },
+          { key: "ar" as AppLocale, label: "ع" },
+        ] as const
+      ).map((opt) => {
+        const active = locale === opt.key;
+        return (
+          <Pressable
+            key={opt.key}
+            onPress={() => onChange(opt.key)}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.language")}
+            accessibilityState={{ selected: active }}
+            style={{
+              minWidth: 36,
+              paddingHorizontal: 10,
+              paddingVertical: 7,
+              borderRadius: 10,
+              backgroundColor: active ? UI.purple : "transparent",
+              alignItems: "center",
+            }}
+          >
+            <AppText
+              compact
+              style={{
+                color: active ? "#FFFFFF" : UI.muted,
+                fontFamily: fonts.semiBold,
+                ...typeScale.sm,
+              }}
+            >
+              {opt.label}
+            </AppText>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -349,146 +393,116 @@ export default function OnboardingScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.background,
-        paddingTop: insets.top + 8,
+        backgroundColor: UI.bg,
+        paddingTop: insets.top + 10,
         paddingBottom: Math.max(insets.bottom, 16),
-        paddingHorizontal: 24,
+        paddingHorizontal: 22,
       }}
     >
-      <Atmosphere />
+      <StatusBar barStyle="dark-content" />
 
       <View
         style={{
           ...row(),
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 12,
-          zIndex: 1,
+          marginBottom: 14,
         }}
       >
-        <AppText
-          compact
-          style={{
-            color: colors.mutedForeground,
-            fontFamily: fonts.medium,
-            ...typeScale.sm,
-          }}
+        <LanguageToggle locale={locale} onChange={(next) => void setLocale(next)} />
+        <Pressable
+          onPress={() => void finish()}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            ...row(),
+            alignItems: "center",
+            gap: 4,
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            borderRadius: 999,
+            backgroundColor: UI.skipBg,
+            opacity: pressed ? 0.75 : 1,
+          })}
         >
-          {index + 1} / {SLIDES.length}
-        </AppText>
-        <View style={{ ...row(), alignItems: "center", gap: 10 }}>
-          <View style={{ ...row(), gap: 6 }}>
-            {(
-              [
-                { key: "en" as AppLocale, label: "EN" },
-                { key: "ar" as AppLocale, label: "ع" },
-              ] as const
-            ).map((opt) => {
-              const active = locale === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => void setLocale(opt.key)}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("common.language")}
-                  accessibilityState={{ selected: active }}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    backgroundColor: active ? "rgba(105,13,212,0.35)" : "rgba(255,255,255,0.06)",
-                  }}
-                >
-                  <AppText
-                    compact
-                    style={{
-                      color: active ? colors.yellow : colors.mutedForeground,
-                      fontFamily: fonts.medium,
-                      ...typeScale.sm,
-                    }}
-                  >
-                    {opt.label}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Pressable onPress={() => void finish()} hitSlop={12}>
-            <AppText
-              compact
-              style={{
-                color: colors.mutedForeground,
-                fontFamily: fonts.medium,
-                ...typeScale.md,
-              }}
-            >
-              {t("auth.onboarding.skip")}
-            </AppText>
-          </Pressable>
-        </View>
+          <AppText
+            compact
+            style={{
+              color: UI.muted,
+              fontFamily: fonts.medium,
+              ...typeScale.md,
+            }}
+          >
+            {t("auth.onboarding.skip")}
+          </AppText>
+          <Ionicons name={nextIcon} size={14} color={UI.muted} />
+        </Pressable>
       </View>
 
       <ProgressTrack index={index} total={SLIDES.length} />
 
-      <View style={{ flex: 1, justifyContent: "center", zIndex: 1 }}>
-        <Animated.View key={slide} entering={FadeIn.duration(260)} exiting={FadeOut.duration(140)}>
-          <Animated.View entering={SlideInRight.duration(300).easing(Easing.out(Easing.cubic))}>
-            <SlideVisual id={slide} onOpenWeb={openGallery} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          paddingBottom: 8,
+        }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Animated.View key={slide} entering={FadeIn.duration(240)} exiting={FadeOut.duration(120)}>
+          <Animated.View entering={SlideInRight.duration(280).easing(Easing.out(Easing.cubic))}>
+            <View style={{ alignItems: "center", width: "100%" }}>
+              <BrandLogo height={52} tone="purple" style={{ marginBottom: 22 }} />
+
+              {slide === "works" ? null : <HeroVisual slide={slide} />}
+
+              <AccentTitle slide={slide} />
+
+              <AppText
+                align="center"
+                style={{
+                  color: UI.muted,
+                  fontFamily: fonts.regular,
+                  ...typeScale.md,
+                  lineHeight: 22,
+                  paddingHorizontal: 6,
+                  marginBottom: slide === "works" ? 16 : 0,
+                }}
+              >
+                {t(`auth.onboarding.${slide}.body`)}
+              </AppText>
+
+              {slide === "works" ? <WorkGallery onOpenWeb={openGallery} /> : null}
+              {slide !== "works" ? <FeatureCards id={slide} /> : null}
+            </View>
           </Animated.View>
-
-          <AppText
-            align="center"
-            style={{
-              color: colors.foreground,
-              fontFamily: fonts.semiBold,
-              ...typeScale.display,
-              fontSize: 26,
-              lineHeight: 32,
-              marginTop: 26,
-              marginBottom: 10,
-            }}
-          >
-            {t(`auth.onboarding.${slide}.title`)}
-          </AppText>
-          <AppText
-            align="center"
-            style={{
-              color: colors.mutedForeground,
-              fontFamily: fonts.regular,
-              ...typeScale.md,
-              lineHeight: 22,
-              paddingHorizontal: 4,
-            }}
-          >
-            {t(`auth.onboarding.${slide}.body`)}
-          </AppText>
         </Animated.View>
-      </View>
+      </ScrollView>
 
-      <View style={{ ...row(), gap: 10, zIndex: 1 }}>
+      <View style={{ ...row(), gap: 10 }}>
         <Pressable
           onPress={goBack}
           disabled={isFirst}
           style={({ pressed }) => ({
             flex: 1,
-            minHeight: 48,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: isFirst ? "rgba(255,255,255,0.06)" : colors.border,
-            backgroundColor: isFirst ? "transparent" : "rgba(255,255,255,0.05)",
+            minHeight: 52,
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: isFirst ? "#F0EEF4" : UI.border,
+            backgroundColor: UI.bg,
             ...row(),
             alignItems: "center",
             justifyContent: "center",
             gap: 4,
-            opacity: isFirst ? 0.35 : pressed ? 0.8 : 1,
+            opacity: isFirst ? 0.4 : pressed ? 0.8 : 1,
           })}
         >
-          <Ionicons name={backIcon} size={18} color={colors.foreground} />
+          <Ionicons name={backIcon} size={18} color={UI.ink} />
           <AppText
             compact
             style={{
-              color: colors.foreground,
+              color: UI.ink,
               fontFamily: fonts.semiBold,
               ...typeScale.md,
             }}
@@ -500,36 +514,32 @@ export default function OnboardingScreen() {
         <Pressable
           onPress={goNext}
           style={({ pressed }) => ({
-            flex: 1.35,
-            minHeight: 48,
-            borderRadius: 12,
-            backgroundColor: BRAND.colors.purple,
+            flex: 1.25,
+            minHeight: 52,
+            borderRadius: 16,
+            backgroundColor: UI.purple,
             ...row(),
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
-            opacity: pressed ? 0.85 : 1,
-            shadowColor: BRAND.colors.purple,
-            shadowOpacity: 0.45,
-            shadowRadius: 12,
+            opacity: pressed ? 0.88 : 1,
+            shadowColor: UI.purple,
+            shadowOpacity: 0.28,
+            shadowRadius: 10,
             shadowOffset: { width: 0, height: 6 },
           })}
         >
           <AppText
             compact
             style={{
-              color: colors.foreground,
+              color: "#FFFFFF",
               fontFamily: fonts.semiBold,
               ...typeScale.md,
             }}
           >
             {isLast ? t("auth.onboarding.getStarted") : t("auth.onboarding.next")}
           </AppText>
-          <Ionicons
-            name={isLast ? "arrow-forward" : nextIcon}
-            size={18}
-            color={isLast ? BRAND.colors.yellow : colors.foreground}
-          />
+          <Ionicons name={nextIcon} size={18} color="#FFFFFF" />
         </Pressable>
       </View>
     </View>

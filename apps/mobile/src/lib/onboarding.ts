@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY = "wengz_onboarding_done_v3";
+const KEY = "wengz_onboarding_done_v4";
 
 /** Always open the 3-page splash, even after it was completed or a session exists. */
 export const FORCE_ONBOARDING = true;

@@ -23,6 +23,8 @@ import {
   AppText,
 } from "../../src/components/ui";
 import { fonts, typeScale } from "../../src/theme/brand";
+import { CreditAmount } from "../../src/components/CreditIcon";
+import { row } from "../../src/rtl";
 
 export default function SubscribeScreen() {
   const qc = useQueryClient();
@@ -90,10 +92,12 @@ export default function SubscribeScreen() {
                   })}
                 </AppText>
                 <Muted>{t("client.subscription.currentSubscription.description")}</Muted>
-                <Muted>
-                  {t("client.subscription.currentSubscription.creditsRemaining")}:{" "}
-                  {current.remainingCredits}
-                </Muted>
+                <View style={{ ...row(), alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <Muted style={{ marginBottom: 0 }}>
+                    {t("client.subscription.currentSubscription.creditsRemaining")}:
+                  </Muted>
+                  <CreditAmount value={current.remainingCredits ?? 0} size={15} />
+                </View>
                 <Muted>
                   {t("client.subscription.currentSubscription.daysRemaining")}:{" "}
                   {current.daysRemaining}
@@ -148,11 +152,15 @@ export default function SubscribeScreen() {
                   </AppText>
                 ) : null}
               </View>
-              <Muted>
-                ${String(item.price)}
-                {t("client.subscription.plans.perMonth")} · {String(item.credits)}{" "}
-                {t("common.credits")}
-              </Muted>
+              <View
+                style={{ ...row(), alignItems: "center", gap: 8, marginTop: 4, marginBottom: 8 }}
+              >
+                <Muted style={{ marginBottom: 0 }}>
+                  ${String(item.price)}
+                  {t("client.subscription.plans.perMonth")} ·
+                </Muted>
+                <CreditAmount value={String(item.credits)} label={t("common.credits")} size={15} />
+              </View>
               <Button
                 label={
                   sub.isPending

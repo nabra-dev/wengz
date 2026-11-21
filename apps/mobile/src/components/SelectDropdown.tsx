@@ -1,5 +1,13 @@
 import { useRef, useState } from "react";
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ViewInstance,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, typeScale } from "../theme/brand";
 import { useLocale } from "../providers/locale";
@@ -43,7 +51,7 @@ export function SelectDropdown({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
-  const triggerRef = useRef<View>(null);
+  const triggerRef = useRef<ViewInstance>(null);
   const selected = options.find((o) => o.value === value);
   const { locale } = useLocale();
   const rtl = locale === "ar";
